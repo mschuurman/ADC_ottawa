@@ -1,0 +1,326 @@
+accuracy.o: accuracy.f90 
+
+amplitudes_eva.o: amplitudes_eva.f90 accuracy.o eikonal_tools.o eikonal_tools_eva.o fields.o fock.o import_gamess.o multigrid.o qmech.o timer.o 
+
+amplitudes.o: amplitudes.f90 accuracy.o eikonal_tools.o fields.o fock.o import_gamess.o lebedev.o multigrid.o opendx.o qmech.o timer.o 
+
+arpack.o: arpack.f90 accuracy.o 
+
+atoms.o: atoms.f90 accuracy.o 
+
+basis_cap.o: basis_cap.f90 accuracy.o gamess_internal.o import_gamess.o math.o molecular_grid.o rf_cap.o timer.o 
+
+basis_recontract.o: basis_recontract.f90 accuracy.o basis_cap.o biorthogonal_tools.o block_diag.o diis.o ecp_convert_gamess.o fock_tools.o gamess_internal.o import_gamess.o integral_tools.o math.o matrix_tools.o scf_tools.o sort_tools.o timer.o 
+
+bessel.o: bessel.f90 accuracy.o 
+
+big-brother.o: big-brother.f90 accuracy.o fftw.o lanczos.o lapack.o liu.o multigrid.o symmetry.o timer.o 
+
+biorthogonal_tools_block_of_eigenvectors_common.o: biorthogonal_tools_block_of_eigenvectors_common.f90 
+
+biorthogonal_tools_bt_eigenvectors_common.o: biorthogonal_tools_bt_eigenvectors_common.f90 
+
+biorthogonal_tools_bt_follow_mos_common.o: biorthogonal_tools_bt_follow_mos_common.f90 
+
+biorthogonal_tools_bt_sanity_check_common.o: biorthogonal_tools_bt_sanity_check_common.f90 
+
+biorthogonal_tools.o: biorthogonal_tools.f90 accuracy.o biorthogonal_tools_block_of_eigenvectors_common.f90 biorthogonal_tools_bt_eigenvectors_common.f90 biorthogonal_tools_bt_follow_mos_common.f90 biorthogonal_tools_bt_sanity_check_common.f90 biorthogonal_tools_find_optimal_rotation_common.f90 lapack.o matrix_tools.o sort_tools.o timer.o 
+
+biorthogonal_tools_find_optimal_rotation_common.o: biorthogonal_tools_find_optimal_rotation_common.f90 
+
+block_diag.o: block_diag.f90 accuracy.o block_diag_syev_common.f90 block_diag_zgeev_common.f90 lapack.o printing.o sort_tools.o timer.o 
+
+block_diag_syev_common.o: block_diag_syev_common.f90 
+
+block_diag_zgeev_common.o: block_diag_zgeev_common.f90 
+
+caps.o: caps.f90 accuracy.o multigrid.o 
+
+chiral.o: chiral.f90 accuracy.o import_gamess.o math.o sfa.o timer.o 
+
+ci_tools.o: ci_tools.f90 accuracy.o arpack.o block_diag.o integrals_mo2e.o sort_tools.o timer.o 
+
+complex.o: complex.f90 accuracy.o 
+
+convolution.o: convolution.f90 accuracy.o fftw.o timer.o 
+
+correlation_potential.o: correlation_potential.f90 accuracy.o dyson_tools.o 
+
+correlation_potential_v2.o: correlation_potential_v2.f90 accuracy.o import_gamess.o math.o timer.o 
+
+correlation_potential_v3.o: correlation_potential_v3.f90 accuracy.o import_gamess.o lebedev.o math.o molecular_grid.o timer.o 
+
+crude_adiabatic_ff.o: crude_adiabatic_ff.f90 accuracy.o atoms.o import_gamess.o math.o timer.o 
+
+cubeint.o: cubeint.f90 accuracy.o 
+
+dft.o: dft.f90 accuracy.o 
+
+diis_extrapolate_common.o: diis_extrapolate_common.f90 
+
+diis.o: diis.f90 accuracy.o diis_extrapolate_common.f90 lapack.o math.o matrix_tools.o timer.o 
+
+dyson_1chan.o: dyson_1chan.f90 accuracy.o dyson_tools.o 
+
+dyson_harmonics.o: dyson_harmonics.f90 accuracy.o fftw.o math.o 
+
+dyson_nchan.o: dyson_nchan.f90 accuracy.o dyson_tools.o lapack.o 
+
+dyson_tools.o: dyson_tools.f90 accuracy.o caps.o ecp_gamess.o eikonal_tools.o fftw.o fields.o flux.o fock.o import_gamess.o math.o multigrid.o qmech.o timer.o 
+
+ecp_convert_gamess.o: ecp_convert_gamess.f90 accuracy.o block_diag.o fields.o gamess_internal.o import_gamess.o lebedev.o math.o matrix_tools.o printing.o timer.o 
+
+ecp_gamess.o: ecp_gamess.f90 accuracy.o ecp_convert_gamess.o gamess_internal.o import_gamess.o multigrid.o timer.o 
+
+ecp_test.o: ecp_test.f90 accuracy.o ecp_gamess.o import_gamess.o multigrid.o timer.o 
+
+ee_integral.o: ee_integral.f90 accuracy.o caps.o ecp_gamess.o eikonal_tools.o fields.o fock.o import_gamess.o math.o multigrid.o qmech.o timer.o 
+
+eikonal_integrals_2index.o: eikonal_integrals_2index.f90 accuracy.o eikonal_tools.o fields.o fock.o import_gamess.o multigrid.o qmech.o timer.o 
+
+eikonal_integrals.o: eikonal_integrals.f90 accuracy.o eikonal_tools.o fields.o fock.o import_gamess.o multigrid.o qmech.o timer.o 
+
+eikonal_tools_eva.o: eikonal_tools_eva.f90 accuracy.o fields.o multigrid.o phase_interpolation_eva.o timer.o 
+
+eikonal_tools.o: eikonal_tools.f90 accuracy.o dft.o fields.o fock.o import_gamess.o math.o multigrid.o qmech.o timer.o 
+
+fftw_fftw3.o: fftw_fftw3.f90 accuracy.o 
+
+fftw_scilib.o: fftw_scilib.f90 accuracy.o 
+
+fields.o: fields.f90 accuracy.o cubeint.o math.o 
+
+flux.o: flux.f90 accuracy.o bessel.o caps.o fftw.o math.o multigrid.o timer.o 
+
+fock.o: fock.f90 accuracy.o fields.o multigrid.o qmech.o timer.o 
+
+fock_tools_accumulate_g_common.o: fock_tools_accumulate_g_common.f90 
+
+fock_tools_accumulate_g_coulomb_common.o: fock_tools_accumulate_g_coulomb_common.f90 
+
+fock_tools_accumulate_g_exchange_common.o: fock_tools_accumulate_g_exchange_common.f90 
+
+fock_tools.o: fock_tools.f90 accuracy.o fock_tools_accumulate_g_common.f90 fock_tools_accumulate_g_coulomb_common.f90 fock_tools_accumulate_g_exchange_common.f90 fock_tools_g_matrix_block_common.f90 fock_tools_g_matrix_common.f90 import_gamess.o integral_tools.o timer.o 
+
+fock_tools_g_matrix_block_common.o: fock_tools_g_matrix_block_common.f90 
+
+fock_tools_g_matrix_common.o: fock_tools_g_matrix_common.f90 
+
+gamess_internal.o: gamess_internal.f90 accuracy.o 
+
+h2_potential.o: h2_potential.f90 accuracy.o 
+
+h2p_recollide_3d.o: h2p_recollide_3d.f90 accuracy.o fields.o lanczos.o liu.o multigrid.o qmech.o symmetry.o timer.o 
+
+h2_rotation.o: h2_rotation.f90 accuracy.o lapack.o math.o printing.o timer.o 
+
+h2_thermo.o: h2_thermo.f90 accuracy.o 
+
+hhg_driver_n2o.o: hhg_driver_n2o.f90 accuracy.o math.o 
+
+import_gamess_1e_integrals_common.o: import_gamess_1e_integrals_common.f90 
+
+import_gamess.o: import_gamess.f90 accuracy.o gamess_internal.o import_gamess_1e_integrals_common.f90 import_gamess_gamess_2e_integrals_common.f90 import_gamess_os_1e_3c_common.f90 import_gamess_os_1e_contraction_common.f90 import_gamess_os_1e_dipole_common.f90 import_gamess_os_1e_grad_common.f90 import_gamess_os_1e_kinetic_common.f90 import_gamess_os_1e_matrix_common.f90 import_gamess_os_1e_overlap_common.f90 import_gamess_os_1e_rddr_common.f90 import_gamess_os_2e_batch_common.f90 import_gamess_os_2e_primitives_common.f90 import_gamess_os_basic_integral_common.f90 import_gamess_os_boys_table_common.f90 import_gamess_os_common_primitives_common.f90 import_gamess_print_1e_integrals_common.f90 lapack.o math.o os_integral_operators.o timer.o 
+
+import_gamess_gamess_2e_integrals_common.o: import_gamess_gamess_2e_integrals_common.f90 
+
+import_gamess_os_1e_3c_common.o: import_gamess_os_1e_3c_common.f90 
+
+import_gamess_os_1e_contraction_common.o: import_gamess_os_1e_contraction_common.f90 
+
+import_gamess_os_1e_dipole_common.o: import_gamess_os_1e_dipole_common.f90 
+
+import_gamess_os_1e_grad_common.o: import_gamess_os_1e_grad_common.f90 
+
+import_gamess_os_1e_kinetic_common.o: import_gamess_os_1e_kinetic_common.f90 
+
+import_gamess_os_1e_matrix_common.o: import_gamess_os_1e_matrix_common.f90 
+
+import_gamess_os_1e_overlap_common.o: import_gamess_os_1e_overlap_common.f90 
+
+import_gamess_os_1e_rddr_common.o: import_gamess_os_1e_rddr_common.f90 
+
+import_gamess_os_2e_batch_common.o: import_gamess_os_2e_batch_common.f90 
+
+import_gamess_os_2e_primitives_common.o: import_gamess_os_2e_primitives_common.f90 
+
+import_gamess_os_basic_integral_common.o: import_gamess_os_basic_integral_common.f90 
+
+import_gamess_os_boys_table_common.o: import_gamess_os_boys_table_common.f90 
+
+import_gamess_os_common_primitives_common.o: import_gamess_os_common_primitives_common.f90 
+
+import_gamess_print_1e_integrals_common.o: import_gamess_print_1e_integrals_common.f90 
+
+integrals_mo2e_accum_head_qq.o: integrals_mo2e_accum_head_qq.f90 
+
+integrals_mo2e_accum_head_qr.o: integrals_mo2e_accum_head_qr.f90 
+
+integrals_mo2e_accum_head_rq.o: integrals_mo2e_accum_head_rq.f90 
+
+integrals_mo2e_accum_head_rr.o: integrals_mo2e_accum_head_rr.f90 
+
+integrals_mo2e_accum_ijkl_common.o: integrals_mo2e_accum_ijkl_common.f90 
+
+integrals_mo2e_accum_ijlk_common.o: integrals_mo2e_accum_ijlk_common.f90 
+
+integrals_mo2e_accum_jikl_common.o: integrals_mo2e_accum_jikl_common.f90 
+
+integrals_mo2e_accum_jilk_common.o: integrals_mo2e_accum_jilk_common.f90 
+
+integrals_mo2e_accum_klij_common.o: integrals_mo2e_accum_klij_common.f90 
+
+integrals_mo2e_accum_klji_common.o: integrals_mo2e_accum_klji_common.f90 
+
+integrals_mo2e_accum_lkij_common.o: integrals_mo2e_accum_lkij_common.f90 
+
+integrals_mo2e_accum_lkji_common.o: integrals_mo2e_accum_lkji_common.f90 
+
+integrals_mo2e.o: integrals_mo2e.f90 accuracy.o gamess_internal.o import_gamess.o integral_tools.o integrals_mo2e_accum_head_qq.f90 integrals_mo2e_accum_head_qr.f90 integrals_mo2e_accum_head_rq.f90 integrals_mo2e_accum_head_rr.f90 integrals_mo2e_accum_ijkl_common.f90 integrals_mo2e_accum_ijlk_common.f90 integrals_mo2e_accum_jikl_common.f90 integrals_mo2e_accum_jilk_common.f90 integrals_mo2e_accum_klij_common.f90 integrals_mo2e_accum_klji_common.f90 integrals_mo2e_accum_lkij_common.f90 integrals_mo2e_accum_lkji_common.f90 integrals_mo2e_transform_index_i_common.f90 integrals_mo2e_transform_index_j_common.f90 integrals_mo2e_transform_index_k_common.f90 integrals_mo2e_transform_moint2e_common.f90 integrals_mo2e_transform_one_orbital_common.f90 math.o matrix_tools.o timer.o 
+
+integrals_mo2e_transform_index_i_common.o: integrals_mo2e_transform_index_i_common.f90 
+
+integrals_mo2e_transform_index_j_common.o: integrals_mo2e_transform_index_j_common.f90 
+
+integrals_mo2e_transform_index_k_common.o: integrals_mo2e_transform_index_k_common.f90 
+
+integrals_mo2e_transform_moint2e_common.o: integrals_mo2e_transform_moint2e_common.f90 
+
+integrals_mo2e_transform_one_orbital_common.o: integrals_mo2e_transform_one_orbital_common.f90 
+
+integral_tools.o: integral_tools.f90 accuracy.o gamess_internal.o import_gamess.o integral_tools_swap_ijlk_common.f90 integral_tools_swap_jikl_common.f90 integral_tools_swap_jilk_common.f90 integral_tools_swap_klij_common.f90 integral_tools_swap_klji_common.f90 integral_tools_swap_lkij_common.f90 integral_tools_swap_lkji_common.f90 math.o timer.o 
+
+integral_tools_swap_ijlk_common.o: integral_tools_swap_ijlk_common.f90 
+
+integral_tools_swap_jikl_common.o: integral_tools_swap_jikl_common.f90 
+
+integral_tools_swap_jilk_common.o: integral_tools_swap_jilk_common.f90 
+
+integral_tools_swap_klij_common.o: integral_tools_swap_klij_common.f90 
+
+integral_tools_swap_klji_common.o: integral_tools_swap_klji_common.f90 
+
+integral_tools_swap_lkij_common.o: integral_tools_swap_lkij_common.f90 
+
+integral_tools_swap_lkji_common.o: integral_tools_swap_lkji_common.f90 
+
+interpolate.o: interpolate.f90 lapack.o 
+
+kinetic.o: kinetic.f90 lapack.o 
+
+lanczos_complex.o: lanczos_complex.f90 accuracy.o lapack.o multigrid.o qmech.o 
+
+lanczos.o: lanczos.f90 accuracy.o lapack.o multigrid.o qmech.o 
+
+lapack.o: lapack.f90 accuracy.o 
+
+lebedev.o: lebedev.f90 accuracy.o 
+
+liu.o: liu.f90 accuracy.o fields.o lapack.o multigrid.o qmech.o symmetry.o timer.o 
+
+lyubo-in-small-box.o: lyubo-in-small-box.f90 accuracy.o lapack.o multigrid.o timer.o 
+
+math.o: math.f90 accuracy.o lapack.o 
+
+matmul_test.o: matmul_test.f90 accuracy.o timer.o 
+
+matrix_tools.o: matrix_tools.f90 accuracy.o matrix_tools_matmul_common.f90 timer.o 
+
+matrix_tools_matmul_common.o: matrix_tools_matmul_common.f90 
+
+mo_adk.o: mo_adk.f90 accuracy.o math.o opendx.o timer.o 
+
+molecular_grid.o: molecular_grid.f90 accuracy.o atoms.o lebedev.o math.o timer.o 
+
+mp2_tools.o: mp2_tools.f90 accuracy.o import_gamess.o integral_tools.o integrals_mo2e.o mp2_tools_incore_mp2_single_shift_common.f90 mp2_tools_mp2_energy_incore_common.f90 timer.o 
+
+mp2_tools_incore_mp2_single_shift_common.o: mp2_tools_incore_mp2_single_shift_common.f90 
+
+mp2_tools_mp2_energy_incore_common.o: mp2_tools_mp2_energy_incore_common.f90 
+
+multigrid.o: multigrid.f90 accuracy.o complex.o fftw.o import_gamess.o interpolate.o kinetic.o parallel.o phase_interpolation.o timer.o 
+
+opendx.o: opendx.f90 accuracy.o timer.o 
+
+orbital_fft.o: orbital_fft.f90 accuracy.o fields.o import_gamess.o multigrid.o qmech.o timer.o 
+
+orbital_fft_v2.o: orbital_fft_v2.f90 accuracy.o import_gamess.o math.o timer.o 
+
+os_integral_operators.o: os_integral_operators.f90 accuracy.o 
+
+parallel.o: parallel.f90 
+
+partial_waves_c3.o: partial_waves_c3.f90 accuracy.o fields.o import_gamess.o multigrid.o qmech.o timer.o 
+
+partial_waves_sp.o: partial_waves_sp.f90 accuracy.o fields.o import_gamess.o math.o opendx.o timer.o 
+
+partition.o: partition.f90 accuracy.o convolution.o h2_potential.o h2_rotation.o h2_thermo.o lapack.o math.o sparse.o timer.o vector.o 
+
+phase_interpolation_eva.o: phase_interpolation_eva.f90 accuracy.o 
+
+phase_interpolation.o: phase_interpolation.f90 accuracy.o 
+
+point_group.o: point_group.f90 accuracy.o math.o 
+
+printing.o: printing.f90 accuracy.o 
+
+prog-h2p.o: prog-h2p.f90 multigrid.o 
+
+prog-h.o: prog-h.f90 accuracy.o fields.o lanczos.o liu.o multigrid.o pulse.o qmech.o symmetry.o timer.o vandalyse.o 
+
+pulse.o: pulse.f90 accuracy.o 
+
+qmech.o: qmech.f90 accuracy.o multigrid.o timer.o 
+
+rf_cap.o: rf_cap.f90 accuracy.o gamess_internal.o import_gamess.o math.o molecular_grid.o timer.o 
+
+sample_orbital.o: sample_orbital.f90 accuracy.o fields.o import_gamess.o timer.o 
+
+scf_ca.o: scf_ca.f90 accuracy.o ecp_convert_gamess.o gamess_internal.o import_gamess.o lapack.o math.o opendx.o sort_tools.o timer.o 
+
+scf_tools_density_matrix_common.o: scf_tools_density_matrix_common.f90 
+
+scf_tools_diagonalize_fmat_common.o: scf_tools_diagonalize_fmat_common.f90 
+
+scf_tools_diagonalize_real_fmat_common.o: scf_tools_diagonalize_real_fmat_common.f90 
+
+scf_tools.o: scf_tools.f90 accuracy.o biorthogonal_tools.o block_diag.o lapack.o matrix_tools.o scf_tools_density_matrix_common.f90 scf_tools_diagonalize_fmat_common.f90 scf_tools_diagonalize_real_fmat_common.f90 scf_tools_invert_smat_common.f90 timer.o 
+
+scf_tools_invert_smat_common.o: scf_tools_invert_smat_common.f90 
+
+sfa.o: sfa.f90 accuracy.o math.o 
+
+small-box.o: small-box.f90 accuracy.o fftw.o lapack.o multigrid.o timer.o 
+
+sort_tools.o: sort_tools.f90 accuracy.o 
+
+sparse.o: sparse.f90 accuracy.o timer.o 
+
+spherical_interpolate.o: spherical_interpolate.f90 accuracy.o fields.o opendx.o timer.o 
+
+static_tunnel.o: static_tunnel.f90 accuracy.o basis_cap.o biorthogonal_tools.o block_diag.o ci_tools.o diis.o ecp_convert_gamess.o fock_tools.o gamess_internal.o import_gamess.o integral_tools.o integrals_mo2e.o lapack.o math.o matrix_tools.o mp2_tools.o scf_tools.o sort_tools.o timer.o 
+
+symgen.o: symgen.f90 accuracy.o atoms.o import_gamess.o math.o molecular_grid.o point_group.o printing.o sort_tools.o timer.o 
+
+symmetry.o: symmetry.f90 accuracy.o 
+
+test_2e.o: test_2e.f90 accuracy.o import_gamess.o math.o timer.o 
+
+test.o: test.f90 accuracy.o math.o 
+
+test_os.o: test_os.f90 accuracy.o gamess_internal.o import_gamess.o math.o 
+
+timer.o: timer.f90 accuracy.o 
+
+tunnel.o: tunnel.f90 accuracy.o caps.o fields.o fock.o import_gamess.o multigrid.o qmech.o timer.o 
+
+vanalyse.o: vanalyse.f90 
+
+vandalyse.o: vandalyse.f90 accuracy.o multigrid.o timer.o 
+
+vector.o: vector.f90 accuracy.o timer.o 
+
+viewpot.o: viewpot.f90 accuracy.o fftw.o lapack.o multigrid.o timer.o 
+
+well-bottom.o: well-bottom.f90 accuracy.o 
+
