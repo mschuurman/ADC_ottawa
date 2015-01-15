@@ -1,0 +1,76 @@
+#!/bin/bash
+
+########################################################################
+#                              install_ADC
+#-----------------------------------------------------------------------
+#               A simple script to install the ADC program
+########################################################################
+
+#-----------------------------------------------------------------------
+# Read target name. If target is not given, then perform a clean install
+#-----------------------------------------------------------------------
+target=$1
+
+#-----------------------------------------------------------------------
+# $args: list of variables to be passed to make
+#-----------------------------------------------------------------------
+args=""
+
+#-----------------------------------------------------------------------
+# Determine the path to the BLZPACK library
+#-----------------------------------------------------------------------
+if [ -z $BLZPACK ]; then
+    found=false
+else
+    if [ -f $BLZPACK ]; then
+	found=true
+    else
+	found=false
+    fi
+fi
+
+if [ "$found" == 'false' ]; then
+    blzpath=$HOME'/blzpack/lib/libblzpack.a'
+    if [ ! -f $blzpath ]; then
+	read -p "Please enter the path to the directory containing the BLZPACK library libblzpack.a:  " blzdir
+	blzpath=$blzdir/libblzpack.a
+    fi
+else
+    blzpath=$BLZPACK
+fi
+
+args+="BLZPACK=$blzpath"
+
+#-----------------------------------------------------------------------
+# Determine the path to the SLEPc install directory
+#-----------------------------------------------------------------------
+if [ -z $SLEPC_DIR ]; then
+    found=false
+else
+    if [ -d $SLEPC_DIR ]; then
+	found=true
+    else
+	found=false
+    fi
+fi
+
+if [ "$found" == 'false' ]; then
+    slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
+    if [ ! -d $slepcpath ]; then
+	read -p "Please enter the path to the SLEPc install directory:  " slepcpath
+    fi
+else
+    slepcpath=$SLEPC_DIR
+fi
+
+args+=" "SLEPC_DIR=$slepcpath
+
+#-----------------------------------------------------------------------
+# Call to make
+#-----------------------------------------------------------------------
+if [ -z $target ]; then
+    make clean_all $args
+    make ww $args
+else
+    make $target $args
+fi

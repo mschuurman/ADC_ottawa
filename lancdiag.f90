@@ -1,264 +1,405 @@
-module lancdiag
+  module lancdiag
 
-  use constants
-  use parameters
-  use get_matrix
-  use fspace
+    use constants
+    use parameters
+    use get_matrix
+    use fspace
 
-  implicit none
+    implicit none
 
-  integer :: main,nsat,mdim,noffdel
-  real(d), dimension(:), allocatable :: diag, offdiag
-  integer, dimension(:), allocatable :: indi, indj
+    integer :: main,nsat,mdim,noffdel
+    real(d), dimension(:), allocatable :: diag, offdiag
+    integer, dimension(:), allocatable :: indi, indj
 
-contains
+  contains
 
-!!&-------------------------------------------------------------
+!#######################################################################
 
-!!$-----------------------------------------------  
-  subroutine master_lancdiag(ndim,noff,flag)
+    subroutine master_lancdiag(ndim,noff,flag)
     
-    integer, intent(in) :: ndim,noff
-    character(2),intent(in) :: flag
+      integer, intent(in)     :: ndim,noff
+      character(2),intent(in) :: flag
+      
+      integer                 :: i,j
 
-    integer :: i,j
+!-----------------------------------------------------------------------
+! ndim: Hamiltonian matrix dimension
+! noff: no. non-zero off-diagonal Hamiltonian matrix elements
+! flag: ???
+! lmain: block-Lanczos block size
+!-----------------------------------------------------------------------      
+
+!-----------------------------------------------------------------------      
+! Enter block-Lanczos routine
+!-----------------------------------------------------------------------            
+      call lanczos_diag(ndim,lmain,lancstates,ncycles)
+
+      return
+
+    end subroutine master_lancdiag
+
+!#######################################################################
     
-    external blnczs
+    subroutine lanczos_diag(matdim,blckdim,lancstates,ncycles)
 
-!!$flag switches between adc2 and adc2e
+      implicit none
 
-!    if (stvc_flg .eq. 0) then
+      integer                                       :: matdim,blckdim,&
+                                                       lancstates,&
+                                                       ncycles,nvopu,&
+                                                       nneig
 
-       write(6,*) 'Set stvc_flg to 1'
+      integer                                       :: lflag
+      integer, dimension(:), allocatable            :: istor
+      double precision, dimension(:), allocatable   :: rstor      
+      double precision, dimension(:,:), allocatable :: eig,X,U,V
+      double precision                              :: eigl,eigr,sigma
 
-!!$       allocate(kpq_loc(7,0:nBas**2*nOcc**2))
-!!$       kpq_loc(:,0:nBas**2*nOcc**2)=kpq_gl(:,0:nBas**2*nOcc**2)
-!!$    
-!!$       main=kpq_loc(1,0)
-!!$       nsat=ndim-main
-!!$
-!!$       write(6,*) 'parameter main=',main
-!!$       write(6,*) 'parameter nsat=',nsat
-!!$
-!!$       if (flag .eq. '2s') then
-!!$          mtxid='mx2s'   
-!!$          call blnczs(mtxid,ndim,main,ncycles,maxmem,memx,mode,nprint,wthr,erange(:),unit,iparm(:),fparm(:),&
-!!$               mtxq1_0,mtxhq2s_0)
-!!$       end if
-!!$
-!!$       
-!!$       deallocate(kpq_loc) 
+!-----------------------------------------------------------------------
+! Initialise blzpack arguments
+!-----------------------------------------------------------------------
+      eigl=erange(1)
+      eigr=erange(2)
+      call init_blzpack(istor,rstor,matdim,blckdim,eigl,eigr,eig,X,U,V,&
+           lancstates,ncycles)
 
-!    elseif (stvc_flg .eq. 1) then
+!-----------------------------------------------------------------------
+! Block-Lanczos diagonalisation of the ADC Hamiltonian matrix
+!-----------------------------------------------------------------------
+      lflag=0
+10    continue
+      call blzdrd(istor,rstor,sigma,nneig,U,V,lflag,nvopu,eig,X)
+      
+      if (lflag.eq.1) then
+         ! Matrix-vector multiplication is required
+         call matvecmul_lanc(U,V,matdim,blckdim,nvopu)
+         goto 10
+      else if (lflag.eq.4) then
+         ! Specification of the starting vectors is required
+         call initvecs_lanc(V,matdim,blckdim,nvopu)
+         goto 10
+      else if (lflag.ne.0) then
+         ! Unsuccessful termination
+         call lanc_err(lflag)
+      endif
 
+!-----------------------------------------------------------------------
+! Write Lanczos pseudospectrum to disk
+!-----------------------------------------------------------------------
+      call wrvecs_lanc(matdim,lancstates,eig,X,istor(4))
 
-    write(6,*) 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
-       mdim=ndim
-       main=lmain
-       noffdel=noff
+      return
 
-       write(6,*) 'noffdel=',noffdel
-       allocate(diag(ndim),offdiag(noffdel),indi(noffdel),indj(noffdel))
-       call read_matrix()
-       if (flag .eq. '2s') then       
-!       if (flag .eq. 'f') then
-          mtxid='mx2s'   
-          call blnczs(mtxid,ndim,main,ncycles,maxmem,memx,mode,nprint,wthr,erange(:),unit,iparm(:),fparm(:),&
-               MTXQ1_1,mtxhq2s_2)
-       end if
-       
-       deallocate(diag,offdiag,indi,indj)
-!    end if
+    end subroutine lanczos_diag
 
-  end subroutine master_lancdiag
+!#######################################################################
 
-!!$----------------------------------------------
-!!$----------------------------------------------
+    subroutine init_blzpack(istor,rstor,matdim,blckdim,eigl,eigr,eig,&
+         X,U,V,lancstates,ncycles)
 
-!!$  subroutine MTXQ1_0(amx,bmx,i1,i2,work)
-!!$
-!!$    real(d), dimension(main,main), intent(out) :: amx
-!!$    real(d), dimension(nsat,i2-i1+1), intent(out) :: bmx
-!!$    real(d), dimension(memx), intent(inout) :: work
-!!$    integer, intent(in) :: i1,i2
-!!$
-!!$    call get_phph_adc2(main,kpq_loc(:,:),amx(:,:))
-!!$    call get_ph_2p2h(nsat,i1,i2,kpq_loc(:,:),bmx(:,:))
-!!$    
-!!$  end subroutine MTXQ1_0
-  
-!!$-----------------------------------------------------
-!!$-----------------------------------------------------
+      implicit none
 
-!!$  subroutine MTXHQ2s_0(q,z,nq,work)
-!!$    
-!!$    integer, intent(in) :: nq
-!!$    real(d), dimension(nq,nsat), intent(in) :: q
-!!$    real(d), dimension(nq,nsat), intent(out) :: z
-!!$    real(d), dimension(memx), intent(inout) :: work
-!!$    
-!!$    integer :: k
-!!$    real(d), dimension(:),allocatable :: ar_diag
-!!$!    
-!!$    allocate(ar_diag(nsat))
-!!$   
-!!$    call get_2p2h2p2h_dg2s(nsat,kpq_loc(:,:),ar_diag(:)) 
-!!$    do k=1,nsat
-!!$       z(:,k)=q(:,k)*ar_diag(k)
-!!$    end do
-!!$   
-!!$   deallocate(ar_diag) 
-!!$ end subroutine MTXHQ2s_0
+      integer                                       :: matdim,blckdim,&
+                                                       lancstates,&
+                                                       ncycles,ierr,&
+                                                       itmp,k1,k2,k3,k4
 
-!!$------------------------------------------
+      integer, dimension(:), allocatable            :: istor
+      double precision, dimension(:), allocatable   :: rstor      
+      double precision, dimension(:,:), allocatable :: eig,X,U,V
+      double precision                              :: eigl,eigr
 
-  subroutine MTXQ1_1(amx,bmx,i1,i2,work)
+!-----------------------------------------------------------------------
+! Allocate the istor array
+!-----------------------------------------------------------------------
+      k1=min(matdim,180)
 
-    real(d), dimension(main,main), intent(out) :: amx
-    real(d), dimension(mdim,1), intent(out) :: bmx
-!    real(d), dimension(mdim,i2-i1+1), intent(out) :: bmx
-    real(d), dimension(memx), intent(inout) :: work
-    integer, intent(in) :: i1,i2
+      ! THIS NEEDS ADDRESSING
+!      itmp=17+(123+12*k1)
+      itmp=17+(123+12*k1)*10
 
-    integer :: i
+      allocate(istor(itmp),stat=ierr)
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate istor in subroutine init_blzpack'
+         STOP
+      endif
 
-! Hier kann ich den Startblock fest legen bmx(i,j)=bla
-! Frage bleibt, wie man i1, i2 festlegen kann
-    write(6,*) 'BBBBBBBBBBBBBBBBBBBBBBBBB'
-    amx(:,:)=rzero
-    bmx(:,:)=rzero
-    write(6,*) 'ratatata'
-    bmx(1,1)=rone
-    bmx(2:mdim,1)=rzero
-!     do i=i1,i2
-!        bmx(stvc_lbl(i),i-i1+1)=rone
-!     end do
-       
-  end subroutine MTXQ1_1
+!-----------------------------------------------------------------------
+! Fill in the istor array 
+!-----------------------------------------------------------------------
+! NI: no. active rows on each processor, equal to the matrix dimension
+!     for serial execution
+!
+! LNI: leading dimension of the matrix to be diagonalised
+!
+! NREIG: no. required eigenvalues
+!
+! LEIG: dimension of the! eig array: needs to be! large enough to
+!       store all converged eigenvalues, which may be more than the
+!       no. requested 
+!
+! NVBSET: no. vectors in a block
+!
+! NSTEPS: max no. steps
+!
+! NSTART: no. starting vectors, if >0 the user must specify the
+!         starting vectors
+!
+! GNRZD: specifies the problem type: 0 for a standard eigenvalue
+!        problem
+!
+! LPRNT: level of information to be printed: 1 for header errors and
+!        warnings, 0 for no printing
+!
+! LFILE: file unit where information (if any) is printed, e.g., 6 for
+!        printing to the screen
+!
+! LISTOR: dimension of the istor array is 17+LISTOR
+!-----------------------------------------------------------------------
+      istor=0
 
-!!$-----------------------------------------
+      istor(1)=matdim ! NI
 
-  subroutine  MTXHQ2s_1(qv,zv,nq,work)
+      istor(2)=matdim ! LNI
 
-    integer, intent(in) :: nq
-    real(d), dimension(nq,mdim), intent(in) :: qv
-    real(d), dimension(nq,mdim), intent(out) :: zv
-    real(d), dimension(memx), intent(inout) :: work
+      istor(3)=lancstates ! NREIG
 
-    real(d) :: mtrl
-    integer :: mark1,ndim,maxbl,nrec,type
-    integer :: irec,nlim,i,j, irow,jcol
+      istor(4)=min(istor(3)+10,istor(3)*2) ! LEIG
 
-    real(d), dimension(:), allocatable :: dgl,offdgl
-    integer, dimension(:), allocatable :: oi,oj
+      istor(5)=blckdim ! NVBSET
+      
+      istor(6)=ncycles ! NSTEPS
 
-!!$ Reading diagonal elements
+      istor(7)=blckdim ! NSTART
 
-    write(6,*) 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+      istor(9)=0 ! GNRZD
 
-    OPEN(UNIT=77,FILE='adc2.diagc',STATUS='OLD',ACCESS='SEQUENTIAL',&
-         FORM='UNFORMATTED')
+ !     istor(12)=1 ! LPRNT
 
-    read(77) ndim,maxbl,nrec,type
-    allocate(dgl(ndim),offdgl(maxbl),oi(maxbl),oj(maxbl))
-    read(77) dgl(:)
+ !     istor(13)=6 ! LFILE
 
-    CLOSE(77)
+      ! THIS NEEDS ADDRESSING
+      ! istor(15)=123+k1*12 ! LISTOR
+      istor(15)=(123+k1*12)*10 ! LISTOR
 
-    do i= 1,mdim
-       zv(:,i)=dgl(i)*qv(:,i)
-    end do
+!-----------------------------------------------------------------------
+! Allocate the rstor array
+!-----------------------------------------------------------------------
+      if (blckdim.eq.0) then
+         k2=3
+      else
+         k2=blckdim
+      endif
+      k4=min(istor(4),matdim)
+      k3=484+k1*(13+k1*2+k2+max(18,k2+2))+k2*k2*3+k4*2
 
-    OPEN(UNIT=78,FILE='adc2.offc',STATUS='OLD',ACCESS='SEQUENTIAL',&
-         FORM='UNFORMATTED')
+      ! THIS NEEDS ADDRESSING
+!       itmp=5+(dim*k2*5+k3)
+       itmp=5+(matdim*k2*5+k3)*20
 
-    do irec= 1,nrec
-       read(78) offdgl(:),oi(:),oj(:),nlim
+      allocate(rstor(itmp))
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate rstor in subroutine init_blzpack'
+         STOP
+      endif
 
-       do i= 1,nlim
-          irow=oi(i)
-          jcol=oj(i)
-          mtrl=offdgl(i)
+!-----------------------------------------------------------------------
+! Fill in the rstor array
+!-----------------------------------------------------------------------
+! EIGL: lower limit for the eigenvalue interval
+!
+! EIGR: lower limit for the eigenvalue interval
+!
+! LRSTOR: dimension of the rstor array is 4+LRSTOR
+!-----------------------------------------------------------------------
+      rstor=0.0d0
 
-          zv(:,irow)=zv(:,irow)+mtrl*qv(:,jcol)
-          zv(:,jcol)=zv(:,jcol)+mtrl*qv(:,irow)
+      rstor(1)=eigl ! EIGL (lower limit for the eigenvalue interval)
 
-       end do
-    end do
+      rstor(2)=eigr ! EIGR (lower limit for the eigenvalue interval)
 
-    close(78)
-    deallocate(dgl,offdgl,oi,oj)
+      ! THIS NEEDS ADDRESSING
+      ! rstor(4)=dim*k2*5+k3 ! LRSTOR
+      rstor(4)=(matdim*k2*5+k3)*20 ! LRSTOR (dimension of the rstor array
+                                ! is 4+LRSTOR)
+!-----------------------------------------------------------------------
+! Allocate the eig, X, U and V arrays
+!-----------------------------------------------------------------------
+      ! eig (eigenvalues on exit)
+      allocate(eig(istor(4),2))
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate eig in subroutine init_blzpack'
+         STOP
+      endif
 
-  end subroutine MTXHQ2s_1
+      ! X (eigenvectors on exit)
+      allocate(X(matdim,istor(4)))
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate X in subroutine init_blzpack'
+         STOP
+      endif
 
-!$$-------------------------------------------
+      ! U (vectors recieved from blzdrd for use in matrix-vector
+      ! multiplication) 
+      allocate(U(matdim,blckdim))
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate U in subroutine init_blzpack'
+         STOP
+      endif
 
-  subroutine  read_matrix()
+      ! V (matrix-vector products to be sent to blzdrd)
+      allocate(V(matdim,blckdim))
+      if (ierr.ne.0) then
+         write(6,'(/,a,/)') &
+              'Failed to allocate V in subroutine init_blzpack'
+         STOP
+      endif
+      
+      return
+
+    end subroutine init_blzpack
+
+!#######################################################################
     
-    real(d) :: mtrl
-    integer :: mark1,ndim,maxbl,nrec,type
-    integer :: irec,nlim,i,count
-    
-    real(d), dimension(:), allocatable :: dgl,offdgl
-    integer, dimension(:), allocatable :: oi,oj
-    
+    subroutine initvecs_lanc(V,n1,n2,nvecs)
 
-!!$ Reading diagonal elements
-    
-    
-    OPEN(UNIT=77,FILE='adc2.diagc',STATUS='OLD',ACCESS='SEQUENTIAL',&
-         FORM='UNFORMATTED')
-    
-    read(77) ndim,maxbl,nrec,type
-    allocate(offdgl(maxbl),oi(maxbl),oj(maxbl))
-    read(77) diag(:)
-    
-    CLOSE(77)
+      use parameters, only: stvc_lbl
 
-    
-    OPEN(UNIT=78,FILE='adc2.offc',STATUS='OLD',ACCESS='SEQUENTIAL',&
-         FORM='UNFORMATTED')
-    
-    count=0
-    do irec= 1,nrec
-       read(78) offdgl(:),oi(:),oj(:),nlim
-       offdiag(count+1:count+nlim)=offdgl(1:nlim)
-       indi(count+1:count+nlim)=oi(1:nlim)
-       indj(count+1:count+nlim)=oj(1:nlim)
-       count=count+nlim
-    end do
-    close(78)
-    deallocate(offdgl,oi,oj)
-    
-  end subroutine read_matrix
+      implicit none
 
-!!$------------------------------------------
+      integer                            :: dim,nvecs,i,k,n1,n2
+      double precision, dimension(n1,n2) :: V
+      double precision                   :: ftmp
 
-  subroutine  MTXHQ2s_2(qv,zv,nq,work)
+!-----------------------------------------------------------------------
+! Generate guess vectors: blckdim unit vectors corresponding to the 1h1p
+! intermediate states with the greatest TDMs with the initial state
+!-----------------------------------------------------------------------
+      V=0.0d0
+      do i=1,nvecs
+         k=stvc_lbl(i)
+         V(k,i)=1.0d0
+      enddo
 
-    integer, intent(in) :: nq
-    real(d), dimension(nq,mdim), intent(in) :: qv
-    real(d), dimension(nq,mdim), intent(out) :: zv
-    real(d), dimension(memx), intent(inout) :: work
+      return
 
-    real(d) :: mtrl
-    integer :: mark1,ndim,maxbl,nrec,type
-    integer :: irec,nlim,i,j,irow,jcol
+    end subroutine initvecs_lanc
 
-    do i= 1,mdim
-       zv(:,i)=diag(i)*qv(:,i)
-    end do
-    
-    do i= 1,noffdel
-       irow=indi(i)
-       jcol=indj(i)
-       mtrl=offdiag(i)
-       
-       zv(:,irow)=zv(:,irow)+mtrl*qv(:,jcol)
-       zv(:,jcol)=zv(:,jcol)+mtrl*qv(:,irow)
-       
-    end do
- 
-  end subroutine MTXHQ2s_2
+!#######################################################################
 
-end module lancdiag
+    subroutine matvecmul_lanc(U,V,matdim,blckdim,nvopu)
+
+      implicit none
+
+      integer                                     :: matdim,blckdim,&
+                                                     nvopu,unit,maxbl,&
+                                                     nrec,nlim,i,k,l
+      double precision, dimension(matdim,blckdim) :: U,V
+      real(d), dimension(matdim)                  :: hii
+      real(d), dimension(:), allocatable          :: hij
+      integer, dimension(:), allocatable          :: indxi,indxj
+
+!-----------------------------------------------------------------------
+! Save the ith matrix-vector product H*U(:,i) to V(:,i)
+!-----------------------------------------------------------------------
+      V=0.0d0
+
+!-----------------------------------------------------------------------
+! On-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      unit=77
+      open(unit,file='hmlt.diac',status='old',access='sequential',&
+           form='unformatted')
+
+      read(unit) maxbl,nrec
+      read(unit) hii
+
+      close(unit)
+
+      do i=1,nvopu
+         do k=1,matdim
+            V(k,i)=hii(k)*U(k,i)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      
+      open(unit,file='hmlt.offc',status='old',access='sequential',&
+           form='unformatted')
+            
+      do k=1,nrec
+         read(unit) hij(:),indxi(:),indxj(:),nlim
+         do l=1,nlim            
+            do i=1,nvopu
+               V(indxi(l),i)=V(indxi(l),i)+hij(l)*U(indxj(l),i)               
+            enddo
+         enddo
+      enddo
+
+      close(unit)
+
+      deallocate(hij,indxi,indxj)
+
+    end subroutine matvecmul_lanc
+
+!#######################################################################
+
+    subroutine lanc_err(lflag)
+
+      implicit none
+
+      integer :: lflag
+
+      write(6,'(/,2x,a,1x,i2,/)') &
+           'Unsuccessful block-Lanczos termination. BLZPACK error code:',lflag
+      STOP
+
+      return
+
+    end subroutine lanc_err
+
+!#######################################################################
+
+    subroutine wrvecs_lanc(matdim,lancstates,eig,X,nvecs)
+
+      implicit none
+
+      integer                                   :: matdim,lancstates,i,&
+                                                   unit,nvecs
+      double precision, dimension(nvecs,2)      :: eig
+      double precision, dimension(matdim,nvecs) :: X
+
+!-----------------------------------------------------------------------
+! Open file
+!-----------------------------------------------------------------------
+      unit=77
+      open(unit=unit,file=lancname,status='unknown',access='sequential',&
+           form='unformatted')
+
+!-----------------------------------------------------------------------
+! Write Lanczos pseudospectrum to file
+!-----------------------------------------------------------------------
+      do i=1,lancstates
+         write(unit) i,eig(i,1),X(:,i)
+      enddo
+
+!-----------------------------------------------------------------------
+! Close file
+!-----------------------------------------------------------------------
+      close(unit)
+
+      return
+
+    end subroutine wrvecs_lanc
+
+!#######################################################################
+
+  end module lancdiag

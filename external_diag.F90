@@ -102,7 +102,7 @@
 #include "finclude/slepceps.h"
 
    integer                             :: blckdim,matdim,davstates,&
-                                          maxbl,nrec,unit
+                                          maxbl,nrec,unit,num
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
    double precision, dimension(matdim) :: vec
@@ -264,7 +264,11 @@
 !-----------------------------------------------------------------------
       ! Open file
       unit=77
-      open(unit=unit,file='dav_vecs.init',status='old',&
+
+!      open(unit=unit,file='dav_vecs.init',status='old',&
+!           access='sequential',form='unformatted')
+
+      open(unit=unit,file='dav_vecs.init',status='unknown',&
            access='sequential',form='unformatted')
 
       do i=0,nconv-1
@@ -275,10 +279,9 @@
          ! Write the ith converged eigenpair to file
          val=PetscRealPart(kr)
          vec=PetscRealPart(xr)
+         num=i
 
-         ! CHECK THAT MATDIM IS THE CORRECT NUMBER TO BE
-         ! WRITING HERE
-         write(unit) matdim,kr,vec(:)
+         write(unit) num,val,vec(:)
          
       enddo
 
@@ -354,7 +357,7 @@
 ! Open file
 !-----------------------------------------------------------------------
    unit=77
-   open(unit,file='hmlt.dia',status='old',access='sequential',&
+   open(unit,file='hmlt.diai',status='old',access='sequential',&
         form='unformatted')
 
 !-----------------------------------------------------------------------
@@ -406,7 +409,7 @@
 ! Open file
 !-----------------------------------------------------------------------
    unit=78
-   open(unit,file='hmlt.off',status='old',access='sequential',&
+   open(unit,file='hmlt.offi',status='old',access='sequential',&
         form='unformatted')
 
 !-----------------------------------------------------------------------

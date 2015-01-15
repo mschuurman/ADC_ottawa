@@ -799,7 +799,7 @@ subroutine master_adc2_prop()
            ! calculation of the final states ???
            !
            ! CHECK THIS: IT LOOKS LIKE ONLY THE 1h1p ISs ARE TAKEN
-           ! INTO ACCOUNT...
+           ! INTO ACCOUNT... WHICH IS CORRECT FOR ADC(2)-s
            !
            ! ALSO, WHY IS FILL_STVC CALLED TWICE: DOESN'T THE SECOND
            ! CALL OVERWRITE THE RESULT OF THE FIRST CALL? 
