@@ -1,6 +1,7 @@
 module parameters
 
   use constants
+  use integrals_mo2e
 
 !!$*************************************
 !!$*******MOLCAS provided variables*****
@@ -25,7 +26,8 @@ module parameters
   real(d), dimension(:), allocatable :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
   real(d), dimension(:,:), allocatable :: density_matrix
-  real(d), dimension(:),allocatable    :: moIntegrals
+  type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
+
 !!$**************************************************
 !!$*********User provided variables******************
 !!$**************************************************

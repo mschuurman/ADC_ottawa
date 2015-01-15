@@ -6,12 +6,14 @@
       !
       integer(ik)  :: at_l, sh_l, c1_l, c2_l, l_l, p1_l, p2_l
       integer(ik)  :: at_r, sh_r, c1_r, c2_r, l_r, p1_r, p2_r
+      integer(ik)  :: out=6
       !
       !  Make sure neither bra nor ket include a rotation matrix
       !
       if (.not. MathIsUnitMatrix(l%rotmat) .or. .not. MathIsUnitMatrix(r%rotmat) ) then
         stop 'import_gamess%os_1e_matrix - rotation is not implemented'
       end if
+
       !
       !  Iterate over all shell blocks. Since l and r are not necessarily the same,
       !  matrix elements do not have to be symmetric, and we have to process all
@@ -39,13 +41,13 @@
               c1_l = l%atoms(at_l)%sh_p(sh_l  )
               c2_l = l%atoms(at_l)%sh_p(sh_l+1)-1
               !*ps
-              ! write (out,"('doing pair: ',2i4,' shells: ',2i4,' block: ',4i6)") at_l, at_r, sh_l, sh_r, p1_l, p2_l, p1_r, p2_r
-              ! write (out,"('atoms at:  '6f12.6)") l%atoms(at_l)%xyz/abohr, r%atoms(at_r)%xyz/abohr
-              ! write (out,"('l: ',2i2)") l_l, l_r
-              ! write (out,"('zeta_l: ',12g12.6)") l%atoms(at_l)%p_zet(c1_l:c2_l)
-              ! write (out,"('zeta_r: ',12g12.6)") r%atoms(at_r)%p_zet(c1_r:c2_r)
-              ! write (out,"('   c_l: ',12g12.6)") l%atoms(at_l)%p_c(c1_l:c2_l)
-              ! write (out,"('   c_r: ',12g12.6)") r%atoms(at_r)%p_c(c1_r:c2_r)
+               write (out,"('doing pair: ',2i4,' shells: ',2i4,' block: ',4i6)") at_l, at_r, sh_l, sh_r, p1_l, p2_l, p1_r, p2_r
+               write (out,"('atoms at:  '6f12.6)") l%atoms(at_l)%xyz/abohr, r%atoms(at_r)%xyz/abohr
+               write (out,"('l: ',2i2)") l_l, l_r
+               write (out,"('zeta_l: ',12g12.6)") l%atoms(at_l)%p_zet(c1_l:c2_l)
+               write (out,"('zeta_r: ',12g12.6)") r%atoms(at_r)%p_zet(c1_r:c2_r)
+               write (out,"('   c_l: ',12g12.6)") l%atoms(at_l)%p_c(c1_l:c2_l)
+               write (out,"('   c_r: ',12g12.6)") r%atoms(at_r)%p_c(c1_r:c2_r)
               call os_1e_contraction(what,v(p1_l:p2_l,p1_r:p2_r),        &
                    real(l%atoms(at_l)%xyz,kind=kind(v))/abohr,l_l,       &
                      real(l%atoms(at_l)%p_zet(c1_l:c2_l),kind=kind(v)),  &
