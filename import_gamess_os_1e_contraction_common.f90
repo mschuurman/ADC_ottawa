@@ -17,6 +17,7 @@
       integer(ik)                 :: n_rec        ! Number of additional recursion intermediated
       integer(ik)                 :: alloc
       real(kind(vb))              :: ang_c_kind(lbound(ang_c,dim=1):ubound(ang_c,dim=1))
+      integer(ik)                 :: out=6
       !
       p1_l = ang_loc(l_l)
       p2_l = ang_loc(l_l+1)-1
@@ -48,9 +49,9 @@
       r_contractions_loop: do ic_r=1,size(z_r)
         l_contractions_loop: do ic_l=1,size(z_l)
           !*ps
-          ! write (out,"('doing contraction ',2i3,' c = ',2g13.6)") ic_l, ic_r, c_l(ic_l), c_r(ic_r)
-          ! write (out,"('p2 = '2i4,' r_l = ',3f12.5,' l_l = ',i2,' z_l = ',g12.6,' r_r = ',3f12.5,' l_r = ',i2,' z_r = ',g12.6)") &
-          !        p2_l,p2_r,r_l,l_l,z_l(ic_l),r_r,l_r,z_r(ic_r)
+           write (out,"('doing contraction ',2i3,' c = ',2g13.6)") ic_l, ic_r, c_l(ic_l), c_r(ic_r)
+           write (out,"('p2 = '2i4,' r_l = ',3f12.5,' l_l = ',i2,' z_l = ',g12.6,' r_r = ',3f12.5,' l_r = ',i2,' z_r = ',g12.6)") &
+                  p2_l,p2_r,r_l,l_l,z_l(ic_l),r_r,l_r,z_r(ic_r)
           !
           !  The only part of the 1e integral code which is property-specific
           !  is the primitive-integral call below. Everything else is identical

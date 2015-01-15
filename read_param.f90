@@ -77,7 +77,6 @@ subroutine read_gamess(chkpt_file,log_file)
   character(len=72),intent(inout)      :: chkpt_file,log_file
   type(gam_structure)               :: gamess_info       ! Default GAMESS
   integer                           :: j,naos
-  real(selected_real_kind(8)),allocatable  :: mos(:,:)
 
   ! determine the number of aos, mos, and read in the mos
   print *,'chk='//trim(chkpt_file)
@@ -86,11 +85,9 @@ subroutine read_gamess(chkpt_file,log_file)
   nBas  = gamess_info%nvectors
   naos  = gamess_info%nbasis
 
-  allocate(mos(nBas,naos))
+  print *,'nBas, naos: ',nBas,',',naos
   allocate(e(nBas),occNum(nBas),orbSym(nBas),roccnum(nBas))
   allocate(x_dipole(nBas,nBas),y_dipole(nBas,nBas),z_dipole(nBas,nBas),dpl(nBas,nBas))
-
-  mos   = gamess_info%vectors
 
   ! determine various electronic structure variables
 !  call read_gamess_output(trim(log_file),nBas,nCen,nIrr,labSym,occNum,Ehf,e)
