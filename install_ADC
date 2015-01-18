@@ -55,9 +55,10 @@ else
 fi
 
 if [ "$found" == 'false' ]; then
-    slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
-    if [ ! -d $slepcpath ]; then
-	read -p "Please enter the path to the SLEPc install directory:  " slepcpath
+    if [ -d $HOME/slepc*/conf/ ]; then
+	slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
+    else
+	read -p "Please enter the path to the SLEPc install directory:  " slepcpath	
     fi
 else
     slepcpath=$SLEPC_DIR
