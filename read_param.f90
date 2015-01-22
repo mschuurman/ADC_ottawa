@@ -87,13 +87,12 @@ subroutine read_gamess(chkpt_file,log_file)
   write (6,"(/'Loaded GAMESS checkpoint file ',a/)") trim(chkpt_file)
   nBas  = gamess_info%nbasis
   naos  = gamess_info%nbasis
-  print *,'nbas,naos,nvec=',nBas,naos,gamess_info%nvectors
 
   allocate(e(nBas),occNum(nBas),orbSym(nBas),roccnum(nBas))
   allocate(x_dipole(nBas,nBas),y_dipole(nBas,nBas),z_dipole(nBas,nBas),dpl(nBas,nBas))
 
   ! determine various electronic structure variables
-  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,occNum,Ehf,e)
+  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,Ehf,e)
   write (6,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
 
   ! load MO integrals into memory
