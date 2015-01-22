@@ -17,12 +17,12 @@ module parameters
 !!$occNum - real*8 array(nBas) containing MO's occupation numbers 
 !!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements 
   
-  integer*4 :: nIrr,nBas,nCen
+  integer*4 :: nelec,nIrr,nBas,nCen
   integer :: nOcc,nVirt
   real(d) :: Ehf
   real(d) :: E_MP2
   integer*4, dimension(:), allocatable :: orbSym
-  character*2,dimension(1024)          :: labSym
+  character*2,dimension(3)          :: labSym
   real(d), dimension(:), allocatable :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
   real(d), dimension(:,:), allocatable :: density_matrix
@@ -32,6 +32,7 @@ module parameters
 !!$*********User provided variables******************
 !!$**************************************************
 
+!!$logical debug - debug levels of output
 !!$int hinit - initial hole orbital number
 !!$int nirrep - number of irrep of the initial excitation
 !!$int idiag - diagonalisation proc. for the init. state:1-Lapack,2-Davidson; activated if chrun is not 'direct'
@@ -61,6 +62,7 @@ module parameters
 !!$integer array(1:lmain) stvc_lbl  - Damit wirder der Lanc-Startblock festgelegt
 !!$integer info if 1 stops execution after printing the configuration tables
 !!$integer ninista gives the number of the fanostate among davidson eigenvectors
+  logical      :: debug
   character(1) :: tranmom,tranflag,tranmom2
   character(4) :: chrun
   character(4) :: chrun2
@@ -89,7 +91,7 @@ module parameters
 !!$ os2cs - oscillator strength [a.u.] to cross-section [Mb] conversion factor
 !!$ omega - photon energy, required by Stieltjes_phi, photoionisation routine.
 
-  real(d), parameter :: abohr=5.2918e-9
+!  real(d), parameter :: abohr=5.2918e-9
   real(d), parameter :: fsconstinv=137._d
   real(d), parameter :: os2cs=4.0347443
   real(d), parameter :: omega=3.0_d

@@ -73,6 +73,8 @@ end subroutine read_molcas1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 subroutine read_gamess(chkpt_file,log_file)
+  use accuracy
+  use parameters
   use import_gamess 
   character(len=72),intent(inout)      :: chkpt_file,log_file
   type(gam_structure)               :: gamess_info       ! Default GAMESS
@@ -80,19 +82,23 @@ subroutine read_gamess(chkpt_file,log_file)
 
   ! determine the number of aos, mos, and read in the mos
   print *,'chk='//trim(chkpt_file)
+  call accuracyInitialize
   call gamess_load_orbitals(file=trim(chkpt_file),structure=gamess_info)
   write (6,"(/'Loaded GAMESS checkpoint file ',a/)") trim(chkpt_file)
-  nBas  = gamess_info%nvectors
+  nBas  = gamess_info%nbasis
   naos  = gamess_info%nbasis
+  print *,'nbas,naos,nvec=',nBas,naos,gamess_info%nvectors
 
-  print *,'nBas, naos: ',nBas,',',naos
   allocate(e(nBas),occNum(nBas),orbSym(nBas),roccnum(nBas))
   allocate(x_dipole(nBas,nBas),y_dipole(nBas,nBas),z_dipole(nBas,nBas),dpl(nBas,nBas))
 
   ! determine various electronic structure variables
-!  call read_gamess_output(trim(log_file),nBas,nCen,nIrr,labSym,occNum,Ehf,e)
-  call read_gamess_output(nBas,nCen,nIrr,orbSym,labSym,occNum,Ehf,e)
+  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,occNum,Ehf,e)
   write (6,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
+
+  ! load MO integrals into memory
+  call load_mo_integrals(gamess_info)
+  write (6,"(/'Loaded MO integrals into memory ',a/)")
 
   write(6,102) "HF energy", Ehf, "a.u."
   write(6,100) 'nr.','sym','sym label','occ','orbital energy'
@@ -100,9 +106,6 @@ subroutine read_gamess(chkpt_file,log_file)
   do j=1,nBas
      write(6,101) j,orbSym(j),labSym(orbSym(j)),occNum(j),e(j)
   end do
-
-  ! load MO integrals into memory
-  call load_mo_integrals(gamess_info)
 
 100 FORMAT(/,10x,A3,5x,A3,5x,A9,5x,A3,5x,A16)
 101 FORMAT(/,10x,I3,5x,I3,5x,A2,5x,F3.1,5x,F16.10)
@@ -113,7 +116,7 @@ end subroutine read_gamess
 
 subroutine read_user()
 
-  NAMELIST /USER/ nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
+  NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM
 
@@ -122,6 +125,7 @@ subroutine read_user()
   hcentre(:)=-1
 
   ninista=-1
+  debug=.false.
 
   READ(*,USER)
   READ(*,LNZLST)
