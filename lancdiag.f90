@@ -135,7 +135,7 @@
 !
 ! NREIG: no. required eigenvalues
 !
-! LEIG: dimension of the! eig array: needs to be! large enough to
+! LEIG: dimension of the eig array: needs to be large enough to
 !       store all converged eigenvalues, which may be more than the
 !       no. requested 
 !

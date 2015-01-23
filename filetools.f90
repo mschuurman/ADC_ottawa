@@ -17,7 +17,7 @@ contains
     
     write(untnr) maxbl,nbuf
     write(untnr) diag(:)
-    
+
   end subroutine wrtdg
 !!$------------------------------------------------------
   subroutine wrtoffdg(untnr,maxbl,buff,oi,oj,nrec)

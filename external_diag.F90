@@ -100,6 +100,7 @@
 #include "finclude/petscmat.h"
 #include "finclude/slepcsys.h"
 #include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
 
    integer                             :: blckdim,matdim,davstates,&
                                           maxbl,nrec,unit,num
@@ -116,7 +117,7 @@
       EPSType     tname,method  ! Eigenproblem type and method name
       PetscReal   tol,error     ! Error tolerance and calculated error value
       PetscScalar kr,ki         ! Real and imaginary parts of an eigenvalue
-      Vec         xr,xi         ! Real and imaginary parts of an eigenvector
+      Vec         xr,xi         ! Real and imaginary parts of an eigenvector      
       PetscInt    n,i,j,&       ! Integers...
                   Istart,&
                   Iend
@@ -139,17 +140,23 @@
       PetscScalar targ          ! Target value for the eigensolver
 
 
-      Vec         ivec(blckdim) ! Initial vectors
-      PetscInt    nivec         ! No. initial vectors
-      PetscInt    indx          ! Integer array used to fill initial
-                                ! vector array
-      PetscScalar ftmp          ! Scalar array used to fill initial
-                                ! vector array
-
+      Vec         ivec(blckdim)     ! Initial vectors
+      PetscInt    nivec             ! No. initial vectors
+      PetscInt    indx              ! Integer array used to fill initial
+                                    ! vector array
+      PetscScalar ftmp              ! Scalar array used to fill initial
+                                    ! vector array
+      PetscScalar, pointer :: xx(:) ! array to hold a single retrieved 
+                                    ! retrieved eigenvector
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
 !-----------------------------------------------------------------------
       call slepcinitialize(petsc_null_character,ierr)
+
+!-----------------------------------------------------------------------
+! MPI
+!-----------------------------------------------------------------------
+!      call mpi_comm_rank(petsc_comm_world,rank,ierr)
 
 !-----------------------------------------------------------------------
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
@@ -178,6 +185,12 @@
 
       ! (ii) Off-diagonal elements      
       call fill_offdiag(maxbl,nrec,ham)
+
+      ! Assemble the PETSc matrix
+      call matassemblybegin(ham,mat_final_assembly,ierr)
+      call matassemblyend(ham,mat_final_assembly,ierr)
+
+!      call matview(ham,petsc_viewer_stdout_world)
 
 !-----------------------------------------------------------------------
 ! Create vectors xr and xi (real and imaginary parts of an eigenvector) 
@@ -212,7 +225,8 @@
 ! dimenson (mpd, which for serial execution we take to be equal to ncv)
 !-----------------------------------------------------------------------
       neig=davstates
-      ncv=blckdim
+      ncv=min(davstates+blckdim+10,(davstates+blckdim)*2)
+     
       call epssetdimensions(eps,neig,ncv,ncv,ierr)
 
 !-----------------------------------------------------------------------
@@ -233,13 +247,15 @@
          call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
          ! Assign the components of the ith initial vector
          ftmp=1.0d0
-         indx=i
+         ! PETSc indices start from zero...
+         indx=i-1
          call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
          call vecassemblybegin(ivec(i),ierr)
          call vecassemblyend(ivec(i),ierr)
       enddo
 
       ! Set the initial vector space
+      nivec=blckdim
       call epssetinitialspace(eps,nivec,ivec,ierr)
 
 !-----------------------------------------------------------------------
@@ -256,7 +272,7 @@
       if (nconv.lt.davstates) then
          write(6,'(/,2x,i3,1x,a,/)') davstates,'Davidson states requested'
          write(6,'(/,2x,i3,1x,a,/)') nconv,'Davidson states converged'
-         STOP
+!         STOP
       endif
 
 !-----------------------------------------------------------------------
@@ -265,28 +281,25 @@
       ! Open file
       unit=77
 
-!      open(unit=unit,file='dav_vecs.init',status='old',&
-!           access='sequential',form='unformatted')
-
       open(unit=unit,file='dav_vecs.init',status='unknown',&
            access='sequential',form='unformatted')
-
+      
       do i=0,nconv-1
-         
+         num=i+1
          ! Get the ith converged eigenpair
-         call epsgeteigenpair(eps,i,kr,ki,xr,xi,ierr)
-         
+         call epsgeteigenpair(eps,i,kr,ki,xr,xi,ierr) 
          ! Write the ith converged eigenpair to file
          val=PetscRealPart(kr)
-         vec=PetscRealPart(xr)
-         num=i
-
+         call VecGetArrayF90(xr,xx,ierr) 
+         vec=xx         
          write(unit) num,val,vec(:)
-         
       enddo
 
       ! Close file
       close(unit)
+
+! CHECK AGAINT THE RESULTS OF FULL DIAGONALISATION
+!      call full_diag(matdim)
 
    return
 
@@ -317,7 +330,7 @@
 !----------------------------------------------------------------
    Mat            ham
    PetscErrorCode ierr
-   PetscInt       dim1,dim2,indx
+   PetscInt       dim1,dim2,indx,pmatindx
    PetscScalar    elval
    
 !----------------------------------------------------------------
@@ -333,7 +346,10 @@
    dim2=1
    do indx=1,matdim
       elval=hii(indx)
-      call matsetvalues(ham,dim1,indx,dim2,indx,elval,insert_values,ierr)
+      ! PETSc matrix indices start from zero
+      pmatindx=indx-1
+      call matsetvalues(ham,dim1,pmatindx,dim2,pmatindx,elval,&
+           insert_values,ierr)
    enddo
 
  end subroutine fill_ondiag
@@ -363,6 +379,7 @@
 !-----------------------------------------------------------------------
 ! Read the on-diagonal Hamiltonian matrix elements
 !-----------------------------------------------------------------------
+   rewind(unit)
    read(77) maxbl,nrec
    read(77) hii
 
@@ -418,12 +435,16 @@
 !-----------------------------------------------------------------------
    dim1=1
    dim2=1
-
    do k=1,nrec
       read(unit) hij(:),indxi(:),indxj(:),nlim
       do l=1,nlim
-         i1=indxi(l)
-         i2=indxj(l)
+         ! PETSc matrix indices start from zero
+         i1=indxi(l)-1
+         i2=indxj(l)-1         
+         elval=hij(l)
+         call matsetvalues(ham,dim1,i1,dim2,i2,elval,insert_values,ierr)
+         i2=indxi(l)-1
+         i1=indxj(l)-1         
          elval=hij(l)
          call matsetvalues(ham,dim1,i1,dim2,i2,elval,insert_values,ierr)
       enddo
@@ -437,5 +458,91 @@
    return
 
  end subroutine fill_offdiag
+
+!#######################################################################
+! full_diag: full diagonalisation of the Hamiltonian matrix using
+!            the LAPACK routine dsyev
+!#######################################################################
+
+ subroutine full_diag(matdim)
+
+   use constants
+
+   implicit none
+
+   integer                            :: matdim,unit,maxbl,nrec,nlim,&
+                                         i,k,i1,i2
+   real(d), dimension(matdim)         :: hii
+   real(d), dimension(matdim,matdim)  :: hmat,umat
+   real(d), dimension(:), allocatable :: hij
+   integer, dimension(:), allocatable :: indxi,indxj
+
+
+   integer*4                   :: e2
+   real*8, dimension(3*matdim) :: work
+   real*8                      :: error
+   real*8, dimension(matdim)   :: eigval
+
+   hmat=0.0d0
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+   unit=77
+   open(unit,file='hmlt.diai',status='old',access='sequential',&
+        form='unformatted')
+
+   rewind(unit)
+   read(77) maxbl,nrec
+   read(77) hii
+
+   do i=1,matdim
+      hmat(i,i)=hii(i)
+   enddo
+
+   close(unit)
+
+!-----------------------------------------------------------------------
+! Read the off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+   open(unit,file='hmlt.offi',status='old',access='sequential',&
+        form='unformatted')
+
+   allocate(hij(maxbl))
+   allocate(indxi(maxbl))
+   allocate(indxj(maxbl))
+
+   do i=1,nrec
+      read(unit) hij(:),indxi(:),indxj(:),nlim
+      do k=1,nlim
+         i1=indxi(k)
+         i2=indxj(k)
+         hmat(i1,i2)=hij(k)
+         hmat(i2,i1)=hij(k)
+      enddo
+   enddo
+   
+   close(unit)
+
+!-----------------------------------------------------------------------
+! Diagonalise the Hamiltonian matrix
+!-----------------------------------------------------------------------
+   error=0
+   e2=3*matdim
+   umat=hmat
+   call dsyev('V','U',matdim,umat,matdim,eigval,work,e2,error)
+
+!-----------------------------------------------------------------------
+! Exit here if the diagonalisation was not successful
+!-----------------------------------------------------------------------
+   if (error.ne.0) then
+      write(6,'(/,a,/)') &
+           'Diagonalisation in subroutine full_diag failed.'
+      STOP
+   endif
+
+   return
+
+ end subroutine full_diag
 
 !#######################################################################

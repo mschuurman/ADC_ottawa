@@ -269,7 +269,6 @@ contains
 
     allocate(ar_diag(ndim1+ndim2))
 
-
     ktype=1
     name="hmlt.dia"//chr 
     unt=11

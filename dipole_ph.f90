@@ -115,13 +115,12 @@ contains
           do l1= 1,nOcc
              l=roccnum(l1)
              do b1= nOcc+1,nBas
-                b=roccnum(b1)
-                
+                b=roccnum(b1)                
+
                 sym1=MT(orbSym(k),orbSym(l))
                 if (sym1 .eq. 1) then
                    e_klbc=e(k)+e(l)-e(b)-e(b)
-                   e_lmbc=e(l)+e(m)-e(b)-e(b)
-                   
+                   e_lmbc=e(l)+e(m)-e(b)-e(b)                   
                    FB_ph=FB_ph-0.5_d*dpl(a,m)/e_klbc/e_lmbc*vpqrs(b,k,b,l)*vpqrs(m,b,l,b)
                 end if
 
@@ -131,8 +130,7 @@ contains
                    
                    if (MT(sym1,sym2) .eq. 1) then
                       e_klbc=e(k)+e(l)-e(b)-e(c)
-                      e_lmbc=e(l)+e(m)-e(b)-e(c)
-                      
+                      e_lmbc=e(l)+e(m)-e(b)-e(c)                      
                       FB_ph=FB_ph-0.5_d*dpl(a,m)/e_klbc/e_lmbc*(&
                            vpqrs(b,k,c,l)*(2._d*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
                            vpqrs(b,l,c,k)*(2._d*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
@@ -334,7 +332,7 @@ contains
           end do
        end if
     end do
-    
+
   end function F23_ph
 
 !!$----------------------------------------------
@@ -352,7 +350,6 @@ contains
        sym=MT(orbSym(a),orbSym(dd))
           if (sym .eq. CHECK_dip) then
           e_kd=e(k)-e(dd)
-
           do l1= 1,nOcc
              l=roccnum(l1)
              do b1= nOcc+1,nBas

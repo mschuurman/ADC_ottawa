@@ -68,7 +68,6 @@
          else
             write(6,*) 'This is the Davidson startup run'
          endif
-
 !-----------------------------------------------------------------------
 ! Enter block-Davidson routine
 !-----------------------------------------------------------------------
@@ -103,7 +102,7 @@
 !-----------------------------------------------------------------------
 ! Deallocate Hamiltonian matrix arrays
 !-----------------------------------------------------------------------
-         deallocate(offdiag,indi,indip,diag)
+!         deallocate(offdiag,indi,indip,diag)
 
       end if
 
@@ -361,12 +360,13 @@
       nfl=77
       
       open(unit=nfl, file='dav_vecs.init', status='old',access='sequential', form='unformatted')
-      
+
+      count=0
       do i=1,nvec
          read(nfl,end=77) nr,evec(i),rvec(:,i)
          count=count+1
       end do
-      
+
 77    close(nfl)
       write(6,*) nvec,' vectors requested - ', count, 'found on disc'
       

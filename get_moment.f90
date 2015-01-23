@@ -96,12 +96,12 @@ contains
     do cnt= nlim1,nlim2
        k=kpq(3,cnt)
        a=kpq(5,cnt)
-
-       mtm(cnt)=dpl(a,k)+F0_ph(a,k)+FA_ph(a,k)+FB_ph(a,k)+FC_ph(a,k)
+       mtm(cnt)=dpl(a,k)+F0_ph(a,k)+FA_ph(a,k)+FB_ph(a,k)+FC_ph(a,k)       
        mtm(cnt)=mtm(cnt)+F21_ph(a,k)+F22_ph(a,k)+F23_ph(a,k)+F24_ph(a,k)+F25_ph(a,k)
        mtm(cnt)=mtm(cnt)+F26_ph(a,k)+F27_ph(a,k)+F28_ph(a,k)+F29_ph(a,k)+F210_ph(a,k)
-       
     end do
+
+    STOP
 
     mtm(:)=-sqrt(2._d)*mtm(:)
 

@@ -33,12 +33,13 @@ program main
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!! GAMESS INTERFACE !!!!!!!!!!!!!!!!
-
+  
    gam_chkpt  = 'gamess.dat'
    gam_log = 'gamess.log'
    call read_user()
+
    call read_gamess(gam_chkpt,gam_log)
- 
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!$ Reading user's data
@@ -60,7 +61,7 @@ program main
      dpl(:,:)=z_dipole(:,:)
      tranflag='y'
   end if
-     
+
 !!!  write(6,*) "basic dipole elements"
 !!!   do i=1,nBas
 !!!      ipr=roccnum(i)

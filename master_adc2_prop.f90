@@ -96,7 +96,6 @@ subroutine master_adc2_prop()
      write(6,*) 'Time=',time," s"
      
      deallocate(kpq,kpqd,kpqf)
-     stop
 
   end if
 
@@ -621,8 +620,9 @@ subroutine master_adc2_prop()
         allocate(ener(davstates),rvec(ndim,davstates))
         allocate(vec_init(ndim))
 
-!  call initial_diag (ninit,e_init,vec_init,noffd,nvec,davmem)
+        ! Block-Davidson diagonalisation
         call master_dav(ndim,noffd,'i')
+        
         ! Reading Davidson eigenvectors
         call readdavvc(davstates,ener,rvec)
 
@@ -635,6 +635,12 @@ subroutine master_adc2_prop()
         write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIn  > IN THE INITIAL SPACE'
         call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
         write(100,*) ndim , mtm
+
+
+        print*,mtm
+
+        STOP
+
         do i = 1 , davstates
            tmvec(i) = tm(ndim,rvec(:,i),mtm(:))
            osc_str(i) = 2._d/3._d * ener(i) * tmvec(i)**2
