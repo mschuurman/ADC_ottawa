@@ -101,8 +101,6 @@ contains
        mtm(cnt)=mtm(cnt)+F26_ph(a,k)+F27_ph(a,k)+F28_ph(a,k)+F29_ph(a,k)+F210_ph(a,k)
     end do
 
-    STOP
-
     mtm(:)=-sqrt(2._d)*mtm(:)
 
 !!$----------I-a=b,i=j-------------------

@@ -636,11 +636,6 @@ subroutine master_adc2_prop()
         call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
         write(100,*) ndim , mtm
 
-
-        print*,mtm
-
-        STOP
-
         do i = 1 , davstates
            tmvec(i) = tm(ndim,rvec(:,i),mtm(:))
            osc_str(i) = 2._d/3._d * ener(i) * tmvec(i)**2
@@ -649,8 +644,9 @@ subroutine master_adc2_prop()
 
         write(6,*) "ADC2 diagonalization result in the INITIAL space"
         call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),tmvec(1:davstates),osc_str(1:davstates))
+
         write(6,*) ' sums calculated with respect to the ground state'
-        call get_sigma(davstates,ener(:),os2cs*osc_str(:))
+!        call get_sigma(davstates,ener(:),os2cs*osc_str(:))
 
         deallocate(mtm)
 
@@ -661,17 +657,23 @@ subroutine master_adc2_prop()
 !-----------------------------------------------------------------------
         write(6,*) statenumber,'selected initial state has been obtained' 
         write(6,*) 'The initial state vector is the ', statenumber,'st one'
+
+        ! Set the initial state vector
         do i=1,ndim
            vec_init(i)=rvec(i,statenumber)
-           !      write(6,*) i,vec_init(i)
+           !write(6,*) i,vec_init(i)
         end do
+
         write(6,*)
         write(6,*) " ALL THE FIRST ENERGIES IN THE INITIAL SPACE SYMMETRY"
         write(6,*) ener
         e_init=ener(statenumber)
         WRITE(6,*) " I AM CHOOSING TO IONIZE FROM THE STATE WITH ENERGY", e_init     
+        
         allocate(coeff(ndim))
         allocate(indx(ndim))
+
+        ! Array of squares of the initial state coefficents
         coeff(:)=vec_init(:)**2
 
         ! ??? Create an array indx of indices indexing the elements of
@@ -783,6 +785,7 @@ subroutine master_adc2_prop()
 
         call cpu_time(time)
         write(6,*) 'Time=',time," s"
+
 
         IF ( GO .EQ. 'OK' ) THEN
 
