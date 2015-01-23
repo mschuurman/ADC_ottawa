@@ -168,7 +168,7 @@
   integer(8)                        :: iosize_2e  = 220000000   ! Integral I/O
 
   complex(8),dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_cmplx
-  real(xrk), dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_spin,hao_spin,hmo_spin,fmo_spin
+  real(xrk), dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_spin,hao_spin,hmo_spin,fmo_spin,dipmo_spin
   real(xrk), dimension(  gam_info%nbasis,  gam_info%nbasis)   :: sao,hao,tmp_xk
   real(xrk), dimension(  gam_info%nbasis,  gam_info%nvectors) :: mos
   character(len=clen)                                         :: mo_mode,ao_mode
@@ -289,6 +289,38 @@
   do i = 1,nelec/2
    occNum(i) = int(2,kind=4)
   enddo
+
+  ! Again, a little uncertainty as to whether we can run unrestricted. For time
+  ! being I will assume "no", since the dimension of xdip,ydip and zdip are
+  ! square nao x nao matrices, or appear to be. If this assumption is incorrect,
+  ! moving to spin-MOs is trivial.
+  ! load in the dipole moment integrals
+  call gamess_1e_integrals('AO DIPOLE X',hao,bra=gam_info,ket=gam_info  )
+  x_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  if(debug) then
+   write (6,"(/t5,'AO DIPOLE X INTEGRALS'/)")
+   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
+   write (6,"(/t5,'MO DIPOLE X INTEGRALS'/)")
+   call gamess_print_1e_integrals(x_dipole,bra=gam_info,ket=gam_info)
+  endif
+
+  call gamess_1e_integrals('AO DIPOLE Y',hao,bra=gam_info,ket=gam_info  )
+  y_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  if(debug) then
+   write (6,"(/t5,'AO DIPOLE Y INTEGRALS'/)")
+   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
+   write (6,"(/t5,'MO DIPOLE Y INTEGRALS'/)")
+   call gamess_print_1e_integrals(y_dipole,bra=gam_info,ket=gam_info)
+  endif
+
+  call gamess_1e_integrals('AO DIPOLE Z',hao,bra=gam_info,ket=gam_info  )
+  z_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  if(debug) then
+   write (6,"(/t5,'AO DIPOLE Z INTEGRALS'/)")
+   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
+   write (6,"(/t5,'MO DIPOLE Z INTEGRALS'/)")
+   call gamess_print_1e_integrals(z_dipole,bra=gam_info,ket=gam_info)
+  endif
 
   ! print out summary (compare to GAMESS output)
   write(6,"(60('-'))")
