@@ -14,29 +14,29 @@
   contains
 
 !#######################################################################
-
-    subroutine master_lancdiag(ndim,noff,flag)
-    
-      integer, intent(in)     :: ndim,noff
-      character(2),intent(in) :: flag
-      
-      integer                 :: i,j
-
-!-----------------------------------------------------------------------
-! ndim: Hamiltonian matrix dimension
-! noff: no. non-zero off-diagonal Hamiltonian matrix elements
-! flag: ???
-! lmain: block-Lanczos block size
-!-----------------------------------------------------------------------      
-
-!-----------------------------------------------------------------------      
-! Enter block-Lanczos routine
-!-----------------------------------------------------------------------            
-      call lanczos_diag(ndim,lmain,lancstates,ncycles)
-
-      return
-
-    end subroutine master_lancdiag
+!
+!    subroutine master_lancdiag(ndim,noff,flag)
+!    
+!      integer, intent(in)     :: ndim,noff
+!      character(2),intent(in) :: flag
+!      
+!      integer                 :: i,j
+!
+!!-----------------------------------------------------------------------
+!! ndim: Hamiltonian matrix dimension
+!! noff: no. non-zero off-diagonal Hamiltonian matrix elements
+!! flag: ???
+!! lmain: block-Lanczos block size
+!!-----------------------------------------------------------------------      
+!
+!!-----------------------------------------------------------------------      
+!! Enter block-Lanczos routine
+!!-----------------------------------------------------------------------            
+!      call lanczos_diag(ndim,lmain,lancstates,ncycles)
+!
+!      return
+!
+!    end subroutine master_lancdiag
 
 !#######################################################################
     

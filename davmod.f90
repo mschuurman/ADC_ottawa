@@ -110,44 +110,44 @@
 
 !#######################################################################
 
-    subroutine master_lancdiag(ndim,noffd,flag)
-    
-      integer, intent(in)      :: ndim
-      integer*8, intent(in)    :: noffd
-      
-      character(1), intent(in) :: flag
-      integer                  :: i,j,rc
-    
-      external blnczs
-
-      fl=flag
-      ndm=ndim
-      main=lmain
-      noffdel=noffd
-
-      rc=0
-      allocate(diag(ndm),stat=rc)
-      if (rc.ne.0) call errmsg('memory 1  allocation error')
-
-    !=========================================================
-    ! fast variant: remove for small
-      rc=0
-      allocate(offdiag(noffdel),indi(noffdel),indip(noffdel),stat=rc)
-      if (rc.ne.0) call errmsg('memory 2  allocation error')
-    !=========================================================1
-      call read_matrix()  !fast
-    !call read_matrix2() !small
-  
-      call blnczs(mtxidl,ndim,main,ncycles,maxmem,memx,mode,nprint,wthr,erange(:),unit,iparm(:),fparm(:),&
-           mtxq1_l,rmtxhq1) !fast: rmtxhq1 !small: mtxhq_gg
-       
-    !=========================================================
-    ! fast variant: remove for small
-      deallocate(diag,offdiag,indi,indip)
-    !=========================================================
-
-
-    end subroutine master_lancdiag
+!    subroutine master_lancdiag(ndim,noffd,flag)
+!    
+!      integer, intent(in)      :: ndim
+!      integer*8, intent(in)    :: noffd
+!      
+!      character(1), intent(in) :: flag
+!      integer                  :: i,j,rc
+!    
+!      external blnczs
+!
+!      fl=flag
+!      ndm=ndim
+!      main=lmain
+!      noffdel=noffd
+!
+!      rc=0
+!      allocate(diag(ndm),stat=rc)
+!      if (rc.ne.0) call errmsg('memory 1  allocation error')
+!
+!    !=========================================================
+!    ! fast variant: remove for small
+!      rc=0
+!      allocate(offdiag(noffdel),indi(noffdel),indip(noffdel),stat=rc)
+!      if (rc.ne.0) call errmsg('memory 2  allocation error')
+!    !=========================================================1
+!      call read_matrix()  !fast
+!    !call read_matrix2() !small
+!  
+!      call blnczs(mtxidl,ndim,main,ncycles,maxmem,memx,mode,nprint,wthr,erange(:),unit,iparm(:),fparm(:),&
+!           mtxq1_l,rmtxhq1) !fast: rmtxhq1 !small: mtxhq_gg
+!       
+!    !=========================================================
+!    ! fast variant: remove for small
+!      deallocate(diag,offdiag,indi,indip)
+!    !=========================================================
+!
+!
+!    end subroutine master_lancdiag
 
 !#######################################################################
 

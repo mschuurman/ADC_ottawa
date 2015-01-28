@@ -301,6 +301,20 @@
 ! CHECK AGAINT THE RESULTS OF FULL DIAGONALISATION
 !      call full_diag(matdim)
 
+!-----------------------------------------------------------------------
+! Free the workspace
+!-----------------------------------------------------------------------
+      call epsdestroy(eps,ierr)
+      call matdestroy(ham,ierr)
+      call vecdestroy(xr,ierr)
+      call vecdestroy(xi,ierr)
+      call vecdestroy(xx,ierr)
+
+!-----------------------------------------------------------------------
+! Finalise SLEPc
+!-----------------------------------------------------------------------
+      call slepcfinalize(ierr)
+
    return
 
  end subroutine davidson_diag
