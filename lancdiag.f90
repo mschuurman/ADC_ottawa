@@ -40,57 +40,57 @@
 
 !#######################################################################
     
-    subroutine lanczos_diag(matdim,blckdim,lancstates,ncycles)
-
-      implicit none
-
-      integer                                       :: matdim,blckdim,&
-                                                       lancstates,&
-                                                       ncycles,nvopu,&
-                                                       nneig
-
-      integer                                       :: lflag
-      integer, dimension(:), allocatable            :: istor
-      double precision, dimension(:), allocatable   :: rstor      
-      double precision, dimension(:,:), allocatable :: eig,X,U,V
-      double precision                              :: eigl,eigr,sigma
-
-!-----------------------------------------------------------------------
-! Initialise blzpack arguments
-!-----------------------------------------------------------------------
-      eigl=erange(1)
-      eigr=erange(2)
-      call init_blzpack(istor,rstor,matdim,blckdim,eigl,eigr,eig,X,U,V,&
-           lancstates,ncycles)
-
-!-----------------------------------------------------------------------
-! Block-Lanczos diagonalisation of the ADC Hamiltonian matrix
-!-----------------------------------------------------------------------
-      lflag=0
-10    continue
-      call blzdrd(istor,rstor,sigma,nneig,U,V,lflag,nvopu,eig,X)
-      
-      if (lflag.eq.1) then
-         ! Matrix-vector multiplication is required
-         call matvecmul_lanc(U,V,matdim,blckdim,nvopu)
-         goto 10
-      else if (lflag.eq.4) then
-         ! Specification of the starting vectors is required
-         call initvecs_lanc(V,matdim,blckdim,nvopu)
-         goto 10
-      else if (lflag.ne.0) then
-         ! Unsuccessful termination
-         call lanc_err(lflag)
-      endif
-
-!-----------------------------------------------------------------------
-! Write Lanczos pseudospectrum to disk
-!-----------------------------------------------------------------------
-      call wrvecs_lanc(matdim,lancstates,eig,X,istor(4))
-
-      return
-
-    end subroutine lanczos_diag
+!    subroutine lanczos_diag(matdim,blckdim,lancstates,ncycles)
+!
+!      implicit none
+!
+!      integer                                       :: matdim,blckdim,&
+!                                                       lancstates,&
+!                                                       ncycles,nvopu,&
+!                                                       nneig
+!
+!      integer                                       :: lflag
+!      integer, dimension(:), allocatable            :: istor
+!      double precision, dimension(:), allocatable   :: rstor      
+!      double precision, dimension(:,:), allocatable :: eig,X,U,V
+!      double precision                              :: eigl,eigr,sigma
+!
+!!-----------------------------------------------------------------------
+!! Initialise blzpack arguments
+!!-----------------------------------------------------------------------
+!      eigl=erange(1)
+!      eigr=erange(2)
+!      call init_blzpack(istor,rstor,matdim,blckdim,eigl,eigr,eig,X,U,V,&
+!           lancstates,ncycles)
+!
+!!-----------------------------------------------------------------------
+!! Block-Lanczos diagonalisation of the ADC Hamiltonian matrix
+!!-----------------------------------------------------------------------
+!      lflag=0
+!10    continue
+!      call blzdrd(istor,rstor,sigma,nneig,U,V,lflag,nvopu,eig,X)
+!      
+!      if (lflag.eq.1) then
+!         ! Matrix-vector multiplication is required
+!         call matvecmul_lanc(U,V,matdim,blckdim,nvopu)
+!         goto 10
+!      else if (lflag.eq.4) then
+!         ! Specification of the starting vectors is required
+!         call initvecs_lanc(V,matdim,blckdim,nvopu)
+!         goto 10
+!      else if (lflag.ne.0) then
+!         ! Unsuccessful termination
+!         call lanc_err(lflag)
+!      endif
+!
+!!-----------------------------------------------------------------------
+!! Write Lanczos pseudospectrum to disk
+!!-----------------------------------------------------------------------
+!      call wrvecs_lanc(matdim,lancstates,eig,X,istor(4))
+!
+!      return
+!
+!    end subroutine lanczos_diag
 
 !#######################################################################
 

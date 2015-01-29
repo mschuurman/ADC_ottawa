@@ -51,13 +51,13 @@ contains
        end do
     end do
        
-    write(6,100) "Number of 1h-1p INITIAL configs in the IS ADC",kpq(1,0) 
-    write(6,103)
-    write(6,*) "INITIAL Singly excited configurations allowed in the Fin. St. Manif."
-    write(6,101) "CNF","SPN","HL1","PT1"
-    do i=1,kpq(1,0)
-       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
-    enddo
+!    write(6,100) "Number of 1h-1p INITIAL configs in the IS ADC",kpq(1,0) 
+!    write(6,103)
+!    write(6,*) "INITIAL Singly excited configurations allowed in the Fin. St. Manif."
+!    write(6,101) "CNF","SPN","HL1","PT1"
+!    do i=1,kpq(1,0)
+!       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
+!    enddo
        
         
   end subroutine select_atom_is
@@ -106,13 +106,13 @@ contains
       end do
     end do
        
-    write(6,100) "Number of 1h-1p FINAL configs in the IS ADC",kpq(1,0) 
-    write(6,103)
-    write(6,*) "FINAL Singly excited configurations allowed in the Fin. St. Manif."
-    write(6,101) "CNF","SPN","HL1","PT1"
-    do i=1,kpq(1,0)
-       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
-    enddo
+!    write(6,100) "Number of 1h-1p FINAL configs in the IS ADC",kpq(1,0) 
+!    write(6,103)
+!    write(6,*) "FINAL Singly excited configurations allowed in the Fin. St. Manif."
+!    write(6,101) "CNF","SPN","HL1","PT1"
+!    do i=1,kpq(1,0)
+!       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
+!    enddo
        
         
   end subroutine select_atom_isf
@@ -158,13 +158,13 @@ contains
        end do
     end do
        
-    write(6,100) "Number of 1h-1p TOTAL configs in the IS ADC",kpq(1,0) 
-    write(6,103)
-    write(6,*) "TOTAL Singly excited configurations allowed in the Fin. St. Manif."
-    write(6,101) "CNF","SPN","HL1","PT1"
-    do i=1,kpq(1,0)
-       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
-    enddo
+!    write(6,100) "Number of 1h-1p TOTAL configs in the IS ADC",kpq(1,0) 
+!    write(6,103)
+!    write(6,*) "TOTAL Singly excited configurations allowed in the Fin. St. Manif."
+!    write(6,101) "CNF","SPN","HL1","PT1"
+!    do i=1,kpq(1,0)
+!       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
+!    enddo
        
         
   end subroutine select_atom_ist
@@ -462,15 +462,15 @@ contains
        kpq(7,cnti+1:cnti+kpq(5,0))=5
 
        
-       write(6,100) "Number of 2h-2p |abij> INITIAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) "INITIAL  Doubly excited |abij> configs allowed in the Init. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-    
-       do k=kpq(1,0)+1,cnti+kpq(5,0) 
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> INITIAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) "INITIAL  Doubly excited |abij> configs allowed in the Init. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!    
+!       do k=kpq(1,0)+1,cnti+kpq(5,0) 
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
 
 !--------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------
@@ -484,15 +484,15 @@ contains
        kpq(2,cntf+1:cntf+kpq(5,0))=12 
        kpq(7,cntf+1:cntf+kpq(5,0))=5
     
-       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-       
-       do k=kpq(1,0)+1, cntf+kpq(5,0)
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!       
+!       do k=kpq(1,0)+1, cntf+kpq(5,0)
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
        
     end if
     
@@ -840,15 +840,15 @@ contains
        kpq(7,cnti+1:cnti+kpq(5,0))=5
 
        
-       write(6,100) "Number of 2h-2p |abij> FINAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " FINAL Doubly excited |abij> configs allowed in the Init. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-    
-       do k=kpq(1,0)+1,cnti+kpq(5,0) 
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> FINAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " FINAL Doubly excited |abij> configs allowed in the Init. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!    
+!       do k=kpq(1,0)+1,cnti+kpq(5,0) 
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
 
 !--------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------
@@ -862,15 +862,15 @@ contains
        kpq(2,cntf+1:cntf+kpq(5,0))=12 
        kpq(7,cntf+1:cntf+kpq(5,0))=5
     
-       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-       
-       do k=kpq(1,0)+1, cntf+kpq(5,0)
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!       
+!       do k=kpq(1,0)+1, cntf+kpq(5,0)
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
        
     end if
     
@@ -1220,15 +1220,15 @@ contains
        kpq(7,cnti+1:cnti+kpq(5,0))=5
 
        
-       write(6,100) "Number of 2h-2p |abij> TOTAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " TOTAL Doubly excited |abij> configs allowed in the Init. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-    
-       do k=kpq(1,0)+1,cnti+kpq(5,0) 
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> TOTAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " TOTAL Doubly excited |abij> configs allowed in the Init. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!    
+!       do k=kpq(1,0)+1,cnti+kpq(5,0) 
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
 
 !--------------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------------
@@ -1242,15 +1242,15 @@ contains
        kpq(2,cntf+1:cntf+kpq(5,0))=12 
        kpq(7,cntf+1:cntf+kpq(5,0))=5
     
-       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-       
-       do k=kpq(1,0)+1, cntf+kpq(5,0)
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!       
+!       do k=kpq(1,0)+1, cntf+kpq(5,0)
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
        
     end if
     
@@ -1399,13 +1399,13 @@ contains
        end do
     end do
        
-    write(6,100) "Number of 1h-1p INITIAL configs in the IS ADC",kpq(1,0) 
-    write(6,103)
-    write(6,*) "INITIAL Singly excited configurations allowed in the Fin. St. Manif."
-    write(6,101) "CNF","SPN","HL1","PT1"
-    do i=1,kpq(1,0)
-       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
-    enddo
+!    write(6,100) "Number of 1h-1p INITIAL configs in the IS ADC",kpq(1,0) 
+!    write(6,103)
+!    write(6,*) "INITIAL Singly excited configurations allowed in the Fin. St. Manif."
+!    write(6,101) "CNF","SPN","HL1","PT1"
+!    do i=1,kpq(1,0)
+!       write(6,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
+!    enddo
        
        
    dimensione = kpq(1,0)
@@ -1708,15 +1708,15 @@ contains
        kpq(7,cnti+1:cnti+kpq(5,0))=5
 
        
-       write(6,100) "Number of 2h-2p |abij> INITIAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) "INITIAL  Doubly excited |abij> configs allowed in the Init. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-    
-       do k = kpq(1,0) + 1 , cnti + kpq(5,0) 
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> INITIAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) "INITIAL  Doubly excited |abij> configs allowed in the Init. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!    
+!       do k = kpq(1,0) + 1 , cnti + kpq(5,0) 
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
 
        dimensione = cnti + kpq(5,0)
 
@@ -1733,15 +1733,15 @@ contains
        kpq(2,cntf+1:cntf+kpq(5,0))=12 
        kpq(7,cntf+1:cntf+kpq(5,0))=5
     
-       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
-       write(6,103)
-       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
-       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-       
-       do k = kpq(1,0) + 1 , cntf + kpq(5,0)
-          write(6,102) k,kpq(2,k),kpq(3,k),&
-               kpq(4,k),kpq(5,k),kpq(6,k)
-       end do
+!       write(6,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
+!       write(6,103)
+!       write(6,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
+!       write(6,101) "CNF","SPN","HL1","HL2","PT1","PT2"
+!       
+!       do k = kpq(1,0) + 1 , cntf + kpq(5,0)
+!          write(6,102) k,kpq(2,k),kpq(3,k),&
+!               kpq(4,k),kpq(5,k),kpq(6,k)
+!       end do
 
 
        dimensione = cnti + kpq(5,0)

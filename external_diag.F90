@@ -147,7 +147,13 @@
       PetscScalar ftmp              ! Scalar array used to fill initial
                                     ! vector array
       PetscScalar, pointer :: xx(:) ! array to hold a single retrieved 
-                                    ! retrieved eigenvector
+                                    ! eigenvector
+
+      PetscInt nz,nnz(matdim)       ! Number of non-zero elements per row
+
+      write(6,'(/,2x,a,/)') &
+           'Block-Davidson diagonalisation in the initial space'
+
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
 !-----------------------------------------------------------------------
@@ -159,13 +165,24 @@
 !      call mpi_comm_rank(petsc_comm_world,rank,ierr)
 
 !-----------------------------------------------------------------------
+! Determine the no. non-zero elements per row: important in order to 
+! not have terrible performance from matsetvalues.
+!
+! We here store the no. non-zero elements per row in the PetscInt
+! array nnz: nnz(i)=no. non-zero elements in the ith row.
+!-----------------------------------------------------------------------
+      call get_nonzeros(nnz,matdim)
+
+!-----------------------------------------------------------------------
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
 !-----------------------------------------------------------------------
       n=matdim
 
-      call matcreate(petsc_comm_world,ham,ierr)
-
-      call matsetsizes(ham,petsc_decide,petsc_decide,n,n,ierr)
+!      call matcreate(petsc_comm_world,ham,ierr)
+!
+!      call matsetsizes(ham,petsc_decide,petsc_decide,n,n,ierr)
+      
+      call matcreateseqaij(petsc_comm_world,n,n,nz,nnz,ham,ierr)
 
       call matsetfromoptions(ham,ierr)
 
@@ -233,7 +250,8 @@
 ! Set the eigenpairs of interest: eigenvalues with the smallest
 ! magnitude
 !-----------------------------------------------------------------------
-      call epssetwhicheigenpairs(eps,EPS_SMALLEST_MAGNITUDE,ierr)
+!      call epssetwhicheigenpairs(eps,EPS_SMALLEST_MAGNITUDE,ierr)
+      call epssetwhicheigenpairs(eps,EPS_SMALLEST_REAL,ierr)
 
 !-----------------------------------------------------------------------
 ! Set the initial vectors: Davidson diagonalisation is only ever used
@@ -272,8 +290,13 @@
       if (nconv.lt.davstates) then
          write(6,'(/,2x,i3,1x,a,/)') davstates,'Davidson states requested'
          write(6,'(/,2x,i3,1x,a,/)') nconv,'Davidson states converged'
-!         STOP
       endif
+
+      ! Number of iterations
+      call epsgetiterationnumber(eps,its,ierr)
+      call epsgettolerances(eps,tol,maxit,ierr)
+      write(6,'(/,x,a,x,i4,/)') 'Number of iterations:',its
+      
 
 !-----------------------------------------------------------------------
 ! Output the converged eigenpairs
@@ -293,12 +316,17 @@
          call VecGetArrayF90(xr,xx,ierr) 
          vec=xx         
          write(unit) num,val,vec(:)
+
+         ! Calculate the relative error for the ith eigenpair
+         call epscomputerelativeerror(eps,i,error,ierr)
+         print*,val,error
+
       enddo
 
       ! Close file
       close(unit)
 
-! CHECK AGAINT THE RESULTS OF FULL DIAGONALISATION
+! Check against the results of full diagonalisation
 !      call full_diag(matdim)
 
 !-----------------------------------------------------------------------
@@ -314,6 +342,10 @@
 ! Finalise SLEPc
 !-----------------------------------------------------------------------
       call slepcfinalize(ierr)
+
+!      call full_diag(matdim)
+
+      STOP
 
    return
 
@@ -365,7 +397,7 @@
       call matsetvalues(ham,dim1,pmatindx,dim2,pmatindx,elval,&
            insert_values,ierr)
    enddo
-
+   
  end subroutine fill_ondiag
 
 !#######################################################################
@@ -444,25 +476,25 @@
         form='unformatted')
 
 !-----------------------------------------------------------------------
-! Read the on-diagonal Hamiltonian matrix elements and pass to
+! Read the off-diagonal Hamiltonian matrix elements and pass to
 ! matsetvalues
 !-----------------------------------------------------------------------
    dim1=1
    dim2=1
-   do k=1,nrec
+   do k=1,nrec     
       read(unit) hij(:),indxi(:),indxj(:),nlim
       do l=1,nlim
-         ! PETSc matrix indices start from zero
+         ! N.B., PETSc matrix indices start from zero
          i1=indxi(l)-1
-         i2=indxj(l)-1         
+         i2=indxj(l)-1
          elval=hij(l)
          call matsetvalues(ham,dim1,i1,dim2,i2,elval,insert_values,ierr)
          i2=indxi(l)-1
-         i1=indxj(l)-1         
+         i1=indxj(l)-1
          elval=hij(l)
          call matsetvalues(ham,dim1,i1,dim2,i2,elval,insert_values,ierr)
       enddo
-   end do
+   enddo
 
 !-----------------------------------------------------------------------
 ! Close file
@@ -555,8 +587,85 @@
       STOP
    endif
 
+   do i=1,50
+      print*,i,eigval(i)*27.211
+   enddo
+
    return
 
  end subroutine full_diag
+
+!#######################################################################
+
+ subroutine get_nonzeros(nnz,matdim)
+
+   use constants
+
+   implicit none
+
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscmat.h"
+#include "finclude/slepcsys.h"
+#include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
+
+   integer                            :: matdim,maxbl,nrec,nlim,k,l,&
+                                         tot,tot0
+   integer*8                          :: unit
+   real(d), dimension(:), allocatable :: hij
+   integer, dimension(:), allocatable :: indxi,indxj
+
+!----------------------------------------------------------------
+! PETSc/SLEPc variables
+!----------------------------------------------------------------
+   PetscInt nnz(matdim)       ! Number of non-zero elements per row
+
+!-----------------------------------------------------------------------
+! Read buffer size and no. records from hmlt.diai
+!-----------------------------------------------------------------------
+   unit=78
+
+   open(unit,file='hmlt.diai',status='old',access='sequential',&
+        form='unformatted')
+   read(unit) maxbl,nrec
+
+   close(unit)
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+   allocate(hij(maxbl))
+   allocate(indxi(maxbl))
+   allocate(indxj(maxbl))
+
+!-----------------------------------------------------------------------
+! Read the off-diagonal Hamiltonian matrix elements and determine the
+! no. non-zero elements per row (nnz)
+!-----------------------------------------------------------------------
+   open(unit,file='hmlt.offi',status='old',access='sequential',&
+        form='unformatted')
+
+   nnz=1
+   do k=1,nrec
+      read(unit) hij(:),indxi(:),indxj(:),nlim
+      do l=1,nlim
+         nnz(indxi(l))=nnz(indxi(l))+1
+         nnz(indxj(l))=nnz(indxj(l))+1
+      enddo
+   enddo
+
+   close(unit)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+   deallocate(hij)
+   deallocate(indxi)
+   deallocate(indxj)
+
+   return
+
+ end subroutine get_nonzeros
 
 !#######################################################################

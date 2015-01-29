@@ -26,7 +26,8 @@
  !
  ! read a gamess output file
  !
- subroutine read_gamess_output(nbasis,nelec,ncen,nirr,orbsym,symlab,ehf,earr)
+ subroutine read_gamess_output(nbasis,nelec,ncen,nirr,orbsym,symlab,&
+      ehf,earr,occnum)
   use constants
   integer,intent(in)            :: nbasis
   integer*4,intent(out)         :: nelec,nirr,ncen
@@ -34,9 +35,10 @@
   real(d),intent(out)           :: ehf      ! The Hf energy
   real(d),intent(out)           :: earr(nbasis)  ! The orbital energies
   character*2,intent(out)       :: symlab(1024)
+  real(d), dimension(nbasis)    :: occnum
 
   logical                       :: gexist
-  integer*4                     :: cnt
+  integer*4                     :: cnt,i
   integer                       :: off1,off2
   integer                       :: ios
   integer                       :: orbfnd
@@ -54,9 +56,9 @@
 
   nirr   = -1
   ncen   = -1
-  occnum = 0
-  ehf    = 0.
-  earr   = 0.
+  occnum = 0.0d0
+  ehf    = 0.0d0
+  earr   = 0.0d0
   orbfnd = 0
 
   scan_lines: do while (orbfnd==0)

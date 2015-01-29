@@ -627,6 +627,11 @@ subroutine master_adc2_prop()
         ! Reading Davidson eigenvectors
         call readdavvc(davstates,ener,rvec)
 
+        do i=1,davstates
+           print*,i,ener(i)
+        enddo
+        STOP
+
         allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
 
 !-----------------------------------------------------------------------

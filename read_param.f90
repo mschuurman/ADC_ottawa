@@ -92,7 +92,7 @@ subroutine read_gamess(chkpt_file,log_file)
   allocate(x_dipole(nBas,nBas),y_dipole(nBas,nBas),z_dipole(nBas,nBas),dpl(nBas,nBas))
 
   ! determine various electronic structure variables
-  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,Ehf,e)
+  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,Ehf,e,occnum)
   write (6,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
 
   ! load MO integrals into memory
@@ -104,7 +104,7 @@ subroutine read_gamess(chkpt_file,log_file)
   write(6,'(10x,50("-"))')
   do j=1,nBas
      write(6,101) j,orbSym(j),labSym(orbSym(j)),occNum(j),e(j)
-  end do
+  end do  
 
 100 FORMAT(/,10x,A3,5x,A3,5x,A9,5x,A3,5x,A16)
 101 FORMAT(/,10x,I3,5x,I3,5x,A2,5x,F3.1,5x,F16.10)

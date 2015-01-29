@@ -71,7 +71,7 @@ program main
 !!!   end do
 !!!   end do
 
- 
+
   if (method .eq. 0) then
      write(6,*) "Sorry not included!"
 

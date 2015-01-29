@@ -78,7 +78,7 @@ OBJECTS = $(MULTI) $(ADC)
 # Rules to create the program
 #-----------------------------------------------------------------------
 ww: $(OBJECTS)
-	$(F90) $(F90OPTS) $(OBJECTS) $(BLZPACK) $(LIBS) $(SLEPC_LIBS) -o  adc.x 
+	$(F90) $(F90OPTS) $(OBJECTS) $(LIBS) $(SLEPC_LIBS) -o  adc.x 
 
 %.o: %.f90
 	$(F90) -c $(F90OPTS) $<
