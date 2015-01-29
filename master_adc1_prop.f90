@@ -94,7 +94,7 @@ subroutine master_adc1_prop()
      write(6,*) 'Time=',time," s"
 
      deallocate(kpq,kpqd,kpqf)
-     stop
+!     stop
 
   end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -247,7 +247,6 @@ CALL SYM_TOPROP_VECT_DIP(NSYMA_PROP,SYM_MAP,DIM_PROP,NDIV,DIPOLESYM,ELECTRIC_FIE
 
 ELSE IF ( WHAT .EQ. 'CROS' ) THEN
 
-
   if (tranmom2 .eq. 'x') then
      dpl(:,:)=x_dipole(:,:)
   elseif (tranmom2 .eq. 'y') then
@@ -294,6 +293,7 @@ write(*,*) 'I WILL PERFORM FULL ADC1 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) "DIAGONALIZING IN THE INITIAL SYMMETRY  SPACE" 
    call get_fspace_tda_direct(ndim,kpq(:,:),arr,ener)
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!! TRANSITION MOMENTS FROM GROUND STATE !!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

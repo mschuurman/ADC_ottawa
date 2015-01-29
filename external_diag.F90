@@ -89,7 +89,7 @@
 ! davidson_diag: SLEPc block-Davidson eigensolver
 !#######################################################################
 
- subroutine davidson_diag(blckdim,matdim,davstates,davname)
+ subroutine davidson_diag(blckdim,matdim,davstates,davname,ladc1guess)
 
    use constants
 
@@ -108,6 +108,7 @@
    double precision                    :: val
    double precision, dimension(matdim) :: vec
    character(36)                       :: davname
+   logical                             :: ladc1guess
 
 !----------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -117,7 +118,7 @@
       EPSType     tname,method  ! Eigenproblem type and method name
       PetscReal   tol,error     ! Error tolerance and calculated error value
       PetscScalar kr,ki         ! Real and imaginary parts of an eigenvalue
-      Vec         xr,xi         ! Real and imaginary parts of an eigenvector      
+      Vec         xr,xi         ! Real and imaginary parts of an eigenvector
       PetscInt    n,i,j,&       ! Integers...
                   Istart,&
                   Iend
@@ -258,19 +259,23 @@
 ! for the initial space, so the initial vectors will always correspond
 ! to a set of 1h1p unit vectors
 !-----------------------------------------------------------------------
-      nvecs=blckdim
-      dim=matdim
-      do i=1,nvecs
-         ! Create the ith initial vector
-         call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
-         ! Assign the components of the ith initial vector
-         ftmp=1.0d0
-         ! PETSc indices start from zero...
-         indx=i-1
-         call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
-         call vecassemblybegin(ivec(i),ierr)
-         call vecassemblyend(ivec(i),ierr)
-      enddo
+      if (ladc1guess) then
+         call load_adc1_vecs(blckdim,matdim,ivec)
+      else
+         nvecs=blckdim
+         dim=matdim
+         do i=1,nvecs
+            ! Create the ith initial vector
+            call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+            ! Assign the components of the ith initial vector
+            ftmp=1.0d0
+            ! PETSc indices start from zero...
+            indx=i-1
+            call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
+            call vecassemblybegin(ivec(i),ierr)
+            call vecassemblyend(ivec(i),ierr)
+         enddo
+      endif
 
       ! Set the initial vector space
       nivec=blckdim
@@ -667,5 +672,114 @@
    return
 
  end subroutine get_nonzeros
+
+!#######################################################################
+
+ subroutine load_adc1_vecs(blckdim,matdim,ivec)
+
+   use constants
+
+   implicit none
+
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscmat.h"
+#include "finclude/slepcsys.h"
+#include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
+
+   integer                              :: blckdim,matdim,unit,&
+                                           dim1,curr
+   integer, dimension(:), allocatable   :: indx1
+   real(d), dimension(:,:), allocatable :: vec1
+
+!----------------------------------------------------------------
+! PETSc/SLEPc variables
+!----------------------------------------------------------------
+   Vec            ivec(blckdim)
+   PetscInt       i,nvecs,dim2
+   PetscScalar    ftmp
+   PetscErrorCode ierr
+
+!----------------------------------------------------------------
+! Open ADC(1) vector file
+!----------------------------------------------------------------
+   unit=225
+   open(unit,file='adc1_vecs',form='unformatted',status='old')
+
+!----------------------------------------------------------------
+! Read ADC(1) eigenvectors and set initial Davidson vectors
+!----------------------------------------------------------------
+   read(unit) dim1
+ 
+   allocate(vec1(dim1,dim1))
+   allocate(indx1(dim1))
+
+   rewind(unit)
+   read(unit) dim1,vec1
+
+!----------------------------------------------------------------
+! Set the initial Davidson vectors
+!----------------------------------------------------------------      
+   do i=1,dim1
+      indx1(i)=i-1
+   enddo
+
+   nvecs=blckdim
+   dim2=matdim
+
+   curr=0
+   do i=1,nvecs
+      curr=curr+1
+      ! Create the ith initial vector
+      call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)      
+      ! Assign the components of the ith initial vector
+      call setvec(i,ivec,dim1,vec1(:,curr),blckdim,indx1)
+   enddo
+
+!----------------------------------------------------------------
+! Close ADC(1) vector file
+!----------------------------------------------------------------
+   close(unit)
+
+   return
+
+ end subroutine load_adc1_vecs
+
+!#######################################################################
+
+ subroutine setvec(i,ivec,dim1,vec,blckdim,indx1)
+
+   use constants
+
+   implicit none
+
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscmat.h"
+#include "finclude/slepcsys.h"
+#include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
+
+   integer                  :: dim1,blckdim
+   integer, dimension(dim1) :: indx1
+   real(d), dimension(dim1) :: vec
+
+   Vec            ivec(blckdim)
+   PetscInt       i
+   PetscInt       indx(dim1)
+   PetscReal      ftmp(dim1)
+   PetscErrorCode ierr
+
+   indx=indx1
+   ftmp=vec
+   call vecsetvalues(ivec(i),dim1,indx,ftmp,INSERT_VALUES,ierr)
+   
+   call vecassemblybegin(ivec(i),ierr)
+   call vecassemblyend(ivec(i),ierr)
+
+   return
+
+ end subroutine setvec
 
 !#######################################################################

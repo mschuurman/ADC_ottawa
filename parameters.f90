@@ -17,13 +17,13 @@ module parameters
 !!$occNum - real*8 array(nBas) containing MO's occupation numbers 
 !!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements 
   
-  integer*4 :: nelec,nIrr,nBas,nCen
-  integer :: nOcc,nVirt
-  real(d) :: Ehf
-  real(d) :: E_MP2
+  integer*4                            :: nelec,nIrr,nBas,nCen
+  integer                              :: nOcc,nVirt
+  real(d)                              :: Ehf
+  real(d)                              :: E_MP2
   integer*4, dimension(:), allocatable :: orbSym
-  character*2,dimension(3)          :: labSym
-  real(d), dimension(:), allocatable :: e,occNum
+  character*2,dimension(3)             :: labSym
+  real(d), dimension(:), allocatable   :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
   real(d), dimension(:,:), allocatable :: density_matrix
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
@@ -62,25 +62,32 @@ module parameters
 !!$integer array(1:lmain) stvc_lbl  - Damit wirder der Lanc-Startblock festgelegt
 !!$integer info if 1 stops execution after printing the configuration tables
 !!$integer ninista gives the number of the fanostate among davidson eigenvectors
-  logical      :: debug
-  character(1) :: tranmom,tranflag,tranmom2
-  character(4) :: chrun
-  character(4) :: chrun2
-  character(4) :: WHAT
-  integer  :: matvec
-  character(36) :: lancname,davname
-  integer :: hinit,nirrep,nirrep2,idiag,fdiag,method,fmethod,davstates,lancstates,stiprilev,numinista,norder,info,statenumber,denord
-  integer, parameter :: nhcentre=40
-  integer, dimension(0:nhcentre) ::  hcentre
-  real(d) :: minc,mspacewi,mspacewf,eupper,elower
-  real(d) :: dlim
+
+!!$logical ladc1guess - greater than zero if the initial vectors for the Davidson diagonalisation 
+!!                      are to be generated from an ADC(1) calculation
+
+  logical                            :: debug
+  character(1)                       :: tranmom,tranflag,tranmom2
+  character(4)                       :: chrun
+  character(4)                       :: chrun2
+  character(4)                       :: WHAT
+  integer                            :: matvec
+  character(36)                      :: lancname,davname
+  integer                            :: hinit,nirrep,nirrep2,idiag,fdiag,method,&
+                                        fmethod,davstates,lancstates,stiprilev,&
+                                        numinista,norder,info,statenumber,denord
+  integer, parameter                 :: nhcentre=40
+  integer, dimension(0:nhcentre)     ::  hcentre
+  real(d)                            :: minc,mspacewi,mspacewf,eupper,elower
+  real(d)                            :: dlim
   integer, dimension(:), allocatable :: roccnum
-  integer :: mgvdim
+  integer                            :: mgvdim
   real(d), dimension(:), allocatable :: mgvec
-  integer, dimension(8,8) :: MT
-  logical :: readband
-  integer, dimension(400) :: stvc_lbl
-  integer :: ninista
+  integer, dimension(8,8)            :: MT
+  logical                            :: readband
+  integer, dimension(400)            :: stvc_lbl
+  integer                            :: ninista
+  logical                            :: ladc1guess
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
@@ -100,31 +107,30 @@ module parameters
 !!$**********Lanczos Parameters********************
 !!$************************************************  
 
-  character*4 :: mtxidl
-  integer :: ncycles,maxmem,memx,lmain
-  integer :: mode,nprint
-  integer :: maxiter
+  character*4           :: mtxidl
+  integer               :: ncycles,maxmem,memx,lmain
+  integer               :: mode,nprint
+  integer               :: maxiter
   integer, dimension(2) :: iparm
-  real(d) :: wthr
+  real(d)               :: wthr
   real(d), dimension(2) :: erange
-  real(d) :: unit
-  real(d),dimension(5) :: fparm
+  real(d)               :: unit
+  real(d),dimension(5)  :: fparm
 
 !!$************************************************
 !!$**********Davidson Parameters********************
 !!$************************************************  
 
   character*4 :: mtxidd
-  integer :: dmain
-  logical :: myb0,transp
+  integer     :: dmain
+  logical     :: myb0,transp
   character*2 :: GO
   character*3 :: POLARIZATION
 
-
-INTEGER :: NSYMA
-INTEGER :: NSYMA_PROP
-INTEGER :: HAM_PIECES
-INTEGER :: KLPDTOT
+INTEGER                            :: NSYMA
+INTEGER                            :: NSYMA_PROP
+INTEGER                            :: HAM_PIECES
+INTEGER                            :: KLPDTOT
 integer, dimension(:), allocatable :: SYM_MAP
 integer, dimension(:), allocatable :: DIM_PROP
 integer, dimension(:), allocatable :: NDIV
@@ -143,13 +149,8 @@ integer, dimension(:), allocatable :: NREC_VECTOR
 integer, dimension(:), allocatable :: NRECTOT_VECT
 integer, dimension(:), allocatable :: NREC_VECTOR_BIS
 integer, dimension(:), allocatable :: RECINI_VECT
-integer, dimension(3) :: DIPOLESYM
-REAL*8 , dimension(3) :: ELECTRIC_FIELD
-integer :: CHECK_dip
-
-
-
-
-
+integer, dimension(3)              :: DIPOLESYM
+REAL*8 , dimension(3)              :: ELECTRIC_FIELD
+integer                            :: CHECK_dip
 
 end module parameters

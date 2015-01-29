@@ -71,7 +71,7 @@
 !-----------------------------------------------------------------------
 ! Enter block-Davidson routine
 !-----------------------------------------------------------------------
-         call davidson_diag(dmain,ndm,davstates,davname)
+         call davidson_diag(dmain,ndm,davstates,davname,ladc1guess)
 
 !!-----------------------------------------------------------------------
 !! The initial state correpsonds to the unit vec in the direction iv, 
