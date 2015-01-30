@@ -3,16 +3,43 @@
    use parameters
    implicit none
    integer,intent(in) :: r,s,u,v
+   integer            :: r_alpha,s_alpha,u_alpha,v_alpha
    real(kind=8)            :: vpqrs
 
    ! we're going to hack this a bit. I think this code assumes spatial orbitals.
    ! Given our orbitals ordering, and assuming alpha = beta spatial orbitals
    ! (i.e. rhf), we should pull out the odd indices corresponding to the
    ! alpha spin orbitals. This is easily changed if need be
-   vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)      
+
+   ! ALSO: these are in "chemist's" notation (see Szabo&Ostlund), first two
+   ! indices are r1, second two indices are r2 -- need to check if this is
+   ! consistent with rest of the code. If not, we can change definition of
+   ! r_alpha, s_alpha, etc.
+   r_alpha = 2*r - 1
+   s_alpha = 2*s - 1
+   u_alpha = 2*u - 1
+   v_alpha = 2*v - 1
+   vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)      
 
    return
  end function vpqrs
+
+ ! 
+ ! A little hack-y, but temporary for debugging purposes. Simply return the
+ ! value of the integral buffer using the native spin-indices.
+ !
+ function vpqrs_spin(r,s,u,v)
+   use parameters
+   implicit none
+   integer,intent(in) :: r,s,u,v
+   real(kind=8)            :: vpqrs_spin
+
+   vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+
+   return
+ end function vpqrs_spin
+
+
 
  subroutine errmsg(message)
   implicit none
@@ -155,7 +182,9 @@
 
  ! 
  ! load MO integrals
- ! 
+ ! Jan. 30, 2015 -- assume we are working with RHF reference in a basis of
+ !                  spatial orbitals.  This really only effects vpqrs...
+ !
  subroutine load_mo_integrals(gam_info)
   use accuracy
   use parameters
@@ -175,7 +204,7 @@
   real(xrk), dimension(  gam_info%nbasis,  gam_info%nvectors) :: mos
   character(len=clen)                                         :: mo_mode,ao_mode
   integer                                                     :: a,i,j,nvec,nmo,nao
-  real(d)                                                     :: vpqrs
+  real(d)                                                     :: vpqrs,vpqrs_spin
   real(xrk)                                                   :: xyz(3), q, ov, eps, refval, e1,e2, nuc_repulsion
 
   eps  = 1.d-5
@@ -256,7 +285,7 @@
   sum_row: do i = 1,nmo
    sum_col: do j = 1,nmo
     sum_orb: do a = 1,nelec
-     fmo_spin(i,j) = fmo_spin(i,j) + vpqrs(i,j,a,a) - vpqrs(i,a,j,a)
+     fmo_spin(i,j) = fmo_spin(i,j) + vpqrs_spin(i,j,a,a) - vpqrs_spin(i,a,j,a)
     enddo sum_orb
    enddo sum_col
   enddo sum_row
@@ -274,13 +303,13 @@
    enddo scan_col
   enddo scan_row
 
-  ! Compute HF energy and print
+  ! Compute HF energy and print, using spatial orbitals
   e1 = 0._xrk
   e2 = 0._xrk
-  sum_i: do i = 1,nelec
-   e1 = e1 + hmo_spin(i,i)
-   sum_j: do j = 1,nelec
-    e2 = e2 + 0.5*(vpqrs(i,i,j,j) - vpqrs(i,j,i,j))
+  sum_i: do i = 1,nelec/2
+   e1 = e1 + 2.*hmo_spin(2*i-1,2*i-1)
+   sum_j: do j = 1,nelec/2
+    e2 = e2 + 2.*vpqrs(i,i,j,j) - vpqrs(i,j,i,j)
    enddo sum_j
   enddo sum_i
   
