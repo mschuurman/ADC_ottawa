@@ -289,7 +289,7 @@ ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        end do
 !!!!!! end of the first i cycle: the first travec element has been computed!!!!!
 
-       write(6,*),i,travec(i)
+       write(6,*),i,ndim1f,travec(i)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     end do

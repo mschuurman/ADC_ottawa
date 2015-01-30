@@ -127,9 +127,9 @@
       integer*8 :: i,k
 
       do i=1,iblckdim
-!         k=stvc_lbl(i)
-!         kryvec(k,k)=1.0d0
-         kryvec(i,i)=1.0d0
+         k=stvc_lbl(i)
+         kryvec(k,k)=1.0d0
+!         kryvec(i,i)=1.0d0
       enddo
       
       return
@@ -141,6 +141,8 @@
 !#######################################################################
     
     subroutine run_band_lanczos
+
+      use parameters, only: lancstates
 
       implicit none
 
@@ -321,6 +323,7 @@
 ! or the Krylov sequence has been exhausted.
 !-----------------------------------------------------------------------
 20    continue
+      lancstates=j
       close(lanunit)
 
 !-----------------------------------------------------------------------
@@ -329,13 +332,6 @@
 !-----------------------------------------------------------------------
       call lanczos_pseudospec(cblckdim,prtmat(1:j,1:j),j,ndfl,&
            lanunit,matdim)
-
-      
-      
-
-      
-      STOP
-
       
       return
 
@@ -472,9 +468,9 @@
          read(unit) hij(:),indxi(:),indxj(:),nlim
          do l=1,nlim           
             kvec(indxi(l))=&
-                 kvec(indxi(l))+hij(l)+lanvec(indxj(l),cblckdim+1)            
+                 kvec(indxi(l))+hij(l)*lanvec(indxj(l),cblckdim+1)            
             kvec(indxj(l))=&
-                 kvec(indxj(l))+hij(l)+lanvec(indxi(l),cblckdim+1)
+                 kvec(indxj(l))+hij(l)*lanvec(indxi(l),cblckdim+1)
          enddo
       enddo
 
@@ -588,10 +584,6 @@
 !-----------------------------------------------------------------------
       call calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
 
-!      do i=1,dim
-!         print*,i,eigval(i)
-!      enddo
-      
       return
 
     end subroutine lanczos_pseudospec
@@ -680,9 +672,13 @@
 
     subroutine calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
 
+      use constants
+      use parameters, only: lancname
+
       implicit none
 
-      integer*8                  :: lanunit,dim,matdim,ritzunit,i,k,m
+      integer                    :: i
+      integer*8                  :: lanunit,dim,matdim,ritzunit,k,m
       real*8, dimension(dim,dim) :: umat
       real*8, dimension(dim)     :: eigval
       real*8, dimension(matdim)  :: lvec,ritzvec
@@ -696,13 +692,14 @@
       open(lanunit,file='lanvecs',form='unformatted',status='old')
 
       ritzunit=lanunit+1
-      open(ritzunit,file='ritzvecs',form='unformatted',status='unknown')
+      open(ritzunit,file=lancname,access='sequential',&
+           form='unformatted',status='unknown')
 
 !-----------------------------------------------------------------------
 ! Calculate the Ritz vectors
 !-----------------------------------------------------------------------
       ! Loop over Ritz vectors
-      do i=1,dim           
+      do i=1,dim
          ritzvec=0.0d0
 
          ! Calculate the ith Ritz vector
@@ -720,7 +717,7 @@
            
          ! Write the current Ritz vector to file along with the
          ! corresponding Ritz value
-         write(ritzunit) eigval(i),ritzvec
+         write(ritzunit) i,eigval(i),ritzvec
          
       enddo
 

@@ -117,10 +117,10 @@ subroutine read_user()
 
   NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
-       eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
-       ladc1guess
+       eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM
+       
 
-  NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain
+  NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,ladc1guess
 
   hcentre(:)=-1
 
@@ -128,6 +128,7 @@ subroutine read_user()
   debug=.false.
 
   ladc1guess=.false.
+  davtol=1d-7
 
   READ(*,USER)
   READ(*,LNZLST)

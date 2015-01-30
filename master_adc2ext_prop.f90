@@ -540,7 +540,7 @@ write(*,*) 'I WILL PERFORM DAVIDSON ADC2 DIAGONALIZATION IN THE INITIAL SPACE'
    allocate(vec_init(ndim))
 ! DAVIDSON DIAGONALIZATION IN THE INITIAL SPACE
 !  call initial_diag (ninit,e_init,vec_init,noffd,nvec,davmem)
-   call  master_dav(ndim,noffd,'i')
+   call  master_dav(ndim,noffd,'i',ndims)
 ! Reading Davidson eigenvectors
    call readdavvc(davstates,enerdav,rvec)
 !!! DAVIDSON IN THE INITIAL SPACE PART !!!
@@ -790,7 +790,7 @@ write(*,*) 'I WILL PERFORM LANCZOS ADC2 DIAGONALIZATION IN THE FINAL SPACE'
    allocate(vec_init(ndim))
 ! DAVIDSON DIAGONALIZATION IN THE INITIAL SPACE
 !  call initial_diag (ninit,e_init,vec_init,noffd,nvec,davmem)
-   call  master_dav(ndim,noffd,'i')
+   call  master_dav(ndim,noffd,'i',ndims)
 ! Reading Davidson eigenvectors
    call readdavvc(davstates,ener,rvec)
 !!! DAVIDSON IN THE INITIAL SPACE PART !!!

@@ -2,7 +2,10 @@
 ! davidson_diag: SLEPc block-Davidson eigensolver
 !#######################################################################
 
- subroutine davidson_diag(blckdim,matdim,davstates,davname,ladc1guess)
+ subroutine davidson_diag(blckdim,matdim,davstates,davname,ladc1guess,&
+      ndms)
+
+   use parameters, only: davtol,maxiter
 
    use constants
 
@@ -16,7 +19,7 @@
 #include "finclude/petscvec.h90"
 
    integer                             :: blckdim,matdim,davstates,&
-                                          maxbl,nrec,unit,num
+                                          maxbl,nrec,unit,num,ndms
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
    double precision, dimension(matdim) :: vec
@@ -64,6 +67,8 @@
                                     ! eigenvector
 
       PetscInt nz,nnz(matdim)       ! Number of non-zero elements per row
+
+      PetscInt  niter               ! Max. no. iterations
 
       write(6,'(/,2x,a,/)') &
            'Block-Davidson diagonalisation in the initial space'
@@ -168,12 +173,21 @@
       call epssetwhicheigenpairs(eps,EPS_SMALLEST_REAL,ierr)
 
 !-----------------------------------------------------------------------
+! Set the error tolerance and max. no. iterations
+!-----------------------------------------------------------------------
+      tol=davtol
+      niter=maxiter
+      call epssettolerances(eps,tol,niter,ierr)
+
+!-----------------------------------------------------------------------
 ! Set the initial vectors: Davidson diagonalisation is only ever used
 ! for the initial space, so the initial vectors will always correspond
 ! to a set of 1h1p unit vectors
 !-----------------------------------------------------------------------
+!      call guess_vecs_ondiag(blckdim,matdim,ivec)
+
       if (ladc1guess) then
-         call load_adc1_vecs(blckdim,matdim,ivec)
+         call load_adc1_vecs(blckdim,matdim,ivec,ndms)
       else
          nvecs=blckdim
          dim=matdim
@@ -234,18 +248,12 @@
          call VecGetArrayF90(xr,xx,ierr) 
          vec=xx         
          write(unit) num,val,vec(:)
-
          ! Calculate the relative error for the ith eigenpair
          call epscomputerelativeerror(eps,i,error,ierr)
-         print*,val,error
-
       enddo
 
       ! Close file
       close(unit)
-
-! Check against the results of full diagonalisation
-!      call full_diag(matdim)
 
 !-----------------------------------------------------------------------
 ! Free the workspace
@@ -262,8 +270,6 @@
       call slepcfinalize(ierr)
 
 !      call full_diag(matdim)
-
-      STOP
 
    return
 
@@ -588,7 +594,7 @@
 
 !#######################################################################
 
- subroutine load_adc1_vecs(blckdim,matdim,ivec)
+ subroutine load_adc1_vecs(blckdim,matdim,ivec,ndms)
 
    use constants
 
@@ -601,8 +607,8 @@
 #include "finclude/slepceps.h"
 #include "finclude/petscvec.h90"
 
-   integer                              :: blckdim,matdim,unit,&
-                                           dim1,curr
+   integer                              :: blckdim,matdim,unit,dim1,&
+                                           curr,ndms
    integer, dimension(:), allocatable   :: indx1
    real(d), dimension(:,:), allocatable :: vec1
 
@@ -653,7 +659,7 @@
    do i=1,nvecs
       curr=curr+1
       ! Create the ith initial vector (of dimension dim2=matdim)
-      call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)      
+      call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)
       ! Assign the components of the ith initial vector
       call setvec(i,ivec,dim1,vec1(:,curr),blckdim,indx1)
    enddo
@@ -720,5 +726,79 @@
    return
 
  end subroutine setvec
+
+!#######################################################################
+
+ subroutine guess_vecs_ondiag(blckdim,matdim,ivec)
+
+   use constants
+   use misc, only: dsortindxa1
+
+   implicit none
+
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscmat.h"
+#include "finclude/slepcsys.h"
+#include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
+
+   integer                    :: blckdim,matdim,unit,maxbl,nrec,k
+   integer, dimension(matdim) :: indx_hii
+   real(d), dimension(matdim) :: hii
+
+!-----------------------------------------------------------------------
+! PETSc/SLEPc variables
+!-----------------------------------------------------------------------
+   Vec            ivec(blckdim)
+   PetscInt       i,nvecs,dim
+   PetscInt       indx
+   PetscScalar    ftmp
+   PetscErrorCode ierr
+
+!-----------------------------------------------------------------------
+! Open file
+!-----------------------------------------------------------------------
+   unit=77
+   open(unit,file='hmlt.diai',status='old',access='sequential',&
+        form='unformatted')
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal Hamiltonian matrix elements
+!-----------------------------------------------------------------------
+   rewind(unit)
+   read(77) maxbl,nrec
+   read(77) hii
+
+!-----------------------------------------------------------------------
+! Determine the indices of the on-diagonal elements with the smallest
+! values
+!-----------------------------------------------------------------------
+   hii=abs(hii)   
+   call dsortindxa1('A',matdim,hii,indx_hii)
+
+   nvecs=blckdim
+   dim=matdim
+
+   do i=1,nvecs
+      ! Create the ith initial vector
+      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+      ! Assign the components of the ith initial vector
+      ftmp=1.0d0
+      ! PETSc indices start from zero...
+      indx=indx_hii(i)-1
+      call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
+      call vecassemblybegin(ivec(i),ierr)
+      call vecassemblyend(ivec(i),ierr)
+   enddo
+
+!-----------------------------------------------------------------------
+! Close file
+!-----------------------------------------------------------------------
+   close(unit)
+
+   return
+
+ end subroutine guess_vecs_ondiag
 
 !#######################################################################

@@ -432,7 +432,7 @@ subroutine master_adc2_prop()
 
 ! DAVIDSON DIAGONALIZATION IN THE INITIAL SPACE
 !  call initial_diag (ninit,e_init,vec_init,noffd,nvec,davmem)
-           call  master_dav(ndim,noffd,'i')
+           call  master_dav(ndim,noffd,'i',ndims)
 
 ! Reading Davidson eigenvectors
            call readdavvc(davstates,enerdav,rvec)
@@ -622,15 +622,10 @@ subroutine master_adc2_prop()
         allocate(vec_init(ndim))
 
         ! Block-Davidson diagonalisation
-        call master_dav(ndim,noffd,'i')
+        call master_dav(ndim,noffd,'i',ndims)
         
         ! Reading Davidson eigenvectors
         call readdavvc(davstates,ener,rvec)
-
-        do i=1,davstates
-           print*,i,ener(i)
-        enddo
-        STOP
 
         allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
 
@@ -826,8 +821,12 @@ subroutine master_adc2_prop()
 
            mtxidl='full'
            call master_lancdiag(ndimf,noffdf,'c')
+
            call cpu_time(time)
            write(6,*) 'Time=',time," s"
+           
+           if (allocated(enerf)) deallocate(enerf)
+           if (allocated(tmvec)) deallocate(tmvec)
            allocate(enerf(lancstates),tmvec(lancstates))
 
 !!$ ***lancstates is at most ncyclesXmain, usually we expect it to be lower than that***
@@ -841,6 +840,7 @@ subroutine master_adc2_prop()
            do i = 1 , nstates
               osc_strf(i) = 2._d/3._d * enerf(i) * tmvecf(i)**2
            end do
+
 
 !-----------------------------------------------------------------------
 ! FROM NOW ON IT IS THE SAME BUT WITH travec(:) INSTEAD OF mtm(:)

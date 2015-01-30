@@ -65,6 +65,7 @@ module parameters
 
 !!$logical ladc1guess - greater than zero if the initial vectors for the Davidson diagonalisation 
 !!                      are to be generated from an ADC(1) calculation
+!!$real*8 davtol - error tolerance for the block-Davidson eigensolver, default of 10^-8
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -88,6 +89,7 @@ module parameters
   integer, dimension(400)            :: stvc_lbl
   integer                            :: ninista
   logical                            :: ladc1guess
+  real(d)                            :: davtol
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

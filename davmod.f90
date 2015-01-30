@@ -5,7 +5,7 @@
   
     implicit none 
 
-    integer                            :: ndm,mem,main,nrec
+    integer                            :: ndm,ndms,mem,main,nrec
     integer*8                          :: noffdel
  
     real(d), dimension(:), allocatable :: offdiag,diag
@@ -17,9 +17,9 @@
 
 !#######################################################################
 
-    subroutine master_dav(ndim,noffd,flag)
+    subroutine master_dav(ndim,noffd,flag,ndims)
     
-      integer, intent(in)      :: ndim
+      integer, intent(in)      :: ndim,ndims
       integer*8, intent(in)    :: noffd
       character(1), intent(in) :: flag
 
@@ -34,6 +34,7 @@
 
 !-----------------------------------------------------------------------
 ! ndm:     Hamiltonian matrix dimension
+! ndms:    No. 1h1p ISs
 ! noffdel: No. non-zero off-diagonal Hamiltonian matrix elements ???
 !-----------------------------------------------------------------------
       noffdel=noffd
@@ -65,7 +66,7 @@
 !-----------------------------------------------------------------------
 ! Enter block-Davidson routine
 !-----------------------------------------------------------------------
-         call davidson_diag(dmain,ndm,davstates,davname,ladc1guess)
+         call davidson_diag(dmain,ndm,davstates,davname,ladc1guess,ndms)
 
 
       end if
