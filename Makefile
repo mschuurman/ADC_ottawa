@@ -64,7 +64,6 @@ ADC =   constants.o \
 	fspace2.o \
 	davmod.o \
 	band_lanczos.o \
-	lancdiag.o \
 	photoionisation.o \
 	Propagate.o \
 	master_adc1_prop.o \

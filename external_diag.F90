@@ -1,91 +1,4 @@
 !#######################################################################
-! blnczs: block-Lanczos eigensolver
-!#######################################################################
-
- subroutine blnczs(id,nd,main,ncycles,maxmem,memx,mode,nprint,wthr,erange,unit,iparm,fparm,var1,var2)
-
-   implicit none
-
-   integer       :: id,nd,main,ncycles,maxmem,memx,mode,nprint,wthr,unit,iparm(:),var1,var2
-   real          :: erange(:),fparm(:)
-   
-   return
- end subroutine blnczs
-
-!#######################################################################
-! dnvini: block-Davidson initialisation
-!
-! Currently written only for the case of in core storage of vectors
-!#######################################################################
-
- subroutine dnvini(rstr,ndm)
-
-   use parameters, only: dmain
-
-   implicit none
-
-   integer                    :: ndm
-   real, dimension(ndm,dmain) :: invec
-   logical                    :: rstr
-
-!-----------------------------------------------------------------------
-! If rstr=.true., read initial vectors from file
-! If rstr=.false., take initial vectors to be a collection of 1h1p unit
-! vectors
-!-----------------------------------------------------------------------
-   if (rstr) then
-      write(6,'(/,a,/)') "Write the davidson restart code!"
-      STOP
-   else
-      call dav_invecs(invec,ndm)
-   endif
-
-   return
- end subroutine dnvini
-
-!#######################################################################
-! dav_invecs: constructs the block-Davidson initial vectors - a set of
-!             N=dmain 1h1p unit vectors
-!#######################################################################
-
- subroutine dav_invecs(invec,ndm)
-   
-   use parameters, only: dmain
-
-   implicit none
-
-   integer                    :: ndm,i
-   real, dimension(ndm,dmain) :: invec
-
-
-   ! N.B., as we are using SLEPc for the Davidson diagonalisation, we
-   ! really should be passing this information straight to
-   ! EPSSetInitialSpace
-
-   invec=0.0d0
-   do i=1,dmain
-      invec(i,i)=1.0d0
-   enddo
-
-   return
-
- end subroutine dav_invecs
-
-!#######################################################################
-! dinvop: block-Davidson eigensolver
-!#######################################################################
-
- subroutine dinvop(ndm,dmain,mem,str,myb0,transp,rmtxhd,rmtxq1,rmtxhq1)
-
-   implicit none
-
-   integer       :: ndm,dmain,mem,myb0,transp,rmtxhd,rmtxq1,rmtxhq1
-   character*4   :: str
-   
-   return
- end subroutine dinvop
-
-!#######################################################################
 ! davidson_diag: SLEPc block-Davidson eigensolver
 !#######################################################################
 
@@ -110,9 +23,9 @@
    character(36)                       :: davname
    logical                             :: ladc1guess
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
       Mat         ham           ! Matrix whose eigenpairs are sought
       EPS         eps           ! Eigenproblem solver context 
       EPSType     tname,method  ! Eigenproblem type and method name
@@ -376,23 +289,23 @@
    integer                    :: matdim,maxbl,nrec
    real(d), dimension(matdim) :: hii
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    Mat            ham
    PetscErrorCode ierr
    PetscInt       dim1,dim2,indx,pmatindx
    PetscScalar    elval
    
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Read the diagonal elements of the Hamiltonian matrix
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    call rdham_diag(hii,matdim,maxbl,nrec)
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Pass the diagonal elements of the Hamiltonian matrix to
 ! matsetvalues
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    dim1=1
    dim2=1
    do indx=1,matdim
@@ -621,9 +534,9 @@
    real(d), dimension(:), allocatable :: hij
    integer, dimension(:), allocatable :: indxi,indxj
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    PetscInt nnz(matdim)       ! Number of non-zero elements per row
 
 !-----------------------------------------------------------------------
@@ -693,53 +606,61 @@
    integer, dimension(:), allocatable   :: indx1
    real(d), dimension(:,:), allocatable :: vec1
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    Vec            ivec(blckdim)
    PetscInt       i,nvecs,dim2
    PetscScalar    ftmp
    PetscErrorCode ierr
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Open ADC(1) vector file
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    unit=225
    open(unit,file='adc1_vecs',form='unformatted',status='old')
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Read ADC(1) eigenvectors and set initial Davidson vectors
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    read(unit) dim1
- 
    allocate(vec1(dim1,dim1))
    allocate(indx1(dim1))
 
    rewind(unit)
    read(unit) dim1,vec1
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Set the initial Davidson vectors
-!----------------------------------------------------------------      
+!-----------------------------------------------------------------------
+
+   ! Set the indices of the elements to be inserted into the PETSc
+   ! vectors, taking into account that PETSc vector indices start from 
+   ! zero
    do i=1,dim1
       indx1(i)=i-1
    enddo
 
+   ! Set the PETSc integers corresponding to the no. starting vectors
+   ! and the dimension of these vectors
    nvecs=blckdim
    dim2=matdim
 
+   ! Loop over the starting vectors, such that the ith vector
+   ! corresponds to a direct sum of the ith ADC(1) eigenvector and
+   ! a zero vector in the space spanned by the 2h2p states
    curr=0
    do i=1,nvecs
       curr=curr+1
-      ! Create the ith initial vector
+      ! Create the ith initial vector (of dimension dim2=matdim)
       call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)      
       ! Assign the components of the ith initial vector
       call setvec(i,ivec,dim1,vec1(:,curr),blckdim,indx1)
    enddo
 
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
 ! Close ADC(1) vector file
-!----------------------------------------------------------------
+!-----------------------------------------------------------------------
    close(unit)
 
    return
@@ -771,10 +692,28 @@
    PetscReal      ftmp(dim1)
    PetscErrorCode ierr
 
+!-----------------------------------------------------------------------
+! Copy the index and element value arrays to their PETSc counterparts
+!-----------------------------------------------------------------------
    indx=indx1
    ftmp=vec
-   call vecsetvalues(ivec(i),dim1,indx,ftmp,INSERT_VALUES,ierr)
-   
+
+!-----------------------------------------------------------------------
+! Insert the element values into the ith PETSc starting vector
+!
+! Note that the only reason we (superfluously) call this subroutine is
+! the inability to dynamicall allocate PETSc arrays, and that with the
+! current implementation we do not know in advance the dimension of the
+! ADC(1) eigenvectors in subroutine load_adc1_vecs
+! 
+! However, this could be easily remedied in the future by passing 
+! kqp(1,0) to load_adc1_vecs
+!-----------------------------------------------------------------------
+   call vecsetvalues(ivec(i),dim1,indx,ftmp,INSERT_VALUES,ierr)   
+
+!-----------------------------------------------------------------------
+! Assemble the ith PETSc starting vector
+!-----------------------------------------------------------------------
    call vecassemblybegin(ivec(i),ierr)
    call vecassemblyend(ivec(i),ierr)
 
