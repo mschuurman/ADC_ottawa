@@ -159,6 +159,7 @@ c if the orthogonality is preserved for all orders, MAXORD is set to NPOL
              qoverlap=qoverlap+qpol(i,j)*qpol(i-1,j)*g_point(j)
           end do
           if (qabs(qoverlap).lt.1.q-50) qoverlap=1.q-50
+
 c          print*, i,qoverlap,qnorm
           if (qnorm/qabs(qoverlap).le.overmax) then
 c MAXORD=I-1 is appropriate since the polynomial failing 

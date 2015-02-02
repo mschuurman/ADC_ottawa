@@ -228,7 +228,6 @@
       call epsgetiterationnumber(eps,its,ierr)
       call epsgettolerances(eps,tol,maxit,ierr)
       write(6,'(/,x,a,x,i4,/)') 'Number of iterations:',its
-      
 
 !-----------------------------------------------------------------------
 ! Output the converged eigenpairs
@@ -250,6 +249,7 @@
          write(unit) num,val,vec(:)
          ! Calculate the relative error for the ith eigenpair
          call epscomputerelativeerror(eps,i,error,ierr)
+         print*,num,val
       enddo
 
       ! Close file
@@ -511,7 +511,8 @@
       STOP
    endif
 
-   do i=1,50
+   print*,
+   do i=1,15
       print*,i,eigval(i)*27.211
    enddo
 

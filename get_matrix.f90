@@ -61,8 +61,10 @@ contains
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
-          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-15_d) then
+!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
+          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-12_d) then
              write(6,*) "TDA matrix is not symmetric. Stopping now."
+             print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
              stop
           end if
        end do

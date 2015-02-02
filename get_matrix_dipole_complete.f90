@@ -67,11 +67,6 @@ contains
 !     end do
 !   end do
 
-
-
-
-
-
     travec(:)=0.0
 
 ! THE INDEX i RUNS IN THE 1H1P  BLOCK OF (FINAL) CONFIGURATIONS  
@@ -83,38 +78,38 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)             
-       
-         ar_offdiag_ij = 0.d0
+          
+          ar_offdiag_ij = 0.d0
 
-         ar_offdiag_ij = D2_6_1_ph_ph(inda,indapr,indk,indkpr)
-         ar_offdiag_ij = ar_offdiag_ij + D2_6_2_ph_ph(inda,indapr,indk,indkpr)
-         ar_offdiag_ij = ar_offdiag_ij + D2_6_3_ph_ph(inda,indapr,indk,indkpr)
-         ar_offdiag_ij = ar_offdiag_ij + D2_6_4_ph_ph(inda,indapr,indk,indkpr)
-         ar_offdiag_ij = ar_offdiag_ij + D2_7_1_ph_ph(inda,indapr,indk,indkpr)
-         ar_offdiag_ij = ar_offdiag_ij + D2_7_2_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = D2_6_1_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = ar_offdiag_ij + D2_6_2_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = ar_offdiag_ij + D2_6_3_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = ar_offdiag_ij + D2_6_4_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = ar_offdiag_ij + D2_7_1_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij = ar_offdiag_ij + D2_7_2_ph_ph(inda,indapr,indk,indkpr)
 
-    if(indk .eq. indkpr) then
-                   ar_offdiag_ij = ar_offdiag_ij + D0_1_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_1_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_2_1_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_2_2_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_3_1_ph_ph(inda,indapr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_3_2_ph_ph(inda,indapr)
-    end if
+          if(indk .eq. indkpr) then
+             ar_offdiag_ij = ar_offdiag_ij + D0_1_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_1_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_2_1_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_2_2_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_3_1_ph_ph(inda,indapr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_3_2_ph_ph(inda,indapr)
+          end if
 
-    if(inda .eq. indapr) then
-                   ar_offdiag_ij = ar_offdiag_ij + D0_2_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_4_1_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_4_2_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_5_1_ph_ph(indk,indkpr)
-                   ar_offdiag_ij = ar_offdiag_ij + D2_5_2_ph_ph(indk,indkpr)
-    end if
+          if(inda .eq. indapr) then
+             ar_offdiag_ij = ar_offdiag_ij + D0_2_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_4_1_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_4_2_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_5_1_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + D2_5_2_ph_ph(indk,indkpr)
+          end if
 
 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
        end do
 
@@ -123,30 +118,30 @@ contains
        do j=dim_count+1,dim_count+kpq(2,0)
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
  
-ar_offdiag_ij = 0.d0
+          ar_offdiag_ij = 0.d0
 
- if((indk .eq. indkpr).and. (inda .eq. indapr))&
-ar_offdiag_ij = D5_1_ph_2p2h(inda,indk,indbpr,indlpr) + D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          if((indk .eq. indkpr).and. (inda .eq. indapr))&
+               ar_offdiag_ij = D5_1_ph_2p2h(inda,indk,indbpr,indlpr) + D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = ar_offdiag_ij + D5_2_ph_2p2h(inda,indk,indbpr,indkpr) + D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = ar_offdiag_ij + D5_2_ph_2p2h(inda,indk,indbpr,indkpr) + D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D5_3_ph_2p2h(inda,indk,indapr,indlpr) + D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk .eq. indlpr)  .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D5_4_ph_2p2h(inda,indk,indapr,indkpr) + D5_8_ph_2p2h(inda,indk,indapr,indkpr)
 
-if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D5_3_ph_2p2h(inda,indk,indapr,indlpr) + D5_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-if((indk .eq. indlpr)  .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D5_4_ph_2p2h(inda,indk,indapr,indkpr) + D5_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-if(inda .eq. indapr)&
-ar_offdiag_ij = ar_offdiag_ij + D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-if(inda .eq. indbpr)&
-ar_offdiag_ij = ar_offdiag_ij + D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-if(indk .eq. indkpr)&
-ar_offdiag_ij = ar_offdiag_ij + D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-if(indk .eq. indlpr)&
-ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          if(inda .eq. indapr)&
+               ar_offdiag_ij = ar_offdiag_ij + D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          if(inda .eq. indbpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          if(indk .eq. indkpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          if(indk .eq. indlpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
        end do
     
@@ -156,31 +151,31 @@ ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        do j=dim_count+1,dim_count+kpq(3,0)
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
 
-ar_offdiag_ij = 0.d0
+          ar_offdiag_ij = 0.d0
 
- if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = D4_1_ph_2p2h(inda,indk,indbpr,indlpr) + D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = D4_1_ph_2p2h(inda,indk,indbpr,indlpr) + D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = ar_offdiag_ij + D4_2_ph_2p2h(inda,indk,indbpr,indkpr) + D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          
+          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D4_3_ph_2p2h(inda,indk,indapr,indlpr) + D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D4_4_ph_2p2h(inda,indk,indapr,indkpr) + D4_8_ph_2p2h(inda,indk,indapr,indkpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = ar_offdiag_ij + D4_2_ph_2p2h(inda,indk,indbpr,indkpr) + D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
 
-if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D4_3_ph_2p2h(inda,indk,indapr,indlpr) + D4_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D4_4_ph_2p2h(inda,indk,indapr,indkpr) + D4_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-
-if(inda .eq. indapr)&
-ar_offdiag_ij = ar_offdiag_ij + D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-if(inda .eq. indbpr)&
-ar_offdiag_ij = ar_offdiag_ij + D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-if(indk .eq. indkpr)&
-ar_offdiag_ij = ar_offdiag_ij + D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-if(indk .eq. indlpr)&
-ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          if(inda .eq. indapr)&
+               ar_offdiag_ij = ar_offdiag_ij + D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          if(inda .eq. indbpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          if(indk .eq. indkpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          if(indk .eq. indlpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
        end do
     
@@ -190,31 +185,31 @@ ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        do j=dim_count+1,dim_count+kpq(4,0)
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
  
-ar_offdiag_ij = 0.d0
+          ar_offdiag_ij = 0.d0
 
- if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = D3_1_ph_2p2h(inda,indk,indbpr,indlpr) + D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = D3_1_ph_2p2h(inda,indk,indbpr,indlpr) + D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = ar_offdiag_ij + D3_2_ph_2p2h(inda,indk,indbpr,indkpr) + D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = ar_offdiag_ij + D3_2_ph_2p2h(inda,indk,indbpr,indkpr) + D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
 
-if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D3_3_ph_2p2h(inda,indk,indapr,indlpr) + D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D3_3_ph_2p2h(inda,indk,indapr,indlpr) + D3_7_ph_2p2h(inda,indk,indapr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D3_4_ph_2p2h(inda,indk,indapr,indkpr) + D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D3_4_ph_2p2h(inda,indk,indapr,indkpr) + D3_8_ph_2p2h(inda,indk,indapr,indkpr)
 
+          
+          if(inda .eq. indapr)&
+               ar_offdiag_ij = ar_offdiag_ij + D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          if(inda .eq. indbpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          if(indk .eq. indkpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          if(indk .eq. indlpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
-if(inda .eq. indapr)&
-ar_offdiag_ij = ar_offdiag_ij + D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-if(inda .eq. indbpr)&
-ar_offdiag_ij = ar_offdiag_ij + D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-if(indk .eq. indkpr)&
-ar_offdiag_ij = ar_offdiag_ij + D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-if(indk .eq. indlpr)&
-ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
        end do
        
@@ -224,32 +219,32 @@ ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        do j=dim_count+1,dim_count+kpq(5,0)
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
 
-ar_offdiag_ij = 0.d0
+          ar_offdiag_ij = 0.d0
 
 
-  if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = D1_1_ph_2p2h(inda,indk,indbpr,indlpr) + D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = D1_1_ph_2p2h(inda,indk,indbpr,indlpr) + D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = ar_offdiag_ij + D1_2_ph_2p2h(inda,indk,indbpr,indkpr) + D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = ar_offdiag_ij + D1_2_ph_2p2h(inda,indk,indbpr,indkpr) + D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
 
-if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D1_3_ph_2p2h(inda,indk,indapr,indlpr) + D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D1_3_ph_2p2h(inda,indk,indapr,indlpr) + D1_7_ph_2p2h(inda,indk,indapr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D1_4_ph_2p2h(inda,indk,indapr,indkpr) + D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D1_4_ph_2p2h(inda,indk,indapr,indkpr) + D1_8_ph_2p2h(inda,indk,indapr,indkpr)
 
 
-if(inda .eq. indapr)&
-ar_offdiag_ij = ar_offdiag_ij + D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-if(inda .eq. indbpr)&
-ar_offdiag_ij = ar_offdiag_ij + D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-if(indk .eq. indkpr)&
-ar_offdiag_ij = ar_offdiag_ij + D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-if(indk .eq. indlpr)&
-ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          if(inda .eq. indapr)&
+               ar_offdiag_ij = ar_offdiag_ij + D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          if(inda .eq. indbpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          if(indk .eq. indkpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          if(indk .eq. indlpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
        end do
 
@@ -259,31 +254,31 @@ ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        do j=dim_count+1,dim_count+kpq(5,0)
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
  
-ar_offdiag_ij = 0.d0
+          ar_offdiag_ij = 0.d0
 
- if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = D2_1_ph_2p2h(inda,indk,indbpr,indlpr) + D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = D2_1_ph_2p2h(inda,indk,indbpr,indlpr) + D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_2p2h(inda,indk,indbpr,indkpr) + D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
+               ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_2p2h(inda,indk,indbpr,indkpr) + D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
 
-if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_2p2h(inda,indk,indapr,indlpr) + D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_2p2h(inda,indk,indapr,indlpr) + D2_7_ph_2p2h(inda,indk,indapr,indlpr)
 
-if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_2p2h(inda,indk,indapr,indkpr) + D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
+               ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_2p2h(inda,indk,indapr,indkpr) + D2_8_ph_2p2h(inda,indk,indapr,indkpr)
 
 
-if(inda .eq. indapr)&
-ar_offdiag_ij = ar_offdiag_ij + D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-if(inda .eq. indbpr)&
-ar_offdiag_ij = ar_offdiag_ij + D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-if(indk .eq. indkpr)&
-ar_offdiag_ij = ar_offdiag_ij + D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-if(indk .eq. indlpr)&
-ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          if(inda .eq. indapr)&
+               ar_offdiag_ij = ar_offdiag_ij + D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          if(inda .eq. indbpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          if(indk .eq. indkpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          if(indk .eq. indlpr)&
+               ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        end do

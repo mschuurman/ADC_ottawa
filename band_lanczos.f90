@@ -30,7 +30,7 @@
     integer*8                            :: matdim,iblckdim,cblckdim,&
                                             maxit,ndfl,lanunit,nnzrtd
     integer*8, dimension(:), allocatable :: indxdfl
-    real*8, parameter                    :: dfltol=1e-5
+    real*8, parameter                    :: dfltol=1e-6
     real*8, dimension(:,:), allocatable  :: kryvec,lanvec
     logical(kind=4)                      :: lex
     
@@ -128,8 +128,7 @@
 
       do i=1,iblckdim
          k=stvc_lbl(i)
-         kryvec(k,k)=1.0d0
-!         kryvec(i,i)=1.0d0
+         kryvec(k,i)=1.0d0
       enddo
       
       return
@@ -243,7 +242,6 @@
 !-----------------------------------------------------------------------
 ! Calculate the j+pc'th Krylov vector
 !-----------------------------------------------------------------------
-!      kryvec(:,cblckdim+1)=matmul(mat,lanvec(:,cblckdim+1))
       kryvec(:,cblckdim+1)=hxlanvec()
 
 !-----------------------------------------------------------------------
@@ -310,8 +308,7 @@
 !-----------------------------------------------------------------------
 ! Write the jth Lanczos vector to file
 !-----------------------------------------------------------------------
-      call wrlanvec(j,lanunit,lanvec(:,cblckdim+1),matdim,&
-           maxit*iblckdim)
+      call wrlanvec(j,lanunit,lanvec(:,cblckdim+1),matdim)
 
 !-----------------------------------------------------------------------
 ! Goto the next iteration if we haven't reached the max. no. vectors
@@ -327,12 +324,25 @@
       close(lanunit)
 
 !-----------------------------------------------------------------------
+! Deallocate Krylov and Lanczos vector arrays now that they are no
+! longer needed
+!-----------------------------------------------------------------------
+      deallocate(kryvec)
+      deallocate(lanvec)
+
+!      call chkortho(j,matdim)
+!      STOP
+
+!-----------------------------------------------------------------------
 ! Calculate the Lanczos pseudospectrum from the jth-order projection
 ! of the Hamiltonian onto the Lanczos basis
 !-----------------------------------------------------------------------
       call lanczos_pseudospec(cblckdim,prtmat(1:j,1:j),j,ndfl,&
-           lanunit,matdim)
+           lanunit,matdim,iblckdim)
       
+
+      STOP
+
       return
 
     end subroutine run_band_lanczos
@@ -430,7 +440,6 @@
     function hxlanvec() result(kvec)
 
       implicit none
-
       
       integer                            :: unit
       integer                            :: maxbl,nrec,nlim,i,k,l
@@ -490,14 +499,14 @@
 
       integer*8                 :: j,indx,lanunit,matdim,n,i
       real*8                    :: tkj
-      real*8, dimension(matdim) :: kvec,lvec
+      real*8, dimension(matdim) :: kvec,lvec,tmpvec
 
 !-----------------------------------------------------------------------
 ! Rewind Lanczos vector file to the vector of interest
 !-----------------------------------------------------------------------
         rewind(lanunit)
         do i=1,indx-1
-           read(lanunit)
+           read(lanunit) tmpvec
         enddo
 
 !-----------------------------------------------------------------------
@@ -510,7 +519,7 @@
 !-----------------------------------------------------------------------
         rewind(lanunit)
         do i=1,j-1
-           read(lanunit)
+           read(lanunit) tmpvec
         enddo
 
 !-----------------------------------------------------------------------
@@ -526,11 +535,11 @@
 
 !#######################################################################
 
-    subroutine wrlanvec(j,lanunit,lanvec,dim,ifinal)
+    subroutine wrlanvec(j,lanunit,lanvec,dim)
 
       implicit none
 
-      integer*8              :: j,lanunit,dim,ifinal
+      integer*8              :: j,lanunit,dim
       real*8, dimension(dim) :: lanvec
 
 !-----------------------------------------------------------------------
@@ -546,25 +555,21 @@
 !-----------------------------------------------------------------------
       write(lanunit) lanvec(:)
 
-!-----------------------------------------------------------------------
-! If this is the last iteration, then close the Lanczos vector file
-!-----------------------------------------------------------------------
-      if (j.eq.ifinal) then
-         close(lanunit)
-      endif
-
     end subroutine wrlanvec
 
 !#######################################################################
 
     subroutine lanczos_pseudospec(blckdim,matrix,dim,ndfl,lanunit,&
-         matdim)
+         matdim,iblckdim)
 
       implicit none
         
-      integer*8                  :: blckdim,dim,ndfl,lanunit,matdim,i
+      integer*8                  :: blckdim,dim,ndfl,lanunit,matdim,i,&
+                                    iblckdim
       real*8, dimension(dim,dim) :: matrix,umat
       real*8, dimension(dim)     :: eigval
+
+      real*8 :: t1,t2
 
 !-----------------------------------------------------------------------
 ! Diagonalise the projection of the Hamiltonian onto the space spanned
@@ -582,7 +587,17 @@
 !-----------------------------------------------------------------------
 ! Calculate and save to file the Ritz vectors
 !-----------------------------------------------------------------------
-      call calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
+!      call cpu_time(t1)
+!      call calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
+!      call cpu_time(t2)
+!      print*,"Old:",t2-t1
+!
+!      call cpu_time(t1)
+!      call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
+!      call cpu_time(t2)
+!      print*,"New:",t2-t1
+
+      call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
 
       return
 
@@ -730,6 +745,129 @@
       return
       
     end subroutine calc_ritzvecs
+
+!#######################################################################
+
+    subroutine calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
+
+      use constants
+      use parameters, only: lancname
+
+      implicit none
+
+      integer*8                            :: i,v,k,m,n,count,lanunit,&
+                                              dim,matdim,ritzunit,&
+                                              iblckdim,nblcks,last
+      real*8, dimension(dim,dim)           :: umat
+      real*8, dimension(dim)               :: eigval
+      real*8, dimension(matdim)            :: lvec
+      real*8, dimension(iblckdim+1,matdim) :: ritzvec
+
+!-----------------------------------------------------------------------
+! Open the Lanzcos and Ritz vector files
+!-----------------------------------------------------------------------
+      open(lanunit,file='lanvecs',form='unformatted',status='old')
+
+      ritzunit=lanunit+1
+      open(ritzunit,file=lancname,access='sequential',&
+           form='unformatted',status='unknown')
+
+!-----------------------------------------------------------------------
+! Calculate the Ritz vectors
+!-----------------------------------------------------------------------
+      ! Loop over blocks of Ritz vectors
+      nblcks=ceiling(real(dim)/real(iblckdim+1))
+      do i=1,nblcks-1
+         
+         ritzvec=0.0d0
+
+         ! Calculate the curent block of iblckdim+1 Ritz vectors
+         rewind(lanunit)
+         do k=1,dim ! Loop over Lanczos vectors
+            read(lanunit) lvec
+            ! The kth Lanczos vector contributes to all components
+            ! of the current block of Ritz vectors
+            count=0
+            do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+               count=count+1
+               do m=1,matdim
+                  ritzvec(m,count)=ritzvec(m,count)+lvec(m)*umat(k,v)
+               enddo
+            enddo
+         enddo
+
+         ! Write the current block of Ritz vectors to file along with
+         ! the corresponding Ritz values
+         count=0
+         do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+            count=count+1
+            write(ritzunit) v,eigval(v),ritzvec(:,count)
+        enddo
+
+      enddo
+      
+      ! Remaining n Ritz vectors from the incomplete block
+      n=dim-(iblckdim+1)*(nblcks-1)
+      ritzvec=0.0d0
+      rewind(lanunit)
+      do k=1,dim
+         read(lanunit) lvec
+         count=0
+         do v=dim-n,dim
+            count=count+1
+            do m=1,matdim
+               ritzvec(m,count)=ritzvec(m,count)+lvec(m)*umat(k,v)
+            enddo
+         enddo
+      enddo
+      count=0
+      do v=dim-n,dim
+         count=count+1
+         write(ritzunit) v,eigval(v),ritzvec(:,count)
+      enddo
+
+!-----------------------------------------------------------------------
+! Close the Lanczos and Ritz vector files
+!-----------------------------------------------------------------------
+      close(lanunit)
+      close(ritzunit)
+
+      return
+
+    end subroutine calc_ritzvecs2
+
+!#######################################################################
+
+    subroutine chkortho(dim,matdim)
+
+      implicit none
+
+      integer*8                     :: unit,dim,matdim,i,j
+      real*8, dimension(matdim,dim) :: lvec
+      real*8                        :: dp
+      real*8, parameter             :: tol=1d-3
+
+      lvec=0.0d0
+
+      unit=28
+      open(unit,file='lanvecs',form='unformatted',status='old')
+
+      do i=1,dim
+         read(unit) lvec(:,i)
+      enddo
+
+      do i=1,dim-1
+         do j=i+1,dim
+            dp=dot_product(lvec(:,i),lvec(:,j))
+            if (abs(dp).gt.tol) print*,i,j,dp
+         enddo
+      enddo
+
+      close(unit)
+
+      return
+
+    end subroutine chkortho
 
 !#######################################################################
 

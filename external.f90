@@ -19,7 +19,8 @@
    s_alpha = 2*s - 1
    u_alpha = 2*u - 1
    v_alpha = 2*v - 1
-   vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)      
+
+   vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)
 
    return
  end function vpqrs
