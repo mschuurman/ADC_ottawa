@@ -17,7 +17,7 @@ subroutine master_adc2_prop()
 
   integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
   integer                              :: i,j,ndim,ndims,ndimsf,nout,nstates,ndimf,&
-                                          ndimd,noutf
+                                          ndimd,noutf,itmp
   integer*8                            :: noffd,noffdf  
   integer                              :: k,l,m,n,k1,b1,b
 
@@ -268,7 +268,9 @@ subroutine master_adc2_prop()
 
            nout = 100
            write(6,*) "ADC2 diagonalization result in the INITIAL space"
-           call table2(ndim,nout,ener(1:nout),arr(:,1:nout),tmvec(:),osc_str(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndim,nout,ener(1:nout),arr(:,1:nout),tmvec(:),osc_str(:)&
+             ,kpq,itmp)
            write(6,*) ' sums calculated with respect to the ground state'
            call get_sigma(ndim,ener(:),os2cs*osc_str(:))
 
@@ -289,7 +291,9 @@ subroutine master_adc2_prop()
 
            nout = 100
            write(6,*) "ADC2 diagonalization result in the FINAL space"
-           call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:)&
+                ,kpq,itmp)
            write(6,*) ' sums calculated with respect to the ground state'
            call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
 
@@ -387,7 +391,9 @@ subroutine master_adc2_prop()
            end do
            write(6,*) "ADC2 diagonalization results and trans. mom. FROM THE CHOOSEN EXCITED INITIAL SPACE STATE, in the FINAL space"
 !!! call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
-           call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:)&
+                ,kpq,itmp)
            write(6,*) ' sums calculated with respect to the',statenumber,'initial excited state'
 !!! call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
            call get_sigma(ndimf,excit(:),os2cs*osc_strf(:))
@@ -451,7 +457,10 @@ subroutine master_adc2_prop()
            end do
 
            write(6,*) "ADC2 diagonalization result in the INITIAL space"
-           call table2(ndim,davstates,enerdav(1:davstates),rvec(:,1:davstates),tmvec(:),osc_str(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndim,davstates,enerdav(1:davstates),&
+                rvec(:,1:davstates),tmvec(:),osc_str(:),&
+                kpq,itmp)
            write(6,*) ' sums calculated with respect to the ground state'
            call get_sigma(ndim,enerdav(:),os2cs*osc_str(:))
 
@@ -473,13 +482,13 @@ subroutine master_adc2_prop()
 
            nout = 100
            write(6,*) "ADC2 diagonalization result in the FINAL space"
-           call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:)&
+             ,kpq,itmp)
            write(6,*) ' sums calculated with respect to the ground state'
            call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
 
            deallocate(mtmf)
-
-
 
 !-----------------------------------------------------------------------
 ! here we analyse the eigenvectors and determine the initial state
@@ -581,7 +590,9 @@ subroutine master_adc2_prop()
            end do
            write(6,*) "ADC2 diagonalization results and trans. mom. FROM THE CHOOSEN EXCITED INITIAL SPACE STATE, in the FINAL space"
 !!! call table2(ndimf,noutf,enerf(1:noutf),arrf(:,1:noutf),tmvecf(:),osc_strf(:))
-           call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:)&
+             ,kpq,itmp)
            write(6,*) ' sums calculated with respect to the',statenumber,'initial excited state'
 !!! call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
            call get_sigma(ndimf,excit(:),os2cs*osc_strf(:))
@@ -644,7 +655,11 @@ subroutine master_adc2_prop()
         end do
 
         write(6,*) "ADC2 diagonalization result in the INITIAL space"
-        call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),tmvec(1:davstates),osc_str(1:davstates))
+
+        itmp=1+nBas**2*4*nOcc**2
+        call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),&
+             tmvec(1:davstates),osc_str(1:davstates),&
+             kpq,itmp)
 
         write(6,*) ' sums calculated with respect to the ground state'
 !        call get_sigma(davstates,ener(:),os2cs*osc_str(:))
@@ -656,6 +671,7 @@ subroutine master_adc2_prop()
 !-----------------------------------------------------------------------
 ! INITIAL STATE VECTOR
 !-----------------------------------------------------------------------
+
         write(6,*) statenumber,'selected initial state has been obtained' 
         write(6,*) 'The initial state vector is the ', statenumber,'st one'
 

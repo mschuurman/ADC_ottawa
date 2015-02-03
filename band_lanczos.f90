@@ -148,10 +148,10 @@
       integer*8 :: i,j,n,k,kt,k0,indx,kcount,lcount
       real*8    :: norm,frac
       
-      write(6,'(/,70a)') ('-',i=1,70)
+      write(6,'(/,70a)') ('*',i=1,70)
       write(6,'(12x,a)') &
            'Band-Lanczos Diagonalisation in the Final Space'
-      write(6,'(70a,/)') ('-',i=1,70)
+      write(6,'(70a,/)') ('*',i=1,70)
       write(6,'(2x,a,x,i4,2x,a,x,i5,x,a,/)') 'A maximum of',&
            maxit,'Lanczos blocks will be generated (<=',&
            maxit*iblckdim,'vectors)'
@@ -340,6 +340,9 @@
       call lanczos_pseudospec(cblckdim,prtmat(1:j,1:j),j,ndfl,&
            lanunit,matdim,iblckdim)
       
+      write(6,'(/,2x,a,/)') 'End of the band-Lanczos routine'
+      write(6,'(70a,/)') ('*',i=1,70)
+
       return
 
     end subroutine run_band_lanczos
@@ -566,8 +569,6 @@
       real*8, dimension(dim,dim) :: matrix,umat
       real*8, dimension(dim)     :: eigval
 
-      real*8 :: t1,t2
-
 !-----------------------------------------------------------------------
 ! Diagonalise the projection of the Hamiltonian onto the space spanned
 ! by the Lanczos vectors.
@@ -575,6 +576,9 @@
 ! N.B., if ndfl=0, then we have a banded matrix and we can use a more
 !       efficient diagonalisation method.
 !-----------------------------------------------------------------------        
+      write(6,'(70a)') ('-',i=1,70)
+      write(6,'(/,2x,a)') 'Calculating the Lanczos state energies...'
+      
       if (ndfl.eq.0) then
          call diagmat_banded(blckdim,matrix,dim,umat,eigval)
       else
@@ -584,16 +588,7 @@
 !-----------------------------------------------------------------------
 ! Calculate and save to file the Ritz vectors
 !-----------------------------------------------------------------------
-!      call cpu_time(t1)
-!      call calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
-!      call cpu_time(t2)
-!      print*,"Old:",t2-t1
-!
-!      call cpu_time(t1)
-!      call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
-!      call cpu_time(t2)
-!      print*,"New:",t2-t1
-
+      write(6,'(/,2x,a,/)') 'Calculating the Lanczos state vectors...'
       call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
 
       return
@@ -756,10 +751,18 @@
       integer*8                            :: i,k,m,n,count,lanunit,&
                                               dim,matdim,ritzunit,&
                                               iblckdim,nblcks,last
+
+      integer*8                            :: blcksize
+
       real*8, dimension(dim,dim)           :: umat
       real*8, dimension(dim)               :: eigval
       real*8, dimension(matdim)            :: lvec
-      real*8, dimension(matdim,iblckdim+1) :: ritzvec
+!      real*8, dimension(matdim,iblckdim+1) :: ritzvec
+      real*8, dimension(:,:), allocatable :: ritzvec
+
+
+      blcksize=2*iblckdim+2
+      allocate(ritzvec(matdim,blcksize))
 
 !-----------------------------------------------------------------------
 ! Open the Lanzcos and Ritz vector files
@@ -774,19 +777,22 @@
 ! Calculate the Ritz vectors
 !-----------------------------------------------------------------------
       ! Loop over blocks of Ritz vectors
-      nblcks=ceiling(real(dim)/real(iblckdim+1))
+!      nblcks=ceiling(real(dim)/real(iblckdim+1))
+      nblcks=ceiling(real(dim)/real(blcksize))
+
       do i=1,nblcks-1
          
          ritzvec=0.0d0
 
-         ! Calculate the curent block of iblckdim+1 Ritz vectors
+         ! Calculate the curent block of 2*iblckdim+2 Ritz vectors
          rewind(lanunit)
          do k=1,dim ! Loop over Lanczos vectors
             read(lanunit) lvec
             ! The kth Lanczos vector contributes to all components
             ! of the current block of Ritz vectors
             count=0
-            do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+!            do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+            do v=blcksize*i-blcksize+1,blcksize*i
                count=count+1
                do m=1,matdim
                   ritzvec(m,count)=ritzvec(m,count)+lvec(m)*umat(k,v)
@@ -797,7 +803,8 @@
          ! Write the current block of Ritz vectors to file along with
          ! the corresponding Ritz values
          count=0
-         do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+!         do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
+         do v=blcksize*i-blcksize+1,blcksize*i
             count=count+1
             write(ritzunit) v,eigval(v),ritzvec(:,count)
          enddo
@@ -805,7 +812,8 @@
       enddo
       
       ! Remaining n Ritz vectors from the incomplete block
-      n=dim-(iblckdim+1)*(nblcks-1)
+!      n=dim-(iblckdim+1)*(nblcks-1)
+      n=dim-blcksize*(nblcks-1)
       ritzvec=0.0d0
       rewind(lanunit)
       do k=1,dim

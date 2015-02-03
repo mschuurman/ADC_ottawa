@@ -320,7 +320,8 @@ contains
 
 !!$-----------------------------------------------------------
 
-  subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str)
+  subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str,&
+       kpq,kpqdim2)
     
     integer, intent(in) :: ndim1,ndim2
     real(d), dimension(ndim2), intent(in) :: en,tmvec,osc_str
@@ -328,32 +329,130 @@ contains
 
     real(d), dimension(:), allocatable :: coeff
     integer, dimension(:), allocatable :: indx
-    integer :: i,j,nlim
+    integer :: i,j,nlim,k
+
+    integer                       :: kpqdim2,iout
+    integer, dimension(7,kpqdim2) :: kpq
 
 100 FORMAT(60("-"),/)    
 101 FORMAT(4(A10,2x),/)
 102 FORMAT(I10,x,"|",4(F10.5,2x),"|",x,5(F8.6,"(",I7,")",1x)) 
-
+    
     allocate(coeff(ndim1),indx(ndim1))
+    
     nlim=5
     if (nlim .gt. ndim1) nlim=ndim1
   
-    write(6,101) "Eigenval","a.u.","Ev","Trans.Mom."
+!    write(6,101) "Eigenval","a.u.","Ev","Trans.Mom."
     write(6,100)
+    
+    iout=127
+    open(iout,file='davstates.dat',form='formatted',status='unknown')
+
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
        call dsortindxa1("D",ndim1,coeff(:),indx(:))
-       
        coeff(:)=vspace(:,i)
-       write(6,102) i,en(i),en(i)*27.211396,tmvec(i),osc_str(i),(coeff(indx(j)),indx(j),j=1,nlim)
+!       write(6,102) i,en(i),en(i)*27.211396,tmvec(i),osc_str(i),(coeff(indx(j)),indx(j),j=1,nlim)
+       call wrstateinfo(i,indx,coeff,kpq,kpqdim2,en(i),tmvec(i),&
+            osc_str(i),ndim1,iout)
+    end do
 
-!!$       write(6,102) i,en(i),en(i)*27.211396,tmvec(i),(coeff(indx(j)),indx(j),j=1,5)
-    end do 
+    close(iout)
+    
 
     deallocate(coeff,indx)
 
   end subroutine table2
 
+!#######################################################################
+
+  subroutine wrstateinfo(i,indx,coeff,kpq,kpqdim2,en,tmvec,osc_str,&
+       ndim1,iout)
+
+    implicit none
+
+    integer                       :: i,k,ndim1,kpqdim2,ilbl,iout
+    integer, dimension(ndim1)     :: indx
+    integer, dimension(7,kpqdim2) :: kpq
+    real(d), dimension(ndim1)     :: coeff
+    real(d)                       :: en,tmvec,osc_str
+    real(d), parameter            :: tol=0.05d0
+
+    write(6,'(/,70a)') ('-',k=1,70)
+    write(6,'(2x,a,2x,i2)') 'Initial Space State Number',i
+    write(6,'(70a)') ('-',k=1,70)
+
+    write(iout,'(/,70a)') ('-',k=1,70)
+    write(iout,'(2x,a,2x,i2)') 'Initial Space State Number',i
+    write(iout,'(70a)') ('-',k=1,70)
+
+
+!-----------------------------------------------------------------------
+! Excitation energy
+!-----------------------------------------------------------------------
+    if (en*27.211d0.lt.10.0d0) then
+       write(6,'(2x,a,2x,F10.5)') &
+            'Excitation Energy (eV):',en*27.211d0
+       write(iout,'(2x,a,2x,F10.5)') &
+            'Excitation Energy (eV):',en*27.211d0
+    else
+       write(6,'(2x,a,3x,F10.5)') &
+            'Excitation Energy (eV):',en*27.211d0
+       write(iout,'(2x,a,3x,F10.5)') &
+            'Excitation Energy (eV):',en*27.211d0
+    endif
+
+!-----------------------------------------------------------------------
+! Transition dipole moment along the chosen direction
+!-----------------------------------------------------------------------
+    write(6,'(2x,a,F10.5)') 'Transition Dipole Moment:',tmvec
+    write(iout,'(2x,a,F10.5)') 'Transition Dipole Moment:',tmvec
+
+!-----------------------------------------------------------------------
+! Oscillator strength
+!-----------------------------------------------------------------------
+    write(6,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str
+    write(iout,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str
+
+!-----------------------------------------------------------------------
+! Dominant configurations
+!-----------------------------------------------------------------------
+    write(6,'(/,2x,a,/)') 'Dominant Configurations:'
+    write(6,'(2x,25a)') ('*',k=1,25)
+    write(6,'(3x,a)') 'j   k -> a  b    C_jkab'
+    write(6,'(2x,25a)') ('*',k=1,25)
+    write(iout,'(/,2x,a,/)') 'Dominant Configurations:'
+    write(iout,'(2x,25a)') ('*',k=1,25)
+    write(iout,'(3x,a)') 'j   k -> a  b    C_jkab'
+    write(iout,'(2x,25a)') ('*',k=1,25)
+
+    do k=1,50
+       ilbl=indx(k)
+       if (abs(coeff(ilbl)).ge.tol) then
+          if (kpq(4,ilbl).eq.-1) then
+             ! Single excitations
+             write(6,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+                  kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
+             write(iout,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+                  kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
+          else
+             ! Double excitations
+             write(6,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
+                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                  kpq(6,ilbl),coeff(ilbl)
+             write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
+                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                  kpq(6,ilbl),coeff(ilbl)
+          endif
+       endif
+    enddo
+
+    return
+
+  end subroutine wrstateinfo
+
+!#######################################################################
 
  subroutine mat_vec_multiply_SYM(ndim,A,vec,fin)
 

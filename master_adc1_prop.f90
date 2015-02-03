@@ -17,7 +17,7 @@ subroutine master_adc1_prop()
   integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
   integer :: i,j,ndim,ndims,ndimsf,nout,nstates,ndimf,ndimd,noutf
   integer*8 :: noffd,noffdf  
-  integer :: k,l,m,n,k1,b1,b
+  integer :: k,l,m,n,k1,b1,b,itmp
 
 
   real(d) :: time,enerstate
@@ -311,7 +311,9 @@ write(*,*) 'I WILL PERFORM FULL ADC1 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    nout = 100
    write(6,*) "ADC1 diagonalization result in the INITIAL space"
-   call table2(ndim,nout,ener(1:nout),arr(:,1:nout),tmvec(:),osc_str(:))
+   itmp=1+nBas**2*4*nOcc**2
+   call table2(ndim,nout,ener(1:nout),arr(:,1:nout),tmvec(:),osc_str(:),&
+        kpq,itmp)
    write(6,*) ' sums calculated with respect to the ground state'
    call get_sigma(ndim,ener(:),os2cs*osc_str(:))
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -342,7 +344,9 @@ write(*,*) 'I WILL PERFORM FULL ADC1 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    nout = 100
    write(6,*) "ADC1 diagonalization result in the FINAL space"
-   call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+   itmp=1+nBas**2*4*nOcc**2
+   call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:),&
+        kpq,itmp)
    write(6,*) ' sums calculated with respect to the ground state'
    call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -455,7 +459,9 @@ write(*,*) 'I WILL PERFORM FULL ADC1 DIAGONALIZATION IN THE FINAL SPACE'
    end do
     write(6,*) "ADC1 diagonalization results and trans. mom. FROM THE CHOOSEN EXCITED INITIAL SPACE STATE, in the FINAL space"
 !!! call table2(ndimf,nout,enerf(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
-    call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:))
+    itmp=1+nBas**2*4*nOcc**2
+    call table2(ndimf,nout,excit(1:nout),arrf(:,1:nout),tmvecf(:),osc_strf(:),&
+        kpq,itmp)
     write(6,*) ' sums calculated with respect to the',statenumber,'initial excited state'
 !!! call get_sigma(ndimf,enerf(:),os2cs*osc_strf(:))
     call get_sigma(ndimf,excit(:),os2cs*osc_strf(:))
