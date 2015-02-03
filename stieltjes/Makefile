@@ -23,7 +23,7 @@ CCOPTS  = -g -O0
 OBJECTS = qmath.o \
 	pythag_quad.o \
 	tql2_quad.o \
-        stieltjesmod.o \
+        globalmod.o \
 	stieltjes_s3_modified.o \
 	main_stieltjes.o 
 

@@ -1,3 +1,9 @@
+  module stieltjesmod
+
+    implicit none
+
+  contains
+
       subroutine stieltjes (num,e8,g8,printflag,overmax,filename,filint)
 ! Vitali Averbukh (2003). Comments to: vitali@tc.pci.uni-heidelberg.de
 ! This routine receives the sequence of the energy-gamma pairs and transforms it 
@@ -22,12 +28,12 @@
 ! length and velocity gauge. Filename must be given with quote marks
 ! either side
 
-        use stieltjesmod
+        use globalmod
         use qmath
      
         implicit none
 
-        integer :: num,npol
+        integer :: num,npol,iout
         integer :: maxord,ierr,imax,min,max,printflag
         integer :: k,n,i,j,ifail,converge,conv_max,iconv
 
@@ -45,8 +51,10 @@
         real*16                       :: e_min,e_max,bprod,asum,qnorm,qoverlap,overmax
         real*8, dimension(np)         :: e8,g8
         real*8, dimension(nmax)       :: e0,gamma
-        character*40                  :: filename,filint !max length of filename string is 40 
+        character(len=40)             :: filename,filint !max length of filename string is 40 
 
+! Create a directory to hold the xsec files for all orders
+        call makedir
 
 ! check the number of the input energy points 
         open(unit=2007,file=filename)
@@ -219,6 +227,10 @@
         write(2008,*) max
         do imax=min,max
 
+! Open new xsec file
+           call get_outname(imax)
+           open(iout,file=aout,form='formatted',status='unknown')
+
 ! fill the coefficients matrix
            do i=1,imax
               diag(i)=acoef(i)
@@ -258,9 +270,14 @@
              gamma(i)=(g_new(i+1)+g_new(i))/(2.d0*(e_new(i+1)-e_new(i)))
              write(2007,*) e0(i)*27.211396,gamma(i)
              write(2008,*) e0(i)*27.211396,gamma(i)
+             write(iout,*) e0(i)*27.211396,gamma(i)
          end do
 
+! Close current xsec file
+         close(iout)
+
       end do
+
       close(2007)
       close(2008)
       
@@ -268,3 +285,51 @@
     
     end subroutine stieltjes
 
+!#######################################################################
+
+    subroutine get_outname(i)
+
+      use globalmod
+
+      implicit none
+
+      integer :: i
+
+      aout=''
+      
+      if (i.lt.10) then
+         write(aout,'(a17,i1,a4)') 'xsec/xsec_order.0',i,'.dat'
+      else
+         write(aout,'(a16,i2,a4)') 'xsec/xsec_order.',i,'.dat'
+      endif
+
+      return
+
+    end subroutine get_outname
+
+!#######################################################################
+
+    subroutine makedir
+
+      implicit none
+      
+      logical(kind=4)   :: ldir
+      character(len=80) :: acmnd
+
+      inquire(file='xsec/.',exist=ldir)
+
+      if (ldir) then
+         acmnd='rm xsec/*.dat'
+         call system(acmnd)
+      else
+         acmnd='mkdir xsec'
+         call system(acmnd)
+      endif
+
+      return
+
+    end subroutine makedir
+
+!#######################################################################
+
+  end module stieltjesmod

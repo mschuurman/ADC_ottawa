@@ -1,5 +1,6 @@
       program dipole_calc
 
+        use globalmod
         use stieltjesmod
 
         implicit none
