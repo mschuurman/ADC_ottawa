@@ -876,22 +876,19 @@ contains
 
 !!!!!!!!!!!!!!  GET TRANSITION MOMENTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-
   subroutine get_tranmom_1(ndim,negvc,name,mtm,nstate,fen,tmvec,ndims)
     
-    integer, intent(in) :: ndim,negvc,ndims
-    integer, intent(out) :: nstate
-    real(d), dimension(ndim), intent(in) :: mtm 
+    integer, intent(in)                    :: ndim,negvc,ndims
+    integer, intent(out)                   :: nstate
+    real(d), dimension(ndim), intent(in)   :: mtm 
     real(d), dimension(negvc), intent(out) :: fen,tmvec
     
-    character(36), intent(in) :: name
+    character(36), intent(in)              :: name
 
-    integer :: i,j,num
-    real(d) :: enr,cntr
-    real(d), dimension(:), allocatable :: vec 
-    logical :: log1
+    integer                                :: i,j,num,k
+    real(d)                                :: enr,cntr
+    real(d), dimension(:), allocatable     :: vec 
+    logical                                :: log1
 
     INQUIRE(file=name,exist=log1)
     
@@ -903,69 +900,63 @@ contains
     allocate(vec(ndim))
     nstate=0
     cntr=0.0
-
+    
     if(dlim.lt.0.0) then
 
-    write(*,*) 'Take all states with 2h2p part greater than',-dlim
+       write(*,*) 'Take all states with 2h2p part greater than',-dlim
 
-    OPEN(unit=78,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-    do i=1,negvc
+       OPEN(unit=78,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
+       do i=1,negvc
 
-       read(78,END=78) num,enr,vec(:)
+          read(78,END=78) num,enr,vec(:)
 
-!       write(6,*) 'Read vector',num,enr
+          do j=1,ndims
+             cntr=cntr+vec(j)**2
+          end do
 
-        do j=1,ndims
-          cntr=cntr+vec(j)**2
-        end do
+          if(cntr.lt.-dlim) then
+             nstate=nstate+1
+             fen(nstate)=enr
+             tmvec(nstate)=tm(ndim,vec(:),mtm(:))
+          end if
 
-       if(cntr.lt.-dlim) then
-!        write(6,*) 'State',num,'taken'
-        nstate=nstate+1
-        fen(nstate)=enr
-        tmvec(nstate)=tm(ndim,vec(:),mtm(:))
-       end if
+          cntr=0.0
+       end do
 
-       cntr=0.0
-    end do
-78  CLOSE(78)
-    write(6,*) 'There are ',nstate,' energies and tran. moments'
+78     CLOSE(78)
+       write(6,*) 'There are ',nstate,' energies and tran. moments'
 
 
     else
 
-    write(*,*) 'Take all states with 1h1p part greater than',dlim
+       write(*,*) 'Take all states with 1h1p part greater than',dlim
     
-    OPEN(unit=77,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-    do i=1,negvc
+       OPEN(unit=77,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
 
-       read(77,END=77) num,enr,vec(:)
+       do i=1,negvc
 
-!       write(6,*) 'Read vector',num,enr
+          read(77,END=77) num,enr,vec(:)
 
+          do j=1,ndims
+             cntr=cntr+vec(j)**2
+          end do
 
-        do j=1,ndims
-          cntr=cntr+vec(j)**2
-        end do
+          if(cntr.gt.dlim) then
+             nstate=nstate+1
+             fen(nstate)=enr
+             tmvec(nstate)=tm(ndim,vec(:),mtm(:))
+          end if
 
-       if(cntr.gt.dlim) then
-!        write(6,*) 'State',num,'taken'
-        nstate=nstate+1   
-        fen(nstate)=enr
-        tmvec(nstate)=tm(ndim,vec(:),mtm(:))
-       end if
+          cntr=0.0
+       end do
 
-       cntr=0.0
-    end do
-77  CLOSE(77)
-    write(6,*) 'There are ',nstate,' energies and tran. moments'
+77     CLOSE(77)
+       write(6,*) 'There are ',nstate,' energies and tran. moments'
     
-    end if 
+    end if
     
        
   end subroutine get_tranmom_1
-
-
 
 !!$---------------------------------------------------------
 
@@ -1175,24 +1166,31 @@ contains
 
 
 !!$---------------------------------------------------------
+!!$ N.B., here ndim is the no. states
+!!$---------------------------------------------------------
 
   subroutine get_sigma(ndim,ener,sigmavec)
 
-    integer, intent(in) :: ndim
+    integer, intent(in)                  :: ndim
     real(d), dimension(ndim), intent(in) :: ener
     real(d), dimension(ndim), intent(in) :: sigmavec
-
-    integer :: i,nlimit,ncount
-    real(d) :: gamma0,ehole,oslimit
-    real(d), dimension(:), allocatable :: sgmvc_short,ener_short
-
+    
+    integer                              :: i,nlimit,ncount
+    real(d)                              :: gamma0,ehole,oslimit
+    real(d), dimension(:), allocatable   :: sgmvc_short,ener_short
+    
+    integer :: iout
 
     allocate(sgmvc_short(ndim),ener_short(ndim))
-    write(6,*) 'Running Stiltjes'
-    ehole=e(hinit)
     
+    write(6,*) 'Running Stiltjes'
+    
+    ehole=e(hinit)
     oslimit=1.e-8
     ncount=0
+
+! sgmvc_short: array of oscillator strengths (in Mb) that are greater than oslimit
+! ener_short:  array of corresponding state energies
     do i= 1,ndim
        if (sigmavec(i) .gt. oslimit) then
           ncount=ncount+1
@@ -1200,16 +1198,22 @@ contains
           ener_short(ncount)=ener(i)
        end if
     end do
+
     call get_sums(ncount,ener_short(1:ncount),sgmvc_short(1:ncount)/os2cs)
   
-       write(6,*) ncount,' states are to be sent to ST subroutine'
-       do i=1,ncount
-        write(6,*) ener_short(i),sgmvc_short(i)
-       end do
+
+    iout=112
+    open(iout,file='osc.dat',form='formatted',status='unknown')
+
+    write(6,*) ncount,' states are to be sent to ST subroutine'
+    do i=1,ncount
+       write(6,*) ener_short(i),sgmvc_short(i)
+       write(iout,'(2x,F20.15,2x,E21.15)') ener_short(i),sgmvc_short(i)
+    end do
+
+    close(iout)
+
 !       write(6,*) 'Gamma for IS  Energy:',isen(ninista)
-       nlimit=3000
-
-
     nlimit=3000
 
     if (ncount .ge. nlimit) then
@@ -1223,6 +1227,8 @@ contains
   end subroutine get_sigma
 
 !!$--------------------------------------------------------
+!!$ N.B., here ndim is the no. states
+!!$---------------------------------------------------------
 
   subroutine get_sums(ndim,ener,fosc)
     
@@ -1233,7 +1239,8 @@ contains
     integer :: i,j
     real(d) :: elev,flev,ratio
 
-    sums(0:10)=0._d
+!    sums(0:10)=0._d
+    sums=0.0d0
     do i=1,ndim
        elev=ener(i)
        flev=fosc(i)

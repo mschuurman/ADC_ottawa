@@ -834,13 +834,14 @@ subroutine master_adc2_prop()
            write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
            write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIm  > IN THE FINAL SPACE'
            tmvecf(:) = 0.d0
+
            call get_tranmom_1(ndimf,lancstates,lancname,mtmf(:),nstates,enerf(:),tmvecf(:),ndimsf)
+
            allocate(osc_strf(nstates))
            osc_strf(:) = 0.d0
            do i = 1 , nstates
               osc_strf(i) = 2._d/3._d * enerf(i) * tmvecf(i)**2
            end do
-
 
 !-----------------------------------------------------------------------
 ! FROM NOW ON IT IS THE SAME BUT WITH travec(:) INSTEAD OF mtm(:)
@@ -848,18 +849,23 @@ subroutine master_adc2_prop()
 ! TRANSITION MOMENTS FROM EXCITED STATE
 !-----------------------------------------------------------------------
            write(6,*)  'energies and  pseudo-cross-section values OF THE FINAL SPACE STATES, from THE CHOOSEN',statenumber,'EXCITED STATE IN THE INITIAL SPACE'
+
            tmvec(:) = 0.d0
            call get_tranmom_3(ndimf,lancstates,lancname,travec(:),nstates,enerf(:),tmvecf(:),ndimsf)
+
            allocate(excit(nstates))
            do i = 1 , nstates
               excit(i) = enerf(i) - e_init
            end do
+
            osc_strf(:) = 0.d0
            do i = 1 , nstates
               osc_strf(i) = 2._d/3._d * excit(i) * tmvecf(i)**2
            end do
+
            call cpu_time(time)
            write(6,*) 'Time=',time," s"
+
            call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
 
            call MP2(E_MP2)

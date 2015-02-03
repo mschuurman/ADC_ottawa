@@ -340,9 +340,6 @@
       call lanczos_pseudospec(cblckdim,prtmat(1:j,1:j),j,ndfl,&
            lanunit,matdim,iblckdim)
       
-
-      STOP
-
       return
 
     end subroutine run_band_lanczos
@@ -755,13 +752,14 @@
 
       implicit none
 
-      integer*8                            :: i,v,k,m,n,count,lanunit,&
+      integer                              :: v
+      integer*8                            :: i,k,m,n,count,lanunit,&
                                               dim,matdim,ritzunit,&
                                               iblckdim,nblcks,last
       real*8, dimension(dim,dim)           :: umat
       real*8, dimension(dim)               :: eigval
       real*8, dimension(matdim)            :: lvec
-      real*8, dimension(iblckdim+1,matdim) :: ritzvec
+      real*8, dimension(matdim,iblckdim+1) :: ritzvec
 
 !-----------------------------------------------------------------------
 ! Open the Lanzcos and Ritz vector files
@@ -802,8 +800,8 @@
          do v=(iblckdim+1)*i-(iblckdim+1)+1,(iblckdim+1)*i
             count=count+1
             write(ritzunit) v,eigval(v),ritzvec(:,count)
-        enddo
-
+         enddo
+         
       enddo
       
       ! Remaining n Ritz vectors from the incomplete block
