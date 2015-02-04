@@ -62,10 +62,11 @@ program main
 
 !-----------------------------------------------------------------------  
 ! Perform the ADC Stieltjes imaging calculation
-  !-----------------------------------------------------------------------  
+!-----------------------------------------------------------------------  
   if (method .eq. 0) then
      write(6,*) "Sorry not included!"
-
+  
+  ! Calculation of spectral moments
   elseif (method .eq. 1) then
      write(6,*) "Activating ADC1"
      call master_adc1_prop()
@@ -77,7 +78,11 @@ program main
   elseif (method .eq. 3) then
      write(6,*) "Activating ADC2 EXT"
      call master_adc2ext_prop()
-     
+  
+  ! Calculations of VEEs only
+  elseif (method.eq.-2) then
+     call master_adc2_ener()
+
   end if
   
   call cpu_time(time)

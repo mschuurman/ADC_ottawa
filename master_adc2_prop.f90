@@ -643,10 +643,14 @@ subroutine master_adc2_prop()
 !-----------------------------------------------------------------------
 ! TRANSITION MOMENTS FROM GROUND STATE
 !-----------------------------------------------------------------------
-        write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
-        write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIn  > IN THE INITIAL SPACE'
+        write(6,*) &
+             'Calculating ADC2 transition moments from ground state in ',&
+             tranmom2,' direction.'
+        write(6,*) 'I AM Calculating ADC2 transition moments in',&
+             tranmom2,' direction, i.e. : < PSI0  D',tranmom2,&
+             ' PSIn  > IN THE INITIAL SPACE'
+
         call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
-        write(100,*) ndim , mtm
 
         do i = 1 , davstates
            tmvec(i) = tm(ndim,rvec(:,i),mtm(:))

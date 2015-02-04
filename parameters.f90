@@ -66,6 +66,8 @@ module parameters
 !!$logical ladc1guess - greater than zero if the initial vectors for the Davidson diagonalisation 
 !!                      are to be generated from an ADC(1) calculation
 !!$real*8 davtol - error tolerance for the block-Davidson eigensolver, default of 10^-8
+!!$logical lcvs - flag to switch on the CVS approximation
+!!$integer array(1:nhcentre) icore - array of indices indexing the core orbitals
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -90,6 +92,8 @@ module parameters
   integer                            :: ninista
   logical                            :: ladc1guess
   real(d)                            :: davtol
+  logical                            :: lcvs
+  integer, dimension(nhcentre)       :: icore
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

@@ -120,7 +120,8 @@ subroutine read_user()
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM
        
 
-  NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,ladc1guess
+  NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
+       ladc1guess,lcvs,icore
 
   hcentre(:)=-1
 
@@ -129,6 +130,9 @@ subroutine read_user()
 
   ladc1guess=.false.
   davtol=1d-7
+
+  lcvs=.false.  
+  icore=0
 
   READ(*,USER)
   READ(*,LNZLST)
@@ -161,7 +165,8 @@ subroutine check_user()
   elseif ((hinit .le. 0) .or. (hinit .gt. nBas)) then   
      write(6,*) "INITIAL PARTICLE ORBITAL NUMBER IS NOT SET"
      stop 
-  elseif ((method .lt. 0) .or. (method .gt. 20)) then
+!  elseif ((method .lt. 0) .or. (method .gt. 20)) then
+  elseif (method .gt. 20) then
      write(6,*) "COMPUTATION METHOD IS NOT CHOSEN"
      stop
   elseif ((numinista .lt. 0) .or. (numinista .gt. davstates)) then

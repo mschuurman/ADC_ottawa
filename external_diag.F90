@@ -96,10 +96,6 @@
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
 !-----------------------------------------------------------------------
       n=matdim
-
-!      call matcreate(petsc_comm_world,ham,ierr)
-!
-!      call matsetsizes(ham,petsc_decide,petsc_decide,n,n,ierr)
       
       call matcreateseqaij(petsc_comm_world,n,n,nz,nnz,ham,ierr)
 
@@ -125,8 +121,6 @@
       ! Assemble the PETSc matrix
       call matassemblybegin(ham,mat_final_assembly,ierr)
       call matassemblyend(ham,mat_final_assembly,ierr)
-
-!      call matview(ham,petsc_viewer_stdout_world)
 
 !-----------------------------------------------------------------------
 ! Create vectors xr and xi (real and imaginary parts of an eigenvector) 
@@ -167,9 +161,8 @@
 
 !-----------------------------------------------------------------------
 ! Set the eigenpairs of interest: eigenvalues with the smallest
-! magnitude
+! real part
 !-----------------------------------------------------------------------
-!      call epssetwhicheigenpairs(eps,EPS_SMALLEST_MAGNITUDE,ierr)
       call epssetwhicheigenpairs(eps,EPS_SMALLEST_REAL,ierr)
 
 !-----------------------------------------------------------------------
@@ -184,24 +177,10 @@
 ! for the initial space, so the initial vectors will always correspond
 ! to a set of 1h1p unit vectors
 !-----------------------------------------------------------------------
-!      call guess_vecs_ondiag(blckdim,matdim,ivec)
-
       if (ladc1guess) then
          call load_adc1_vecs(blckdim,matdim,ivec,ndms)
       else
-         nvecs=blckdim
-         dim=matdim
-         do i=1,nvecs
-            ! Create the ith initial vector
-            call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
-            ! Assign the components of the ith initial vector
-            ftmp=1.0d0
-            ! PETSc indices start from zero...
-            indx=i-1
-            call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
-            call vecassemblybegin(ivec(i),ierr)
-            call vecassemblyend(ivec(i),ierr)
-         enddo
+         call guess_vecs_ondiag(blckdim,matdim,ivec)
       endif
 
       ! Set the initial vector space
@@ -249,7 +228,6 @@
          write(unit) num,val,vec(:)
          ! Calculate the relative error for the ith eigenpair
          call epscomputerelativeerror(eps,i,error,ierr)
-         print*,num,val
       enddo
 
       ! Close file
