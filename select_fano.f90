@@ -62,6 +62,62 @@ contains
         
   end subroutine select_atom_is
 
+!#######################################################################
+
+  subroutine select_atom_is_cvs(kpq)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+
+    integer :: i,ap,n2pne,ic
+    integer :: isym,a,cah
+    integer, dimension(7) :: col
+
+    write(6,'(/,2x,a)') 'Selecting 1h1p subspace for CVS-ADC(2)'
+
+    kpq(1,0)=0
+
+    do ap=nOcc+1,nBas
+       a=roccnum(ap)
+       do i=1,hcentre(0)
+          cah=hcentre(i)
+          call iscore(cah,ic)
+          if (ic.eq.1) then
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym .eq. nirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             end if
+          endif
+       enddo
+    enddo
+
+    return
+
+  end subroutine select_atom_is_cvs
+
+!#######################################################################
+
+  subroutine iscore(cah,ic)
+
+    implicit none
+
+    integer :: cah,k,ic
+
+    ic=0
+ 
+    do k=1,ncore
+       if (cah.eq.icore(k)) ic=1
+    enddo
+    
+    return
+
+  end subroutine iscore
+
+!#######################################################################
+
   subroutine select_atom_isf(kpq)
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
@@ -497,7 +553,134 @@ contains
     end if
     
   end subroutine select_atom_d
-!!$--------------------------------------------
+
+!#######################################################################
+
+  subroutine select_atom_d_cvs(kpq,flag)
+
+!!$Includes 2p2pnxnx configurations in the both, initial and final states.
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer, intent(in)                                    :: flag
+
+    integer               :: i,j,a,b,k,ic1,ic2
+    integer               :: ih,jh,ap,bp
+    integer               :: cnti,cntf
+    integer               :: isym1, isym2
+    integer, dimension(7) :: col
+    real(d)               :: einit,ei,ej
+
+!-----------------------------------------------------------------------
+! Filling the kpq arrays in the order:
+!
+! a=b,i=j;
+! a|=b,i=j;
+! a=b,i|=j;
+! a|=b,i|=j(I,II).
+!
+! Note that in the CVS approximation, the following configurations are
+! ignored: a=b,i=j
+!          a|=b,i=j;
+!
+! i.e., we only need to consider a=b,i|=j and a|=b,i|=j(I,II) for which
+!       one, and only one, of i or j corresponds to a core orbital
+!-----------------------------------------------------------------------
+
+100 FORMAT(/,3("*"),A50,3x,I4)
+101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
+102 FORMAT(("*"),3x,I5,3x,I3,3x,I3,3x,I3,3x,I3,3x,I3)
+103 FORMAT(/,60("-")) 
+    
+    einit=abs(e(hinit))
+
+    write(6,*) 'Selecting INITIAL 2h2p subspace'
+
+    kpq(2:5,0)=0
+    cnti=kpq(1,0)
+
+!-----------------------------------------------------------------------
+! a=b,i|=j, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+    do ih=1,hcentre(0)
+       i=hcentre(ih)
+       call iscore(i,ic1)
+       ei=abs(e(i))
+
+       do jh=ih+1,hcentre(0)
+          j=hcentre(jh)
+          call iscore(j,ic2)
+          ej=abs(e(j))          
+
+          if ((ic1.eq.0.and.ic2.eq.1) &
+               .or.(ic1.eq.1.and.ic2.eq.0)) then
+
+             isym1=MT(orbSym(i),orbSym(j))
+             if (isym1 .eq. nirrep) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             end if
+             
+          endif
+
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! a|=b,i|=j spin I, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+       do ih=1,hcentre(0)
+          i=hcentre(ih)          
+          call iscore(i,ic1)
+          ei=abs(e(i))
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             call iscore(j,ic2)
+             ej=abs(e(j))
+             isym1=MT(orbSym(i),orbSym(j))
+
+             if ((ic1.eq.0.and.ic2.eq.1) &
+                  .or.(ic1.eq.1.and.ic2.eq.0)) then
+                
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   do bp=ap+1,nBas
+                      b=roccnum(bp)
+                      isym2=MT(orbSym(a),orbSym(b))
+                      if(MT(isym1,isym2) .eq. nirrep) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   end do
+                end do
+                
+             endif
+
+          end do
+       end do
+
+       kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
+       kpq(2,cnti+1:cnti+kpq(5,0))=12
+       kpq(7,cnti+1:cnti+kpq(5,0))=5
+
+    return
+
+  end subroutine select_atom_d_cvs
+
+!#######################################################################
 
     subroutine select_atom_df(kpq,flag)
 

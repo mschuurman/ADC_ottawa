@@ -115,13 +115,15 @@ end subroutine read_gamess
 
 subroutine read_user()
 
+  integer :: k
+
   NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
-       eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM
-       
+       eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
+       lcvs,icore
 
   NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
-       ladc1guess,lcvs,icore
+       ladc1guess
 
   hcentre(:)=-1
 
@@ -143,6 +145,11 @@ subroutine read_user()
   hinit=hcentre(1)
   lancstates=ncycles*lmain
   
+  ncore=0
+  do k=1,nhcentre
+     if (icore(k).gt.0) ncore=ncore+1
+  enddo
+
   write(6,*) 'Orbitals on the central atom', hcentre(0),':',hcentre(1:hcentre(0))
   
   write(6,*) "User data read"

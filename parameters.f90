@@ -68,6 +68,7 @@ module parameters
 !!$real*8 davtol - error tolerance for the block-Davidson eigensolver, default of 10^-8
 !!$logical lcvs - flag to switch on the CVS approximation
 !!$integer array(1:nhcentre) icore - array of indices indexing the core orbitals
+!!$integer ncore - no. core orbitals
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -94,6 +95,7 @@ module parameters
   real(d)                            :: davtol
   logical                            :: lcvs
   integer, dimension(nhcentre)       :: icore
+  integer                            :: ncore
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

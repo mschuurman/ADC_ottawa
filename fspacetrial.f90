@@ -559,7 +559,28 @@ contains
     
   end subroutine write_fspace_adc2_1
 
-!!$------------------------------------------------------------------------
+!#######################################################################
+
+  subroutine write_fspace_adc2_1_cvs(ndim,kpq,noffdel,chr) 
+    
+    integer, intent(in) :: ndim 
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    character(1), intent(in) :: chr
+    integer*8, intent(out) :: noffdel
+
+    integer :: ndim1, ndim2, nbuf,i
+    
+    ndim1=kpq(1,0)
+    ndim2=ndim-kpq(1,0)
+    
+    call get_offdiag_adc2_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+    call get_diag_adc2_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
+    
+  end subroutine write_fspace_adc2_1_cvs
+
+
+!#######################################################################
+
 
 
   subroutine write_fspace_adc2_1_MIO(ndim,kpq,noffdel,indx,chr) 

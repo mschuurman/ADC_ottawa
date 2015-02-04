@@ -285,7 +285,7 @@ contains
        ar_diag(i)=ar_diag(i)+CB_ph_ph(indj,indj)
        ar_diag(i)=ar_diag(i)+CC_ph_ph(inda,indj,inda,indj)
     end do
-    
+
 !!$ Filling the 2p2h-2p2h block
     
     do i=ndim1+1, ndim1+ndim2
@@ -456,7 +456,7 @@ contains
     do i=1,ndim1
        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
        do j=i+1,ndim1
-          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)             
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
           if(indj .eq. indjpr)&
                ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
@@ -567,9 +567,134 @@ contains
     end subroutine register2
     
   end subroutine get_offdiag_adc2_save
-!!$-----------------------------------
 
-!!$--------------------------------------------------
+!#######################################################################
+
+  subroutine get_offdiag_adc2_save_cvs(ndim,kpq,nbuf,count,chr)
+
+    integer, intent(in) :: ndim
+    integer, intent(out) :: nbuf
+    integer*8, intent(out) :: count 
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    character(1), intent(in) :: chr
+    
+    integer :: inda,indb,indj,indk,spin
+    integer :: indapr,indbpr,indjpr,indkpr,spinpr 
+    
+    character(10) :: name
+    integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
+    real(d) :: ar_offdiag_ij
+    
+    integer, dimension(buf_size) :: oi,oj
+    real(d), dimension(buf_size) :: file_offdiag
+    
+    name="hmlt.off"//chr
+    unt=12
+
+    count=0
+    rec_count=0
+
+    write(6,*) "Writing the off-diagonal part of ADC matrix in file ", name
+    OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
+         FORM='UNFORMATTED')
+
+!-----------------------------------------------------------------------
+! Off-diagonal part of the ph-ph block: all admissible due to previous
+! screening of the configurations
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=i+1,ndim1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
+          if(indj .eq. indjpr)&
+               ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
+          if(inda .eq. indapr)&
+               ar_offdiag_ij= ar_offdiag_ij+CB_ph_ph(indj,indjpr)
+          ar_offdiag_ij= ar_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
+          call register1()
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! 1p1h - 2h2p (i|=j,a=b) block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)    
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=dim_count+1,dim_count+kpq(4,0)
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+          ar_offdiag_ij=C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr)
+          call register1()
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! 1p1h - 2h2p (i|=j,a|b I) block
+!-----------------------------------------------------------------------
+    dim_count=dim_count+kpq(4,0)
+    
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=dim_count+1,dim_count+kpq(5,0)
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+          ar_offdiag_ij=C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+          call register1()
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! 1p1h - 2h2p (i|=j,a|b II) block
+!-----------------------------------------------------------------------
+    dim_count=dim_count+kpq(5,0)
+
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=dim_count+1,dim_count+kpq(5,0)
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+          ar_offdiag_ij=C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+          call register1()
+       end do
+    end do
+
+    call register2()
+    CLOSE(unt)
+    write(6,*) count,' off-diagonal elements saved'
+    
+  contains
+
+    subroutine register1()
+      if (abs(ar_offdiag_ij) .gt. minc) then
+         count=count+1
+         file_offdiag(count-buf_size*int(rec_count,8))= ar_offdiag_ij
+         oi(count-buf_size*int(rec_count,8))=i
+         oj(count-buf_size*int(rec_count,8))=j
+         !Checking if the buffer is full 
+         if(mod(count,buf_size) .eq. 0) then
+            rec_count=rec_count+1
+            nlim=buf_size
+            !Saving off-diag part in file
+            call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim) 
+         end if
+      end if
+    end subroutine register1
+    
+    subroutine register2()
+      
+      !Saving the rest in file
+      nlim=count-buf_size*int(rec_count,8)
+      call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+      rec_count=rec_count+1
+      nbuf=rec_count
+      
+    end subroutine register2
+
+  end subroutine get_offdiag_adc2_save_cvs
+
+!#######################################################################
+
   subroutine get_phph_adc2(ndim,kpq,amatr)
     
     integer, intent(in) :: ndim
