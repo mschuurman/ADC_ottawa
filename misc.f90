@@ -331,8 +331,8 @@ contains
     integer, dimension(:), allocatable :: indx
     integer :: i,j,nlim,k
 
-    integer                       :: kpqdim2,iout
-    integer, dimension(7,kpqdim2) :: kpq
+    integer                           :: kpqdim2,iout
+    integer, dimension(7,0:kpqdim2-1) :: kpq
 
 100 FORMAT(60("-"),/)    
 101 FORMAT(4(A10,2x),/)
@@ -360,7 +360,6 @@ contains
 
     close(iout)
     
-
     deallocate(coeff,indx)
 
   end subroutine table2
@@ -372,12 +371,12 @@ contains
 
     implicit none
 
-    integer                       :: i,k,ndim1,kpqdim2,ilbl,iout
-    integer, dimension(ndim1)     :: indx
-    integer, dimension(7,kpqdim2) :: kpq
-    real(d), dimension(ndim1)     :: coeff
-    real(d)                       :: en,tmvec,osc_str
-    real(d), parameter            :: tol=0.05d0
+    integer                           :: i,k,ndim1,kpqdim2,ilbl,iout
+    integer, dimension(ndim1)         :: indx
+    integer, dimension(7,0:kpqdim2-1) :: kpq
+    real(d), dimension(ndim1)         :: coeff
+    real(d)                           :: en,tmvec,osc_str
+    real(d), parameter                :: tol=0.05d0
 
     write(6,'(/,70a)') ('-',k=1,70)
     write(6,'(2x,a,2x,i2)') 'Initial Space State Number',i

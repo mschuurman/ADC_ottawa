@@ -12,7 +12,8 @@
     use get_matrix
     use get_matrix_DIPOLE
     use propagate_prepare
- 
+    use guessvecs
+
     implicit none
 
     integer, dimension(:,:), allocatable :: kpq
@@ -25,7 +26,7 @@
 !-----------------------------------------------------------------------
 ! Allocate kpq and select configurations
 !-----------------------------------------------------------------------
-    allocate(kpq(7,0:nBas**2*4*nOcc**2))    
+    allocate(kpq(7,0:nBas**2*4*nOcc**2))
     kpq(:,:)=-1
 
     if (lcvs) then
@@ -52,10 +53,22 @@
     write(6,*)
 
 !-----------------------------------------------------------------------
+! If we are performing a fake ip calculation, then determine the
+! indices of the 1h1p configurations corresponding to excitation into
+! the additional diffuse 'fake continuum' orbital
+!-----------------------------------------------------------------------
+    itmp=1+nBas**2*4*nOcc**2
+    if (lfakeip) call get_fakeip_indices(kpq,itmp,ndims)
+
+!-----------------------------------------------------------------------
 ! Calculate and save the Hamiltonian matrix to file
 !-----------------------------------------------------------------------
     write(6,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
-    call  write_fspace_adc2_1_cvs(ndim,kpq(:,:),noffd,'i') 
+    if (lcvs) then
+       call write_fspace_adc2_1_cvs(ndim,kpq(:,:),noffd,'i')
+    else
+       call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i')
+    endif
 
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation of the Hamiltonian matrix
@@ -69,6 +82,9 @@
 
 !-----------------------------------------------------------------------
 ! Calculate TDMs from the ground state
+!
+! N.B., This needs modifying to be compatible with the CVS 
+!       approximation
 !-----------------------------------------------------------------------    
     allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
     call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))

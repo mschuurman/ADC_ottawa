@@ -120,7 +120,7 @@ subroutine read_user()
   NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
-       lcvs,icore
+       lcvs,icore,lfakeip,ifakeorb
 
   NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
        ladc1guess
@@ -136,6 +136,9 @@ subroutine read_user()
   lcvs=.false.  
   icore=0
 
+  lfakeip=.false.
+  ifakeorb=0
+
   READ(*,USER)
   READ(*,LNZLST)
 
@@ -149,6 +152,12 @@ subroutine read_user()
   do k=1,nhcentre
      if (icore(k).gt.0) ncore=ncore+1
   enddo
+
+  if (lfakeip.and.ifakeorb.eq.0) then
+     write(6,'(/,2x,a,/)') 'Index of the fake IP diffuse orbital has &
+          not been given'
+     STOP
+  endif
 
   write(6,*) 'Orbitals on the central atom', hcentre(0),':',hcentre(1:hcentre(0))
   

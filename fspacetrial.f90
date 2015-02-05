@@ -563,10 +563,10 @@ contains
 
   subroutine write_fspace_adc2_1_cvs(ndim,kpq,noffdel,chr) 
     
-    integer, intent(in) :: ndim 
+    integer, intent(in)                                 :: ndim 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    character(1), intent(in) :: chr
-    integer*8, intent(out) :: noffdel
+    character(1), intent(in)                            :: chr
+    integer*8, intent(out)                              :: noffdel
 
     integer :: ndim1, ndim2, nbuf,i
     

@@ -5,7 +5,7 @@
  subroutine davidson_diag(blckdim,matdim,davstates,davname,ladc1guess,&
       ndms)
 
-   use parameters, only: davtol,maxiter
+   use parameters, only: davtol,maxiter,lfakeip
 
    use constants
 
@@ -177,7 +177,9 @@
 ! for the initial space, so the initial vectors will always correspond
 ! to a set of 1h1p unit vectors
 !-----------------------------------------------------------------------
-      if (ladc1guess) then
+      if (lfakeip) then
+         call guess_vecs_fakeip(blckdim,matdim,ivec)
+      else if (ladc1guess) then
          call load_adc1_vecs(blckdim,matdim,ivec,ndms)
       else
          call guess_vecs_ondiag(blckdim,matdim,ivec)
@@ -779,5 +781,59 @@
    return
 
  end subroutine guess_vecs_ondiag
+
+!#######################################################################
+
+ subroutine guess_vecs_fakeip(blckdim,matdim,ivec)
+
+   use parameters, only: ifakeorb,ifakeex
+
+   implicit none
+
+#include "finclude/petscsys.h"
+#include "finclude/petscvec.h"
+#include "finclude/petscmat.h"
+#include "finclude/slepcsys.h"
+#include "finclude/slepceps.h"
+#include "finclude/petscvec.h90"
+
+   integer :: blckdim,matdim
+
+!-----------------------------------------------------------------------
+! PETSc/SLEPc variables
+!-----------------------------------------------------------------------
+   Vec            ivec(blckdim)
+   PetscInt       i,nvecs,dim
+   PetscInt       indx
+   PetscScalar    ftmp
+   PetscErrorCode ierr
+
+!-----------------------------------------------------------------------
+! Create initial vectors corresponding to 1p1h excitation into the
+! orbital indexed by ifakeorb
+!-----------------------------------------------------------------------
+   nvecs=blckdim
+   dim=matdim
+
+   do i=1,nvecs
+
+      ! Create the ith initial vector
+      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+
+      ! Assign the components of the ith initial vector
+      ftmp=1.0d0
+
+      ! PETSc indices start from zero...
+      indx=ifakeex(i)-1
+
+      call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
+      call vecassemblybegin(ivec(i),ierr)
+      call vecassemblyend(ivec(i),ierr)
+
+   enddo
+
+   return
+
+ end subroutine guess_vecs_fakeip
 
 !#######################################################################

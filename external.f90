@@ -154,6 +154,10 @@
     orbfnd=1
    endif
 
+   ! BODGE
+!   earr(20)=1d-10
+   ! BODGE
+
   enddo scan_lines
   close(gamess)
 

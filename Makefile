@@ -66,11 +66,11 @@ ADC =   constants.o \
 	band_lanczos.o \
 	photoionisation.o \
 	Propagate.o \
+        guessvecs.o \
 	master_adc1_prop.o \
 	master_adc2_prop.o \
 	master_adc2ext_prop.o \
 	master_adc2_ener.o \
-        guessvecs.o \
 	main_draft1.o
 
 OBJECTS = $(MULTI) $(ADC)

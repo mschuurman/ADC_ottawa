@@ -69,6 +69,13 @@ module parameters
 !!$logical lcvs - flag to switch on the CVS approximation
 !!$integer array(1:nhcentre) icore - array of indices indexing the core orbitals
 !!$integer ncore - no. core orbitals
+!!$logical lfakeip - true if we are going to include a basis function
+!!                      with an extermely small exponent to mimic ionization
+!!$integer ifakeorb - index of the 'continuum' orbital for a fake ip calculation
+!!$ifakeex array(1:dmain) - array of of indices indexing the 1h1p
+!!                          configs to be taken as guesses for the
+!!                          Davidson diagonalisation in the case of a fake
+!!                          IP calculation
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -96,6 +103,9 @@ module parameters
   logical                            :: lcvs
   integer, dimension(nhcentre)       :: icore
   integer                            :: ncore
+  logical                            :: lfakeip
+  integer                            :: ifakeorb
+  integer, dimension(:), allocatable :: ifakeex
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
