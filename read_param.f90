@@ -121,7 +121,6 @@ subroutine read_user()
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
        lcvs,icore,lfakeip,ifakeorb,expfakeip,moType
-       lcvs,icore,lfakeip,ifakeorb,moType
 
   NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
        ladc1guess
@@ -165,7 +164,7 @@ subroutine read_user()
   write(6,*) 'Orbitals on the central atom', hcentre(0),':',hcentre(1:hcentre(0))
   
   write(6,*) "User data read"
-
+  
 end subroutine read_user
 
 
