@@ -120,12 +120,15 @@ subroutine read_user()
   NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
-       lcvs,icore,lfakeip,ifakeorb,expfakeip
+       lcvs,icore,lfakeip,ifakeorb,expfakeip,moType
+       lcvs,icore,lfakeip,ifakeorb,moType
 
   NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
        ladc1guess
 
   hcentre(:)=-1
+
+  moType = 'incore'
 
   ninista=-1
   debug=.false.

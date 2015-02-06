@@ -4,7 +4,7 @@
    implicit none
    integer,intent(in) :: r,s,u,v
    integer            :: r_alpha,s_alpha,u_alpha,v_alpha
-   real(kind=8)            :: vpqrs
+   real(kind=8)       :: vpqrs
 
    ! we're going to hack this a bit. I think this code assumes spatial orbitals.
    ! Given our orbitals ordering, and assuming alpha = beta spatial orbitals
@@ -15,12 +15,18 @@
    ! indices are r1, second two indices are r2 -- need to check if this is
    ! consistent with rest of the code. If not, we can change definition of
    ! r_alpha, s_alpha, etc.
+
    r_alpha = 2*r - 1
    s_alpha = 2*s - 1
    u_alpha = 2*u - 1
    v_alpha = 2*v - 1
 
-   vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)
+   if(moType == 'disk') then
+     if(moIntegrals%mo_l /= v_alpha)call fetch_moint2e(moIntegrals,v_alpha)
+     vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,1),kind=d)
+   else
+     vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)
+   endif
 
    return
  end function vpqrs
@@ -35,7 +41,12 @@
    integer,intent(in) :: r,s,u,v
    real(kind=8)            :: vpqrs_spin
 
-   vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+   if(moType == 'disk') then
+     if(moIntegrals%mo_l /= v)call fetch_moint2e(moIntegrals,v)
+     vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,1),kind=d)
+   else
+     vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+   endif
 
    return
  end function vpqrs_spin
@@ -207,7 +218,7 @@
   real(xrk), dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_spin,hao_spin,hmo_spin,fmo_spin,dipmo_spin
   real(xrk), dimension(  gam_info%nbasis,  gam_info%nbasis)   :: sao,hao,tmp_xk
   real(xrk), dimension(  gam_info%nbasis,  gam_info%nvectors) :: mos
-  character(len=clen)                                         :: mo_mode,ao_mode
+  character(len=clen)                                         :: ao_mode
   integer                                                     :: a,i,j,nvec,nmo,nao
   real(d)                                                     :: vpqrs,vpqrs_spin
   real(xrk)                                                   :: xyz(3), q, ov, eps, refval, e1,e2, nuc_repulsion
@@ -281,9 +292,8 @@
 
   ! this is for debugging only! for production -- move this to disk/conventional
   ao_mode = 'incore'
-  mo_mode = 'incore'
   call prepare_2e(int2e,gam_info,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
-  call transform_moint2e_real(int2e,mo_mode,mo_cmplx,mo_cmplx,mo_cmplx,mo_cmplx,moIntegrals)
+  call transform_moint2e_real(int2e,moType,mo_cmplx,mo_cmplx,mo_cmplx,mo_cmplx,moIntegrals,io_unit=99)
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
   fmo_spin = hmo_spin
