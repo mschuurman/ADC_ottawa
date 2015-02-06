@@ -27,7 +27,8 @@ module parameters
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
   real(d), dimension(:,:), allocatable :: density_matrix
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
-
+  character*100                        :: moType ! Either 'incore' or 'disk'
+ 
 !!$**************************************************
 !!$*********User provided variables******************
 !!$**************************************************
