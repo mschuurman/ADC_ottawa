@@ -76,6 +76,8 @@ module parameters
 !!                          configs to be taken as guesses for the
 !!                          Davidson diagonalisation in the case of a fake
 !!                          IP calculation
+!!$expfakeip - value of the exponent of the diffuse function used in a
+!!             fake IP calculation
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -106,6 +108,7 @@ module parameters
   logical                            :: lfakeip
   integer                            :: ifakeorb
   integer, dimension(:), allocatable :: ifakeex
+  real(d)                            :: expfakeip
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
