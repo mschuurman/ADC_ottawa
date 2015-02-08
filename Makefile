@@ -19,7 +19,7 @@ F90	= gfortran
 F77	= gfortran
 CC	= gcc
 
-F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none
+F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp
 CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------

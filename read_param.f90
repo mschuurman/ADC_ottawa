@@ -89,7 +89,6 @@ subroutine read_gamess(chkpt_file,log_file)
   naos  = gamess_info%nbasis
 
   allocate(e(nBas),occNum(nBas),orbSym(nBas),roccnum(nBas))
-  allocate(x_dipole(nBas,nBas),y_dipole(nBas,nBas),z_dipole(nBas,nBas),dpl(nBas,nBas))
 
   ! determine various electronic structure variables
   call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,Ehf,e,occnum)

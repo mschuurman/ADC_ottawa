@@ -1,55 +1,28 @@
-
- function vpqrs(r,s,u,v)
-   use parameters
-   implicit none
-   integer,intent(in) :: r,s,u,v
-   integer            :: r_alpha,s_alpha,u_alpha,v_alpha
-   real(kind=8)       :: vpqrs
-
-   ! we're going to hack this a bit. I think this code assumes spatial orbitals.
-   ! Given our orbitals ordering, and assuming alpha = beta spatial orbitals
-   ! (i.e. rhf), we should pull out the odd indices corresponding to the
-   ! alpha spin orbitals. This is easily changed if need be
-
-   ! ALSO: these are in "chemist's" notation (see Szabo&Ostlund), first two
-   ! indices are r1, second two indices are r2 -- need to check if this is
-   ! consistent with rest of the code. If not, we can change definition of
-   ! r_alpha, s_alpha, etc.
-
-   r_alpha = 2*r - 1
-   s_alpha = 2*s - 1
-   u_alpha = 2*u - 1
-   v_alpha = 2*v - 1
-
-   if(moType == 'disk') then
-     if(moIntegrals%mo_l /= v_alpha)call fetch_moint2e(moIntegrals,v_alpha)
-     vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,1),kind=d)
-   else
-     vpqrs = real(moIntegrals%buffer_real(r_alpha,s_alpha,u_alpha,v_alpha),kind=d)
-   endif
-
-   return
- end function vpqrs
-
  ! 
  ! A little hack-y, but temporary for debugging purposes. Simply return the
  ! value of the integral buffer using the native spin-indices.
  !
- function vpqrs_spin(r,s,u,v)
+ function vpqrs(r,s,u,v)
    use parameters
    implicit none
    integer,intent(in) :: r,s,u,v
-   real(kind=8)            :: vpqrs_spin
+   integer            :: r2
+   real(d)            :: vpqrs
 
    if(moType == 'disk') then
-     if(moIntegrals%mo_l /= v)call fetch_moint2e(moIntegrals,v)
-     vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,1),kind=d)
+     r2 = u
+     if(moIntegrals%mo_l /= v .and. moIntegrals%mo_l /= u)then
+       call fetch_moint2e(moIntegrals,v)
+     else
+       if(moIntegrals%mo_l == u)r2 = v
+     endif
+     vpqrs = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
    else
-     vpqrs_spin = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+     vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
    endif
 
    return
- end function vpqrs_spin
+ end function vpqrs
 
 
 
@@ -203,6 +176,7 @@
  !
  subroutine load_mo_integrals(gam_info)
   use accuracy
+  use math
   use parameters
   use import_gamess
   use integral_tools
@@ -214,37 +188,47 @@
   integer, parameter                :: iu_2e_ao   = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
   integer(8)                        :: iosize_2e  = 220000000   ! Integral I/O
 
-  complex(8),dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_cmplx
-  real(xrk), dimension(2*gam_info%nbasis,2*gam_info%nbasis)   :: mo_spin,hao_spin,hmo_spin,fmo_spin,dipmo_spin
-  real(xrk), dimension(  gam_info%nbasis,  gam_info%nbasis)   :: sao,hao,tmp_xk
-  real(xrk), dimension(  gam_info%nbasis,  gam_info%nvectors) :: mos
+  real(xrk), dimension(gam_info%nbasis,gam_info%nvectors)     :: gam_mos
+  real(xrk), dimension(:,:),allocatable                       :: mos,sao,hao,hao_basis,hmo,fmo,tmp_xk
+  complex(8),dimension(:,:),allocatable                       :: mos_cmplx
   character(len=clen)                                         :: ao_mode
-  integer                                                     :: a,i,j,nvec,nmo,nao
-  real(d)                                                     :: vpqrs,vpqrs_spin
-  real(xrk)                                                   :: xyz(3), q, ov, eps, refval, e1,e2, nuc_repulsion
+  integer                                                     :: a,i,j,nmo,nao,nocc_spin
+  real(d)                                                     :: vpqrs
+  real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1,e2
+  real(xrk)                                                   :: nuc_repulsion
 
-  eps  = 1.d-5
-  nao  = gam_info%nbasis
-  nmo  = 2*nao
-  nvec = gam_info%nvectors
-  mos  = gam_info%vectors(1:nao, 1:nvec)
+  ! make a call to MathLogFactorial before we get into the parallel parts, since
+  ! it isn't openmp safe...
+  q = MathFactorial(nelec)
+  q = MathLogFactorial(nelec)
+  q = MathDoubleFactorial(nelec)
 
-  ! Note: most other parts of multigrid assume cartesian basis functions, so,
-  ! for rhf, nmo = nao, for uhf nmo = 2*nao.  While this is not the case in
-  ! general, we will work under that assumption for the time being.
+  eps      = 1.d-5
+  nao      = gam_info%nbasis
+  nmo      = gam_info%nvectors
+  gam_mos  = gam_info%vectors(1:nao, 1:nmo)
 
-  ! If rhf, number of orbitals = nao
-  if(nvec == nao) then
-   ! alpha and beta spin orbitals are the same
-   mo_spin(1:nao,    1:nmo-1:2) = mos(1:nao,1:nao)
-   mo_spin(nao+1:nmo,2:nmo  :2) = mos(1:nao,1:nao)
-  else if(nvec == 2*nao) then
-   mo_spin(1:nao,    1:nmo-1:2) = mos(1:nao,1:nao)
-   mo_spin(nao+1:nmo,2:nmo  :2) = mos(1:nao,nao+1:nmo)
-  else
-   stop 'number of mos != nao or 2*nao'
-  endif
-  mo_cmplx = cmplx(mo_spin,kind=xrk)
+  ! allocate arrays
+  allocate(mos(nmo,nmo),mos_cmplx(2*nao,nmo),sao(nao,nao),hao(nao,nao),hao_basis(nmo,nmo),hmo(nmo,nmo),fmo(nmo,nmo),tmp_xk(nao,nao))
+  allocate(x_dipole(nmo,nmo),y_dipole(nmo,nmo),z_dipole(nmo,nmo),dpl(nmo,nmo))
+
+  ! load GAMESS MOS into core
+  if(nmo == nao) then         ! RHF case
+      nocc_spin = nelec / 2
+      d_cf = 2._xrk
+      mos = (0.,0.)
+      mos(1:nao,1:nmo) = gam_mos
+      mos_cmplx(1:nao,1:nmo) = cmplx(mos,kind=xrk)
+   else if(nmo == 2*nao) then ! UHF case
+      nocc_spin = nelec
+      d_cf = 1._xrk
+      mos = (0.,0.)
+      mos(1:nao,     1:nmo-1:2) = gam_mos(1:nao,1:nao)
+      mos(nao+1:nmo, 2:nmo  :2) = gam_mos(1:nao,nao+1:nmo)
+      mos_cmplx = cmplx(mos,kind=xrk)
+   else
+      stop 'load_mo_integrals - confusing number of mos'
+   endif 
 
   ! Compute ao overlap integrals
   call gamess_1e_integrals('AO OVERLAP',sao,bra=gam_info,ket=gam_info  )
@@ -254,9 +238,9 @@
   endif
 
   ! check orthonormality of GAMESS orbitals
-  scan_left: do i = 1,nvec
-   scan_right: do j = 1,nvec
-    ov = dot_product(mos(:,i),matmul(sao,mos(:,j)))
+  scan_left: do i = 1,nmo
+   scan_right: do j = 1,nmo
+    ov = dot_product(gam_mos(:,i),matmul(sao,gam_mos(:,j)))
     refval = 0._xrk
     if(i==j)refval = 1._xrk
     if(abs(ov-refval)>eps)write(6,"('warning: <',i3,'|',i3,'> = ',f15.10,', expecting ',f15.10)")i,j,ov,refval
@@ -283,48 +267,48 @@
     hao = hao + tmp_xk
   end do nuclear_attraction
  
-  hao_spin                       = 0._xrk
-  hao_spin(1:nao    , 1:nao)     = hao
-  hao_spin(nao+1:nmo, nao+1:nmo) = hao
+  hao_basis               = 0._xrk
+  hao_basis(1:nao, 1:nao) = hao
+  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
 
-  ! form 1e Hamiltonian in spin-MO basis
-  hmo_spin = matmul(matmul(transpose(mo_spin),hao_spin),mo_spin)
+  ! form 1e Hamiltonian in MO basis
+  hmo = matmul(matmul(transpose(mos),hao_basis),mos)
 
   ! this is for debugging only! for production -- move this to disk/conventional
   ao_mode = 'incore'
   call prepare_2e(int2e,gam_info,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
-  call transform_moint2e_real(int2e,moType,mo_cmplx,mo_cmplx,mo_cmplx,mo_cmplx,moIntegrals,io_unit=99)
+  call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
-  fmo_spin = hmo_spin
-  sum_row: do i = 1,nmo
-   sum_col: do j = 1,nmo
-    sum_orb: do a = 1,nelec
-     fmo_spin(i,j) = fmo_spin(i,j) + vpqrs_spin(i,j,a,a) - vpqrs_spin(i,a,j,a)
-    enddo sum_orb
-   enddo sum_col
-  enddo sum_row
+  fmo = hmo
+  sum_orb: do a = 1,nocc_spin
+   sum_row: do i = 1,nmo
+    sum_col: do j = 1,nmo
+     fmo(i,j) = fmo(i,j) + d_cf*vpqrs(i,j,a,a) - vpqrs(i,a,j,a)
+    enddo sum_col
+   enddo sum_row
+  enddo sum_orb
 
   if(debug) then
-   write(6,"(/t5,'FOCK MATRIX IN MO BAIS')")
-   call print_matrix(fmo_spin,15,'f15.10')
+   write(6,"(/t5,'FOCK MATRIX IN MO BASIS')")
+   call print_matrix(fmo,15,'f15.10')
   endif
 
   ! ensure Fock matrix is diagonal
   refval = 0._rk
   scan_row: do i = 1,nmo
    scan_col: do j = 1,nmo
-    if(i /= j .and. abs(fmo_spin(i,j)-refval)>eps)write(6,"('warning: <',i3,'|f|',i3,'> = ',f15.10,',expecting ',f15.10)")i,j,fmo_spin(i,j),refval
+    if(i /= j .and. abs(fmo(i,j)-refval)>eps)write(6,"('warning: <',i3,'|f|',i3,'> = ',f15.10,',expecting ',f15.10)")i,j,fmo(i,j),refval
    enddo scan_col
   enddo scan_row
 
   ! Compute HF energy and print, using spatial orbitals
   e1 = 0._xrk
   e2 = 0._xrk
-  sum_i: do i = 1,nelec/2
-   e1 = e1 + 2.*hmo_spin(2*i-1,2*i-1)
-   sum_j: do j = 1,nelec/2
-    e2 = e2 + 2.*vpqrs(i,i,j,j) - vpqrs(i,j,i,j)
+  sum_i: do j = 1,nocc_spin
+   e1 = e1 + d_cf*hmo(j,j)
+   sum_j: do i = 1,nocc_spin
+    e2 = e2 + d_cf*vpqrs(i,i,j,j) - vpqrs(i,j,i,j)
    enddo sum_j
   enddo sum_i
   
@@ -332,17 +316,16 @@
   ! the impression this code works primarily with spatial orbitals (i.e. under
   ! RHF). So, we trivially fill up the lowest nelec/2 orbitals, but this is
   ! easily changed in the future.
-  do i = 1,nelec/2
+  do i = 1,nocc_spin
    occNum(i) = int(2,kind=4)
   enddo
 
-  ! Again, a little uncertainty as to whether we can run unrestricted. For time
-  ! being I will assume "no", since the dimension of xdip,ydip and zdip are
-  ! square nao x nao matrices, or appear to be. If this assumption is incorrect,
-  ! moving to spin-MOs is trivial.
-  ! load in the dipole moment integrals
+  ! determine the dipole moment integrals
   call gamess_1e_integrals('AO DIPOLE X',hao,bra=gam_info,ket=gam_info  )
-  x_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  hao_basis               = 0._xrk
+  hao_basis(1:nao, 1:nao) = hao
+  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
+  x_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
   if(debug) then
    write (6,"(/t5,'AO DIPOLE X INTEGRALS'/)")
    call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
@@ -351,7 +334,10 @@
   endif
 
   call gamess_1e_integrals('AO DIPOLE Y',hao,bra=gam_info,ket=gam_info  )
-  y_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  hao_basis               = 0._xrk
+  hao_basis(1:nao, 1:nao) = hao
+  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
+  y_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
   if(debug) then
    write (6,"(/t5,'AO DIPOLE Y INTEGRALS'/)")
    call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
@@ -360,13 +346,23 @@
   endif
 
   call gamess_1e_integrals('AO DIPOLE Z',hao,bra=gam_info,ket=gam_info  )
-  z_dipole(1:,1:) = matmul(matmul(transpose(mos(1:nao,1:nao)),hao),mos(1:nao,1:nao))
+  hao_basis               = 0._xrk
+  hao_basis(1:nao, 1:nao) = hao
+  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
+  z_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
   if(debug) then
    write (6,"(/t5,'AO DIPOLE Z INTEGRALS'/)")
    call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
    write (6,"(/t5,'MO DIPOLE Z INTEGRALS'/)")
    call gamess_print_1e_integrals(z_dipole,bra=gam_info,ket=gam_info)
   endif
+
+  ! assuming dpl is the norm of the dipole moment vector
+  do i = 1,nmo
+   do j = 1,nmo
+     dpl(i,j) = sqrt(x_dipole(i,j)**2 + y_dipole(i,j)**2 + z_dipole(i,j))
+   enddo
+  enddo
 
   ! print out summary (compare to GAMESS output)
   write(6,"(60('-'))")
