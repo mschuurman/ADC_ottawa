@@ -420,34 +420,58 @@ contains
 
 !!$The difference from the earlier routine is that this routine returns the total number of saved els to a caller. 
     
-    integer, intent(in) :: ndim
-    integer, intent(out) :: nbuf
-    integer*8, intent(out) :: count 
+    integer, intent(in)                                 :: ndim
+    integer, intent(out)                                :: nbuf
+    integer*8, intent(out)                              :: count
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    character(1), intent(in) :: chr
+    character(1), intent(in)                            :: chr
     
-    integer :: inda,indb,indj,indk,spin
-    integer :: indapr,indbpr,indjpr,indkpr,spinpr 
+    integer                      :: inda,indb,indj,indk,spin
+    integer                      :: indapr,indbpr,indjpr,indkpr,spinpr 
     
-    character(10) :: name
-    integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
-    real(d) :: ar_offdiag_ij
+    character(10)                :: name
+    integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
+    real(d)                      :: ar_offdiag_ij
     
     integer, dimension(buf_size) :: oi,oj
     real(d), dimension(buf_size) :: file_offdiag
     
+    integer                              :: nvirt
+    real(d), dimension(:,:), allocatable :: ca,cb
+
+!-----------------------------------------------------------------------    
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+    nvirt=nbas-nocc
+    allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+
+    ! CA_ph_ph
+    do i=1,nvirt
+       do j=i,nvirt
+          ca(i,j)=CA_ph_ph(i,j)
+          ca(j,i)=ca(i,j)
+       enddo
+    enddo
+
+    ! CB_ph_ph
+    do i=1,nocc
+       do j=i,nocc
+          cb(i,j)=CB_ph_ph(i,j)
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Calculate the off-diagonal Hamiltonian matrix elements
+!-----------------------------------------------------------------------
     name="hmlt.off"//chr
     unt=12
 
     count=0
     rec_count=0
     
-    
     write(6,*) "Writing the off-diagonal part of ADC matrix in file ", name
     OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
          FORM='UNFORMATTED')
-
-!!$ Full diagonalization.  
 
 !!$ Filling the off-diagonal part of the ph-ph block
 
@@ -457,16 +481,25 @@ contains
        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
        do j=i+1,ndim1
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
           ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
+
           if(indj .eq. indjpr)&
-               ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
+!               ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
+               ar_offdiag_ij= ar_offdiag_ij+cb(inda,indapr)
+
           if(inda .eq. indapr)&
-               ar_offdiag_ij= ar_offdiag_ij+CB_ph_ph(indj,indjpr)
+!               ar_offdiag_ij= ar_offdiag_ij+CB_ph_ph(indj,indjpr)
+               ar_offdiag_ij= ar_offdiag_ij+cb(indj,indjpr)
+
           ar_offdiag_ij= ar_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
+
           call register1()
        end do
     end do
-    
+
+    deallocate(ca,cb)
+
        
 !!$ Filling the off-diagonal part of the ph-2p2h block 
 !!$ Coupling to the i=j,a=b configs

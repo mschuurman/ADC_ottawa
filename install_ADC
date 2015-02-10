@@ -17,29 +17,68 @@ target=$1
 args=""
 
 #-----------------------------------------------------------------------
-# Determine the path to the SLEPc install directory
+# Get variables from ADC.CONFIG if it exists
 #-----------------------------------------------------------------------
-if [ -z $SLEPC_DIR ]; then
-    found=false
-else
-    if [ -d $SLEPC_DIR ]; then
-	found=true
-    else
-	found=false
-    fi
+if [ -f "ADC.CONFIG" ]; then
+    blasflag=`cat ADC.CONFIG | grep LIB_BLAS | sed 's/.*=//g'`
+    lapackflag=`cat ADC.CONFIG | grep LIB_BLAS | sed 's/.*=//g'`
+    slepcpath=`cat ADC.CONFIG | grep SLEPC_DIR | sed 's/.*=//g'`
 fi
 
-if [ "$found" == 'false' ]; then
-    if [ -d $HOME/slepc*/conf/ ]; then
-	slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
+#-----------------------------------------------------------------------
+# Determine the path to the SLEPc install directory
+#-----------------------------------------------------------------------
+if [ -z $slepcpath ]; then
+
+    if [ -z $SLEPC_DIR ]; then
+	found=false
     else
-	read -p "Please enter the path to the SLEPc install directory:  " slepcpath	
+	if [ -d $SLEPC_DIR ]; then
+	    found=true
+	else
+	    found=false
+	fi
     fi
-else
-    slepcpath=$SLEPC_DIR
+
+    if [ "$found" == 'false' ]; then
+	if [ -d $HOME/slepc*/conf/ ]; then
+	    slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
+	else
+	    read -p "Please enter the path to the SLEPc install directory:  " slepcpath	
+	fi
+    else
+	slepcpath=$SLEPC_DIR
+    fi
+
 fi
 
 args+=" "SLEPC_DIR=$slepcpath
+
+#-----------------------------------------------------------------------
+# Determine BLAS and LAPACK compiler flags
+#-----------------------------------------------------------------------
+if [ -z $blasflag ]; then
+    echo ""
+    read -p "Please enter the BLAS linking flag:  " blasflag
+fi
+
+if [ -z $lapackflag ]; then
+    read -p "Please enter the LAPACK linking flag:  " lapackflag
+fi
+
+args+=" "LIB_BLAS=$blasflag
+args+=" "LIB_LAPACK=$lapackflag
+
+#-----------------------------------------------------------------------
+# Write variables to ADC.CONFIG for future use
+#-----------------------------------------------------------------------
+if [ -f "ADC.CONFIG" ]; then
+    rm ADC.CONFIG
+fi
+
+echo "LIB_BLAS=$blasflag" >>ADC.CONFIG
+echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
+echo "SLEPC_PATH=$slepcpath" >>ADC.CONFIG
 
 #-----------------------------------------------------------------------
 # Call to make

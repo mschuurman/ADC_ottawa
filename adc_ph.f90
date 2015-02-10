@@ -328,10 +328,8 @@ contains
     real(d) :: vpqrs
     
     external vpqrs
-
-    CC_ph_ph=0._d
     
-!    write(6,*) 'j=',a,'k=',k
+    CC_ph_ph=0._d
     
     do c=nOcc+1,nBas
        r=roccnum(c)
@@ -344,7 +342,6 @@ contains
           
              
           if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
-!             write(6,*) 'r=',r,'s=',s  
              
              term=0._d
              
@@ -353,12 +350,7 @@ contains
              
              term=(2._d*vpqrs(a,k,r,s)-vpqrs(a,s,r,k))*(2._d*vpqrs(a1,k1,r,s)-vpqrs(a1,s,r,k1))
              term=term*DC
-!!$             write(6,*) 'vpqrs(j,k,r,s)=',vpqrs(a,k,r,s)
-!!$             write(6,*) 'vpqrs(j,s,r,k)=',vpqrs(a,s,r,k)
-!!$             write(6,*) 'factor=',DC
-!!$             write(6,*) "Cc= "
-!!$             write(6,*) term
-             
+
              CC_ph_ph=CC_ph_ph+term
              
           end if

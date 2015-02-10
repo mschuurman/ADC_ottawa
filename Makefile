@@ -25,7 +25,7 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 -lblas -llapack
+LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
 SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
 
@@ -91,4 +91,4 @@ ww: $(OBJECTS)
 	$(CC) $(CCOPTS)  -c $<
 
 clean_all:
-	rm -f *.o *~ *.mod 
+	rm -f *.o *~ *.mod
