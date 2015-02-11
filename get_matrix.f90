@@ -436,12 +436,16 @@ contains
     integer, dimension(buf_size) :: oi,oj
     real(d), dimension(buf_size) :: file_offdiag
     
-    integer                              :: nvirt
+    integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
+    real(d)                              :: t1,t2
 
 !-----------------------------------------------------------------------    
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
+    
+    call cpu_time(t1)
+
     nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
 
@@ -457,6 +461,7 @@ contains
     do i=1,nocc
        do j=i,nocc
           cb(i,j)=CB_ph_ph(i,j)
+          cb(j,i)=cb(i,j)
        enddo
     enddo
 
