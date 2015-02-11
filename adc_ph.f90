@@ -21,10 +21,6 @@ contains
 !!$*******************************************************************************
 
 
-
-
-
-
   subroutine MP2(E_MP2)
 
     real(d), intent(out) :: E_MP2
@@ -327,6 +323,8 @@ contains
     real(d) :: DC,eic,term
     real(d) :: vpqrs
     
+    real(d), dimension(nocc) :: tau
+
     external vpqrs
     
     CC_ph_ph=0._d

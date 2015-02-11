@@ -440,10 +440,9 @@ contains
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: t1,t2
 
-!-----------------------------------------------------------------------    
+!-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-    
     call cpu_time(t1)
 
     nvirt=nbas-nocc
@@ -452,7 +451,7 @@ contains
     ! CA_ph_ph
     do i=1,nvirt
        do j=i,nvirt
-          ca(i,j)=CA_ph_ph(i,j)
+          ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
           ca(j,i)=ca(i,j)
        enddo
     enddo
@@ -491,7 +490,7 @@ contains
 
           if(indj .eq. indjpr)&
 !               ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
-               ar_offdiag_ij= ar_offdiag_ij+cb(inda,indapr)
+               ar_offdiag_ij= ar_offdiag_ij+ca(inda-nocc,indapr-nocc)
 
           if(inda .eq. indapr)&
 !               ar_offdiag_ij= ar_offdiag_ij+CB_ph_ph(indj,indjpr)
@@ -504,7 +503,6 @@ contains
     end do
 
     deallocate(ca,cb)
-
        
 !!$ Filling the off-diagonal part of the ph-2p2h block 
 !!$ Coupling to the i=j,a=b configs
@@ -575,6 +573,10 @@ contains
     call register2()
     CLOSE(unt)
     write(6,*) count,' off-diagonal elements saved'
+
+    call cpu_time(t2)
+    write(6,'(/,2x,a,F8.2,1x,a1)') &
+         'Time taken to save off-diagonal elements:',t2-t1,'s'
 
   contains
     
