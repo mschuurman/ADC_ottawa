@@ -5,17 +5,17 @@
 
         implicit none
 
-
-        integer           :: scf,iv,ov(maxbas),nov
-        integer           :: nfin,nch,conv_max,ninit,noffd,nham
-        integer           :: nhole_fin,hole_fin(maxbas)
+        integer           :: scf,iv,ov(maxbas),nov                            
+        integer           :: nfin,nch,conv_max,ninit,noffd,nham                             
+        integer           :: nhole_fin,hole_fin(maxbas)                             
         integer           :: sym_fin,nhf,ncontim,nhole_in,np
         integer           :: i,j,k
+
         real*8            :: ecutoff
         real*8            :: e_init,d_init(2)
         real*8            :: xpqrs
         real*16           :: overmax
-        character(LEN=20) :: filename
+        character(len=40) :: filename,filint
 
 !  Allocatable arrays
         integer, dimension(:,:), allocatable            :: kpq_fin,kpq_in
@@ -56,7 +56,11 @@
          READ(4,*) ediff(i), dijlen(i)
       end do
 
-      call stieltjes (np,ediff,dijlen,1,overmax,'grace.dat','int.dat')
+      filename='grace.dat'
+      filint='int.dat'
+      call stieltjes (np,ediff,dijlen,1,overmax,filename,filint)
+
+!      call stieltjes (np,ediff,dijlen,1,overmax,'grace.dat','int.dat')
       
       deallocate(ediff,dijlen)
       

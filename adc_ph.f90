@@ -328,7 +328,7 @@ contains
     external vpqrs
     
     CC_ph_ph=0._d
-    
+
     do c=nOcc+1,nBas
        r=roccnum(c)
        do i=1,nOcc
@@ -356,7 +356,7 @@ contains
           
        end do
     end do
-    
+
   end function CC_ph_ph
 
 

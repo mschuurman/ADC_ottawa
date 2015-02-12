@@ -81,11 +81,14 @@ echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 echo "SLEPC_PATH=$slepcpath" >>ADC.CONFIG
 
 #-----------------------------------------------------------------------
-# Call to make
+# Calls to make
 #-----------------------------------------------------------------------
+list=(clean_all adc stieltjes)
+
 if [ -z $target ]; then
-    make clean_all $args
-    make ww $args
+    for T in "${list[@]}"; do
+	make $T $args
+    done
 else
     make $target $args
 fi

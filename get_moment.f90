@@ -79,12 +79,14 @@ contains
 
   subroutine get_modifiedtm_adc2(ndim,kpq,mtm)
     
-    integer, intent(in) :: ndim
+    integer, intent(in)                                   :: ndim
     integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim), intent(out) :: mtm 
+    real(d), dimension(ndim), intent(out)                 :: mtm
     
     integer :: a,b,k,j,cnt
     integer :: nlim1,nlim2
+
+    real(d) :: t1,t2
 
     mtm(:)=0._d
     
@@ -115,8 +117,7 @@ contains
        mtm(cnt)=FI_2p2h(a,k)
 
     end do
-   
-       
+    
 !!$----------II-a|=b,i=j-------------------
 
     nlim1=nlim2+1
@@ -130,8 +131,8 @@ contains
 
        mtm(cnt)=FII_2p2h(a,b,k)
 
-    end do    
-       
+    end do
+
 !!$----------III-a=b,i|=j-------------------
 
     nlim1=nlim2+1
@@ -146,7 +147,7 @@ contains
        mtm(cnt)=FIII_2p2h(a,k,j)
 
     end do    
-           
+
 !!$----------IV1-a|=b,i|=j-------------------
 
     nlim1=nlim2+1
@@ -164,6 +165,8 @@ contains
     end do 
 
 !!$----------IV2-a|=b,i|=j-------------------
+
+    call cpu_time(t1)
 
     do cnt= nlim1,nlim2
        

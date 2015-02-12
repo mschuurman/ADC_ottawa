@@ -665,7 +665,8 @@ subroutine master_adc2_prop()
              tmvec(1:davstates),osc_str(1:davstates),&
              kpq,itmp)
 
-        write(6,*) ' sums calculated with respect to the ground state'
+
+!        write(6,*) ' sums calculated with respect to the ground state'
 !        call get_sigma(davstates,ener(:),os2cs*osc_str(:))
 
         deallocate(mtm)
