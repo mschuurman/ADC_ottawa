@@ -174,7 +174,7 @@
  ! Jan. 30, 2015 -- assume we are working with RHF reference in a basis of
  !                  spatial orbitals.  This really only effects vpqrs...
  !
- subroutine load_mo_integrals(gam_info)
+ subroutine load_mo_integrals(gam)
   use accuracy
   use math
   use parameters
@@ -183,16 +183,15 @@
   use integrals_mo2e
   use printing
   implicit none
-  type(gam_structure)               :: gam_info ! gamess info (orbitals, geom, etc.) 
+  type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
   integer, parameter                :: iu_2e_ao   = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
-  integer(8)                        :: iosize_2e  = 220000000   ! Integral I/O
+  integer(hik)                      :: iosize_2e  = 220000000   ! Integral I/O
 
-  real(xrk), dimension(gam_info%nbasis,gam_info%nvectors)     :: gam_mos
-  real(xrk), dimension(:,:),allocatable                       :: mos,sao,hao,hao_basis,hmo,fmo,tmp_xk
-  complex(8),dimension(:,:),allocatable                       :: mos_cmplx
-  character(len=clen)                                         :: ao_mode
-  integer                                                     :: a,i,j,nmo,nao,nocc_spin
+  real(xrk), dimension(:,:),allocatable                       :: mos_real,hao,hmo,fmo
+  complex(xrk),dimension(:,:),allocatable                     :: mos_cmplx,hao_cmplx
+  character(len=clen)                                         :: ao_mode,int_type
+  integer(ik)                                                 :: a,i,j,nmo,nao,nao_spin,nocc_spin
   real(d)                                                     :: vpqrs
   real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1,e2
   real(xrk)                                                   :: nuc_repulsion
@@ -204,80 +203,43 @@
   q = MathDoubleFactorial(nelec)
 
   eps      = 1.d-5
-  nao      = gam_info%nbasis
-  nmo      = gam_info%nvectors
-  gam_mos  = gam_info%vectors(1:nao, 1:nmo)
+  nao      = gam%nbasis
+  nao_spin = 2*nao
+  nmo      = gam%nvectors
 
   ! allocate arrays
-  allocate(mos(nmo,nmo),mos_cmplx(2*nao,nmo),sao(nao,nao),hao(nao,nao),hao_basis(nmo,nmo),hmo(nmo,nmo),fmo(nmo,nmo),tmp_xk(nao,nao))
+  allocate(mos_cmplx(nao_spin,nmo),mos_real(nao_spin,nmo),hao(nao,nao),hao_cmplx(nao_spin,nao_spin),hmo(nmo,nmo),fmo(nmo,nmo))
   allocate(x_dipole(nmo,nmo),y_dipole(nmo,nmo),z_dipole(nmo,nmo),dpl(nmo,nmo))
 
-  ! load GAMESS MOS into core
+  ! assume for the time being ao integrals stored in core
+  ao_mode = 'incore'
+  call prepare_2e(int2e,gam,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
+
+  ! form 1e Hamiltonian (in AO basis)
+  call core_hamiltonian(gam,hao)
+  hao_cmplx                                = 0 
+  hao_cmplx(1:nao,1:nao)                   = hao(1:nao,1:nao)
+  hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = hao(1:nao,1:nao)
+
+  call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
+  mos_real = realpart(mos_cmplx)
+
+  ! load up variables depending on RHF/UHF case 
   if(nmo == nao) then         ! RHF case
       nocc_spin = nelec / 2
       d_cf = 2._xrk
-      mos = (0.,0.)
-      mos(1:nao,1:nmo) = gam_mos
-      mos_cmplx(1:nao,1:nmo) = cmplx(mos,kind=xrk)
-   else if(nmo == 2*nao) then ! UHF case
+   else if(nmo == nao_spin) then ! UHF case
       nocc_spin = nelec
       d_cf = 1._xrk
-      mos = (0.,0.)
-      mos(1:nao,     1:nmo-1:2) = gam_mos(1:nao,1:nao)
-      mos(nao+1:nmo, 2:nmo  :2) = gam_mos(1:nao,nao+1:nmo)
-      mos_cmplx = cmplx(mos,kind=xrk)
    else
       stop 'load_mo_integrals - confusing number of mos'
    endif 
 
-  ! Compute ao overlap integrals
-  call gamess_1e_integrals('AO OVERLAP',sao,bra=gam_info,ket=gam_info  )
-  if(debug) then
-   write (6,"(/t5,'AO OVERLAP INTEGRALS'/)")
-   call gamess_print_1e_integrals(sao,bra=gam_info,ket=gam_info)
-  endif
-
-  ! check orthonormality of GAMESS orbitals
-  scan_left: do i = 1,nmo
-   scan_right: do j = 1,nmo
-    ov = dot_product(gam_mos(:,i),matmul(sao,gam_mos(:,j)))
-    refval = 0._xrk
-    if(i==j)refval = 1._xrk
-    if(abs(ov-refval)>eps)write(6,"('warning: <',i3,'|',i3,'> = ',f15.10,', expecting ',f15.10)")i,j,ov,refval
-   enddo scan_right
-  enddo scan_left
-
-  ! Compute kinetic energy integrals
-  call gamess_1e_integrals('AO KINETIC',hao,bra=gam_info,ket=gam_info)
-  if(debug) then
-   write (6,"(/t5,'KINETIC ENERGY INTEGRALS'/)")
-   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
-  endif  
-
-  ! compute nuclear attraction integrals
-  nuclear_attraction: do i=1,nCen
-    xyz = real(gam_info%atoms(i)%xyz,kind=kind(xyz)) / abohr 
-    q   = real(gam_info%atoms(i)%znuc,kind=kind(q))
-    call gamess_1e_integrals('AO 3C 1/R',tmp_xk,bra=gam_info,ket=gam_info,op_xyz=xyz)
-    tmp_xk = -q * tmp_xk
-    if(debug) then
-     write (6,"(/t5,'NUCLEAR ATTRACTION TO ATOM ',i3,' Z= ',f12.5,' XYZ=',3f12.5/)") i, q, xyz
-     call gamess_print_1e_integrals(tmp_xk,bra=gam_info,ket=gam_info)
-    endif
-    hao = hao + tmp_xk
-  end do nuclear_attraction
- 
-  hao_basis               = 0._xrk
-  hao_basis(1:nao, 1:nao) = hao
-  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
+  ! actual call to general integrals in MO basis 
+  call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
 
   ! form 1e Hamiltonian in MO basis
-  hmo = matmul(matmul(transpose(mos),hao_basis),mos)
-
-  ! this is for debugging only! for production -- move this to disk/conventional
-  ao_mode = 'incore'
-  call prepare_2e(int2e,gam_info,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
-  call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
+  hmo = realpart(matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
   fmo = hmo
@@ -320,42 +282,13 @@
    occNum(i) = int(2,kind=4)
   enddo
 
-  ! determine the dipole moment integrals
-  call gamess_1e_integrals('AO DIPOLE X',hao,bra=gam_info,ket=gam_info  )
-  hao_basis               = 0._xrk
-  hao_basis(1:nao, 1:nao) = hao
-  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
-  x_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
-  if(debug) then
-   write (6,"(/t5,'AO DIPOLE X INTEGRALS'/)")
-   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
-   write (6,"(/t5,'MO DIPOLE X INTEGRALS'/)")
-   call gamess_print_1e_integrals(x_dipole,bra=gam_info,ket=gam_info)
-  endif
-
-  call gamess_1e_integrals('AO DIPOLE Y',hao,bra=gam_info,ket=gam_info  )
-  hao_basis               = 0._xrk
-  hao_basis(1:nao, 1:nao) = hao
-  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
-  y_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
-  if(debug) then
-   write (6,"(/t5,'AO DIPOLE Y INTEGRALS'/)")
-   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
-   write (6,"(/t5,'MO DIPOLE Y INTEGRALS'/)")
-   call gamess_print_1e_integrals(y_dipole,bra=gam_info,ket=gam_info)
-  endif
-
-  call gamess_1e_integrals('AO DIPOLE Z',hao,bra=gam_info,ket=gam_info  )
-  hao_basis               = 0._xrk
-  hao_basis(1:nao, 1:nao) = hao
-  if(nmo /= nao)hao_basis(nao+1:nmo, nao+1:nmo) = hao
-  z_dipole = matmul(matmul(transpose(mos),hao_basis),mos)
-  if(debug) then
-   write (6,"(/t5,'AO DIPOLE Z INTEGRALS'/)")
-   call gamess_print_1e_integrals(hao,bra=gam_info,ket=gam_info)
-   write (6,"(/t5,'MO DIPOLE Z INTEGRALS'/)")
-   call gamess_print_1e_integrals(z_dipole,bra=gam_info,ket=gam_info)
-  endif
+  ! load up the dipole moment integrals
+  int_type = 'AO DIPOLE X'
+  call dipole_integrals(gam,int_type,nao_spin,nmo,x_dipole,mos_real)
+  int_type = 'AO DIPOLE Y'
+  call dipole_integrals(gam,int_type,nao_spin,nmo,y_dipole,mos_real)
+  int_type = 'AO DIPOLE Z'
+  call dipole_integrals(gam,int_type,nao_spin,nmo,z_dipole,mos_real)
 
   ! assuming dpl is the norm of the dipole moment vector
   do i = 1,nmo
@@ -369,10 +302,16 @@
   write(6,1000)
   write(6,1001)e1
   write(6,1002)e2
-  write(6,1003)nuc_repulsion(gam_info)
-  write(6,1004)e1+e2+nuc_repulsion(gam_info)
+  write(6,1003)nuc_repulsion(gam)
+  write(6,1004)e1+e2+nuc_repulsion(gam)
   write(6,"(60('-'))")
   call flush
+
+  ! clear integral cache
+!  call clear_2e(int2e)
+
+  ! clean up all the allocated arrays
+  deallocate(mos_real,mos_cmplx,hao,hmo,fmo)
 
   return
 1000 format(' Computation of HF energy in mo basis:')
@@ -383,29 +322,6 @@
  end subroutine load_mo_integrals
 
  ! 
- ! compute nuclear repulsion
- !
- function nuc_repulsion(gam_info)
-  use accuracy
-  use import_gamess
-  type(gam_structure)               :: gam_info ! gamess info (orbitals, geom,etc.) 
-  real(xrk)                         :: nuc_repulsion
-  integer                           :: i,j
-  real(xrk)                         :: xyz(3),q,r
-
-  loop_atom1: do i=1,gam_info%natoms-1
-    xyz = real(gam_info%atoms(i)%xyz, kind=kind(xyz))
-      q = real(gam_info%atoms(i)%znuc,kind=kind(q))
-      loop_atom2: do j=i+1,gam_info%natoms
-        r = sqrt(sum((real(gam_info%atoms(j)%xyz,kind=kind(xyz))-xyz)**2)) / abohr
-        nuc_repulsion = nuc_repulsion + q*real(gam_info%atoms(j)%znuc,kind=kind(q)) / r
-      enddo loop_atom2
-   enddo loop_atom1
-
-   return
- end function nuc_repulsion
-
- !
  ! 
  !
  subroutine phis_init

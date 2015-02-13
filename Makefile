@@ -44,12 +44,19 @@ MULTI = accuracy.o \
 	gamess_internal.o \
 	import_gamess.o \
 	integral_tools.o \
-	integrals_mo2e.o
+	integrals_mo2e.o \
+        diis.o \
+        sort_tools.o \
+        block_diag.o \
+        biorthogonal_tools.o \
+        scf_tools.o \
+        fock_tools.o 
 
 ADC =   constants.o \
 	parameters.o \
 	misc.o \
-	external.o \
+	load_electronic_structure.o \
+        scf_electronic_structure.o \
 	external_diag.o \
 	filetools.o \
 	adc_ph.o \
