@@ -25,7 +25,6 @@
  end function vpqrs
 
 
-
  subroutine errmsg(message)
   implicit none
   character*144         :: message
@@ -290,13 +289,6 @@
   int_type = 'AO DIPOLE Z'
   call dipole_integrals(gam,int_type,nao_spin,nmo,z_dipole,mos_real)
 
-  ! assuming dpl is the norm of the dipole moment vector
-  do i = 1,nmo
-   do j = 1,nmo
-     dpl(i,j) = sqrt(x_dipole(i,j)**2 + y_dipole(i,j)**2 + z_dipole(i,j))
-   enddo
-  enddo
-
   ! print out summary (compare to GAMESS output)
   write(6,"(60('-'))")
   write(6,1000)
@@ -308,10 +300,10 @@
   call flush
 
   ! clear integral cache
-!  call clear_2e(int2e)
+  call clear_2e(int2e)
 
   ! clean up all the allocated arrays
-  deallocate(mos_real,mos_cmplx,hao,hmo,fmo)
+  deallocate(mos_real,mos_cmplx,hao_cmplx,hao,hmo,fmo)
 
   return
 1000 format(' Computation of HF energy in mo basis:')

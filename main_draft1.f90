@@ -27,7 +27,7 @@ program main
   gam_log = 'gamess.log'
   call read_user()
   
-  call read_gamess(gam_chkpt,gam_log)
+  call load_gamess(gam_chkpt,gam_log)
 
 !-----------------------------------------------------------------------  
 ! Reading user's data

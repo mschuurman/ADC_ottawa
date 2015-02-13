@@ -72,7 +72,7 @@ end subroutine read_molcas1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine read_gamess(chkpt_file,log_file)
+subroutine load_gamess(chkpt_file,log_file)
   use accuracy
   use parameters
   use import_gamess 
@@ -108,7 +108,7 @@ subroutine read_gamess(chkpt_file,log_file)
 100 FORMAT(/,10x,A3,5x,A3,5x,A9,5x,A3,5x,A16)
 101 FORMAT(/,10x,I3,5x,I3,5x,A2,5x,F3.1,5x,F16.10)
 102 FORMAT(/,3("-"),A30,5x,F16.10,1x,A4)
-end subroutine read_gamess
+end subroutine load_gamess
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 

@@ -190,7 +190,13 @@
   end do iterate_scf
 
   if(.not.converged)stop 'unable to determine converged orbitals'
-  mos_conv = mos(1:nao_spin,1:nao_spin:2,1)
+
+  if(nvec /= nao_spin) then
+   mos_conv = mos(1:nao_spin,1:nao_spin:2,1) ! for RHF case simply pull out the alpha orbitals
+  else
+   mos_conv = mos(:,:,1)                     ! for UHF case, take all orbitals
+  endif
+
   deallocate(mo_occ,mo_energy,mos,mosg,tmp,rho,rho_old,fmat,fmat_old,gmat,smat,sphalf,smhalf)
 
   return
@@ -230,9 +236,9 @@
    type(gam_structure),intent(in)  :: gam ! gamess info (orbitals, geom, etc.) 
    character(clen),intent(in)      :: int_type
    integer(ik),intent(in)          :: nbas,nmo
-   real(xrk),intent(out)           :: int_dipole(nbas,nmo)
-   real(xrk),intent(in)            :: mos(nbas,nmo)
-   real(xrk),allocatable           :: dao(:,:),dao_spin(:,:)
+   real(rk),intent(out)            :: int_dipole(nmo,nmo)
+   real(rk),intent(in)             :: mos(nbas,nmo)
+   real(rk),allocatable            :: dao(:,:),dao_spin(:,:)
    integer(ik)                     :: nao,nao_spin
 
    nao      = gam%nbasis
