@@ -19,19 +19,20 @@ F90	= gfortran
 F77	= gfortran
 CC	= gcc
 
-F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp
+F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
 CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 -lblas -llapack
+LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
 SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
 
 #-----------------------------------------------------------------------
 # Define object files
 #-----------------------------------------------------------------------
+# Main ADC code
 MULTI = accuracy.o \
 	printing.o \
 	timer.o \
@@ -82,11 +83,29 @@ ADC =   constants.o \
 
 OBJECTS = $(MULTI) $(ADC)
 
+# Stieltjes imaging code
+STIELTJES = stieltjes/qmath.o \
+	stieltjes/pythag_quad.o \
+	stieltjes/tql2_quad.o \
+        stieltjes/globalmod.o \
+	stieltjes/stieltjes_s3_modified.o \
+	stieltjes/main_stieltjes.o 
+
+STIELTJES_OBJ = qmath.o \
+	pythag_quad.o \
+	tql2_quad.o \
+        globalmod.o \
+	stieltjes_s3_modified.o \
+	main_stieltjes.o 
+
 #-----------------------------------------------------------------------
 # Rules to create the program
 #-----------------------------------------------------------------------
-ww: $(OBJECTS)
+adc: $(OBJECTS)
 	$(F90) $(F90OPTS) $(OBJECTS) $(LIBS) $(SLEPC_LIBS) -o adc.x 
+
+stieltjes: $(STIELTJES)
+	$(F90) $(F90OPTS) $(STIELTJES_OBJ) -o stieltjes.x
 
 %.o: %.f90
 	$(F90) -c $(F90OPTS) $<
@@ -98,4 +117,4 @@ ww: $(OBJECTS)
 	$(CC) $(CCOPTS)  -c $<
 
 clean_all:
-	rm -f *.o *~ *.mod 
+	rm -f *.o *~ *.mod

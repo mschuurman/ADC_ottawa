@@ -22,6 +22,7 @@
     real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
                                             osc_str
     real(d), dimension(:,:), allocatable :: rvec
+    real(d)                              :: t1,t2
 
 !-----------------------------------------------------------------------
 ! Allocate kpq and select configurations
@@ -51,6 +52,19 @@
     write(6,*) '      1p1h       2p2h_1      2p2h_2      2p2h_3      2p2h_4i      2p2h_4ii'
     write(6,*) kpq(1,0),kpq(2,0),kpq(3,0),kpq(4,0),kpq(5,0),kpq(5,0)
     write(6,*)
+
+!-----------------------------------------------------------------------
+! Initialise dipole moment matrix
+!-----------------------------------------------------------------------
+    if (tranmom2 .eq. 'x') then
+       dpl(:,:)=x_dipole(:,:)
+    elseif (tranmom2 .eq. 'y') then
+       dpl(:,:)=y_dipole(:,:)
+    elseif (tranmom2 .eq. 'z') then
+       dpl(:,:)=z_dipole(:,:)
+    end if
+    
+    CHECK_dip=nirrep2
 
 !-----------------------------------------------------------------------
 ! If we are performing a fake ip calculation, then determine the
@@ -87,6 +101,7 @@
 !       approximation
 !-----------------------------------------------------------------------    
     allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
+
     call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
 
     do i=1,davstates
