@@ -98,6 +98,7 @@
   real(rk), allocatable       :: smhalf(:,:)     ! S^{-1/2}, null-space isprojected out
   real(rk), allocatable       :: mo_occ(:)       ! MO occupation vector
 
+
   nao = gam%nbasis
   nvec = gam%nvectors
   nao_spin = 2*nao

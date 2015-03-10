@@ -643,6 +643,38 @@ contains
     
   end subroutine get_fspace_tda_direct
 
+!!$------------------------------------------------------------------------
+
+  subroutine get_fspace_tda_direct_cvs(ndim,kpq,arr,evector) 
+
+    integer, intent(in) :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    real(d), dimension(ndim), intent(out) :: evector
+    real(d), dimension(ndim,ndim), intent(inout) :: arr
+
+    integer :: nbuf,i
+    
+    real(d), dimension(:), allocatable :: ar_diag
+    real(d), dimension(:,:), allocatable :: ar_offdiag
+    
+    allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
+    call get_offdiag_tda_direct_cvs(ndim,kpq(:,:),ar_offdiag(:,:))
+    call get_diag_tda_direct_cvs(ndim,kpq(:,:),ar_diag(:))
+    
+    
+    arr(:,:)=ar_offdiag(:,:)
+    
+    do i=1,ndim
+       arr(i,i)=ar_diag(i)
+    end do
+    
+    deallocate(ar_diag,ar_offdiag)
+    
+    call vdiagonalise(ndim,arr(:,:),evector(:))
+    
+  end subroutine get_fspace_tda_direct_cvs
+
 !!$-----------------------------------------------------------------------------
 !!$-----------------------------------------------------------------------------
 

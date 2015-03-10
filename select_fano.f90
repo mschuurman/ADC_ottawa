@@ -83,7 +83,7 @@ contains
        do i=1,hcentre(0)
           cah=hcentre(i)
           call iscore(cah,ic)
-          if (ic.eq.1) then
+          if (ic.eq.1) then             
              isym=MT(orbSym(cah),orbSym(a))
              if(isym .eq. nirrep) then
                 kpq(1,0)=kpq(1,0)+1
@@ -613,7 +613,6 @@ contains
 
           if ((ic1.eq.0.and.ic2.eq.1) &
                .or.(ic1.eq.1.and.ic2.eq.0)) then
-
              isym1=MT(orbSym(i),orbSym(j))
              if (isym1 .eq. nirrep) then
                 do ap=nOcc+1,nBas

@@ -73,6 +73,7 @@ contains
 
     ndim1f=kpqf(1,0)
     do i=1,ndim1f
+       
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
     
        ndim1=kpq(1,0)
@@ -284,7 +285,7 @@ contains
        end do
 !!!!!! end of the first i cycle: the first travec element has been computed!!!!!
 
-       write(6,*),i,ndim1f,travec(i)
+!       write(6,*),i,ndim1f,travec(i)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     end do
@@ -304,7 +305,6 @@ contains
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
    
- 
        ndim1=kpq(1,0)
        do j=1,ndim1
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -415,7 +415,7 @@ ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
        end do
 ! end of the first i cycle: the first travec element has been computed!!!
 
-       write(6,*),i,travec(i)
+!       write(6,*),i,travec(i)
 
     end do
     
@@ -430,6 +430,7 @@ ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
     dim_countf=dim_countf+kpqf(2,0)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
+
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
 
        ndim1=kpq(1,0)
@@ -542,7 +543,7 @@ ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
        end do
 
-       write(6,*),i,travec(i)
+!       write(6,*),i,travec(i)
 
 ! end of the first i cycle: the first travec element has been computed!!!
 
@@ -672,7 +673,7 @@ ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
        end do
 
-       write(6,*),i,travec(i)
+!       write(6,*),i,travec(i)
 
 ! end of the first i cycle: the first travec element has been computed!!!
 
@@ -807,7 +808,7 @@ ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
        end do
 
-       write(6,*),i,travec(i)
+!       write(6,*),i,travec(i)
 
 ! end of the first i cycle: the first travec element has been computed!!!
 
@@ -940,7 +941,7 @@ ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
        end do
 
-       write(6,*),i,travec(i)
+!       write(6,*),i,travec(i)
 
 ! end of the first i cycle: the first travec element has been computed!!!
 
@@ -2161,6 +2162,7 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     ndim1=kpq(1,0)
     
     do i=1,ndim1
+
        call get_indices(kpq(:,i),inda,indb,indk,indl,spin)
        do j=i+1,ndim1
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)             

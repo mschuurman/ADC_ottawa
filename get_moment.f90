@@ -111,13 +111,14 @@ contains
     nlim2=nlim2+kpq(2,0)
     
     do cnt= nlim1,nlim2
+
        k=kpq(3,cnt)
        a=kpq(5,cnt)
 
        mtm(cnt)=FI_2p2h(a,k)
 
     end do
-    
+ 
 !!$----------II-a|=b,i=j-------------------
 
     nlim1=nlim2+1

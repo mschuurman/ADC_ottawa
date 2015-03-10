@@ -729,7 +729,7 @@ subroutine master_adc2_prop()
            call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,travec)
            write(6,*) "first matrix-vector product done"
         else if (matvec.eq. 2) then
-           call get_fspace_adc2_DIPOLE_direct_OK(ndim,ndimf,kpq,kpqf,vec_init,arrd,travec) 
+           call get_fspace_adc2_DIPOLE_direct_OK(ndim,ndimf,kpq,kpqf,vec_init,arrd,travec)
            write(6,*) "second matrix-vector product done"
         else if (matvec.eq.3) then
            call get_fspace_adc2_DIPOLE_direct(ndim,kpq,vec_init,arrd,travec) 

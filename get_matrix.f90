@@ -42,6 +42,28 @@ contains
 !!$-------------------------------------------------------------------------  
 !!$-------------------------------------------------------------------------
 
+  subroutine get_diag_tda_direct_cvs(ndim,kpq,ar_diag)
+    
+    integer, intent(in) :: ndim 
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    real(d), dimension(ndim), intent(out) :: ar_diag
+    
+    integer :: i
+    integer :: inda,indb,indj,indk,spin
+
+!!$ Preparing the diagonal part for the full diagonalisation   
+    
+    do i= 1,ndim
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       ar_diag(i)=K_ph_ph(e(inda),e(indj))
+       ar_diag(i)=ar_diag(i)+C1_ph_ph(inda,indj,inda,indj)
+    end do
+
+  end subroutine get_diag_tda_direct_cvs
+
+!!$-------------------------------------------------------------------------  
+!!$-------------------------------------------------------------------------
+
   subroutine get_offdiag_tda_direct(ndim,kpq,ar_offdiag)
     
     integer, intent(in) :: ndim
@@ -62,7 +84,7 @@ contains
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
 !          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
-          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-12_d) then
+          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
              write(6,*) "TDA matrix is not symmetric. Stopping now."
              print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
              stop
@@ -73,19 +95,42 @@ contains
   end subroutine get_offdiag_tda_direct
 
 
+!!$-------------------------------------------------------------------------  
+!!$-------------------------------------------------------------------------
 
+  subroutine get_offdiag_tda_direct_cvs(ndim,kpq,ar_offdiag)
+    
+    integer, intent(in) :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag 
+    
+    integer :: i,j
+    integer :: inda,indb,indj,indk,spin
+    integer :: indapr,indbpr,indjpr,indkpr,spinpr
+
+!!$ Full diagonalization. The program performs a symmetry check. For better efficiency 
+!!$ it should be removed if no problems have showed up.
+ 
+    do i=1,ndim
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=i+1,ndim
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
+          ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
+!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
+          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
+             write(6,*) "TDA matrix is not symmetric. Stopping now."
+             print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
+             stop
+          end if
+       end do
+    end do
+    
+  end subroutine get_offdiag_tda_direct_cvs
 
 
 !!$---------------------------------------------------
 !!$---------------------------------------------------
-
-
-
-
-
-
-
-
 
 
   subroutine get_diag_tda_save(ndim,kpq,nbuf,chr)
@@ -1460,6 +1505,39 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
   integer, dimension(buf_size) :: oi,oj
   real(d), dimension(buf_size) :: file_offdiag
 
+  integer                              :: nvirt,a,b,nzero
+  real(d), dimension(:,:), allocatable :: ca,cb
+  real(d)                              :: t1,t2
+
+
+
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+  call cpu_time(t1)
+  
+  nvirt=nbas-nocc
+  allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+  
+  ! CA_ph_ph
+  do i=1,nvirt
+     do j=i,nvirt
+        ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
+        ca(j,i)=ca(i,j)
+     enddo
+  enddo
+  
+  ! CB_ph_ph
+  do i=1,nocc
+     do j=i,nocc
+        cb(i,j)=CB_ph_ph(i,j)
+        cb(j,i)=cb(i,j)
+     enddo
+  enddo
+
+!-----------------------------------------------------------------------
+! Calculate the off-diagonal Hamiltonian matrix elements
+!-----------------------------------------------------------------------
   name="hmlt.off"//chr
   unt=12
   
@@ -1479,10 +1557,15 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
         do j=1,i-1
            call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)             
            arr_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
+
            if(indj .eq. indjpr)&
-                arr_offdiag_ij=arr_offdiag_ij+CA_ph_ph(inda,indapr)
+!                arr_offdiag_ij=arr_offdiag_ij+CA_ph_ph(inda,indapr)
+                arr_offdiag_ij= arr_offdiag_ij+ca(inda-nocc,indapr-nocc)
+
            if(inda .eq. indapr)&
-                arr_offdiag_ij=arr_offdiag_ij+CB_ph_ph(indj,indjpr)
+!                arr_offdiag_ij=arr_offdiag_ij+CB_ph_ph(indj,indjpr)
+                arr_offdiag_ij= arr_offdiag_ij+cb(indj,indjpr)
+
            arr_offdiag_ij=arr_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
            call register1()
         end do

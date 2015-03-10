@@ -20,10 +20,9 @@
    else
      vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
    endif
-
+   
    return
  end function vpqrs
-
 
  subroutine errmsg(message)
   implicit none
@@ -136,10 +135,6 @@
     enddo scan_orbs
     orbfnd=1
    endif
-
-   ! BODGE
-!   earr(20)=1d-10
-   ! BODGE
 
   enddo scan_lines
   close(gamess)

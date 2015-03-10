@@ -79,6 +79,7 @@ ADC =   constants.o \
 	master_adc2_prop.o \
 	master_adc2ext_prop.o \
 	master_adc2_ener.o \
+	master_adc2ext_ener.o \
 	main_draft1.o
 
 OBJECTS = $(MULTI) $(ADC)

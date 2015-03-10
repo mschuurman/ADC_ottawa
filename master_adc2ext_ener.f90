@@ -1,4 +1,4 @@
-  subroutine master_adc2_ener
+  subroutine master_adc2ext_ener
 
     use constants
     use parameters
@@ -31,11 +31,11 @@
     kpq(:,:)=-1
 
     if (lcvs) then
-       ! CVS-ADC(2)
-       call select_atom_is_cvs(kpq(:,:))
-       call select_atom_d_cvs(kpq(:,:),-1)
+       ! CVS-ADC(2)-x
+       write(6,'(/,2x,a,/)') "CVS-ADC(2)-x is not yet implemented"
+       STOP
     else
-       ! ADC(2)-s
+       ! ADC(2)-x
        call select_atom_is(kpq(:,:))
        call select_atom_d(kpq(:,:),-1)
     endif
@@ -78,10 +78,11 @@
 ! Calculate and save the Hamiltonian matrix to file
 !-----------------------------------------------------------------------
     write(6,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
-    if (lcvs) then
-       call write_fspace_adc2_1_cvs(ndim,kpq(:,:),noffd,'i')
+    if (lcvs) then       
+       write(6,'(/,2x,a,/)') "CVS-ADC(2)-x is not yet implemented"
+       STOP
     else
-       call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i')
+       call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
     endif
 
 !-----------------------------------------------------------------------
@@ -106,22 +107,17 @@
     osc_str=0.0d0
 
     if (.not.lfakeip) then
-       if (lcvs) then
-          write(6,'(/,2x,a,/)') 'Transition dipole moments within the &
-               CVS approximation are not currently supported'
-       else
-          call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
-          do i=1,davstates
-             tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
-             osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
-          end do
-       endif       
+       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+       do i=1,davstates
+          tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
+          osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
+       end do
     endif
-
+       
     itmp=1+nBas**2*4*nOcc**2
     call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),&
          tmvec(1:davstates),osc_str(1:davstates),kpq,itmp)
     
     return
 
-  end subroutine master_adc2_ener
+  end subroutine master_adc2ext_ener

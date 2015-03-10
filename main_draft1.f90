@@ -83,6 +83,9 @@ program main
   elseif (method.eq.-2) then
      call master_adc2_ener()
 
+  elseif (method.eq.-3) then
+     call master_adc2ext_ener()
+
   end if
   
   call cpu_time(time)
