@@ -88,7 +88,6 @@ contains
 
     external dsyev
 
-    write(6,*) "Starting diagonalisation"
     lwork=3*ndim
     allocate(work(lwork))
     lworkl=int(lwork,lng)

@@ -86,8 +86,7 @@ contains
                       
                       FA_ph=FA_ph-0.5_d*dpl(c,k)/e_lmba/e_lmbc*(&
                            vpqrs(a,l,b,m)*(2._d*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
-                           vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
-                      
+                           vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))                      
                    end if
                    
                 end do
@@ -95,6 +94,7 @@ contains
              end do
           end do
        end if
+
     end do
                    
   end function FA_ph
@@ -893,16 +893,292 @@ contains
 
   end subroutine get_Dground_2
 
+!#######################################################################
 
+  real(d) function tauA(c1,a)
 
+    implicit none
 
+    integer, intent(in) :: c1,a
+    integer             :: c,b1,b,l1,l,m1,m
+    real(d)             :: e_lmba,e_lmbc
 
+    tauA=0.0d0
 
+    c=roccnum(c1)
 
+    do b1= nOcc+1,nBas
+       b=roccnum(b1)
+       
+       do l1=1,nOcc
+          l=roccnum(l1)
 
+          e_lmba=2._d*e(l)-e(b)-e(a)
+          e_lmbc=2._d*e(l)-e(b)-e(c)
 
+          tauA=tauA-0.5d0/e_lmba/e_lmbc*vpqrs(a,l,b,l)*vpqrs(l,c,l,b)
+          
+          do m1=l1+1,nOcc
+             m=roccnum(m1)
+          
+             e_lmba=e(l)+e(m)-e(b)-e(a)
+             e_lmbc=e(l)+e(m)-e(b)-e(c)
 
+             tauA=tauA-0.5d0/e_lmba/e_lmbc*(&
+                  vpqrs(a,l,b,m)*(2._d*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
+                  vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
 
+          enddo
+
+       enddo
+       
+    enddo
+
+  end function tauA
+
+!#######################################################################
+
+  real(d) function tauB(m1,k)
+
+    integer, intent(in) :: k,m1
+    integer             :: b1,b,c1,c,l1,l,m,sym,sym1,sym2
+    real(d)             :: e_klbc,e_lmbc
+    
+    tauB=0.0d0
+    
+    m=roccnum(m1)
+    
+    do l1=1,nOcc
+       l=roccnum(l1)
+       do b1=nOcc+1,nBas
+          b=roccnum(b1)                
+          
+          sym1=MT(orbSym(k),orbSym(l))
+          if (sym1 .eq. 1) then
+             e_klbc=e(k)+e(l)-e(b)-e(b)
+             e_lmbc=e(l)+e(m)-e(b)-e(b)                   
+             tauB=tauB-0.5d0/e_klbc/e_lmbc*vpqrs(b,k,b&
+                  &,l)*vpqrs(m,b,l,b)
+          end if
+          
+          do c1=b1+1,nBas
+             c=roccnum(c1)
+             sym2=MT(orbSym(b),orbSym(c))
+             
+             if (MT(sym1,sym2) .eq. 1) then
+                e_klbc=e(k)+e(l)-e(b)-e(c)
+                e_lmbc=e(l)+e(m)-e(b)-e(c)                      
+                tauB=tauB-0.5d0/e_klbc/e_lmbc*(&
+                     vpqrs(b,k,c,l)*(2._d*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
+                     vpqrs(b,l,c,k)*(2._d*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
+                
+             end if
+             
+          end do
+       end do
+    end do
+
+    return
+
+  end function tauB
+
+!#######################################################################
+  
+  real(d) function tau21(a,m1)
+
+    implicit none
+
+    integer, intent(in) :: a,m1
+    integer             :: b1,b,c1,c,l1,l,m,sym,sym1,sym2
+    real(d)             :: e_ma,e_lmbc
+
+    tau21=0.0d0
+
+    m=roccnum(m1)
+
+    e_ma=e(m)-e(a)
+
+    do l1= 1,nOcc
+       l=roccnum(l1)
+       do b1= nOcc+1,nBas
+          b=roccnum(b1)
+          
+          sym1=MT(orbSym(l),orbSym(m))
+          
+          if (sym1 .eq. 1) then
+             e_lmbc=e(l)+e(m)-e(b)-e(b)
+             tau21=tau21-1.0d0/e_ma/e_lmbc*vpqrs(b,l,b,m)*vpqrs(l,b,a,b)
+          end if
+          
+          do c1= b1+1,nBas
+             c=roccnum(c1)
+             
+             sym2=MT(orbSym(c),orbSym(b))
+             
+             if (MT(sym1,sym2) .eq. 1) then
+                e_lmbc=e(l)+e(m)-e(b)-e(c)
+                tau21= tau21-1.0d0/e_ma/e_lmbc*(&
+                     vpqrs(b,l,c,m)*(2._d*vpqrs(l,b,a,c)-vpqrs(l,c,a,b))+&
+                     vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,a,b)-vpqrs(l,b,a,c)))
+             end if
+             
+          end do
+       end do
+    end do
+
+    return
+
+  end function tau21
+
+!#######################################################################
+
+  real(d) function tau22(a,n1)
+
+    implicit none
+
+    integer, intent(in) :: a,n1
+    integer             :: b1,b,l1,l,m1,m,n,sym,sym1,sym2
+    real(d)             :: e_na,e_lmba
+
+    tau22=0.0d0
+    
+    n=roccnum(n1)
+    
+    e_na=e(n)-e(a)
+    do l1=1,nOcc
+       l=roccnum(l1)
+       do b1=nOcc+1,nBas
+          b=roccnum(b1)
+          sym1=MT(orbSym(n),orbSym(b))
+          
+          if (sym1 .eq. 1) then
+             e_lmba=e(l)+e(l)-e(b)-e(a)
+             tau22=tau22+1.0d0/e_na/e_lmba*vpqrs(l,b,l,n)*vpqrs(b,l,a,l)
+          end if
+                
+          do m1= l1+1,nOcc
+             m=roccnum(m1)
+
+             sym2=MT(orbSym(l),orbSym(m))
+
+             if (MT(sym1,sym2) .eq. 1) then
+                e_lmba=e(l)+e(m)-e(b)-e(a)
+                tau22=tau22+1.0d0/e_na/e_lmba*(&
+                     vpqrs(l,b,m,n)*(2._d*vpqrs(b,l,a,m)-vpqrs(b,m,a,l))+&
+                     vpqrs(l,n,m,b)*(2._d*vpqrs(b,m,a,l)-vpqrs(b,l,a,m)))
+             end if
+             
+          end do
+          
+       end do
+    end do
+
+    return
+    
+  end function tau22
+
+!#######################################################################
+
+  real(d) function tau23(b1,k)
+
+    implicit none
+
+    integer, intent(in) :: b1,k
+    integer             :: b,c1,c,l1,l,m1,m,sym,sym1,sym2
+    real(d)             :: e_kb,e_lmbc
+
+    tau23=0.0d0
+
+    b=roccnum(b1)
+    e_kb=e(k)-e(b)
+    do c1=nOcc+1,nBas
+       c=roccnum(c1)
+       do l1= 1,nOcc
+          l=roccnum(l1)
+          
+          sym1=MT(orbSym(b),orbSym(c))   
+                
+          if (sym1 .eq. 1) then
+             e_lmbc=e(l)+e(l)-e(b)-e(c)
+             tau23=tau23-1.0d0/e_kb/e_lmbc*vpqrs(b,l,c,l)*vpqrs(l,k,l,c)
+          end if
+          
+          do m1= l1+1,nOcc
+             m=roccnum(m1)
+             
+             sym2=MT(orbSym(l),orbSym(m))
+             
+             if (MT(sym1,sym2) .eq. 1) then
+                
+                e_lmbc=e(l)+e(m)-e(b)-e(c)
+                tau23=tau23-1.0d0/e_kb/e_lmbc*(&
+                     vpqrs(b,l,c,m)*(2._d*vpqrs(l,k,m,c)-vpqrs(l,c,m,k))+&
+                     vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,m,k)-vpqrs(l,k,m,c)))
+                
+             end if
+             
+          end do
+          
+       end do
+    end do
+
+    return
+
+  end function tau23
+
+!#######################################################################
+
+  real(d) function tau24(d1,k)
+
+    implicit none
+
+    integer, intent(in) :: d1,k
+    integer             :: b1,b,c1,c,dd,l1,l,sym,sym1,sym2
+    real(d)             :: e_kd,e_klbc
+
+    tau24=0.0d0
+
+    dd=roccnum(d1)
+    
+    e_kd=e(k)-e(dd)
+    do l1= 1,nOcc
+       l=roccnum(l1)
+       do b1= nOcc+1,nBas
+          b=roccnum(b1)
+          
+          sym1=MT(orbSym(l),orbSym(dd))
+          
+          if (sym1 .eq. 1) then
+                
+             e_klbc=e(k)+e(l)-e(b)-e(b)
+             tau24=tau24+1.0d0/e_kd/e_klbc*vpqrs(b,k,b,l)*vpqrs(dd,b,l,b)
+             
+          end if
+          
+          do c1= b1+1,nBas
+             c=roccnum(c1)
+             
+             sym2=MT(orbSym(b),orbSym(c))  
+                
+             if (MT(sym1,sym2) .eq. 1) then
+                
+                e_klbc=e(k)+e(l)-e(b)-e(c)
+                tau24=tau24+1.0d0/e_kd/e_klbc*(&
+                     vpqrs(b,k,c,l)*(2._d*vpqrs(dd,b,l,c)-vpqrs(dd,c,l,b))+&
+                     vpqrs(b,l,c,k)*(2._d*vpqrs(dd,c,l,b)-vpqrs(dd,b,l,c)))
+                
+             end if
+                   
+          end do
+          
+       end do
+    end do
+
+    return
+
+  end function tau24
+
+!#######################################################################
 
 
 end module dipole_ph
