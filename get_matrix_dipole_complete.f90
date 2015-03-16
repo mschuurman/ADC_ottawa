@@ -9124,27 +9124,4 @@ ar_offdiag_ij = 0.
 
  
 end module get_matrix_DIPOLE    
-          
-          
-       
-       
-       
-       
-    
-    
-    
-       
-       
-       
-       
-       
-       
-    
-    
-    
-    
 
-    
-    
-    
-    

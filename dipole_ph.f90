@@ -1180,5 +1180,69 @@ contains
 
 !#######################################################################
 
+  real(d) function tauC(b1,l1)
+
+    implicit none
+
+    integer, intent(in) :: b1,l1
+    integer             :: b,c1,c,l,m1,m,sym
+    real(d)             :: e_klab,e_mlcb
+    
+    tauC=0.0d0
+
+    b=roccnum(b1)
+    l=roccnum(l1)
+
+    do c1=nOcc+1,nBas
+       c=roccnum(c1)
+       do m1=1,nOcc
+          m=roccnum(m1)
+          sym=MT(orbSym(c),orbSym(m))
+          if (sym .eq. CHECK_dip) then
+             e_mlcb=e(m)+e(l)-e(c)-e(b)
+             tauC=tauC+0.5d0*dpl(c,m)/e_mlcb&
+                  *(2.0d0*vpqrs(m,c,l,b)-vpqrs(m,b,l,c))
+          endif
+       enddo
+    enddo
+    
+    return
+
+  end function tauC
+
+!#######################################################################
+
+  real(d) function FC_ph_new(a,k,tau,nvirt)
+
+    implicit none
+    
+    integer, intent(in)                        :: a,k,nvirt
+    real*8, intent(in), dimension(nvirt,nocc)  :: tau
+    integer                                    :: itmp
+    integer                                    :: b1,b,l1,l,sym
+    real(d) :: e_klab,e_mlcb
+
+    FC_ph_new=0.0d0
+
+    itmp=0
+    do b1=nOcc+1,nBas
+       itmp=itmp+1
+       b=roccnum(b1)
+       do l1=1,nOcc
+          l=roccnum(l1)
+          sym=MT(orbSym(l),orbSym(b))
+          if (sym .eq. CHECK_dip) then             
+             e_klab=e(k)+e(l)-e(a)-e(b)
+             FC_ph_new=FC_ph_new &
+                  +tau(itmp,l1)/e_klab*(2.0d0*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))
+          endif
+       enddo
+    enddo
+
+    return
+
+  end function FC_ph_new
+
+!#######################################################################
 
 end module dipole_ph

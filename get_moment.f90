@@ -101,15 +101,13 @@ contains
     nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
-! Not yet improved: FC_ph, F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, 
-!                   F210_ph
+! Not yet improved: F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph
 !-----------------------------------------------------------------------
     do cnt= nlim1,nlim2
        k=kpq(3,cnt)
        a=kpq(5,cnt)
        mtm(cnt)=dpl(a,k)
        mtm(cnt)=mtm(cnt)+F0_ph(a,k)
-       mtm(cnt)=mtm(cnt)+FC_ph(a,k)
        mtm(cnt)=mtm(cnt)+F25_ph(a,k)
        mtm(cnt)=mtm(cnt)+F26_ph(a,k)
        mtm(cnt)=mtm(cnt)+F27_ph(a,k)
@@ -169,6 +167,24 @@ contains
        mtm(cnt)=mtm(cnt)+ftmp
     end do
 
+    deallocate(tau)
+
+!-----------------------------------------------------------------------
+! FC_ph
+!-----------------------------------------------------------------------
+    allocate(tau(nvirt,nocc))
+    itmp=0
+    do a=nocc+1,nbas
+       itmp=itmp+1
+       do l=1,nocc
+          tau(itmp,l)=tauC(a,l)
+       enddo
+    enddo
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       mtm(cnt)=mtm(cnt)+FC_ph_new(a,k,tau,nvirt)
+    enddo
     deallocate(tau)
 
 !-----------------------------------------------------------------------
