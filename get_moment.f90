@@ -101,7 +101,8 @@ contains
     nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
-! Not yet improved: F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph
+! Not yet improved/still very slow: F25_ph, F26_ph, F27_ph, F28_ph,
+! F29_ph, F210_ph
 !-----------------------------------------------------------------------
     do cnt= nlim1,nlim2
        k=kpq(3,cnt)

@@ -722,6 +722,7 @@ subroutine master_adc2_prop()
         ! i.e., the elements < Psi_m|D|Psi_In>, where |Psi_m> are the
         ! ISs
         write(6,*) "DOING THE MATRIX VECTOR MULTIPLICATION TO OBTAIN CONTRACTING VECTOR"
+ 
         if (matvec.eq.0) then
            write(6,*) "you did not request to continue with calculations"
            stop
@@ -869,7 +870,9 @@ subroutine master_adc2_prop()
 !-----------------------------------------------------------------------
 ! TRANSITION MOMENTS FROM EXCITED STATE
 !-----------------------------------------------------------------------
-           write(6,*)  'energies and  pseudo-cross-section values OF THE FINAL SPACE STATES, from THE CHOOSEN',statenumber,'EXCITED STATE IN THE INITIAL SPACE'
+           write(6,*)  &
+                'energies and  pseudo-cross-section values OF THE FINAL SPACE STATES, from THE CHOOSEN',&
+                statenumber,'EXCITED STATE IN THE INITIAL SPACE'
 
            tmvec(:) = 0.d0
            call get_tranmom_3(ndimf,lancstates,lancname,travec(:),nstates,enerf(:),tmvecf(:),ndimsf)
