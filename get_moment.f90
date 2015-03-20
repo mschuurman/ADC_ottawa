@@ -91,8 +91,6 @@ contains
     real*8, dimension(:,:), allocatable  :: tau
 
     mtm(:)=0.0d0
-
-
     
 !!$-----1h1p block------
     nlim1=1
@@ -103,7 +101,7 @@ contains
 !-----------------------------------------------------------------------
 ! Not yet improved: F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph
 !-----------------------------------------------------------------------
-    do cnt= nlim1,nlim2
+    do cnt=nlim1,nlim2
        k=kpq(3,cnt)
        a=kpq(5,cnt)
        mtm(cnt)=dpl(a,k)

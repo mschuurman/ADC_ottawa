@@ -107,33 +107,36 @@
    endif
 
    ! read in orbital occupations and energies
-   if(index(line,'EIGENVECTORS').ne.0 .and. orbfnd==0) then
-    call read_gamess_line(gamess,line) ! ---- format line
-    call read_gamess_line(gamess,line) ! blank line
-    off1=1
-    off2=0
-    scan_orbs: do while(index(line,'END OF RHF')==0)
-      call read_gamess_line(gamess,line) ! orbital indices
-      read(gamess,'(a15,5(f11.4))')scr,earr(off1:min(nbasis,off1+4))
-      off1 = off1 + 5
-      call read_gamess_line(gamess,line) ! irreps
-      scan_irreps: do while(len_trim(line).gt.0)
-       line = adjustl(line)
-       cnt = 1
-       do while(line(1:2) .ne. symlab(cnt))
-        cnt = cnt + 1
-       enddo
-       off2 = off2 + 1
-       orbsym(off2) = cnt
-       line = line(3:len_trim(line))
-      enddo scan_irreps
-
-      do i = 1,nbasis
-       call read_gamess_line(gamess,line) ! mos
-      enddo
-      call read_gamess_line(gamess,line) ! blank line/termination string
-    enddo scan_orbs
-    orbfnd=1
+   if (index(line,'------------').ne.0) then
+      call read_gamess_line(gamess,line)
+      if(index(line,'EIGENVECTORS').ne.0 .and. orbfnd==0) then
+         call read_gamess_line(gamess,line) ! ---- format line
+         call read_gamess_line(gamess,line) ! blank line
+         off1=1
+         off2=0
+         scan_orbs: do while(index(line,'END OF RHF')==0)
+            call read_gamess_line(gamess,line) ! orbital indices
+            read(gamess,'(a15,5(f11.4))')scr,earr(off1:min(nbasis,off1+4))
+            off1 = off1 + 5
+            call read_gamess_line(gamess,line) ! irreps
+            scan_irreps: do while(len_trim(line).gt.0)
+               line = adjustl(line)
+               cnt = 1
+               do while(line(1:2) .ne. symlab(cnt))
+                  cnt = cnt + 1
+               enddo
+               off2 = off2 + 1
+               orbsym(off2) = cnt
+               line = line(3:len_trim(line))
+            enddo scan_irreps
+            
+            do i = 1,nbasis
+               call read_gamess_line(gamess,line) ! mos
+            enddo
+            call read_gamess_line(gamess,line) ! blank line/termination string
+         enddo scan_orbs
+         orbfnd=1
+      endif      
    endif
 
   enddo scan_lines

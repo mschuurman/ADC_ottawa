@@ -1698,28 +1698,22 @@ do b1=nOcc+1,nBas
     integer, intent(in) :: a,apr
 
     D2_1_ph_ph = 0.0
- 
-
-   do l1=1,nOcc
-      l=roccnum(l1)
-
-     sym=MT(orbSym(a),orbSym(l))
-     if (sym .eq. CHECK_dip) then
-
-
-
-!     D2_1_ph_ph=+2.0*density_matrix(l,apr)*dpl(a,l)
-     D2_1_ph_ph = D2_1_ph_ph  + 2.0*density(l,apr)*dpl(a,l)
-
-
-!   write(6,*) 'd1',l,apr,density(l,apr)
-     end if
-
-   end do
-
+    
+    do l1=1,nOcc
+       l=roccnum(l1)
+       
+       sym=MT(orbSym(a),orbSym(l))
+       if (sym .eq. CHECK_dip) then
+          
+          D2_1_ph_ph = D2_1_ph_ph  + 2.0*density(l,apr)*dpl(a,l)
+          
+       end if
+       
+    end do
+    
     D2_1_ph_ph = D2_1_ph_ph/2.0   !!! NORMALIZATION FACTOR
     D2_1_ph_ph = -D2_1_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
-
+    
   end function D2_1_ph_ph
 
 !!$SECOND order contribution D2_2_ak,a'k'. The condition that k'=k
@@ -1862,23 +1856,17 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(a)+e(c)-e(i)-e(j)
                 ebcij=e(b)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term = term + vpqrs(i,b,j,c)*(+4.0*vpqrs(a,i,c,j)-2.0*vpqrs(a,j,c,i))
                 term = term + vpqrs(i,c,j,b)*(-2.0*vpqrs(a,i,c,j)+4.0*vpqrs(a,j,c,i))
                 term = term*dpl(b,apr)
                 term = term/DA
-!                term=DA*term
                 
                 D2_2_1_ph_ph = D2_2_1_ph_ph + term
                 
@@ -1930,23 +1918,17 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(apr)+e(c)-e(i)-e(j)
                 ebcij=e(b)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(b,i,c,j)*(+4.0*vpqrs(i,apr,j,c)-2.0*vpqrs(i,c,j,apr))
                 term=term+vpqrs(b,j,c,i)*(-2.0*vpqrs(i,apr,j,c)+4.0*vpqrs(i,c,j,apr))
                 term=term*dpl(b,a)
                 term=term/DA
-!                term=DA*term
                 
                 D2_2_2_ph_ph=D2_2_2_ph_ph+term
                 
@@ -1997,23 +1979,17 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(apr)+e(b)-e(i)-e(j)
                 ebcij=e(a)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!
                 term=term+vpqrs(i,apr,j,b)*(+4.0*vpqrs(a,i,c,j)-2.0*vpqrs(a,j,c,i))
                 term=term+vpqrs(i,b,j,apr)*(-2.0*vpqrs(a,i,c,j)+4.0*vpqrs(a,j,c,i))
                 term=term*dpl(b,c)
                 term=term/DA
-!                term=DA*term
                 
                 D2_3_1_ph_ph=D2_3_1_ph_ph+term
                 
@@ -2063,23 +2039,17 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(apr)+e(b)-e(i)-e(j)
                 ebcij=e(a)+e(b)-e(l)-e(j)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(i,apr,j,b)*(+4.0*vpqrs(a,l,b,j)-2.0*vpqrs(a,j,b,l))
                 term=term+vpqrs(i,b,j,apr)*(-2.0*vpqrs(a,l,b,j)+4.0*vpqrs(a,j,b,l))
                 term=term*dpl(l,i)
                 term=term/DA
-!                term=DA*term
                 
                 D2_3_2_ph_ph=D2_3_2_ph_ph+term
                 
@@ -2120,32 +2090,24 @@ do j1=1,nOcc
        do i1=1,nOcc
           i=roccnum(i1)
  
-
              nsym1=MT(orbSym(b),orbSym(c))
              nsym2=MT(orbSym(i),orbSym(k))
              nsym3=MT(orbSym(i),orbSym(j))
-             
-             
+                         
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(b)+e(c)-e(j)-e(i)
                 ebcij=e(b)+e(c)-e(k)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(j,b,i,c)*(+4.0*vpqrs(b,k,c,i)-2.0*vpqrs(b,i,c,k))
                 term=term+vpqrs(j,c,i,b)*(-2.0*vpqrs(b,k,c,i)+4.0*vpqrs(b,i,c,k))
                 term=term*dpl(kpr,j)
                 term=term/DA
-!                term=DA*term
                 
                 D2_4_1_ph_ph=D2_4_1_ph_ph+term
                 
@@ -2191,27 +2153,20 @@ do j1=1,nOcc
              nsym2=MT(orbSym(i),orbSym(j))
              nsym3=MT(orbSym(i),orbSym(kpr))
              
-             
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(b)+e(c)-e(j)-e(i)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(b,j,c,i)*(+4.0*vpqrs(kpr,b,i,c)-2.0*vpqrs(kpr,c,i,b))
                 term=term+vpqrs(b,i,c,j)*(-2.0*vpqrs(kpr,b,i,c)+4.0*vpqrs(kpr,c,i,b))
                 term=term*dpl(k,j)
                 term=term/DA
-!                term=DA*term
                 
                 D2_4_2_ph_ph=D2_4_2_ph_ph+term
                 
@@ -2258,31 +2213,21 @@ end do
              nsym2=MT(orbSym(i),orbSym(k))
              nsym3=MT(orbSym(c),orbSym(d))
              nsym4=MT(orbSym(i),orbSym(kpr))
-             
-             
+                          
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
-!                eacij=0._d
-!                ebcij=0._d
-!                DA=0._d
 
                 eacij=e(b)+e(d)-e(k)-e(i)
                 ebcij=e(c)+e(d)-e(kpr)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(kpr,c,i,d)*(+4.0*vpqrs(b,k,d,i)-2.0*vpqrs(b,i,d,k))
                 term=term+vpqrs(kpr,d,i,c)*(-2.0*vpqrs(b,k,d,i)+4.0*vpqrs(b,i,d,k))
                 term=term*dpl(c,b)
                 term=term/DA
-!                term=DA*term
                 
                 D2_5_1_ph_ph=D2_5_1_ph_ph+term
                 
@@ -2322,33 +2267,25 @@ do i1=1,nOcc
       b=roccnum(b1)
      do c1=nOcc+1,nBas
         c=roccnum(c1)
- 
 
              nsym1=MT(orbSym(b),orbSym(c))
              nsym2=MT(orbSym(k),orbSym(j))
-             nsym3=MT(orbSym(kpr),orbSym(i))
-             
+             nsym3=MT(orbSym(kpr),orbSym(i))             
              
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(b)+e(c)-e(k)-e(j)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(kpr,b,i,c)*(+4.0*vpqrs(b,k,c,j)-2.0*vpqrs(b,j,c,k))
                 term=term+vpqrs(kpr,c,i,b)*(-2.0*vpqrs(b,k,c,j)+4.0*vpqrs(b,j,c,k))
                 term=term*dpl(j,i)
                 term=term/DA
-!                term=DA*term
                 
                 D2_5_2_ph_ph=D2_5_2_ph_ph+term
                 
@@ -2390,29 +2327,22 @@ do i1=1,nOcc
              nsym1=MT(orbSym(a),orbSym(c))
              nsym2=MT(orbSym(i),orbSym(k))
              nsym3=MT(orbSym(b),orbSym(c))
-             nsym4=MT(orbSym(i),orbSym(kpr))
-             
+             nsym4=MT(orbSym(i),orbSym(kpr))             
              
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(a)+e(c)-e(k)-e(i)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(kpr,b,i,c)*(+8.0*vpqrs(a,k,c,i)-4.0*vpqrs(a,i,c,k))
                 term=term+vpqrs(kpr,c,i,b)*(-4.0*vpqrs(a,k,c,i)+2.0*vpqrs(a,i,c,k))
                 term=term*dpl(b,apr)
                 term=term/DA
-!                term=DA*term
                 
                 D2_6_1_ph_ph=D2_6_1_ph_ph+term
                 
@@ -2440,54 +2370,47 @@ do i1=1,nOcc
 
     D2_6_2_ph_ph=0.0
     cnt=0
-  do b1=nOcc+1,nBas
-     b=roccnum(b1)
-     sym=MT(orbSym(b),orbSym(a))
-     if (sym .eq. CHECK_dip) then
- 
-    do c1=nOcc+1,nBas
-       c=roccnum(c1)
-       do i1=1,nOcc
-          i=roccnum(i1)
-
-             nsym1=MT(orbSym(apr),orbSym(c))
-             nsym2=MT(orbSym(i),orbSym(kpr))
-             nsym3=MT(orbSym(b),orbSym(c))
-             nsym4=MT(orbSym(i),orbSym(k))
-             
-             
-             if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+    do b1=nOcc+1,nBas
+       b=roccnum(b1)
+       sym=MT(orbSym(b),orbSym(a))
+       if (sym .eq. CHECK_dip) then
+          
+          do c1=nOcc+1,nBas
+             c=roccnum(c1)
+             do i1=1,nOcc
+                i=roccnum(i1)
                 
-                cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
-                term=0.0
-
-                eacij=e(b)+e(c)-e(k)-e(i)
-                ebcij=e(apr)+e(c)-e(kpr)-e(i)
-                DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
-
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
-                term=term+vpqrs(b,k,c,i)*(+8.0*vpqrs(kpr,apr,i,c)-4.0*vpqrs(kpr,c,i,apr))
-                term=term+vpqrs(b,i,c,k)*(-4.0*vpqrs(kpr,apr,i,c)+2.0*vpqrs(kpr,c,i,apr))
-                term=term*dpl(b,a)
-                term=term/DA
-!                term=DA*term
+                nsym1=MT(orbSym(apr),orbSym(c))
+                nsym2=MT(orbSym(i),orbSym(kpr))
+                nsym3=MT(orbSym(b),orbSym(c))
+                nsym4=MT(orbSym(i),orbSym(k))
                 
-                D2_6_2_ph_ph=D2_6_2_ph_ph+term
+                if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+                   
+                   cnt=cnt+1
+                   
+                   term=0.0
+
+                   eacij=e(b)+e(c)-e(k)-e(i)
+                   ebcij=e(apr)+e(c)-e(kpr)-e(i)
+                   DA=eacij*ebcij
+
+                   term=term+vpqrs(b,k,c,i)*(+8.0*vpqrs(kpr,apr,i,c)-4.0*vpqrs(kpr,c,i,apr))
+                   term=term+vpqrs(b,i,c,k)*(-4.0*vpqrs(kpr,apr,i,c)+2.0*vpqrs(kpr,c,i,apr))
+                   term=term*dpl(b,a)
+                   term=term/DA
+                   
+                   D2_6_2_ph_ph=D2_6_2_ph_ph+term
                 
-             end if
+                end if
+             end do
           end do
-  end do
-         end if
-    end do 
+       end if
+    end do
     
     D2_6_2_ph_ph=+0.5*D2_6_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
     D2_6_2_ph_ph=+0.5*D2_6_2_ph_ph   ! EXPRESSION FACTOR
-
+    
 
   end function D2_6_2_ph_ph
 
@@ -2511,34 +2434,26 @@ do j1=1,nOcc
      b=roccnum(b1)
        do i1=1,nOcc
           i=roccnum(i1)
- 
 
              nsym1=MT(orbSym(a),orbSym(b))
              nsym2=MT(orbSym(i),orbSym(k))
              nsym3=MT(orbSym(apr),orbSym(b))
              nsym4=MT(orbSym(i),orbSym(j))
              
-             
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(apr)+e(b)-e(j)-e(i)
                 ebcij=e(a)+e(b)-e(k)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(j,apr,i,b)*(+8.0*vpqrs(a,k,b,i)-4.0*vpqrs(a,i,b,k))
                 term=term+vpqrs(j,b,i,apr)*(-4.0*vpqrs(a,k,b,i)+2.0*vpqrs(a,i,b,k))
                 term=term*dpl(kpr,j)
                 term=term/DA
-!                term=DA*term
                 
                 D2_6_3_ph_ph=D2_6_3_ph_ph+term
                 
@@ -2585,23 +2500,17 @@ do j1=1,nOcc
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(apr)+e(b)-e(kpr)-e(i)
                 ebcij=e(a)+e(b)-e(j)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(a,j,b,i)*(+8.0*vpqrs(kpr,apr,i,b)-4.0*vpqrs(kpr,b,i,apr))
                 term=term+vpqrs(a,i,b,j)*(-4.0*vpqrs(kpr,apr,i,b)+2.0*vpqrs(kpr,b,i,apr))
                 term=term*dpl(k,j)
                 term=term/DA
-!                term=DA*term
                 
                 D2_6_4_ph_ph=D2_6_4_ph_ph+term
                 
@@ -2648,23 +2557,17 @@ do j1=1,nOcc
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(a)+e(b)-e(k)-e(j)
                 ebcij=e(apr)+e(b)-e(kpr)-e(i)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!
                 term=term+vpqrs(kpr,apr,i,b)*(+8.0*vpqrs(a,k,b,j)-4.0*vpqrs(a,j,b,k))
                 term=term+vpqrs(kpr,b,i,apr)*(-4.0*vpqrs(a,k,b,j)+2.0*vpqrs(a,j,b,k))
                 term=term*dpl(j,i)
                 term=term/DA
-!                term=DA*term
                 
                 D2_7_1_ph_ph=D2_7_1_ph_ph+term
                 
@@ -2704,29 +2607,22 @@ do j1=1,nOcc
              nsym1=MT(orbSym(a),orbSym(c))
              nsym2=MT(orbSym(j),orbSym(k))
              nsym3=MT(orbSym(apr),orbSym(b))
-             nsym4=MT(orbSym(j),orbSym(kpr))
-             
+             nsym4=MT(orbSym(j),orbSym(kpr))             
              
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(6,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(6,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
+
                 term=0.0
 
                 eacij=e(a)+e(c)-e(k)-e(j)
                 ebcij=e(apr)+e(b)-e(kpr)-e(j)
                 DA=eacij*ebcij
-!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
 
-!                term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
-!                term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
                 term=term+vpqrs(kpr,apr,j,b)*(+8.0*vpqrs(a,k,c,j)-4.0*vpqrs(a,j,c,k))
                 term=term+vpqrs(kpr,b,j,apr)*(-4.0*vpqrs(a,k,c,j)+2.0*vpqrs(a,j,c,k))
                 term=term*dpl(b,c)
                 term=term/DA
-!                term=DA*term
                 
                 D2_7_2_ph_ph=D2_7_2_ph_ph+term
                 

@@ -408,7 +408,7 @@ contains
                 l=roccnum(l1)
                 do b1= nOcc+1,nBas
                    b=roccnum(b1)
-
+   
                    sym2=MT(orbSym(l),orbSym(b))
                    
                    if (MT(sym1,sym2) .eq. 1) then

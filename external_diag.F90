@@ -240,6 +240,7 @@
 !-----------------------------------------------------------------------
       call epsdestroy(eps,ierr)
       call matdestroy(ham,ierr)
+
       call vecdestroy(xr,ierr)
       call vecdestroy(xi,ierr)
       call vecdestroy(xx,ierr)
