@@ -37,7 +37,7 @@
  ! read a gamess output file
  !
  subroutine read_gamess_output(nbasis,nelec,ncen,nirr,orbsym,symlab,&
-      ehf,earr,occnum)
+      ehf,earr,occnum,pntgroup)
   use constants
   integer,intent(in)            :: nbasis
   integer*4,intent(out)         :: nelec,nirr,ncen
@@ -56,6 +56,8 @@
   real(d)                       :: two = 2.
   character(len=144)            :: line,scr
 
+  character(len=3)              :: pntgroup
+
   inquire(file='gamess.log',exist=gexist)
   if(gexist) then
    open(unit=gamess,file='gamess.log')
@@ -73,6 +75,11 @@
 
   scan_lines: do while (orbfnd==0)
    call read_gamess_line(gamess,line)
+
+   ! read the point group label
+   if (index(line,'POINT GROUP').ne.0) then
+      read(line,'(36x,a3)') pntgroup
+   endif
 
    ! read number of electrons
    if(index(line,'NUMBER OF ELECTRONS').ne.0)then

@@ -140,8 +140,8 @@ module parameters
   real(d),dimension(5)  :: fparm
 
 !!$************************************************
-!!$**********Davidson Parameters********************
-!!$************************************************  
+!!$**********Davidson Parameters*******************
+!!$************************************************
 
   character*4 :: mtxidd
   integer     :: dmain
@@ -174,5 +174,10 @@ integer, dimension(:), allocatable :: RECINI_VECT
 integer, dimension(3)              :: DIPOLESYM
 REAL*8 , dimension(3)              :: ELECTRIC_FIELD
 integer                            :: CHECK_dip
+
+!!$************************************************
+!!$**********Other Parameters**********************
+!!$************************************************
+character(len=3) :: pntgroup
 
 end module parameters

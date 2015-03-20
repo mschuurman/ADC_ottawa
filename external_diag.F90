@@ -198,17 +198,19 @@
 ! Get the number of converged eigenpairs
 ! Exit if we have not converged enough eigenpairs
 !-----------------------------------------------------------------------
-      call epsgetconverged(eps,nconv,ierr)
-      
-      if (nconv.lt.davstates) then
-         write(6,'(/,2x,i3,1x,a,/)') davstates,'Davidson states requested'
-         write(6,'(/,2x,i3,1x,a,/)') nconv,'Davidson states converged'
-      endif
+      call epsgetconverged(eps,nconv,ierr)      
 
-      ! Number of iterations
+      ! Output the number of iterations taken
       call epsgetiterationnumber(eps,its,ierr)
       call epsgettolerances(eps,tol,maxit,ierr)
       write(6,'(/,x,a,x,i4,/)') 'Number of iterations:',its
+
+      ! If not all states have been converged, then exit
+      if (nconv.lt.davstates) then
+         write(6,'(/,2x,i3,1x,a,/)') davstates,'Davidson states requested'
+         write(6,'(/,2x,i3,1x,a,/)') nconv,'Davidson states converged'
+         STOP
+      endif
 
 !-----------------------------------------------------------------------
 ! Output the converged eigenpairs
@@ -241,9 +243,9 @@
       call epsdestroy(eps,ierr)
       call matdestroy(ham,ierr)
 
-      call vecdestroy(xr,ierr)
-      call vecdestroy(xi,ierr)
-      call vecdestroy(xx,ierr)
+!      call vecdestroy(xr,ierr)
+!      call vecdestroy(xi,ierr)
+!      call vecdestroy(xx,ierr)
 
 !-----------------------------------------------------------------------
 ! Finalise SLEPc
