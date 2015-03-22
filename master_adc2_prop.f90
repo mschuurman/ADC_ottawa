@@ -650,7 +650,7 @@ subroutine master_adc2_prop()
              tranmom2,' direction, i.e. : < PSI0  D',tranmom2,&
              ' PSIn  > IN THE INITIAL SPACE'
 
-        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+!        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
 
         do i = 1 , davstates
            tmvec(i) = tm(ndim,rvec(:,i),mtm(:))

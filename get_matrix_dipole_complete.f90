@@ -53,12 +53,34 @@ contains
     real(d) :: ar_offdiag_ij
     integer :: k,k1,b,b1 
 
-    real(d)            :: t1,t2
-    real(d), parameter :: vectol=1d-8
+    
+    integer                              :: nvirt,itmp,itmp1,dim
+    real(d), dimension(:,:), allocatable :: pre_vv,pre_oo,pre_ov,pre_vo
+    real(d), parameter                   :: vectol=1d-8
+    real(d)                              :: t1,t2
 
     write(6,*) &
-      "Writing the travec vector of ADC-DIPOLE matrix INITIAL-STATE product "
+      "Writing the travec vector of ADC-DIPOLE matrix INITIAL-STATE product"
 
+!-----------------------------------------------------------------------
+! Precalculation of function values
+!-----------------------------------------------------------------------
+    ! Allocate and initialise the precomputed term arrays
+    nvirt=nbas-nocc
+    allocate(pre_vv(nvirt,nvirt))
+    allocate(pre_oo(nocc,nocc))
+    pre_vv=0.0d0
+    pre_oo=0.0d0
+
+    ! Precalculate all terms corresponding functions with arguments 
+    ! (a,apr) or (k,kpr).
+    dim=nBas**2*nOcc**2
+    call dmatrix_precalc(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,kpqf,vectol)
+    
+!-----------------------------------------------------------------------
+! Calculation of the intermediate state representation of the dipole
+! operator
+!-----------------------------------------------------------------------
     travec(:)=0.0
 
 ! THE INDEX i RUNS IN THE 1H1P  BLOCK OF (FINAL) CONFIGURATIONS  
@@ -68,7 +90,7 @@ contains
        call cpu_time(t1)
        
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
-    
+
        ndim1=kpq(1,0)
        do j=1,ndim1
 
@@ -88,23 +110,13 @@ contains
           ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
 
           if(indk .eq. indkpr) then
-             ar_offdiag_ij = ar_offdiag_ij + D0_1_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_1_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_2_1_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_2_2_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_3_1_ph_ph(inda,indapr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_3_2_ph_ph(inda,indapr)
+             itmp=inda-nocc
+             itmp1=indapr-nocc
+             ar_offdiag_ij = ar_offdiag_ij + pre_vv(itmp,itmp1)
           end if
 
           if(inda .eq. indapr) then
-             ar_offdiag_ij = ar_offdiag_ij + D0_2_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_4_1_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_4_2_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_5_1_ph_ph(indk,indkpr)
-             ar_offdiag_ij = ar_offdiag_ij + D2_5_2_ph_ph(indk,indkpr)
+             ar_offdiag_ij = ar_offdiag_ij + pre_oo(indk,indkpr)
           end if
 
           travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
@@ -1123,19 +1135,90 @@ contains
     end do
     
   end subroutine get_dipole_initial_product
-!!$-----------------------------------
 
+!#######################################################################
 
+  subroutine dmatrix_precalc(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,kpqf,&
+       vectol)
 
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
+
+    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+                                              itmp1,inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,indkpr,&
+                                              indlpr,spinpr
+    integer, dimension(:,:), allocatable   :: iszeroa,iszerok
+    real(d), dimension(nvirt,nvirt)        :: pre_vv
+    real(d), dimension(nocc,nocc)          :: pre_oo
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), intent(in)                    :: vectol
+
+    ! Note that we only bother computing terms that multiply elements
+    ! of the initial state vector (autvec) whose magnitude is above the
+    ! threshold value (vectol).
+
+    allocate(iszeroa(nvirt,nvirt))
+    allocate(iszerok(nocc,nocc))
+    iszeroa=0
+    iszerok=0
+
+    do i=1,kpqf(1,0)
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       do j=1,kpq(1,0)
+          if (abs(autvec(j)).lt.vectol) cycle
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+          itmp=inda-nocc
+          itmp1=indapr-nocc
+          iszeroa(itmp,itmp1)=1
+          iszerok(indk,indkpr)=1
+       enddo
+    enddo
+
+    itmp=0
+    do a=nocc+1,nbas
+       itmp=itmp+1       
+       itmp1=0
+       do apr=nocc+1,nbas
+          itmp1=itmp1+1
+          if (iszeroa(itmp,itmp1).eq.0) cycle
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D0_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_2_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_2_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_2_2_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_3_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_3_2_ph_ph(a,apr)
+       enddo
+    enddo
+
+    do i=1,nocc
+       do j=1,nocc
+          if (iszerok(i,j).eq.0) cycle
+          pre_oo(i,j)=pre_oo(i,j)+D0_2_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_3_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_4_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_4_1_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_4_2_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_5_1_ph_ph(i,j)
+          pre_oo(i,j)=pre_oo(i,j)+D2_5_2_ph_ph(i,j)
+       enddo
+    enddo
+
+    deallocate(iszeroa)
+    deallocate(iszerok)
+
+    return
+
+  end subroutine dmatrix_precalc
+
+!#######################################################################
 
 
 !!$------------------------------------------------------------------------------
 !!$------------------------------------ ADC1 ------------------------------------
 !!$------------------------------------------------------------------------------
-
-
-
-
 
   subroutine get_dipole_initial_product_tda(ndim,ndimf,kpq,kpqf,autvec,travec)
 
