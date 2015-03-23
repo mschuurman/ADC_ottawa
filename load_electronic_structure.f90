@@ -263,6 +263,11 @@
   ! ensure Fock matrix is diagonal
   refval = 0._rk
   scan_row: do i = 1,nmo
+   ! this check just looks for a mapping (i.e. major change due to SCF
+   ! procedure) error. The number of figures in e(i) from reading the 
+   ! log is small enough that an error of 10*^-4 is reasonable.
+   if(abs(e(i)-fmo(i,i)) > 0.001)write(6,"('warning: orbital ',i3,' energy mismatch - gamess.log=',f15.10,' internal=',f15.10)")i,e(i),fmo(i,i)
+   e(i) = fmo(i,i)
    scan_col: do j = 1,nmo
     if(i /= j .and. abs(fmo(i,j)-refval)>eps)write(6,"('warning: <',i3,'|f|',i3,'> = ',f15.10,',expecting ',f15.10)")i,j,fmo(i,j),refval
    enddo scan_col
