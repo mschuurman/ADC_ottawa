@@ -35,6 +35,7 @@ SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
 # Main ADC code
 MULTI = accuracy.o \
 	printing.o \
+	iomod.o \
 	timer.o \
 	lapack.o \
 	dgefa.o \

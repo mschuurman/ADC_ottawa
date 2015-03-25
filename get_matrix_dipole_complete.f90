@@ -7,7 +7,8 @@ module get_matrix_DIPOLE
   use misc
   use filetools
   use dipole_ph
-  
+  use iomod
+
   implicit none
 
   integer, parameter :: buf_size=8192
@@ -27,13 +28,9 @@ contains
 !!$*******************************************************************************
 
 
-
-
 !!$------------------------------------------------------------------------------
 !!$------------------------------------ ADC2 ------------------------------------
 !!$------------------------------------------------------------------------------
-
-
 
   subroutine get_dipole_initial_product(ndim,ndimf,kpq,kpqf,autvec,travec)
 
@@ -55,32 +52,45 @@ contains
 
     
     integer                              :: nvirt,itmp,itmp1,dim
-    real(d), dimension(:,:), allocatable :: pre_vv,pre_oo,pre_ov,pre_vo
+    integer, dimension(10)               :: unit
+    real(d), dimension(:,:), allocatable :: pre_vv,pre_oo
     real(d), parameter                   :: vectol=1d-8
-    real(d)                              :: t1,t2
+    real(d)                              :: t1,t2,func
 
-    write(6,*) &
-      "Writing the travec vector of ADC-DIPOLE matrix INITIAL-STATE product"
+    write(6,'(/,90a)') ('-',i=1,90)
+    write(6,'(2x,a)') & 
+         'Contracting the IS representation of the dipole operator &
+         with the initial state vector'
+    write(6,'(90a)') ('-',i=1,90)
 
 !-----------------------------------------------------------------------
 ! Precalculation of function values
 !-----------------------------------------------------------------------
-    ! Allocate and initialise the precomputed term arrays
+    ! Allocate and initialise the arrays that will hold the two-index
+    ! terms
     nvirt=nbas-nocc
-    allocate(pre_vv(nvirt,nvirt))
-    allocate(pre_oo(nocc,nocc))
+    allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
 
-    ! Precalculate all terms corresponding functions with arguments 
-    ! (a,apr) or (k,kpr).
-    dim=nBas**2*nOcc**2
-    call dmatrix_precalc(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,kpqf,vectol)
-    
+    ! Open the scratch files that will hold the intermediate
+    ! four-index terms
+    call open_scratch_files(unit)
+
+    ! (1) Intermediate four-index terms that in general need to be 
+    !     saved to file
+    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,unit)
+
+    ! (2) Two-index terms that can be held in memory
+    call dmatrix_precalc_2indx(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,&
+         kpqf,vectol)
+
 !-----------------------------------------------------------------------
-! Calculation of the intermediate state representation of the dipole
-! operator
+! Calculation of the product of the intermediate state representation 
+! of the dipole operator with the initial state
 !-----------------------------------------------------------------------
+    write(6,'(/,2x,a)') 'Calculating the matrix-vector product...'
+
     travec(:)=0.0
 
 ! THE INDEX i RUNS IN THE 1H1P  BLOCK OF (FINAL) CONFIGURATIONS  
@@ -94,18 +104,13 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
           
-          ar_offdiag_ij = 0.d0
+          call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
+               indkpr,unit)
 
-          ar_offdiag_ij=D2_6_1_ph_ph(inda,indapr,indk,indkpr)
-          ar_offdiag_ij=ar_offdiag_ij+D2_6_2_ph_ph(inda,indapr,indk,indkpr)
-          ar_offdiag_ij=ar_offdiag_ij+D2_6_3_ph_ph(inda,indapr,indk,indkpr)
-          ar_offdiag_ij=ar_offdiag_ij+D2_6_4_ph_ph(inda,indapr,indk,indkpr)
           ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
           ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
 
@@ -126,8 +131,6 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
@@ -164,8 +167,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle 
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
@@ -203,8 +204,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
@@ -242,8 +241,6 @@ contains
        dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
@@ -282,11 +279,9 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
  
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
-         call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
  
           ar_offdiag_ij = 0.d0
 
@@ -346,8 +341,6 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -382,9 +375,8 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
+
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
 
 !!$ (1,1) block
@@ -402,8 +394,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -423,8 +413,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
           
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
           
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -444,8 +432,6 @@ contains
       dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -465,8 +451,6 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
  
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -503,8 +487,6 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
           
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -540,8 +522,6 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
           
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
@@ -561,8 +541,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -582,8 +560,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -603,8 +579,6 @@ contains
        dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -624,8 +598,6 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
  
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -663,8 +635,6 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -700,8 +670,6 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
@@ -721,8 +689,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -742,8 +708,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -763,8 +727,6 @@ contains
        dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -784,8 +746,6 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
  
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -825,8 +785,6 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
           
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -864,8 +822,6 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
@@ -885,8 +841,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -906,8 +860,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -928,8 +880,6 @@ contains
        dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -949,8 +899,6 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -991,8 +939,6 @@ contains
        ndim1=kpq(1,0)
        do j=1,ndim1
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
@@ -1028,8 +974,6 @@ contains
        dim_count=kpq(1,0)
        do j=dim_count+1,dim_count+kpq(2,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
@@ -1049,8 +993,6 @@ contains
        dim_count=dim_count+kpq(2,0)
        do j=dim_count+1,dim_count+kpq(3,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -1070,8 +1012,6 @@ contains
        dim_count=dim_count+kpq(3,0)
        do j=dim_count+1,dim_count+kpq(4,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -1091,8 +1031,6 @@ contains
        dim_count=dim_count+kpq(4,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -1112,8 +1050,6 @@ contains
        dim_count=dim_count+kpq(5,0)
        do j=dim_count+1,dim_count+kpq(5,0)
 
-          ! Screening based on the values of the elements of the initial
-          ! state vector
           if (abs(autvec(j)).lt.vectol) cycle
 
           call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
@@ -1133,13 +1069,24 @@ contains
 ! end of the first i cycle: the first travec element has been computed!!!
 
     end do
-    
+
+!-----------------------------------------------------------------------
+! Close scratch files and deallocate arrays
+!-----------------------------------------------------------------------
+    ! Close scratch files
+    do i=1,4
+       close(unit(i))
+    enddo
+
+    ! Deallocate two-index arrays
+    deallocate(pre_vv,pre_oo)
+
   end subroutine get_dipole_initial_product
 
 !#######################################################################
 
-  subroutine dmatrix_precalc(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,kpqf,&
-       vectol)
+  subroutine dmatrix_precalc_2indx(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,&
+       kpqf,vectol)
 
     implicit none
 
@@ -1155,7 +1102,14 @@ contains
     real(d), dimension(ndim), intent(in)   :: autvec
     real(d), intent(in)                    :: vectol
 
-    ! Note that we only bother computing terms that multiply elements
+    ! Note that some of the functions called here are quite
+    ! inefficient and could be improved by first calculating
+    ! intermediate tensors, and then contracting these with the dipole
+    ! matrix dpl.
+
+    write(6,'(/,2x,a)') 'Precomputing two-index terms...'
+
+    ! Here we only bother computing terms that multiply elements
     ! of the initial state vector (autvec) whose magnitude is above the
     ! threshold value (vectol).
 
@@ -1211,7 +1165,227 @@ contains
 
     return
 
-  end subroutine dmatrix_precalc
+  end subroutine dmatrix_precalc_2indx
+
+!#######################################################################
+
+  subroutine open_scratch_files(unit)
+
+    implicit none
+    
+    integer                :: i
+    integer, dimension(10) :: unit
+    character(len=60)      :: filename
+    logical(kind=4)        :: ldir
+
+!-----------------------------------------------------------------------    
+! Create the scratch directory
+!-----------------------------------------------------------------------
+    inquire(file='SCRATCH/.',exist=ldir)
+    if (ldir) call system('rm -rf SCRATCH')
+    call system('mkdir SCRATCH')
+
+!-----------------------------------------------------------------------    
+! Open the scratch files
+!-----------------------------------------------------------------------
+    filename='SCRATCH/D2.6.1.akkprb'
+    call freeunit(unit(1))
+    open(unit(1),file=filename,form='unformatted',status='unknown',&
+         access='direct',recl=8)
+
+    filename='SCRATCH/D2.6.2.aprkkprb'
+    call freeunit(unit(2))
+    open(unit(2),file=filename,form='unformatted',status='unknown',&
+         access='direct',recl=8)
+
+    filename='SCRATCH/D2.6.3.aaprkj'
+    call freeunit(unit(3))
+    open(unit(3),file=filename,form='unformatted',status='unknown',&
+         access='direct',recl=8)
+
+    filename='SCRATCH/D2.6.4.aaprkprj'
+    call freeunit(unit(4))
+    open(unit(4),file=filename,form='unformatted',status='unknown',&
+         access='direct',recl=8)
+
+    return
+    
+  end subroutine open_scratch_files
+!#######################################################################
+
+  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&
+       unit)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
+
+    integer                                :: nvirt,ndim,a,apr,k,&
+                                              kpr,b,j,irec,itmp
+    integer, dimension(10)                 :: unit
+    integer, dimension(:,:), allocatable   :: iszero
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), intent(in)                    :: vectol
+    real(d)                                :: ftmp
+    character(len=60)                      :: filename
+
+    write(6,'(/,2x,a)') 'Precomputing four-index terms...'
+
+!-----------------------------------------------------------------------
+! (1) D2.6.1.akkprb
+!-----------------------------------------------------------------------
+    irec=0
+    do a=nocc+1,nbas
+       do k=1,nocc
+          do kpr=1,nocc
+             do b=nocc+1,nbas
+                irec=irec+1                
+                ftmp=tau_D2_6_1(a,k,kpr,b)
+                write(unit(1),rec=irec) ftmp
+             enddo
+          enddo
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! (2) D2.6.2.aprkkprb
+!-----------------------------------------------------------------------
+    irec=0
+    do apr=nocc+1,nbas
+       do k=1,nocc
+          do kpr=1,nocc
+             do b=nocc+1,nbas
+                irec=irec+1        
+                ftmp=tau_D2_6_2(apr,k,kpr,b)
+                write(unit(2),rec=irec) ftmp
+             enddo
+          enddo
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! (3) D2.6.3.aprkkprb
+!-----------------------------------------------------------------------
+    irec=0
+    do a=nocc+1,nbas
+       do apr=nocc+1,nbas
+          do k=1,nocc
+             do j=1,nocc
+                irec=irec+1        
+                ftmp=tau_D2_6_3(a,apr,k,j)
+                write(unit(3),rec=irec) ftmp
+             enddo
+          enddo
+       enddo
+    enddo
+    
+!-----------------------------------------------------------------------
+! (4) D2.6.4.aaprkprj
+!-----------------------------------------------------------------------
+    irec=0
+    do a=nocc+1,nbas
+       do apr=nocc+1,nbas
+          do kpr=1,nocc
+             do j=1,nocc
+                irec=irec+1        
+                ftmp=tau_D2_6_4(a,apr,kpr,j)
+                write(unit(4),rec=irec) ftmp                
+             enddo
+          enddo
+       enddo
+    enddo
+
+    return
+
+  end subroutine dmatrix_precalc_4indx
+
+!#######################################################################
+
+  subroutine contract_4indx_dpl(func,a,apr,k,kpr,unit)
+
+    implicit none
+
+    real(d)                :: func,ftmp,curr
+    integer                :: a,apr,k,kpr,itmp,b,b1,j,j1
+    integer, dimension(10) :: unit
+
+    func=0.0d0
+
+!-----------------------------------------------------------------------
+! (1) D2.6.1.akkprb
+!-----------------------------------------------------------------------
+    ! Contract the intermediate four-index terms with the dipole matrix
+    curr=0.0d0
+    do b1=nocc+1,nbas
+       b=roccnum(b1)
+       itmp=(a-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
+            +(kpr-1)*nvirt+(b1-nocc)
+       read(unit(1),rec=itmp) ftmp
+       curr=curr+dpl(b,apr)*ftmp
+    enddo
+    
+    ! Normalisation
+    curr=0.25d0*curr
+
+    func=func+curr
+
+!-----------------------------------------------------------------------
+! (2) D2.6.2.aprkkprb
+!-----------------------------------------------------------------------
+    ! Contract the intermediate four-index terms with the dipole matrix
+    curr=0.0d0
+    do b1=nocc+1,nbas
+       b=roccnum(b1)
+       itmp=(apr-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
+            +(kpr-1)*nvirt+(b1-nocc)
+       read(unit(2),rec=itmp) ftmp
+       curr=curr+dpl(b,a)*ftmp
+    enddo
+    
+    ! Normalisation
+    curr=0.25d0*curr
+
+    func=func+curr
+
+!-----------------------------------------------------------------------
+! (3) D2.6.3.aprkkprb
+!-----------------------------------------------------------------------
+    ! Contract the intermediate four-index terms with the dipole matrix
+    curr=0.0d0
+    do j1=1,nocc
+       j=roccnum(j1)
+       itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
+            +(k-1)*nocc+j1
+       read(unit(3),rec=itmp) ftmp
+       curr=curr+dpl(kpr,j)*ftmp
+    enddo
+
+    ! Normalisation
+    curr=-0.25d0*curr
+
+    func=func+curr
+
+!-----------------------------------------------------------------------
+! (4) D2.6.4.aaprkprj
+!-----------------------------------------------------------------------
+    ! Contract the intermediate four-index terms with the dipole matrix
+    curr=0.0d0
+    do j1=1,nocc
+       j=roccnum(j1)
+       itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
+            +(kpr-1)*nocc+j1
+       read(unit(4),rec=itmp) ftmp
+       curr=curr+dpl(k,j)*ftmp
+    enddo
+
+    ! Normalisation
+    curr=-0.25d0*curr
+
+    func=func+curr
+
+    return
+
+  end subroutine contract_4indx_dpl
 
 !#######################################################################
 

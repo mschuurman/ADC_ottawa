@@ -2310,7 +2310,7 @@ do i1=1,nOcc
     integer, intent(in) :: a,apr,k,kpr
 
     integer :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,b1,c1,i1,cnt
-    real*8 :: DA,eacij,ebcij,term
+    real*8 :: DA,eacij,ebcij,term,ftmp
 
     D2_6_1_ph_ph=0.0
     cnt=0
@@ -2351,10 +2351,9 @@ do i1=1,nOcc
    end do
         end if
     end do 
-    
+
     D2_6_1_ph_ph=+0.5*D2_6_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
     D2_6_1_ph_ph=+0.5*D2_6_1_ph_ph   ! EXPRESSION FACTOR
-
 
   end function D2_6_1_ph_ph
 
@@ -6690,6 +6689,214 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 ! FACTOR FOR THE ENTIRE EXPRESSION?
 
 !  end function D2_1_14_ph_ph
+
+!####################################################################### 
+  
+  function tau_D2_6_1(a,k,kpr,b1) result(func)
+
+    implicit none
+
+    real(d)             :: func
+    integer, intent(in) :: a,k,kpr,b1
+    integer             :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,c1,i1,cnt
+    real*8              :: DA,eacij,ebcij,term
+
+    func=0.0d0
+
+    b=roccnum(b1)
+
+    cnt=0
+    
+    do c1=nOcc+1,nBas
+       c=roccnum(c1)
+       do i1=1,nOcc
+          i=roccnum(i1)
+             
+          nsym1=MT(orbSym(a),orbSym(c))
+          nsym2=MT(orbSym(i),orbSym(k))
+          nsym3=MT(orbSym(b),orbSym(c))
+          nsym4=MT(orbSym(i),orbSym(kpr))             
+                
+          if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+                
+             cnt=cnt+1
+                   
+             term=0.0
+
+             eacij=e(a)+e(c)-e(k)-e(i)
+             ebcij=e(b)+e(c)-e(kpr)-e(i)
+             DA=eacij*ebcij
+                   
+             term=term+vpqrs(kpr,b,i,c)*(+8.0*vpqrs(a,k,c,i)-4.0*vpqrs(a,i,c,k))
+             term=term+vpqrs(kpr,c,i,b)*(-4.0*vpqrs(a,k,c,i)+2.0*vpqrs(a,i,c,k))
+!             term=term*dpl(b,apr)
+             term=term/DA
+
+             func=func+term
+                
+          end if
+       end do
+    end do
+    
+    return
+
+  end function tau_D2_6_1
+
+!####################################################################### 
+
+      function tau_D2_6_2(apr,k,kpr,b1) result(func)
+
+        implicit none
+
+        integer, intent(in) :: apr,k,kpr,b1
+        integer             :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,c1,i1,cnt
+        real*8              :: DA,eacij,ebcij,term,func
+
+        func=0.0d0
+        cnt=0
+
+        b=roccnum(b1)
+          
+        do c1=nOcc+1,nBas
+           c=roccnum(c1)
+           do i1=1,nOcc
+              i=roccnum(i1)
+                
+              nsym1=MT(orbSym(apr),orbSym(c))
+              nsym2=MT(orbSym(i),orbSym(kpr))
+              nsym3=MT(orbSym(b),orbSym(c))
+              nsym4=MT(orbSym(i),orbSym(k))
+                
+              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+                   
+                 cnt=cnt+1
+                   
+                 term=0.0
+
+                 eacij=e(b)+e(c)-e(k)-e(i)
+                 ebcij=e(apr)+e(c)-e(kpr)-e(i)
+                 DA=eacij*ebcij
+
+                 term=term+vpqrs(b,k,c,i)*(+8.0*vpqrs(kpr,apr,i,c)-4.0*vpqrs(kpr,c,i,apr))
+                 term=term+vpqrs(b,i,c,k)*(-4.0*vpqrs(kpr,apr,i,c)+2.0*vpqrs(kpr,c,i,apr))
+!                 term=term*dpl(b,a)
+                 term=term/DA
+                 
+                 func=func+term
+                
+              end if
+           end do
+        end do
+       
+        return
+        
+      end function tau_D2_6_2
+
+!####################################################################### 
+
+      function tau_D2_6_3(a,apr,k,j1) result(func)
+
+        implicit none
+
+        integer, intent(in) :: a,apr,k,j1
+        integer             :: b,b1,i,j,sym,nsym1,nsym2,nsym3,nsym4,i1,cnt
+        real*8              :: DA,eacij,ebcij,term, func
+
+        func=0.0d0
+
+        cnt=0
+
+        j=roccnum(j1)
+  
+        do b1=nOcc+1,nBas
+           b=roccnum(b1)
+           do i1=1,nOcc
+              i=roccnum(i1)
+
+              nsym1=MT(orbSym(a),orbSym(b))
+              nsym2=MT(orbSym(i),orbSym(k))
+              nsym3=MT(orbSym(apr),orbSym(b))
+              nsym4=MT(orbSym(i),orbSym(j))
+             
+              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+                
+                 cnt=cnt+1
+
+                 term=0.0
+
+                 eacij=e(apr)+e(b)-e(j)-e(i)
+                 ebcij=e(a)+e(b)-e(k)-e(i)
+                 DA=eacij*ebcij
+
+                 term=term+vpqrs(j,apr,i,b)*(+8.0*vpqrs(a,k,b,i)-4.0*vpqrs(a,i,b,k))
+                 term=term+vpqrs(j,b,i,apr)*(-4.0*vpqrs(a,k,b,i)+2.0*vpqrs(a,i,b,k))
+!                 term=term*dpl(kpr,j)
+                 term=term/DA
+                
+                 func=func+term
+                
+              end if
+       
+           end do
+        end do
+
+        return
+
+      end function tau_D2_6_3
+
+!####################################################################### 
+
+      function tau_D2_6_4(a,apr,kpr,j1) result(func)
+
+        implicit none
+
+        integer, intent(in) :: a,apr,kpr,j1
+        integer             :: b,i,j,sym,nsym1,nsym2,nsym3,nsym4,b1,i1,cnt
+        real*8              :: DA,eacij,ebcij,term,func
+
+
+        func=0.0d0
+
+        cnt=0
+
+        j=roccnum(j1)
+   
+        do b1=nOcc+1,nBas
+           b=roccnum(b1)
+           do i1=1,nOcc
+              i=roccnum(i1)
  
+              nsym1=MT(orbSym(apr),orbSym(b))
+              nsym2=MT(orbSym(i),orbSym(kpr))
+              nsym3=MT(orbSym(a),orbSym(b))
+              nsym4=MT(orbSym(i),orbSym(j))            
+             
+              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
+                
+                 cnt=cnt+1
+
+                 term=0.0
+
+                 eacij=e(apr)+e(b)-e(kpr)-e(i)
+                 ebcij=e(a)+e(b)-e(j)-e(i)
+                 DA=eacij*ebcij
+
+                 term=term+vpqrs(a,j,b,i)*(+8.0*vpqrs(kpr,apr,i,b)-4.0*vpqrs(kpr,b,i,apr))
+                 term=term+vpqrs(a,i,b,j)*(-4.0*vpqrs(kpr,apr,i,b)+2.0*vpqrs(kpr,b,i,apr))
+!                 term=term*dpl(k,j)
+                 term=term/DA
+                
+                 func=func+term
+                
+             end if
+       
+          end do
+       end do
+
+        return
+
+      end function tau_D2_6_4
+
+!####################################################################### 
 
   end module D_matrix
