@@ -294,34 +294,39 @@ contains
 
     mtm(:)=-sqrt(2.0d0)*mtm(:)
 
+
+    if (.not.lcvs) then
+
 !!$----------I-a=b,i=j-------------------
 
-    nlim1=nlim2+1
-    nlim2=nlim2+kpq(2,0)
+       nlim1=nlim2+1
+       nlim2=nlim2+kpq(2,0)
     
-    do cnt= nlim1,nlim2
+       do cnt= nlim1,nlim2
 
-       k=kpq(3,cnt)
-       a=kpq(5,cnt)
+          k=kpq(3,cnt)
+          a=kpq(5,cnt)
+          
+          mtm(cnt)=FI_2p2h(a,k)
 
-       mtm(cnt)=FI_2p2h(a,k)
-
-    end do
+       end do
  
 !!$----------II-a|=b,i=j-------------------
 
-    nlim1=nlim2+1
-    nlim2=nlim2+kpq(3,0)
-    
-    do cnt= nlim1,nlim2
+       nlim1=nlim2+1
+       nlim2=nlim2+kpq(3,0)
        
-       k=kpq(3,cnt)
-       a=kpq(5,cnt)
-       b=kpq(6,cnt)
+       do cnt= nlim1,nlim2
+          
+          k=kpq(3,cnt)
+          a=kpq(5,cnt)
+          b=kpq(6,cnt)
+          
+          mtm(cnt)=FII_2p2h(a,b,k)
+          
+       end do
 
-       mtm(cnt)=FII_2p2h(a,b,k)
-
-    end do
+    endif
 
 !!$----------III-a=b,i|=j-------------------
 

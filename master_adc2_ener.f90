@@ -96,9 +96,6 @@
 
 !-----------------------------------------------------------------------
 ! Calculate TDMs from the ground state
-!
-! N.B., This needs modifying to be compatible with the CVS 
-!       approximation
 !-----------------------------------------------------------------------    
     allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
     
@@ -106,16 +103,11 @@
     osc_str=0.0d0
 
     if (.not.lfakeip) then
-       if (lcvs) then
-          write(6,'(/,2x,a,/)') 'Transition dipole moments within the &
-               CVS approximation are not currently supported'
-       else
-          call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
-          do i=1,davstates
-             tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
-             osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
-          end do
-       endif       
+       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+       do i=1,davstates
+          tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
+          osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
+       end do
     endif
 
     itmp=1+nBas**2*4*nOcc**2

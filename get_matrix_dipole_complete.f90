@@ -91,7 +91,7 @@ contains
 !-----------------------------------------------------------------------
     write(6,'(/,2x,a)') 'Calculating the matrix-vector product...'
 
-    travec(:)=0.0
+    travec(:)=0.0d0
 
 ! THE INDEX i RUNS IN THE 1H1P  BLOCK OF (FINAL) CONFIGURATIONS  
     ndim1f=kpqf(1,0)
@@ -1211,6 +1211,7 @@ contains
     return
     
   end subroutine open_scratch_files
+
 !#######################################################################
 
   subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&

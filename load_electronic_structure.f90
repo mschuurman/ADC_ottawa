@@ -18,9 +18,9 @@
      endif
      vpqrs = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
    else
-     vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+      vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
    endif
-   
+
    return
  end function vpqrs
 
