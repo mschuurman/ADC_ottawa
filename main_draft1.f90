@@ -4,6 +4,7 @@ program main
   use parameters
   use read_param
   use guessvecs
+  use adc2mod
   
   implicit none
   

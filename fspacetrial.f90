@@ -1324,22 +1324,9 @@ contains
     allocate(indarr(ndim))
     call dsortindxa1('D',ndim,vctr(:)**2,indarr(:))
 
-!    cnt=lmain+1 ! merkt sich den platz, mit dem geswapt wird
-!    if(lmain.lt.ndim) then
-!     do i=1,lmain
-!        do while (indarr(i).gt.lmain)
-!         indarr(i)=indarr(cnt)
-!         cnt=cnt+1
-!        end do
-!     end do
-!     stvc_lbl(:)=indarr(:)
-!    else
-     stvc_lbl(1:lmain)=indarr(1:lmain)
-!    end if
+    stvc_lbl(1:lmain)=indarr(1:lmain)
 
     write(6,*)'Following configurations were chosen as the starting block of Lanzcos:',stvc_lbl(1:lmain)
-
-
 
     write(6,*) 'dipole values for 1h1p config in stvc_lbl order'    
     do i=1,lmain

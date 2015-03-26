@@ -342,9 +342,6 @@ contains
     nlim=5
     if (nlim .gt. ndim1) nlim=ndim1
   
-!    write(6,101) "Eigenval","a.u.","Ev","Trans.Mom."
-    write(6,100)
-    
     iout=127
     open(iout,file='davstates.dat',form='formatted',status='unknown')
 
@@ -352,7 +349,6 @@ contains
        coeff(:)=vspace(:,i)**2
        call dsortindxa1("D",ndim1,coeff(:),indx(:))
        coeff(:)=vspace(:,i)
-!       write(6,102) i,en(i),en(i)*27.211396,tmvec(i),osc_str(i),(coeff(indx(j)),indx(j),j=1,nlim)
        call wrstateinfo(i,indx,coeff,kpq,kpqdim2,en(i),tmvec(i),&
             osc_str(i),ndim1,iout)
     end do
