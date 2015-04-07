@@ -76,6 +76,7 @@ ADC =   constants.o \
 	photoionisation.o \
 	Propagate.o \
         guessvecs.o \
+        diagnostics.o \
 	master_adc1_prop.o \
 	master_adc2_prop.o \
 	master_adc2ext_prop.o \

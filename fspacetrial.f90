@@ -430,24 +430,34 @@ contains
     integer*8, intent(out) :: noffdel 
 
     integer :: ndim1,ndim2,nbuf,i
-!    logical :: prsd, prso
-    
-!!$    inquire(file='hmlt.dia'//chr,exist=prsd)
-!!$    inquire(file='hmlt.off'//chr,exist=prso)
-!!$    
-!!$    if(prsd .and. prso) then
-!!$       write(6,*) 'Engaging older hamiltonian files'
-!!$       
-!!$    else
-    
-       ndim1=kpq(1,0)
-       ndim2=ndim-kpq(1,0)
-       write(6,*) 'in write_space'
-       call get_offdiag_adc2ext_save(ndim,kpq(:,:),nbuf,noffdel,chr)
-       call get_diag_adc2ext_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
-!!$    end if
+
+    ndim1=kpq(1,0)
+    ndim2=ndim-kpq(1,0)
+    write(6,*) 'in write_space'
+    call get_offdiag_adc2ext_save(ndim,kpq(:,:),nbuf,noffdel,chr)
+    call get_diag_adc2ext_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
 
   end subroutine write_fspace_adc2e_1
+
+!!$-----------------------------------------------------------------------------------------
+
+    subroutine write_fspace_adc2e_1_cvs(ndim,kpq,noffdel,chr) 
+
+    integer, intent(in) :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    character(1), intent(in) :: chr
+    integer*8, intent(out) :: noffdel 
+
+    integer :: ndim1,ndim2,nbuf,i
+
+    ndim1=kpq(1,0)
+    ndim2=ndim-kpq(1,0)
+    write(6,*) 'in write_space'
+    call get_offdiag_adc2ext_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+    call get_diag_adc2ext_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
+
+  end subroutine write_fspace_adc2e_1_cvs
+
 !!$-----------------------------------------------------------------------------------------
 
   subroutine write_fspace_adc2e_1_MIO(ndim,kpq,noffdel,indx,chr) 
@@ -1254,7 +1264,6 @@ contains
 
     call get_sums(ncount,ener_short(1:ncount),sgmvc_short(1:ncount)/os2cs)
   
-
     iout=112
     open(iout,file='osc.dat',form='formatted',status='unknown')
 

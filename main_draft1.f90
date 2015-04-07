@@ -6,6 +6,8 @@ program main
   use guessvecs
   use adc2mod
   
+  use adc_ph
+
   implicit none
   
   
@@ -74,15 +76,12 @@ program main
   
   ! Calculation of spectral moments
   elseif (method .eq. 1) then
-     write(6,*) "Activating ADC1"
      call master_adc1_prop()
      
   elseif (method .eq. 2) then
-     write(6,*) "Activating ADC2 "
      call master_adc2_prop()
      
   elseif (method .eq. 3) then
-     write(6,*) "Activating ADC2 EXT"
      call master_adc2ext_prop()
   
   ! Calculations of VEEs only

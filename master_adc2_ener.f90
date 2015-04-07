@@ -17,7 +17,7 @@
     implicit none
 
     integer, dimension(:,:), allocatable :: kpq
-    integer                              :: ndim,ndims,i,itmp
+    integer                              :: ndim,ndims,i,itmp,ista
     integer*8                            :: noffd
     real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
                                             osc_str
@@ -103,7 +103,7 @@
     osc_str=0.0d0
 
     if (.not.lfakeip) then
-       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
        do i=1,davstates
           tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
           osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2

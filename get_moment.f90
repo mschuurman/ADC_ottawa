@@ -77,9 +77,9 @@ contains
 
 !!$----------------------------------------------
 
-  subroutine get_modifiedtm_adc2(ndim,kpq,mtm)
+  subroutine get_modifiedtm_adc2(ndim,kpq,mtm,ista)
     
-    integer, intent(in)                                   :: ndim
+    integer, intent(in)                                   :: ndim,ista
     integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
     real*8, dimension(ndim), intent(out)                  :: mtm
     integer                                               :: a,b,k,j,cnt
@@ -292,42 +292,43 @@ contains
 
     deallocate(tau)
 
-    mtm(:)=-sqrt(2.0d0)*mtm(:)
+    mtm(:)=-sqrt(2.0d0)*mtm(:)    
 
+    if (lcvs) goto 100
 
-    if (.not.lcvs) then
+    if (lcvsfinal.and.ista.eq.0) goto 100
 
 !!$----------I-a=b,i=j-------------------
 
-       nlim1=nlim2+1
-       nlim2=nlim2+kpq(2,0)
+    nlim1=nlim2+1
+    nlim2=nlim2+kpq(2,0)
     
-       do cnt= nlim1,nlim2
+    do cnt= nlim1,nlim2
 
-          k=kpq(3,cnt)
-          a=kpq(5,cnt)
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
           
-          mtm(cnt)=FI_2p2h(a,k)
+       mtm(cnt)=FI_2p2h(a,k)
 
-       end do
+    end do
  
 !!$----------II-a|=b,i=j-------------------
 
-       nlim1=nlim2+1
-       nlim2=nlim2+kpq(3,0)
+    nlim1=nlim2+1
+    nlim2=nlim2+kpq(3,0)
        
-       do cnt= nlim1,nlim2
+    do cnt= nlim1,nlim2
           
-          k=kpq(3,cnt)
-          a=kpq(5,cnt)
-          b=kpq(6,cnt)
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       b=kpq(6,cnt)
           
-          mtm(cnt)=FII_2p2h(a,b,k)
+       mtm(cnt)=FII_2p2h(a,b,k)
           
-       end do
-
-    endif
-
+    end do
+    
+100 continue
+    
 !!$----------III-a=b,i|=j-------------------
 
     nlim1=nlim2+1

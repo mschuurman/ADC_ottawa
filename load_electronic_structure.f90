@@ -24,6 +24,8 @@
    return
  end function vpqrs
 
+!#######################################################################
+
  subroutine errmsg(message)
   implicit none
   character*144         :: message
@@ -225,7 +227,7 @@
   hao_cmplx(1:nao,1:nao)                   = hao(1:nao,1:nao)
   hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = hao(1:nao,1:nao)
 
-  call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
+  if (lscf) call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
   mos_real = realpart(mos_cmplx)
 
   ! load up variables depending on RHF/UHF case 

@@ -307,7 +307,7 @@ write(*,*) 'I WILL PERFORM FULL ADC2 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
    write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIn  > IN THE INITIAL SPACE'
-   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
    write(100,*) ndim , mtm
    do i = 1 , ndim
    tmvec(i) = tm(ndim,arr(:,i),mtm(:))
@@ -339,7 +339,7 @@ write(*,*) 'I WILL PERFORM FULL ADC2 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
    write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIm  > IN THE FINAL SPACE'
-   call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:))
+   call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
    write(100,*) ndimf , mtmf
    do i = 1 , ndimf
    tmvecf(i) = tm(ndimf,arrf(:,i),mtmf(:))
@@ -554,7 +554,7 @@ write(*,*) 'I WILL PERFORM DAVIDSON ADC2 DIAGONALIZATION IN THE INITIAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
    write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIn  > IN THE INITIAL SPACE'
-   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
    write(100,*) ndim , mtm
    do i = 1 , davstates
    tmvec(i) = tm(ndim,rvec(:,i),mtm(:))
@@ -585,7 +585,7 @@ write(*,*) 'I WILL PERFORM DAVIDSON ADC2 DIAGONALIZATION IN THE INITIAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
    write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIm  > IN THE FINAL SPACE'
-   call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:))
+   call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
    write(100,*) ndimf , mtmf
    do i = 1 , ndimf
    tmvecf(i) = tm(ndimf,arrf(:,i),mtmf(:))
@@ -815,7 +815,7 @@ write(*,*) 'I WILL PERFORM LANCZOS ADC2 DIAGONALIZATION IN THE FINAL SPACE'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
    write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIn  > IN THE INITIAL SPACE'
-   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+   call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
    write(100,*) ndim , mtm
    do i = 1 , davstates
    tmvec(i) = tm(ndim,rvec(:,i),mtm(:))
@@ -976,7 +976,7 @@ IF ( GO .EQ. 'OK' ) THEN
      else
         write(6,*) 'Calculating ADC2 transition moments from ground state in ',tranmom2,' direction.'
         write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,' direction, i.e. : < PSI0  D',tranmom2,' PSIm  > IN THE FINAL SPACE'
-        call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:))
+        call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
         call write_vec(ndimf,'mmnt',mtmf(:))
         call write_vec(ndimf,'mmnt',travec(:))
      end if 

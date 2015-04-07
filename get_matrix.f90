@@ -1933,6 +1933,427 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
     end subroutine register2
 
   end subroutine get_offdiag_adc2ext_save
+
+
+!#######################################################################
+
+subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
+   
+  integer, intent(in) :: ndim
+  integer*8, intent(out) :: count
+  integer, intent(out) :: nbuf
+  integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+  character(1), intent(in) :: chr
+  
+  integer :: inda,indb,indj,indk,spin
+  integer :: indapr,indbpr,indjpr,indkpr,spinpr 
+  
+  character(13) :: name
+  integer :: rec_count
+  integer :: i,j,nlim,dim_count,ndim1,unt
+  integer :: lim1i, lim2i, lim1j, lim2j
+  real(d) :: arr_offdiag_ij
+  
+  integer, dimension(buf_size) :: oi,oj
+  real(d), dimension(buf_size) :: file_offdiag
+
+  integer                              :: nvirt,a,b,nzero
+  real(d), dimension(:,:), allocatable :: ca,cb
+  real(d)                              :: t1,t2
+
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+  call cpu_time(t1)
+  
+  nvirt=nbas-nocc
+  allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+  
+  ! CA_ph_ph
+  do i=1,nvirt
+     do j=i,nvirt
+        ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
+        ca(j,i)=ca(i,j)
+     enddo
+  enddo
+  
+  ! CB_ph_ph
+  do i=1,nocc
+     do j=i,nocc
+        cb(i,j)=CB_ph_ph(i,j)
+        cb(j,i)=cb(i,j)
+     enddo
+  enddo
+
+!-----------------------------------------------------------------------
+! Calculate the off-diagonal Hamiltonian matrix elements
+!-----------------------------------------------------------------------
+  name="hmlt.off"//chr
+  unt=12
+  
+  count=0
+  rec_count=0
+  
+  write(6,*) "Writing the off-diagonal part of ADC matrix in file ", name
+  OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
+       FORM='UNFORMATTED')
+
+!!$ Filling the off-diagonal part of the ph-ph block
+
+     ndim1=kpq(1,0)
+       
+     do i=1,ndim1
+        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+        do j=1,i-1
+           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)             
+           arr_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
+
+           if(indj .eq. indjpr)&
+                arr_offdiag_ij= arr_offdiag_ij+ca(inda-nocc,indapr-nocc)
+
+           if(inda .eq. indapr)&
+                arr_offdiag_ij= arr_offdiag_ij+cb(indj,indjpr)
+
+           arr_offdiag_ij=arr_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
+           call register1()
+        end do
+     end do
+   
+!!$ Coupling to the i|=j,a=b configs
+       
+       dim_count=kpq(1,0)
+             
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(4,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr)
+             call register1()
+          end do
+       end do
+
+!!$ Coupling to the i|=j,a|=b I configs
+       
+       dim_count=dim_count+kpq(4,0)
+
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(5,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+             !Culling  small matrix elements
+             if (abs(arr_offdiag_ij) .gt. minc) then
+                call register1()
+             end if
+          end do
+       end do
+
+!!$ Coupling to the i|=j,a|=b II configs
+       
+       dim_count=dim_count+kpq(5,0)
+
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(5,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+             !Culling  small matrix elements
+             call register1()
+          end do
+       end do
+    
+!!$ Filling the 2p2h-2p2h block
+    
+!!$ (1,1) block
+    
+    lim1i=kpq(1,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)
+    lim1j=lim1i
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_1_1(inda,indj,indapr,indjpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (2,1) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_2_1(inda,indb,indj,indapr,indjpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (3,1) block
+     
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_1(inda,indj,indk,indapr,indjpr)
+           
+          call register1()
+       end do
+    end do          
+         
+!!$ (4i,1) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_1(inda,indb,indj,indk,indapr,indjpr)
+           
+          call register1()
+       end do
+    end do 
+ 
+!!$ (4ii,1) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_1(inda,indb,indj,indk,indapr,indjpr)
+            
+          call register1()
+       end do
+    end do 
+
+!!$ (2,2) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    lim1j=lim1i
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          arr_offdiag_ij=C_2_2(inda,indb,indj,indapr,indbpr,indjpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (3,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_2(inda,indj,indk,indapr,indbpr,indjpr)
+            
+          call register1()
+       end do
+    end do
+        
+!!$ (4i,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_2(inda,indb,indj,indk,indapr,indbpr,indjpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (4ii,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_2(inda,indb,indj,indk,indapr,indbpr,indjpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (3,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=lim1i
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_3(inda,indj,indk,indapr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (4i,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_3(inda,indb,indj,indk,indapr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (4ii,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_3(inda,indb,indj,indk,indapr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (4i,4i) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=lim1i
+    
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_4i(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+
+!!$ (4ii,4i) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          arr_offdiag_ij=C_4ii_4i(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+    
+!!$ (4ii,4ii) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=lim1i
+
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_4ii(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+           
+          call register1()
+       end do
+    end do
+    
+    call register2()
+    CLOSE(unt)
+    write(6,*) 'rec_counts',nbuf
+    write(6,*) count,' off-diagonal elements saved in file ', name
+
+  contains
+       
+    subroutine register1()
+      if (abs(arr_offdiag_ij) .gt. minc) then
+         count=count+1
+! buf_size*int(rec_count,8) can exceed the int*4 limit
+         file_offdiag(count-buf_size*int(rec_count,8))=arr_offdiag_ij
+         oi(count-buf_size*int(rec_count,8))=i
+         oj(count-buf_size*int(rec_count,8))=j
+         !Checking if the buffer is full 
+         if(mod(count,buf_size) .eq. 0) then
+            rec_count=rec_count+1
+            nlim=buf_size
+            !Saving off-diag part in file
+            call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+!!$            call wrtoffat(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)  
+         end if
+      end if
+    end subroutine register1
+    
+    subroutine register2()
+      
+      !Saving the rest in file
+      nlim=count-buf_size*int(rec_count,8)
+      call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+!!$      call wrtoffat(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+      rec_count=rec_count+1
+      nbuf=rec_count
+      
+    end subroutine register2
+
+end subroutine get_offdiag_adc2ext_save_cvs
+
+!#######################################################################
+
 !---------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------
 !-------------------FANO SUBROUTINES----------------------------------------------

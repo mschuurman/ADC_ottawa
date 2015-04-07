@@ -373,14 +373,8 @@ contains
     real(d)                           :: en,tmvec,osc_str
     real(d), parameter                :: tol=0.05d0
 
-    write(6,'(/,70a)') ('-',k=1,70)
     write(6,'(2x,a,2x,i2)') 'Initial Space State Number',i
-    write(6,'(70a)') ('-',k=1,70)
-
-    write(iout,'(/,70a)') ('-',k=1,70)
     write(iout,'(2x,a,2x,i2)') 'Initial Space State Number',i
-    write(iout,'(70a)') ('-',k=1,70)
-
 
 !-----------------------------------------------------------------------
 ! Excitation energy

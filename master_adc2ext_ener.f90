@@ -32,8 +32,8 @@
 
     if (lcvs) then
        ! CVS-ADC(2)-x
-       write(6,'(/,2x,a,/)') "CVS-ADC(2)-x is not yet implemented"
-       STOP
+       call select_atom_is_cvs(kpq(:,:))
+       call select_atom_d_cvs(kpq(:,:),-1)
     else
        ! ADC(2)-x
        call select_atom_is(kpq(:,:))
@@ -79,8 +79,7 @@
 !-----------------------------------------------------------------------
     write(6,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
     if (lcvs) then       
-       write(6,'(/,2x,a,/)') "CVS-ADC(2)-x is not yet implemented"
-       STOP
+       call write_fspace_adc2e_1_cvs(ndim,kpq(:,:),noffd,'i')
     else
        call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
     endif
@@ -97,9 +96,6 @@
 
 !-----------------------------------------------------------------------
 ! Calculate TDMs from the ground state
-!
-! N.B., This needs modifying to be compatible with the CVS 
-!       approximation
 !-----------------------------------------------------------------------    
     allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
     
@@ -107,7 +103,7 @@
     osc_str=0.0d0
 
     if (.not.lfakeip) then
-       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+       call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
        do i=1,davstates
           tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
           osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2

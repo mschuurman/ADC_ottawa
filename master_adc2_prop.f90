@@ -9,7 +9,7 @@
         use constants
         use parameters
         use band_lanczos
- 
+
         implicit none
 
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
@@ -20,12 +20,16 @@
         real(d)                              :: time
         real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
         real(d), dimension(:), allocatable   :: travec
-        real(d)                              :: e_init
+        real(d)                              :: e_init,e0
         real(d), dimension(:,:), allocatable :: rvec
         real(d), dimension(:), allocatable   :: vec_init
-        real*8, dimension(:), allocatable    :: mtmf        
-        real(d)                              :: E_groundstate
-        
+        real*8, dimension(:), allocatable    :: mtmf
+
+!-----------------------------------------------------------------------
+! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
+!-----------------------------------------------------------------------
+        call run_mp2(e0)
+
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces
 !-----------------------------------------------------------------------
@@ -40,70 +44,83 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation in the initial space.
 !-----------------------------------------------------------------------
-        call initial_space_diag(time,kpq,ndim,ndims,noffd,vec_init)
+        if (statenumber.gt.0) &
+             call initial_space_diag(time,kpq,ndim,ndims,noffd)
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------        
-        call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
+        if (statenumber.gt.0) &
+             call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,&
+             kpq)
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
 !-----------------------------------------------------------------------
-        write(6,'(/,70a)') ('*',i=1,70)
-        write(6,'(2x,a)') 'Initial space ADC(2)-s excitation energies'
-        write(6,'(70a)') ('*',i=1,70)
- 
-       itmp=1+nBas**2*4*nOcc**2
-        call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),&
-             tmvec(1:davstates),osc_str(1:davstates),&
-             kpq,itmp)
+        if (statenumber.gt.0) then
+           write(6,'(/,70a)') ('*',i=1,70)
+           write(6,'(2x,a)') &
+                'Initial space ADC(2)-s excitation energies'
+           write(6,'(70a)') ('*',i=1,70)
+           
+           itmp=1+nBas**2*4*nOcc**2
+           call table2(ndim,davstates,ener(1:davstates),&
+                rvec(:,1:davstates),tmvec(1:davstates),&
+                osc_str(1:davstates),kpq,itmp)
+        endif
 
 !-----------------------------------------------------------------------
 ! Set the initial state vector and energy
 !-----------------------------------------------------------------------
-        vec_init(:)=rvec(:,statenumber)
-        e_init=ener(statenumber)
+        allocate(vec_init(ndim))
+
+        if (statenumber.gt.0) then
+           vec_init(:)=rvec(:,statenumber)
+           e_init=ener(statenumber)
+        else
+           e_init=0.0d0
+        endif
 
 !-----------------------------------------------------------------------
 ! Determine the guess vectors for the band-Lanczos calculation
+!
+! Note that as part of this process, the transition moments between
+! the ISs and the initial state are calculated in lanczos_guess_vecs
+! and passed back in the travec array
 !-----------------------------------------------------------------------
         allocate(travec(ndimf))
 
         call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
-             travec,ndimf,kpq,kpqf)
+             travec,ndimf,kpq,kpqf,mtmf)
 
 !-----------------------------------------------------------------------
 ! Write the final space ADC(2)-s Hamiltonian matrix to file
 !-----------------------------------------------------------------------
         write(6,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-        call  write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+        if (lcvsfinal) then
+           call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+        else
+           call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+        endif
 
 !-----------------------------------------------------------------------
 ! Perform the band-Lanczos calculation
 !-----------------------------------------------------------------------
-        call master_lancdiag(ndimf,noffdf,'c')
+        call master_lancdiag(ndimf,noffdf,'c')        
 
 !-----------------------------------------------------------------------
-! Calculate the transition moments between the initial state and the
-! Lanczos states
+! Calculate the transition moments and oscillator strengths between 
+! the initial state and the Lanczos pseudo-states
 !-----------------------------------------------------------------------            
-        call tdm_lancstates(ndimf,ndimsf,travec,e_init)
+        call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
 
 !-----------------------------------------------------------------------
-! Calculate the MP2 ground state energy.
-!
-! We should really do this at the start.
-! Also, we should calculate and output the t2 diagnostic so that
-! we have an idea of how "multi-referency" the wavefunction is.
+! Deallocate arrays
 !-----------------------------------------------------------------------
-        call MP2(E_MP2)
-        E_groundstate = Ehf + E_MP2
-        write(6,*) 'THE ADC2 GROUND STATE ENERGY AT THIS GEOMETRY IS',&
-             E_groundstate
-  
-        deallocate(ener,rvec,vec_init)
-        deallocate(travec)          
+        if (allocated(ener)) deallocate(ener)
+        if (allocated(rvec)) deallocate(rvec)
+        if (allocated(vec_init)) deallocate(vec_init)        
+        if (allocated(travec)) deallocate(travec)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -138,19 +155,24 @@
 !-----------------------------------------------------------------------
         ! Initial subspace
         kpq(:,:)=-1
-        call  select_atom_is(kpq(:,:))
-        call  select_atom_d(kpq(:,:),-1)
+        call select_atom_is(kpq(:,:))
+        call select_atom_d(kpq(:,:),-1)
 
         ! Final subspace
         kpqf(:,:)=-1
-        call  select_atom_isf(kpqf(:,:))
-        call  select_atom_df(kpqf(:,:),-1)
-        
+        if (lcvsfinal) then
+           call select_atom_is_cvs(kpqf(:,:))
+           call select_atom_d_cvs(kpqf(:,:),-1)
+        else
+           call select_atom_isf(kpqf(:,:))
+           call select_atom_df(kpqf(:,:),-1)
+        endif
+           
         ! Total subspace
         kpqd(:,:)=-1
-        call  select_atom_ist(kpqd(:,:))
-        call  select_atom_dt(kpqd(:,:),-1)
-
+        call select_atom_ist(kpqd(:,:))
+        call select_atom_dt(kpqd(:,:),-1)
+           
 !-----------------------------------------------------------------------
 ! Determine the various subspace dimensions
 !-----------------------------------------------------------------------
@@ -210,7 +232,7 @@
 
 !#######################################################################
 
-      subroutine initial_space_diag(time,kpq,ndim,ndims,noffd,vec_init)
+      subroutine initial_space_diag(time,kpq,ndim,ndims,noffd)
         
         use constants
         use parameters
@@ -222,13 +244,11 @@
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
         integer                                   :: ndim,ndims
         integer*8                                 :: noffd
-        real(d), dimension(:), allocatable        :: vec_init
         real(d)                                   :: time
 
         ! Davidson in the initial space
         write(6,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
         call  write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i') 
-        write(111,*) noffd
         call cpu_time(time)
         write(6,*) 'Time=',time," s"
         
@@ -276,10 +296,10 @@
 !-----------------------------------------------------------------------        
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 > (mtm)
 !-----------------------------------------------------------------------
-!        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:))
+!        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
 
 !-----------------------------------------------------------------------
-! Contract the F-vector with the davidson states to yield the
+! Contract the F-vector with the Davidson states to yield the
 ! transition moments between the ground state and the Davidson states
 !-----------------------------------------------------------------------
         do i=1,davstates
@@ -296,7 +316,7 @@
 !#######################################################################
 
       subroutine lanczos_guess_vecs(vec_init,ndim,ndimsf,travec,ndimf,&
-           kpq,kpqf)
+           kpq,kpqf,mtmf)
 
         use constants
         use parameters
@@ -307,11 +327,13 @@
         integer                                   :: ndim,ndimf,ndimsf
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
+        real(d), dimension(:), allocatable        :: mtmf
 
 !-----------------------------------------------------------------------
 ! Ionisation from the ground state
 !-----------------------------------------------------------------------
-        if (statenumber.eq.0) call guess_vecs_gs2ex
+        if (statenumber.eq.0) call guess_vecs_gs2ex(ndimf,ndimsf,mtmf,&
+             kpqf)
 
 !-----------------------------------------------------------------------
 ! Ionisation from an excited state
@@ -325,15 +347,18 @@
 
 !#######################################################################
 
-      subroutine guess_vecs_gs2ex
+      subroutine guess_vecs_gs2ex(ndimf,ndimsf,mtmf,kpqf)
 
         use constants
         use parameters
+        use get_moment
+        use fspace
 
         implicit none
 
-        print*,"WRITE THIS PART OF THE CODE!"
-        STOP
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+        integer                                   :: ndimf,ndimsf
+        real(d), dimension(:), allocatable        :: mtmf
 
 !-----------------------------------------------------------------------        
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
@@ -341,7 +366,8 @@
 !
 ! N.B. this vector is saved to the mtmf array
 !-----------------------------------------------------------------------
-!        call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:))
+        allocate(mtmf(ndimf))
+        call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of mtmf, determine which 1h1p 
@@ -349,7 +375,7 @@
 ! 
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-!        call fill_stvc(ndimsf,mtmf(1:ndimsf))
+        call fill_stvc(ndimsf,mtmf(1:ndimsf))
 
         return
 
@@ -388,14 +414,14 @@
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
         call fill_stvc(ndimsf,travec(1:ndimsf))
-
+        
         return
 
       end subroutine guess_vecs_ex2ex
 
 !#######################################################################
 
-      subroutine tdm_lancstates(ndimf,ndimsf,travec,e_init)
+      subroutine tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
         
         use constants
         use parameters
@@ -403,13 +429,13 @@
         implicit none
 
         integer                   :: ndimf,ndimsf
-        real(d), dimension(ndimf) :: travec
+        real(d), dimension(ndimf) :: travec,mtmf
         real(d)                   :: e_init
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state
 !-----------------------------------------------------------------------
-        if (statenumber.eq.0) call tdm_gs2lanc
+        if (statenumber.eq.0) call tdm_gs2lanc(ndimf,ndimsf,mtmf,e_init)
 
 !-----------------------------------------------------------------------
 ! Transition moments from an excited state
@@ -423,37 +449,54 @@
 
 !#######################################################################
 
-      subroutine tdm_gs2lanc
-        
+      subroutine tdm_gs2lanc(ndimf,ndimsf,mtmf,e_init)
+
+        use constants
+        use parameters
+        use fspace
+
         implicit none
 
-        print*,"WRITE THE CODE INVOLVING mtmf"
-        STOP
+        integer                            :: ndimf,ndimsf,nstates,i
+        real(d)                            :: e_init
+        real(d), dimension(ndimf)          :: mtmf
+        real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
+                                              osc_strf
 
-!        if (allocated(enerf)) deallocate(enerf)
-!        if (allocated(tmvec)) deallocate(tmvec)
-!        allocate(enerf(lancstates),tmvec(lancstates),mtmf(ndimf))
+!-----------------------------------------------------------------------
+! Calculate the transition moments between the ground state and the
+! Lanczos states
 !
-!!!$ ***lancstates is at most ncyclesXmain, usually we expect it to be lower than that
-!        
-!        write(6,*) &
-!             'Calculating ADC2 transition moments from ground state in',&
-!             tranmom2,' direction.'
-!        write(6,*) 'I AM Calculating ADC2 transition moments in', tranmom2,&
-!             ' direction, i.e. : < PSI0  D',tranmom2,' PSIm  > IN THE FINAL SPACE'
-!        tmvecf(:) = 0.d0
-!  
-!        call get_tranmom_1(ndimf,lancstates,lancname,mtmf(:),nstates,enerf(:),&
-!             tmvecf(:),ndimsf)
-!  
-!        allocate(osc_strf(nstates))
-!        osc_strf(:) = 0.d0
-!        do i = 1 , nstates
-!           osc_strf(i) = 2._d/3._d * enerf(i) * tmvecf(i)**2
-!        end do
+! N.B. nstates is determined in get_tranmom_1
+!-----------------------------------------------------------------------
+        allocate(enerf(lancstates),tmvecf(lancstates))
+        tmvecf=0.0d0
+        enerf=0.0d0
 
-!        call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
+        call get_tranmom_1(ndimf,lancstates,lancname,mtmf(:),nstates,enerf(:),&
+             tmvecf(:),ndimsf)
 
+!-----------------------------------------------------------------------
+! Calculate and output the oscillator strengths
+!-----------------------------------------------------------------------
+        allocate(osc_strf(nstates),excit(nstates))
+
+        do i=1,nstates
+           excit(i)=enerf(i)-e_init
+        end do
+
+        osc_strf=0.0d0
+        do i=1,nstates
+           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
+        enddo
+
+        call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(enerf,tmvecf,osc_strf,excit)
+        
         return
 
       end subroutine tdm_gs2lanc
@@ -475,39 +518,96 @@
         real(d)                            :: e_init
         real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
                                               osc_strf
-        
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-        allocate(enerf(lancstates),tmvecf(lancstates),&
-             osc_strf(nstates))
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments between the initial state and the
 ! Lanczos states
+!
+! N.B. nstates is determined in get_tranmom_3
 !-----------------------------------------------------------------------
+        allocate(enerf(lancstates),tmvecf(lancstates))
         tmvecf=0.0d0
+        enerf=0.0d0
+
         call get_tranmom_3(ndimf,lancstates,lancname,travec(:),&
              nstates,enerf(:),tmvecf(:),ndimsf)
 
 !-----------------------------------------------------------------------
 ! Calculate and output the oscillator strengths
 !-----------------------------------------------------------------------
-        allocate(excit(nstates))
+        allocate(osc_strf(nstates),excit(nstates))
+
         do i=1,nstates
            excit(i)=enerf(i)-e_init
         end do
-        
+
         osc_strf=0.0d0
         do i=1,nstates
-           osc_strf(i) = (2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
+           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
         enddo
 
         call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
 
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(enerf,tmvecf,osc_strf,excit)
+
         return
 
       end subroutine tdm_ex2lanc
+
+!#######################################################################
+
+      subroutine run_mp2(e0)
+        
+        use constants
+        use parameters
+        use diagnostics        
+        use adc_ph, only: mp2
+
+        implicit none
+
+        integer           :: i
+        real(d)           :: e0,d2
+        character(len=60) :: atmp
+
+!-----------------------------------------------------------------------
+! Calculation of the MP2 correlation energy
+!-----------------------------------------------------------------------
+        call MP2(E_MP2)
+
+!-----------------------------------------------------------------------
+! Calculation of the D2 diagnostic
+!-----------------------------------------------------------------------
+        if (ld2) call mp2_d2(d2)
+
+!-----------------------------------------------------------------------
+! Output results
+!-----------------------------------------------------------------------
+        e0=Ehf+E_MP2
+ 
+        write(6,'(/,2x,90a)') ('*',i=1,90)
+        write(6,'(2x,1a)') '*'
+        atmp='* HF energy:'
+        write(6,'(2x,a25,2x,F18.10)') adjustl(atmp),Ehf
+        write(6,'(2x,1a)') '*'
+        atmp='* MP2 correlation energy:'
+        write(6,'(2x,a25,2x,F18.10)') adjustl(atmp),E_MP2
+        write(6,'(2x,1a)') '*'
+        atmp='* MP2 energy:'
+        write(6,'(2x,a25,2x,F18.10)') adjustl(atmp),e0
+        if (ld2) then
+           write(6,'(2x,1a)') '*'
+           atmp='* D2 diagnostic:'
+           write(6,'(2x,a25,2x,F18.10)') adjustl(atmp),d2
+        endif
+        write(6,'(2x,1a)') '*'
+        write(6,'(2x,90a)') ('*',i=1,90)
+
+        return
+
+      end subroutine run_mp2
 
 !#######################################################################
 

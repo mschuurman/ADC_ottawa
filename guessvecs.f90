@@ -88,104 +88,76 @@
       
       integer                              :: kpqdim2,dims,inda,indb,&
                                               indj,indk,spin,i,j,k,&
-                                              nex,norb,ndim,a,count,dim
+                                              norb,ndim,a,count,dim
       integer, dimension(7,0:kpqdim2-1)    :: kpq
-      integer, dimension(nocc,2)           :: exindx
+
       real(d), dimension(:), allocatable   :: apprx_en
       integer, dimension(:,:), allocatable :: indxaji
       integer, dimension(:), allocatable   :: sortindx,map
 
 !-----------------------------------------------------------------------
-! Determine the indices of the 1h1p configurations corresponding to
-! excitation into the diffuse orbital
-!-----------------------------------------------------------------------
-      exindx=0
-      nex=0
-      do i=1,dims
-         call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
-         if (inda.eq.ifakeorb) then
-            nex=nex+1
-            exindx(nex,1)=i
-            exindx(nex,2)=indj
-         endif         
-      enddo
-
-!-----------------------------------------------------------------------
-! Fill in the ifakeex array: ifakeex(k) is the index of the singl 
+! Fill in the ifakeex array: ifakeex(k) is the index of the single
 ! non-zero element of the unit vector corresponding to the kth guess
 ! vector
 !-----------------------------------------------------------------------
+      nvirt=nbas-nocc
+      ndim=nocc+(nvirt-1)*nocc**2
+
       allocate(ifakeex(dmain))
+      allocate(apprx_en(ndim))
+      allocate(sortindx(ndim))
+      allocate(map(ndim))
+      allocate(indxaji(ndim,3))
+      
+      indxaji=0
+      apprx_en=9999999.9d0
 
-      if (lcvs) then
-         norb=ncore
-         if (dmain.gt.ncore) then
-            write(6,'(/,2(2x,a,/))') 'Currently only 1h1p initial vectors &
-                 are supported for a fake IP calculation.','Reduce &
-                 dmain so that it is less than or equal to ncore and &
-                 re-run'
-            STOP
+      ! (1) i->inf
+      count=0
+      do i=1,dims
+         call get_indices(kpq(:,i),inda,indb,indj,indk,spin)         
+         if (inda.eq.ifakeorb) then
+            count=count+1
+            indxaji(i,3)=indj
+            apprx_en(i)=-e(indj)
+            map(count)=i
          endif
-         do i=1,dmain
-            k=norb-i+1
-            ifakeex(i)=exindx(k,1)
-         enddo
-      else
-         nvirt=nbas-nocc
-         ndim=nocc+(nvirt-1)*nocc**2
-         allocate(apprx_en(ndim))
-         allocate(sortindx(ndim))
-         allocate(map(ndim))
-         allocate(indxaji(ndim,3))
-         indxaji=0
-         apprx_en=0.0d0
+      enddo
 
-         ! (1) i->inf
-         count=0
-         do i=1,dims
-            call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
-            if (inda.eq.ifakeorb) then
-               count=count+1
-               indxaji(i,3)=indj
-               apprx_en(i)=-e(indj)
-               map(count)=i
-            endif
-         enddo
+      ! (2) i->inf, j->b
+      do i=dims+1,dim
+         call get_indices(kpq(:,i),inda,indb,indj,indk,spin)            
+         if (inda.eq.ifakeorb.and.indb.ne.ifakeorb) then
+            count=count+1
+            indxaji(count,3)=indj
+            indxaji(count,2)=indk
+            indxaji(count,1)=indb
+            apprx_en(count)=-e(indj)+e(indb)-e(indk)           
+            map(count)=i
+         else if (indb.eq.ifakeorb.and.inda.ne.ifakeorb) then
+            count=count+1
+            indxaji(count,3)=indj
+            indxaji(count,2)=indk
+            indxaji(count,1)=inda
+            apprx_en(count)=-e(indj)+e(inda)-e(indk)           
+            map(count)=i
+         endif
+      enddo
 
-         ! (2) i->inf, j->b
-         do i=dims+1,dim
-            call get_indices(kpq(:,i),inda,indb,indj,indk,spin)            
-            if (inda.eq.ifakeorb.and.indb.ne.ifakeorb) then
-               count=count+1
-               indxaji(count,3)=indj
-               indxaji(count,2)=indk
-               indxaji(count,1)=indb
-               apprx_en(count)=-e(indj)+e(indb)-e(indk)           
-               map(count)=i
-            else if (indb.eq.ifakeorb.and.inda.ne.ifakeorb) then
-               count=count+1
-               indxaji(count,3)=indj
-               indxaji(count,2)=indk
-               indxaji(count,1)=inda
-               apprx_en(count)=-e(indj)+e(inda)-e(indk)           
-               map(count)=i
-            endif
-         enddo
+      ! Sort the approximate ionization energies and save the indices
+      ! to sortindx in order of increasing energy
+      call dsortindxa1('A',ndim,apprx_en,sortindx)
 
-         call dsortindxa1('A',ndim,apprx_en,sortindx)
-
-!         do i=1,100
+!         do i=1,10
 !            k=sortindx(i)
 !            print*,k,apprx_en(k)*27.211,&
 !                 indxaji(k,3),indxaji(k,2),indxaji(k,1),map(k)
 !         enddo
 
-         do i=1,dmain
-            k=sortindx(i)
-            ifakeex(i)=map(k)
-         enddo
-         
-      endif
+      do i=1,dmain
+         k=sortindx(i)
+         ifakeex(i)=map(k)
+      enddo
 
       return
 

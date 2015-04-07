@@ -49,19 +49,19 @@
       READ(4,*) np ! number of series
        
       write(6,*) 'numberpoints=',np
+
       allocate(ediff(np))
       allocate(dijlen(np))
  
       do i=1,np
-         READ(4,*) ediff(i), dijlen(i)
-      end do
+         read(4,*) ediff(i), dijlen(i)
+      enddo
 
       filename='grace.dat'
       filint='int.dat'
+
       call stieltjes (np,ediff,dijlen,1,overmax,filename,filint)
 
-!      call stieltjes (np,ediff,dijlen,1,overmax,'grace.dat','int.dat')
-      
       deallocate(ediff,dijlen)
       
       close(4)

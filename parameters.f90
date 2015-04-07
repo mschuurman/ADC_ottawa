@@ -79,6 +79,14 @@ module parameters
 !!                          IP calculation
 !!$expfakeip - value of the exponent of the diffuse function used in a
 !!             fake IP calculation
+!!
+!!$logical ld2 - flag to turn on the calculation of the MP2 D2 diagnostic
+!!
+!!$logical lscf - flag used to determine whether to perform an SCF calculation
+!!                to ensure that the MOs as read from the GAMESS output are converged
+!!
+!!$real*8 dmatmem - threshold for memory (in MB) to switch to storing on disk the pre-calcalculated
+!!                  4-index terms required to evaluate the D-matrix
 
   logical                            :: debug
   character(1)                       :: tranmom,tranflag,tranmom2
@@ -103,13 +111,18 @@ module parameters
   integer                            :: ninista
   logical                            :: ladc1guess
   real(d)                            :: davtol
-  logical                            :: lcvs
+  logical                            :: lcvs,lcvsfinal
   integer, dimension(nhcentre)       :: icore
   integer                            :: ncore
   logical                            :: lfakeip
   integer                            :: ifakeorb
   integer, dimension(:), allocatable :: ifakeex
   real(d)                            :: expfakeip
+  logical                            :: ld2
+  logical                            :: lscf
+  integer                            :: ivpqrs
+  real(d)                            :: dmatmem
+  
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

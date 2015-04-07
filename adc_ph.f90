@@ -12,7 +12,6 @@ module adc_ph
   implicit none
   
 contains
-  
 
 !!$*******************************************************************************
 !!$*******************************************************************************
@@ -73,9 +72,6 @@ contains
   end do
   
   end subroutine MP2
-
-
-
 
 
 !!$Indices are supplied in the order: PH,PH

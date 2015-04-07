@@ -120,7 +120,7 @@ subroutine read_user()
   NAMELIST /USER/ debug,nirrep,hcentre,dlim,minc,stiprilev,method,matvec,idiag,fdiag,fmethod,WHAT, &
        davname,lancname,mspacewi,mspacewf,davstates,numinista,chrun,chrun2,NSYMA,ELECTRIC_FIELD,POLARIZATION, &
        eupper,elower,readband,tranmom,norder,info,ninista,statenumber,nirrep2,tranmom2,denord,GO,DIPOLESYM,&
-       lcvs,icore,lfakeip,ifakeorb,expfakeip,moType
+       lcvs,icore,lfakeip,ifakeorb,expfakeip,moType,ld2,lcvsfinal,lscf,dmatmem
 
   NAMELIST /LNZLST/ ncycles,maxmem,memx,mode,nprint,maxiter,wthr,erange,unit,fparm,lmain,dmain,davtol,&
        ladc1guess
@@ -136,10 +136,17 @@ subroutine read_user()
   davtol=1d-7
 
   lcvs=.false.  
+  lcvsfinal=.false.
   icore=0
 
   lfakeip=.false.
   ifakeorb=0
+
+  ld2=.false.
+
+  lscf=.true.
+
+  dmatmem=250.0d0
 
   READ(*,USER)
   READ(*,LNZLST)

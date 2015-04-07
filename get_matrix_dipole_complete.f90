@@ -51,11 +51,13 @@ contains
     integer :: k,k1,b,b1 
 
     
-    integer                              :: nvirt,itmp,itmp1,dim
-    integer, dimension(10)               :: unit
-    real(d), dimension(:,:), allocatable :: pre_vv,pre_oo
-    real(d), parameter                   :: vectol=1d-8
-    real(d)                              :: t1,t2,func
+    integer                                  :: nvirt,itmp,itmp1,dim
+    integer, dimension(10)                   :: unit
+    real(d), dimension(:,:), allocatable     :: pre_vv,pre_oo
+    real(d), dimension(:,:,:,:), allocatable :: D261,D262,D263,D264
+    real(d), parameter                       :: vectol=1d-8
+    real(d)                                  :: t1,t2,func,mem4indx
+    logical                                  :: lincore
 
     write(6,'(/,90a)') ('-',i=1,90)
     write(6,'(2x,a)') & 
@@ -73,17 +75,40 @@ contains
     pre_vv=0.0d0
     pre_oo=0.0d0
 
-    ! Open the scratch files that will hold the intermediate
-    ! four-index terms
-    call open_scratch_files(unit)
+    ! Determine the ammount (in MB) of memory required to hold the
+    ! intermediate four-index terms.
+    ! If we are above the threshold dmatmem, then we will write
+    ! these terms to disk
+    mem4indx=4.0d0*8.0d0*(nvirt**2)*(nocc**2)/(1024.0d0**2)
+    if (mem4indx.le.dmatmem) then
+       lincore=.true.
+       allocate(D261(nvirt,nocc,nocc,nvirt))
+       allocate(D262(nvirt,nocc,nocc,nvirt))
+       allocate(D263(nvirt,nvirt,nocc,nocc))
+       allocate(D264(nvirt,nvirt,nocc,nocc))
+    else
+       lincore=.false.
+    endif
 
-    ! (1) Intermediate four-index terms that in general need to be 
+    ! If we are saving the intermediate four-index term to disk, then
+    ! open the scratch files that will hold these terms
+    ! four-index terms
+    if (.not.lincore) call open_scratch_files(unit)
+
+    ! (1) Intermediate four-index terms that in may need to be 
     !     saved to file
-    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,unit)
+    call cpu_time(t1)
+    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&
+         unit,lincore,D261,D262,D263,D264)
+    call cpu_time(t2)
+    print*,"Time taken:",t2-21
 
     ! (2) Two-index terms that can be held in memory
+    call cpu_time(t1)
     call dmatrix_precalc_2indx(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,&
          kpqf,vectol)
+    call cpu_time(t2)
+    print*,"Time taken:",t2-21
 
 !-----------------------------------------------------------------------
 ! Calculation of the product of the intermediate state representation 
@@ -109,7 +134,7 @@ contains
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
           
           call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
-               indkpr,unit)
+               indkpr,unit,lincore,D261,D262,D263,D264)
 
           ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
           ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
@@ -335,6 +360,9 @@ contains
 !*************************************************************************
 
     dim_countf=kpqf(1,0)
+
+    if (.not.lcvsfinal) then
+
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
    
@@ -470,6 +498,7 @@ contains
 
     end do
     
+    endif
 
 !*************************************************************************
 !*************************************************************************
@@ -480,6 +509,9 @@ contains
 !*************************************************************************
 
     dim_countf=dim_countf+kpqf(2,0)
+
+    if (.not.lcvsfinal) then
+
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -618,6 +650,8 @@ contains
 
     end do
     
+    endif
+
 
 !*************************************************************************
 !*************************************************************************
@@ -1074,12 +1108,17 @@ contains
 ! Close scratch files and deallocate arrays
 !-----------------------------------------------------------------------
     ! Close scratch files
-    do i=1,4
-       close(unit(i))
-    enddo
+    if (.not.lincore) then
+       do i=1,4
+          close(unit(i))
+       enddo
+    endif
 
     ! Deallocate two-index arrays
     deallocate(pre_vv,pre_oo)
+
+    ! Deallocate four-index arrays
+    if (lincore) deallocate(D261,D262,D263,D264)
 
   end subroutine get_dipole_initial_product
 
@@ -1132,7 +1171,8 @@ contains
 
     itmp=0
     do a=nocc+1,nbas
-       itmp=itmp+1       
+       print*,a,nbas
+       itmp=itmp+1
        itmp1=0
        do apr=nocc+1,nbas
           itmp1=itmp1+1
@@ -1148,6 +1188,7 @@ contains
     enddo
 
     do i=1,nocc
+       print*,i,nocc
        do j=1,nocc
           if (iszerok(i,j).eq.0) cycle
           pre_oo(i,j)=pre_oo(i,j)+D0_2_ph_ph(i,j)
@@ -1215,20 +1256,25 @@ contains
 !#######################################################################
 
   subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&
-       unit)
+       unit,lincore,D261,D262,D263,D264)
 
     implicit none
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                :: nvirt,ndim,a,apr,k,&
-                                              kpr,b,j,irec,itmp
-    integer, dimension(10)                 :: unit
-    integer, dimension(:,:), allocatable   :: iszero
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), intent(in)                    :: vectol
-    real(d)                                :: ftmp
-    character(len=60)                      :: filename
+    integer                                  :: nvirt,ndim,a,apr,k,&
+                                                kpr,b,j,irec,itmp
+    integer, dimension(10)                   :: unit
+    integer, dimension(:,:), allocatable     :: iszero
+    real(d), dimension(ndim), intent(in)     :: autvec
+    real(d), intent(in)                      :: vectol
+    real(d)                                  :: ftmp
+    real(d), dimension(:,:,:,:), allocatable :: D261
+    real(d), dimension(:,:,:,:), allocatable :: D262
+    real(d), dimension(:,:,:,:), allocatable :: D263
+    real(d), dimension(:,:,:,:), allocatable :: D264
+    character(len=60)                        :: filename
+    logical                                  :: lincore
 
     write(6,'(/,2x,a)') 'Precomputing four-index terms...'
 
@@ -1240,9 +1286,13 @@ contains
        do k=1,nocc
           do kpr=1,nocc
              do b=nocc+1,nbas
-                irec=irec+1                
-                ftmp=tau_D2_6_1(a,k,kpr,b)
-                write(unit(1),rec=irec) ftmp
+                if (lincore) then
+                   D261(a-nocc,k,kpr,b-nocc)=tau_D2_6_1(a,k,kpr,b)
+                else
+                   irec=irec+1
+                   ftmp=tau_D2_6_1(a,k,kpr,b)
+                   write(unit(1),rec=irec) ftmp
+                endif
              enddo
           enddo
        enddo
@@ -1256,9 +1306,13 @@ contains
        do k=1,nocc
           do kpr=1,nocc
              do b=nocc+1,nbas
-                irec=irec+1        
-                ftmp=tau_D2_6_2(apr,k,kpr,b)
-                write(unit(2),rec=irec) ftmp
+                if (lincore) then
+                   D262(apr-nocc,k,kpr,b-nocc)=tau_D2_6_2(apr,k,kpr,b)
+                else
+                   irec=irec+1
+                   ftmp=tau_D2_6_2(apr,k,kpr,b)
+                   write(unit(2),rec=irec) ftmp
+                endif
              enddo
           enddo
        enddo
@@ -1272,9 +1326,13 @@ contains
        do apr=nocc+1,nbas
           do k=1,nocc
              do j=1,nocc
-                irec=irec+1        
-                ftmp=tau_D2_6_3(a,apr,k,j)
-                write(unit(3),rec=irec) ftmp
+                if (lincore) then
+                   D263(a-nocc,apr-nocc,k,j)=tau_D2_6_3(a,apr,k,j)
+                else
+                   irec=irec+1
+                   ftmp=tau_D2_6_3(a,apr,k,j)
+                   write(unit(3),rec=irec) ftmp
+                endif
              enddo
           enddo
        enddo
@@ -1288,9 +1346,13 @@ contains
        do apr=nocc+1,nbas
           do kpr=1,nocc
              do j=1,nocc
-                irec=irec+1        
-                ftmp=tau_D2_6_4(a,apr,kpr,j)
-                write(unit(4),rec=irec) ftmp                
+                if (lincore) then
+                   D264(a-nocc,apr-nocc,kpr,j)=tau_D2_6_4(a,apr,kpr,j)
+                else
+                   irec=irec+1
+                   ftmp=tau_D2_6_4(a,apr,kpr,j)
+                   write(unit(4),rec=irec) ftmp                
+                endif
              enddo
           enddo
        enddo
@@ -1302,14 +1364,23 @@ contains
 
 !#######################################################################
 
-  subroutine contract_4indx_dpl(func,a,apr,k,kpr,unit)
+  subroutine contract_4indx_dpl(func,a,apr,k,kpr,unit,lincore,&
+       D261,D262,D263,D264)
 
     implicit none
 
-    real(d)                :: func,ftmp,curr
-    integer                :: a,apr,k,kpr,itmp,b,b1,j,j1
-    integer, dimension(10) :: unit
+    real(d)                                  :: func,ftmp,curr
+    integer                                  :: a,apr,k,kpr,itmp,b,b1,j,j1
+    integer, dimension(10)                   :: unit
+    logical                                  :: lincore
+    real(d), dimension(:,:,:,:), allocatable :: D261
+    real(d), dimension(:,:,:,:), allocatable :: D262
+    real(d), dimension(:,:,:,:), allocatable :: D263
+    real(d), dimension(:,:,:,:), allocatable :: D264
 
+!-----------------------------------------------------------------------
+! Function value to be returned: func
+!-----------------------------------------------------------------------
     func=0.0d0
 
 !-----------------------------------------------------------------------
@@ -1319,10 +1390,14 @@ contains
     curr=0.0d0
     do b1=nocc+1,nbas
        b=roccnum(b1)
-       itmp=(a-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
-            +(kpr-1)*nvirt+(b1-nocc)
-       read(unit(1),rec=itmp) ftmp
-       curr=curr+dpl(b,apr)*ftmp
+       if (lincore) then
+          curr=curr+dpl(b,apr)*D261(a-nocc,k,kpr,b1-nocc)
+       else
+          itmp=(a-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
+               +(kpr-1)*nvirt+(b1-nocc)
+          read(unit(1),rec=itmp) ftmp
+       endif
+          curr=curr+dpl(b,apr)*ftmp
     enddo
     
     ! Normalisation
@@ -1337,10 +1412,14 @@ contains
     curr=0.0d0
     do b1=nocc+1,nbas
        b=roccnum(b1)
-       itmp=(apr-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
-            +(kpr-1)*nvirt+(b1-nocc)
-       read(unit(2),rec=itmp) ftmp
-       curr=curr+dpl(b,a)*ftmp
+       if (lincore) then
+          curr=curr+dpl(b,a)*D262(apr-nocc,k,kpr,b1-nocc)
+       else
+          itmp=(apr-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
+               +(kpr-1)*nvirt+(b1-nocc)
+          read(unit(2),rec=itmp) ftmp
+          curr=curr+dpl(b,a)*ftmp
+       endif
     enddo
     
     ! Normalisation
@@ -1355,10 +1434,14 @@ contains
     curr=0.0d0
     do j1=1,nocc
        j=roccnum(j1)
-       itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
-            +(k-1)*nocc+j1
-       read(unit(3),rec=itmp) ftmp
-       curr=curr+dpl(kpr,j)*ftmp
+       if (lincore) then
+          curr=curr+dpl(kpr,j)*D263(a-nocc,apr-nocc,k,j1)
+       else
+          itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
+               +(k-1)*nocc+j1
+          read(unit(3),rec=itmp) ftmp
+          curr=curr+dpl(kpr,j)*ftmp
+       endif
     enddo
 
     ! Normalisation
@@ -1373,10 +1456,14 @@ contains
     curr=0.0d0
     do j1=1,nocc
        j=roccnum(j1)
-       itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
-            +(kpr-1)*nocc+j1
-       read(unit(4),rec=itmp) ftmp
-       curr=curr+dpl(k,j)*ftmp
+       if (lincore) then
+          curr=curr+dpl(k,j)*D264(a-nocc,apr-nocc,kpr,j1)
+       else
+          itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
+               +(kpr-1)*nocc+j1
+          read(unit(4),rec=itmp) ftmp
+          curr=curr+dpl(k,j)*ftmp
+       endif
     enddo
 
     ! Normalisation
