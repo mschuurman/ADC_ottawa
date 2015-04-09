@@ -92,3 +92,12 @@ if [ -z $target ]; then
 else
     make $target $args
 fi
+
+#-----------------------------------------------------------------------
+# Compile the documentation
+#-----------------------------------------------------------------------
+cd doc
+pdflatex input >/dev/null
+rm *.aux *.log
+cd ..
+

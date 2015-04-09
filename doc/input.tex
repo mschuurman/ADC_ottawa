@@ -1,0 +1,204 @@
+\documentclass[12pt]{article}
+\usepackage{a4}
+%-----------------------------------------------------------------------
+% Define a bundle of useful commands.
+%-----------------------------------------------------------------------
+\newcommand*\key[1]{\mbox{\texttt{{#1}}}}  % keywords, labels
+\newcommand*\subs[1]{\mbox{\textit{{#1}}}} % to be substituted by reader
+\newcommand*\prg[1]{\mbox{\textbf{{#1}}}}  % programs, scripts, options
+\newcommand*\file[1]{\mbox{\small \textsf{{#1}}}} % files, directories
+\newcommand*\code[1]{\mbox{\texttt{{#1}}}} % routines, variables, code
+\newcommand*\name[1]{\mbox{\textsc{{#1}}}} % persons, "commercial" progs
+\newcommand*\myldots{\mbox{$\ldots$}}
+\renewcommand*\mathbf[1]{\mbox{\boldmath$#1$\unboldmath}}
+\renewcommand*\kappa{\varkappa}
+
+\begin{document}
+
+\section*{Input Keywords}
+
+\noindent
+The calculation to be performed is controlled via a number of keywords
+and associated arguments.
+
+\vspace{0.2cm}
+\noindent
+In general, any number of keywords may be present on a single line, in
+free format.
+
+\vspace{0.2cm}
+\noindent
+The input file must be terminated with the single keyword
+\code{end-input}.
+
+\subsection*{Selecting the level of perturbation theory}
+\noindent
+The level of perturbation theory is controled by the \code{method} keyword.
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{method =} & \code{adc1}   & selects ADC(1) \\
+                & \code{adc2-s} & selects ADC(2)-s \\
+                & \code{adc2-x} & selects ADC(2)-x \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Initial state symmetry}
+\noindent
+The symmetry species of the initial state is specified using the
+keyword \code{istate\_symm}.
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{istate\_symm =} & \code{n}   & where \code{n} is the integer labeling the initial state symmetry \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Final state symmetry}
+\noindent
+The symmetry of the final states is determined via the specification
+of the symmetry species of the dipole operator using the keyword \code{dipole\_symm}.
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{dipole\_symm =} & \code{n}   & where \code{n} is the integer labeling the dipole operator symmetry \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Initial state number}
+\noindent
+The number of the initial state, within the initial space symmetry
+block, is specified by the keyword \code{initial\_state}.
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{initial\_state =} & \code{n}   & where \code{n} is state number of interest \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Dipole operator}
+\noindent
+The component of the dipole operator is specified using the keyword \code{dipole\_component}.
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{dipole\_component =} & \code{c}   & where \code{c} is \code{x, y} or \code{z} \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Contoling the block-Davidson procedure}
+\noindent
+The keywords controling the block-Davidson calculation must appear in
+a separate section between the keywords
+
+\vspace{0.2cm}
+\code{davidson\_section}
+
+\vspace{0.2cm}
+\noindent
+and
+
+\vspace{0.2cm}
+\code{end-davidson\_section}
+
+\vspace{0.2cm}
+\noindent
+Possible keywords are:
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{nstates =} & \code{n}   & where \code{n} is number of Davidson states to be calculated \\
+\vspace{0.2cm}
+\code{block\_size =} & \code{n} & where \code{n} is the block size to be used \\
+\vspace{0.2cm}
+\code{maxit =} & \code{n} & where \code{n} is the maximum number of iterations \\ 
+\vspace{0.2cm}
+\code{tol =} & \code{f} & where \code{f} is the tolerance for converence \\
+\vspace{0.2cm}
+\code{guess =} & \code{adc1} & requests that the initial vectors are generated from the ADC(1) eigenvectors \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Contoling the block-Lanczos procedure}
+\noindent
+The keywords controling the block-Lanczos calculation must appear in
+a separate section between the keywords
+
+\vspace{0.2cm}
+\code{lanczos\_section}
+
+\vspace{0.2cm}
+\noindent
+and
+
+\vspace{0.2cm}
+\code{end-lanczos\_section}
+
+\vspace{0.2cm}
+\noindent
+Possible keywords are:
+
+\begin{table}[h]
+\vspace*{1.7ex}
+\begin{center}
+\begin{tabular}{llp{2.5in}}
+\code{block\_size =} & \code{n} & where \code{n} is the block size to be used \\
+\vspace{0.2cm}
+\code{iter =} & \code{n} & where \code{n} is number of iterations to be taken \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection*{Core-valence separation}
+\noindent
+The core-valence separation approximation is turned by by the single
+keyword 
+
+\vspace{0.2cm}
+\code{cvs}
+
+\subsection*{Calculation of ionization potentials}
+\noindent
+The calculation of ionization potentials via excitation into an
+extremely diffuse `continuum' orbital is requested by the single
+keyword
+
+\vspace{0.2cm}
+\code{fakeip}
+
+\subsection*{Disabling of the calculation of Lanczos pseudo-spectra}
+\noindent
+The calculation of Lanczos pseudo-spectra can be disabled by the
+single keyword 
+
+\vspace{0.2cm}
+\code{energy\_only}
+
+\subsection*{Disabling the calculation of transition dipole moments to
+the initial space states}
+\noindent
+The calculation of transition dipole moments between the ground state
+and the initial space states may be disabled using the keyword
+
+\vspace{0.2cm}
+\code{no\_tdm}
+
+\end{document}

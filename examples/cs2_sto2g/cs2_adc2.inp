@@ -1,0 +1,24 @@
+method = adc2
+
+istate_symm = 1 
+
+dipole_symm = 1
+
+initial_state=1
+
+dipole_component = x
+
+davidson_section
+ nstates = 11
+ block_size = 30
+ tol=1d-5
+ maxit=700
+ guess=adc1
+end-davidson_section
+
+lanczos_section
+ block_size=10
+ iter=20
+end-lanczos_section
+
+end-input
