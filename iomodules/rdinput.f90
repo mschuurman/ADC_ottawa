@@ -175,7 +175,7 @@
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
-        call checkinp(ldav,llanc)
+        call checkinp(ldav,llanc,energyonly)
 
       return
 
@@ -183,7 +183,7 @@
 
 !#######################################################################
 
-    subroutine checkinp(ldav,llanc)
+    subroutine checkinp(ldav,llanc,energyonly)
 
       use parameters
       use iomod
@@ -191,7 +191,7 @@
       implicit none
 
       character(len=120) :: msg
-      logical            :: ldav,llanc
+      logical            :: ldav,llanc,energyonly
 
 !-----------------------------------------------------------------------
 ! ADC level
@@ -267,18 +267,22 @@
 !-----------------------------------------------------------------------
 ! Lanczos section
 !-----------------------------------------------------------------------
-      if (.not.llanc) then
-         msg='No Lanczos section has been found'
-         goto 999
-      endif
+      if (.not.energyonly) then
 
-      if (lmain.eq.0) then
-         msg='The Lanczos block size has not been given'
-         goto 999
-      endif
+         if (.not.llanc) then
+            msg='No Lanczos section has been found'
+            goto 999
+         endif
 
-      if (ncycles.eq.0) then
-         msg='The no. Lanczos iterations has not been given'
+         if (lmain.eq.0) then
+            msg='The Lanczos block size has not been given'
+            goto 999
+         endif
+
+         if (ncycles.eq.0) then
+            msg='The no. Lanczos iterations has not been given'
+         endif
+
       endif
 
       return

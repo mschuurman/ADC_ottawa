@@ -105,7 +105,7 @@
 
       ! If a log file is open, write the error message to the log file
       inquire(unit=ilog,opened=lopen)
-      if (lopen) write(ilog) trim(errmsg)
+      if (lopen) write(ilog,'(/,2x,a,/)') trim(errmsg)
 
       ! Terminate the program
       STOP

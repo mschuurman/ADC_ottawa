@@ -5,6 +5,7 @@ program main
   use read_param
   use guessvecs
   use adc2mod
+  use adc2extmod
   use rdinput
   use orbindx
   use defaults
