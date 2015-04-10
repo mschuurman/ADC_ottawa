@@ -11,6 +11,7 @@
         use band_lanczos
         use fspace
         use misc
+        use guessvecs
 
         implicit none
 
@@ -31,6 +32,16 @@
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
 !-----------------------------------------------------------------------
         call run_mp2(e0)
+
+!-----------------------------------------------------------------------  
+! Calculate guess initial space vectors from an ADC(1) calculation if 
+! requested.
+!
+! N.B. adc1_guessvecs must be called BEFORE we select the ADC2 
+! configurations, otherwise the kpq array will be overwritten with the 
+! ADC1 configurations.
+!-----------------------------------------------------------------------  
+  if (ladc1guess) call adc1_guessvecs
 
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces
@@ -385,12 +396,12 @@
         call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of mtmf, determine which 1h1p 
-! unit vectors will form the initial Lanczos vectors
-! 
+! From the values of the elements of mtmf, determine which 1h1p
+! AND 2h2p unit vectors will form the initial Lanczos vectors
+!
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        call fill_stvc(ndimsf,mtmf(1:ndimsf))
+        call fill_stvc(ndimsf,mtmf(1:ndimf))
 
         return
 
@@ -423,12 +434,12 @@
              travec)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of travec, determine which 1h1p 
-! unit vectors will form the initial Lanczos vectors
-! 
+! From the values of the elements of travec, determine which 1h1p
+! AND 2h2p unit vectors will form the initial Lanczos vectors
+!
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        call fill_stvc(ndimsf,travec(1:ndimsf))
+        call fill_stvc(ndimsf,travec(1:ndimf))
 
         return
 

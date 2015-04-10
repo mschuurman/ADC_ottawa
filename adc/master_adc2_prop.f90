@@ -11,6 +11,7 @@
         use band_lanczos
         use fspace
         use misc
+        use guessvecs
 
         implicit none
 
@@ -31,6 +32,16 @@
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
 !-----------------------------------------------------------------------
         call run_mp2(e0)
+
+!-----------------------------------------------------------------------  
+! Calculate guess initial space vectors from an ADC(1) calculation if 
+! requested.
+!
+! N.B. adc1_guessvecs must be called BEFORE we select the ADC2 
+! configurations, otherwise the kpq array will be overwritten with the 
+! ADC1 configurations.
+!-----------------------------------------------------------------------  
+  if (ladc1guess) call adc1_guessvecs
 
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces

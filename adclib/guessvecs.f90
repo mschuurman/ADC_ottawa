@@ -21,11 +21,23 @@
       real(d), dimension(:,:), allocatable :: eigvec
       real(d), dimension(:), allocatable   :: eigval
 
+      if (lcvs) then
+         write(ilog,'(/,2x,a)') &
+              'Generating guess Davidson vectors by diagonalising &
+              the CVS-ADC(1) Hamiltonian'
+      else
+         write(ilog,'(/,2x,a)') &
+              'Generating guess Davidson vectors by diagonalising &
+              the ADC(1) Hamiltonian'
+      endif
+
 !-----------------------------------------------------------------------
-! Select initial 1h1p space
+! Select the ADC1 1h1p space
 !-----------------------------------------------------------------------
       allocate(kpq(7,0:nBas**2*4*nOcc**2))
+
       kpq(:,:)=-1
+
       if (lcvs) then
          call select_atom_is_cvs(kpq(:,:))
       else
@@ -35,7 +47,7 @@
       ndim=kpq(1,0)
 
 !-----------------------------------------------------------------------
-! Allocate arrays
+! Allocate the arrays that will hold the ADC1 eigenpairs
 !-----------------------------------------------------------------------
       allocate(eigvec(ndim,ndim))
       allocate(eigval(ndim))
@@ -44,25 +56,23 @@
 ! Diagonalise the ADC(1) Hamiltonian matrix
 !-----------------------------------------------------------------------
       if (lcvs) then
-         write(ilog,'(2x,a)') 'Generating guess Davidson vectors by diagonalising &
-              the CVS-ADC(1) Hamiltonian'
-      else
-         write(ilog,'(2x,a)') 'Generating guess Davidson vectors by diagonalising &
-              the ADC(1) Hamiltonian'
-      endif
-
-      if (lcvs) then
          call get_fspace_tda_direct_cvs(ndim,kpq(:,:),eigvec,eigval)
       else
          call get_fspace_tda_direct(ndim,kpq(:,:),eigvec,eigval)
       endif
 
+      deallocate(kpq)
+
 !-----------------------------------------------------------------------
 ! Write the ADC(1) eigenvectors to file
 !-----------------------------------------------------------------------
       iout=22
-      open(iout,file='SCRATCH/adc1_vecs',form='unformatted',status='unknown')
+
+      open(iout,file='SCRATCH/adc1_vecs',form='unformatted',&
+           status='unknown')
+
       write(iout) ndim,eigvec
+
       close(iout)
 
       return

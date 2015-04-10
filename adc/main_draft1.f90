@@ -84,12 +84,6 @@ program main
   end if
 
 !-----------------------------------------------------------------------  
-! Calculate guess initial space vectors from an ADC(1) calculation if 
-! requested
-!-----------------------------------------------------------------------  
-  if (method.ne.1.and.ladc1guess) call adc1_guessvecs
-
-!-----------------------------------------------------------------------  
 ! Perform the ADC calculation
 !-----------------------------------------------------------------------    
   select case(method)
@@ -111,9 +105,16 @@ program main
 
   end select
 
+!-----------------------------------------------------------------------    
+! Clean up the scratch files and exit
+!-----------------------------------------------------------------------    
+  call system('rm -rf SCRATCH')
+
   call cpu_time(time)
 
-  write(ilog,'(a,1x,F9.2,1x,a)') 'Final Time=',time," s"
+  write(ilog,'(a,1x,F9.2,1x,a)') 'Final Time:',time," s"
+
+  STOP
   
 end program main
   

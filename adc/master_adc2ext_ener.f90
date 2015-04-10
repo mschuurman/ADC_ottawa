@@ -24,6 +24,16 @@
     real(d), dimension(:,:), allocatable :: rvec
     real(d)                              :: t1,t2
 
+!-----------------------------------------------------------------------  
+! Calculate guess initial space vectors from an ADC(1) calculation if 
+! requested.
+!
+! N.B. adc1_guessvecs must be called BEFORE we select the ADC2 
+! configurations, otherwise the kpq array will be overwritten with the 
+! ADC1 configurations.
+!-----------------------------------------------------------------------  
+  if (ladc1guess) call adc1_guessvecs
+
 !-----------------------------------------------------------------------
 ! Allocate kpq and select configurations
 !-----------------------------------------------------------------------

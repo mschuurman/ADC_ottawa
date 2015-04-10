@@ -6,68 +6,7 @@ module read_param
 
   implicit none
   
-  integer, parameter :: Bcknd=131072
-  integer :: phis_init, ncheck
-  
-  external phis_init
-  
   contains
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-subroutine read_molcas0()
-
-  external phis_get_info
-
-101 FORMAT(("|"),A25,3x,A25,3x,A25,("|"))
-102 FORMAT(("|"),I25,3x,I25,3x,I25,("|"))
-
-  ncheck=phis_init(Bcknd)
-
-!!$ get nm. of irreps, basis functions, atomic centres
-
-  call phis_get_info(nIrr,nBas,nCen)
-
-  write(ilog,'(/,83("-"))')
-  write(ilog,101) "Number of irreps","Number of active MO's", "Number of centres"
-  write(ilog,102)  nIrr, nBas, nCen
-  write(ilog,'(83("-")),/')
-
-
-end subroutine read_molcas0
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-subroutine read_molcas1(info)
-
-  integer, intent(in) :: info
-  integer :: j
-
-  external phis_get_info
-  external phis_get_epsi,phis_get_sym,phis_get_occ,phis_load_vpqrs
-
-100 FORMAT(/,10x,A3,5x,A3,5x,A3,5x,A16)
-101 FORMAT(/,10x,I3,5x,I3,5x,F3.1,5x,F16.10)
-102 FORMAT(/,3("-"),A30,5x,F16.10,1x,A4)
-
-  call phis_get_epsi(Ehf,e(:),nBas)
-  call phis_get_sym(orbSym(:),nBas)
-  call phis_get_occ(occNum(:),nBas)
-  call phis_mc_dip(x_dipole(:,:),y_dipole(:,:),z_dipole(:,:),nBas)
-  if(info.ne.1) then
-  call phis_load_Vpqrs()
-  end if
-  write(ilog,102) "HF energy", Ehf, "a.u."
-  write(ilog,100) 'nr.','sym','occ','orbital energy'
-  write(ilog,'(10x,50("-"))')
-  do j=1,nBas
-     write(ilog,101) j,orbSym(j),occNum(j),e(j)
-  end do
-
-
-end subroutine read_molcas1
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -254,12 +193,6 @@ subroutine rearrange_occ()
 
   roccNum(:)=indx(:)
   
-  write(ilog,103) 'nr.','sym','occ','orbital energy'
-  write(ilog,'(10x,50("-"))')
-  do i=1,nBas
-     write(ilog,104) i,orbSym(roccNum(i)),occNum(roccNum(i)),e(roccNum(i))
-  end do
-
 end subroutine rearrange_occ
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
