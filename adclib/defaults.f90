@@ -25,6 +25,7 @@
       dlim=0.0d0
       ltdm_gs2i=.true.
       dmatmem=250.0d0
+      lifrzcore=.false.
 
 !-----------------------------------------------------------------------
 ! CVS-ADC parameters

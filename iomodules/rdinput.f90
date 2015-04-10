@@ -122,6 +122,9 @@
          else if (keyword(i).eq.'no_tdm') then
             ltdm_gs2i=.false.
 
+         else if (keyword(i).eq.'istate_frozen_core') then
+            lifrzcore=.true.
+
            else
               ! Exit if the keyword is not recognised
               errmsg='Unknown keyword: '//trim(keyword(i))
@@ -165,7 +168,11 @@
 !-----------------------------------------------------------------------
 ! Read the Davidson section
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.and.ldav) call rddavinp
+        if (ldav) then
+           if (statenumber.gt.0.or.energyonly) then
+              call rddavinp
+           endif
+        endif
 
 !-----------------------------------------------------------------------
 ! Read the Lanczos section
@@ -220,10 +227,12 @@
 !-----------------------------------------------------------------------
 ! Initial state number
 !-----------------------------------------------------------------------
-      if (statenumber.eq.-1) then
+      if (statenumber.eq.-1.and..not.energyonly) then
          msg='The initial state number has not been given'
          goto 999
       endif
+
+      if (energyonly) statenumber=0
 
 !-----------------------------------------------------------------------
 ! Dipole operator component
@@ -242,15 +251,19 @@
       endif
 
 !-----------------------------------------------------------------------
-! Davidson section
+! Davidson section: only required if either:
+!
+! (1) We are ionizing from an excited state, or;
+! (2) We are performing an energy-only calculation.
 !-----------------------------------------------------------------------
-      if (statenumber.gt.0.and..not.ldav) then
-         msg='The initial state is not the ground state, but &
-              Davidson section has been found'
-         goto 999
+      if (.not.ldav) then
+         if (statenumber.gt.0.or.energyonly) then
+            msg='The Davidson section has not been found.'
+            goto 999
+         endif
       endif
 
-      if (statenumber.gt.0.) then
+      if (statenumber.gt.0.or.energyonly) then
          if (davstates.eq.0) then
             msg='The number of Davidson states has not been given'
             goto 999

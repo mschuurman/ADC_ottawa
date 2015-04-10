@@ -16,50 +16,48 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!! KEY SUBROUTINE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-
-
   subroutine select_atom_is(kpq)
-    
+  
+    implicit none
+  
     integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
-    
-    integer :: i,ap,n2pne
-    integer :: isym,a,cah
+    integer               :: i,ap,n2pne
+    integer               :: isym,a,cah,ic
     integer, dimension(7) :: col
-    
-    
-100 FORMAT(/,3("*"),A50,3x,I4)
-101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,/)
-102 FORMAT(("*"),3x,I3,3x,I3,3x,I3,3x,I3)
-103 FORMAT(/,60("-"))
-    
-!    write(ilog,'(a)') 'Selecting INITIAL  1h1p subspace'
     
     kpq(1,0)=0
 
-    do ap=nOcc+1,nBas
-       a=roccnum(ap)
-       do i=1,hcentre(0)
-           cah=hcentre(i)
-          isym=MT(orbSym(cah),orbSym(a))
-          if(isym .eq. nirrep) then
-             kpq(1,0)=kpq(1,0)+1
-             call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-             kpq(:,kpq(1,0))=col(:)
-          end if
+    if (lifrzcore) then
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             call iscore(cah,ic)
+             if (ic.eq.0) then
+                isym=MT(orbSym(cah),orbSym(a))
+                if(isym .eq. nirrep) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                end if
+             endif
+          end do
        end do
-    end do
-       
-!    write(ilog,100) "Number of 1h-1p INITIAL configs in the IS ADC",kpq(1,0) 
-!    write(ilog,103)
-!    write(ilog,*) "INITIAL Singly excited configurations allowed in the Fin. St. Manif."
-!    write(ilog,101) "CNF","SPN","HL1","PT1"
-!    do i=1,kpq(1,0)
-!       write(ilog,102) i,kpq(2,i),kpq(3,i),kpq(5,i)
-!    enddo
-       
-        
+    else
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym .eq. nirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             end if
+          end do
+       end do
+    endif
+
   end subroutine select_atom_is
 
 !#######################################################################
@@ -73,8 +71,6 @@ contains
     integer :: i,ap,n2pne,ic
     integer :: isym,a,cah
     integer, dimension(7) :: col
-
-!    write(ilog,'(/,2x,a)') 'Selecting 1h1p subspace for CVS-ADC(2)'
 
     kpq(1,0)=0
 
@@ -107,11 +103,11 @@ contains
     integer :: cah,k,ic
 
     ic=0
- 
-    do k=1,ncore
+
+    do k=1,ncore       
        if (cah.eq.icore(k)) ic=1
     enddo
-    
+
     return
 
   end subroutine iscore
@@ -244,7 +240,7 @@ contains
     integer :: i,j,a,b,k
     integer :: ih,jh,ap,bp
     integer :: cnti,cntf
-    integer :: isym1, isym2
+    integer :: isym1, isym2,ic
     integer, dimension(7) :: col
     real(d) :: einit,ei,ej
 
@@ -259,17 +255,19 @@ contains
 
     if (flag .eq. -1) then
        
-!       write(ilog,*) 'Selecting INITIAL 2h2p subspace'
-       
        kpq(2:5,0)=0
        cnti=kpq(1,0)
     
 !!$a=b,i=j i=hcentre(ih)
-       
+
        if(nirrep .eq. 1) then
           do ih=1,hcentre(0)
              i=hcentre(ih)
              ei=abs(e(i))
+
+             call iscore(i,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
                 if(einit .le. 2._d*ei) then
@@ -287,27 +285,6 @@ contains
           end do
        end if
 
-!        if(nirrep .eq. 1) then
-!           do ih=1,hneighb(0)
-!              i=hneighb(ih)
-!              ei=abs(e(i))
-!              do ap=nOcc+1,nBas
-!                 a=roccnum(ap)
-!                 if(einit .le. 2._d*ei) then
-!                    cnti=cnti+1
-!                    kpq(2,0)=kpq(2,0)+1
-!                    call fill_indices(col(:),2,1,a,a,i,i,1)
-!                    kpq(:,cnti)=col(:)
-!                 else
-!                    cnti=cnti+1
-!                    kpq(2,0)=kpq(2,0)+1
-!                    call fill_indices(col(:),2,1,a,a,i,i,1)
-!                    kpq(:,cnti)=col(:)
-!                 end if
-!              end do
-!           end do
-!        end if
-
 !!$a|=b,i=j
   
        do ap=nOcc+1,nBas
@@ -319,6 +296,10 @@ contains
                 do ih=1,hcentre(0)
                    i=hcentre(ih)
                    ei=abs(e(i))
+
+                   call iscore(i,ic)
+                   if (lifrzcore.and.ic.eq.1) cycle
+
                    if(einit .le. 2._d*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
@@ -335,39 +316,22 @@ contains
           end do
        end do
 
-
-!        do ap=nOcc+1,nBas
-!           a=roccnum(ap)
-!           do bp=ap+1,nBas
-!              b=roccnum(bp)
-!              isym1=MT(orbSym(a),orbSym(b))
-!              if(isym1 .eq. nirrep) then
-!                 do ih=1,hneighb(0)
-!                    i=hneighb(ih)
-!                    ei=abs(e(i))
-!                    if(einit .le. 2._d*ei) then
-!                       cnti=cnti+1
-!                       kpq(3,0)=kpq(3,0)+1
-!                       call fill_indices(col(:),2,1,a,b,i,i,2)
-!                       kpq(:,cnti)=col(:)
-!                    else
-!                       cnti=cnti+1
-!                       kpq(3,0)=kpq(3,0)+1
-!                       call fill_indices(col(:),2,1,a,b,i,i,2)
-!                       kpq(:,cnti)=col(:)
-!                    end if
-!                 end do
-!              end if
-!           end do
-!        end do
 !a=b,i|=j
   
        do ih=1,hcentre(0)
           i=hcentre(ih)
           ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
           do jh=ih+1,hcentre(0)
              j=hcentre(jh)
              ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
              isym1=MT(orbSym(i),orbSym(j))
              if (isym1 .eq. nirrep) then
                 do ap=nOcc+1,nBas
@@ -381,52 +345,22 @@ contains
           end do
        end do
 
-!        do ih=1,hneighb(0)
-!          i=hneighb(ih)
-!           ei=abs(e(i))
-!           do jh=1,hcentre(0)
-!              j=hcentre(jh)
-!             ej=abs(e(j))
-!              isym1=MT(orbSym(i),orbSym(j))
-!              if (isym1 .eq. nirrep) then
-!                 do ap=nOcc+1,nBas
-!                    a=roccnum(ap)
-!                       cnti=cnti+1
-!                       kpq(4,0)=kpq(4,0)+1
-!                       call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                       kpq(:,cnti)=col(:)
-!                 end do
-!              end if
-!           end do
-!        end do
-
-!        do ih=1,hneighb(0)
-!           i=hneighb(ih)
-!           ei=abs(e(i))
-!           do jh=ih+1,hneighb(0)
-!              j=hneighb(jh)
-!              ej=abs(e(j))
-!              isym1=MT(orbSym(i),orbSym(j))
-!              if (isym1 .eq. nirrep) then
-!                 do ap=nOcc+1,nBas
-!                    a=roccnum(ap)
-!                       cnti=cnti+1
-!                       kpq(4,0)=kpq(4,0)+1
-!                       call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                       kpq(:,cnti)=col(:)
-!                 end do
-!              end if
-!           end do
-!        end do
-    
 !a|=b,i|=j spin I
 
        do ih=1,hcentre(0)
           i=hcentre(ih)
           ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
           do jh=ih+1,hcentre(0)
              j=hcentre(jh)
              ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
              isym1=MT(orbSym(i),orbSym(j))
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
@@ -450,106 +384,23 @@ contains
              end do
           end do
        end do
-
-!        do ih=1,hneighb(0)
-!           i=hneighb(ih)
-!           ei=abs(e(i))
-!           do jh=1,hcentre(0)
-!              j=hcentre(jh)
-!              ej=abs(e(j))
-!              isym1=MT(orbSym(i),orbSym(j))
-!              do ap=nOcc+1,nBas
-!                a=roccnum(ap)
-!                 do bp=ap+1,nBas
-!                    b=roccnum(bp)
-!                    isym2=MT(orbSym(a),orbSym(b))
-!                    if(MT(isym1,isym2) .eq. nirrep) then 
-!                       if(einit .le. (ei+ej)) then
-!                         cnti=cnti+1
-!                          kpq(5,0)=kpq(5,0)+1
-!                          call fill_indices(col(:),2,11,a,b,i,j,4)
-!                          kpq(:,cnti)=col(:)
-!                       else
-!                          cnti=cnti+1
-!                         kpq(5,0)=kpq(5,0)+1
-!                          call fill_indices(col(:),2,11,a,b,i,j,4)
-!                          kpq(:,cnti)=col(:)
-!                       end if
-!                    end if
-!                 end do
-!              end do
-!           end do
-!        end do
-
-! aukommentier -> Ne sonst HF
-
-!        do ih=1,hneighb(0)
-!           i=hneighb(ih)
-!           ei=abs(e(i))
-!           do jh=ih+1,hneighb(0)
-!              j=hneighb(jh)
-!              ej=abs(e(j))
-!              isym1=MT(orbSym(i),orbSym(j))
-!              do ap=nOcc+1,nBas
-!                 a=roccnum(ap)
-!                 do bp=ap+1,nBas
-!                    b=roccnum(bp)
-!                    isym2=MT(orbSym(a),orbSym(b))
-!                    if(MT(isym1,isym2) .eq. nirrep) then 
-!                       if(einit .le. (ei+ej)) then
-!                          cnti=cnti+1
-!                          kpq(5,0)=kpq(5,0)+1
-!                          call fill_indices(col(:),2,11,a,b,i,j,4)
-!                          kpq(:,cnti)=col(:)
-!                       else
-!                          cnti=cnti+1
-!                          kpq(5,0)=kpq(5,0)+1
-!                          call fill_indices(col(:),2,11,a,b,i,j,4)
-!                          kpq(:,cnti)=col(:)
-!                       end if
-!                    end if
-!                 end do
-!              end do
-!           end do
-!        end do
     
        kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
        kpq(2,cnti+1:cnti+kpq(5,0))=12
        kpq(7,cnti+1:cnti+kpq(5,0))=5
 
-       
-!       write(ilog,100) "Number of 2h-2p |abij> INITIAL configs in the IS ADC", cnti+kpq(5,0)-kpq(1,0)
-!       write(ilog,103)
-!       write(ilog,*) "INITIAL  Doubly excited |abij> configs allowed in the Init. St. Manif."
-!       write(ilog,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-!    
-!       do k=kpq(1,0)+1,cnti+kpq(5,0) 
-!          write(ilog,102) k,kpq(2,k),kpq(3,k),&
-!               kpq(4,k),kpq(5,k),kpq(6,k)
-!       end do
+!------------------------------------------------------------------------------------
+!------------------------------------------------------------------------------------
 
-!-------------------------------------------------------------------------------------
-!-------------------------------------------------------------------------------------
     elseif(flag .eq. 1) then
-       
-!       write(ilog,'(a)') 'Selecting final 2h2p subspace'
+
        kpq(2:5,0)=0
        cntf=kpq(1,0)
 
        kpq(:,cntf+1:cntf+kpq(5,0))=kpq(:,cntf+1-kpq(5,0):cntf)
        kpq(2,cntf+1:cntf+kpq(5,0))=12 
        kpq(7,cntf+1:cntf+kpq(5,0))=5
-    
-!       write(ilog,100) "Number of 2h-2p |abij> configs in the FS ADC", cntf+kpq(5,0)-kpq(1,0)
-!       write(ilog,103)
-!       write(ilog,*) " Doubly excited |abij> configs allowed in the Fin. St. Manif."
-!       write(ilog,101) "CNF","SPN","HL1","HL2","PT1","PT2"
-!       
-!       do k=kpq(1,0)+1, cntf+kpq(5,0)
-!          write(ilog,102) k,kpq(2,k),kpq(3,k),&
-!               kpq(4,k),kpq(5,k),kpq(6,k)
-!       end do
-       
+
     end if
     
   end subroutine select_atom_d
@@ -592,8 +443,6 @@ contains
 103 FORMAT(/,60("-")) 
     
     einit=abs(e(hinit))
-
-!    write(ilog,'(a)') 'Selecting INITIAL 2h2p subspace'
 
     kpq(2:5,0)=0
     cnti=kpq(1,0)

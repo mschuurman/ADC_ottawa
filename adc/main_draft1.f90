@@ -65,7 +65,7 @@ program main
 !-----------------------------------------------------------------------
   call get_hcentre
 
-  if (lcvs.or.lcvsfinal) call coreindx
+  call coreindx
 
   if (lfakeip) call contindx
 

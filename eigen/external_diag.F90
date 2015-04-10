@@ -110,9 +110,6 @@
 !
 ! N.B. here nrec and maxbl are read from fill_ondiag (via rdham_diag)
 !      and subsequently passed to fill_offdiag
-!
-! To do: determine whether we actually have to pass the matrix elements
-!        one-by-one to matsetvalues
 !-----------------------------------------------------------------------
       ! (i) Diagonal elements
       call fill_ondiag(ham,maxbl,nrec,matdim)

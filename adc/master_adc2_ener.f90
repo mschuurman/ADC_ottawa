@@ -112,7 +112,7 @@
     tmvec=0.0d0
     osc_str=0.0d0
 
-    if (.not.lfakeip) then
+    if (ltdm_gs2i.and..not.lfakeip) then
        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
        do i=1,davstates
           tmvec(i)=tm(ndim,rvec(:,i),mtm(:))

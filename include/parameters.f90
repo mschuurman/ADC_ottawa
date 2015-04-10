@@ -91,6 +91,10 @@ module parameters
 !!$logical ltdm_gs2i - flag used to determine whether to calculate the
 !!                     TDM between the ground state and the initial
 !!                     space states
+!!
+!!$logical lifrzcore - flag used to determine whether to freeze the
+!!                     core orbitals in the calculation of the initial
+!!                     space states
 
   logical                              :: debug
   character(1)                         :: tranmom,tranflag,tranmom2
@@ -128,7 +132,7 @@ module parameters
   real(d)                              :: dmatmem
   real(d), dimension(:,:), allocatable :: density
   logical                              :: ltdm_gs2i
-
+  logical                              :: lifrzcore
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

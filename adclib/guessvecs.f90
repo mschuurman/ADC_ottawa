@@ -22,11 +22,11 @@
       real(d), dimension(:), allocatable   :: eigval
 
       if (lcvs) then
-         write(ilog,'(/,2x,a)') &
+         write(ilog,'(/,2x,a,/)') &
               'Generating guess Davidson vectors by diagonalising &
               the CVS-ADC(1) Hamiltonian'
       else
-         write(ilog,'(/,2x,a)') &
+         write(ilog,'(/,2x,a,/)') &
               'Generating guess Davidson vectors by diagonalising &
               the ADC(1) Hamiltonian'
       endif
