@@ -81,6 +81,81 @@
 
 !#######################################################################
 
+    subroutine adc1_guessvecs_final
+
+      use constants
+      use parameters
+      use select_fano
+      use fspace
+      use fspace2
+
+      implicit none
+
+      integer                              :: ndim,i,iout
+      integer, dimension(:,:), allocatable :: kpqf
+      real(d), dimension(:,:), allocatable :: eigvec
+      real(d), dimension(:), allocatable   :: eigval
+
+      if (lcvsfinal) then
+         write(ilog,'(/,2x,a,/)') &
+              'Generating guess Davidson vectors by diagonalising &
+              the CVS-ADC(1) Hamiltonian'
+      else
+         write(ilog,'(/,2x,a,/)') &
+              'Generating guess Davidson vectors by diagonalising &
+              the ADC(1) Hamiltonian'
+      endif
+
+!-----------------------------------------------------------------------
+! Select the ADC1 1h1p space
+!-----------------------------------------------------------------------
+      allocate(kpqf(7,0:nBas**2*4*nOcc**2))
+
+      kpqf(:,:)=-1
+
+      if (lcvs) then
+         call select_atom_is_cvs(kpqf(:,:))
+      else
+         call select_atom_isf(kpqf(:,:))
+      endif
+
+      ndim=kpqf(1,0)
+
+!-----------------------------------------------------------------------
+! Allocate the arrays that will hold the ADC1 eigenpairs
+!-----------------------------------------------------------------------
+      allocate(eigvec(ndim,ndim))
+      allocate(eigval(ndim))
+
+!-----------------------------------------------------------------------
+! Diagonalise the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------
+      if (lcvsfinal) then
+         call get_fspace_tda_direct_cvs(ndim,kpqf(:,:),eigvec,eigval)
+      else
+         call get_fspace_tda_direct(ndim,kpqf(:,:),eigvec,eigval)
+      endif
+
+      deallocate(kpqf)
+
+!-----------------------------------------------------------------------
+! Write the ADC(1) eigenvectors to file
+!-----------------------------------------------------------------------
+      iout=22
+
+      open(iout,file='SCRATCH/adc1_vecs',form='unformatted',&
+           status='unknown')
+
+      write(iout) ndim,eigvec
+
+      close(iout)
+
+      return
+
+    end subroutine adc1_guessvecs_final
+
+!#######################################################################
+
     subroutine get_fakeip_indices(kpq,kpqdim2,dims,dim)
       
       use constants

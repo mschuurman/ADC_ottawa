@@ -95,6 +95,16 @@ module parameters
 !!$logical lifrzcore - flag used to determine whether to freeze the
 !!                     core orbitals in the calculation of the initial
 !!                     space states
+!!
+!!$logical ldavfinal - flag used to determine whether to perform
+!!                     Davidson diagonalisation in the final space -
+!!                     used when considering excitation from a
+!!                     valence-excited neutral state to a
+!!                     core-excited neutral state
+!!
+!!$real*8 gwidth - width of Gaussian function used in the broadening
+!!                 of the valence-excited-to-core-excited spectrum
+
 
   logical                              :: debug
   character(1)                         :: tranmom,tranflag,tranmom2
@@ -102,10 +112,11 @@ module parameters
   character(4)                         :: chrun2
   character(4)                         :: WHAT
   integer                              :: matvec
-  character(36)                        :: lancname,davname
+  character(36)                        :: lancname,davname,davname_f
   integer                              :: hinit,nirrep,nirrep2,idiag,fdiag,method,&
                                           fmethod,davstates,lancstates,stiprilev,&
-                                          numinista,norder,info,statenumber,denord
+                                          numinista,norder,info,statenumber,denord,&
+                                          davstates_f
   integer, parameter                   :: nhcentre=40
   integer, dimension(0:nhcentre)       ::  hcentre
   real(d)                              :: minc,mspacewi,mspacewf,eupper,elower
@@ -117,8 +128,8 @@ module parameters
   logical                              :: readband
   integer, dimension(400)              :: stvc_lbl
   integer                              :: ninista
-  logical                              :: ladc1guess
-  real(d)                              :: davtol
+  logical                              :: ladc1guess,ladc1guess_f
+  real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
   integer, dimension(nhcentre)         :: icore
   integer                              :: ncore
@@ -133,6 +144,8 @@ module parameters
   real(d), dimension(:,:), allocatable :: density
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore
+  logical                              :: ldavfinal
+  real(d)                              :: gwidth
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
@@ -152,10 +165,12 @@ module parameters
 !!$**********Lanczos Parameters********************
 !!$************************************************  
 
+  
+
   character*4           :: mtxidl
   integer               :: ncycles,maxmem,memx,lmain
   integer               :: mode,nprint
-  integer               :: maxiter
+  
   integer, dimension(2) :: iparm
   real(d)               :: wthr
   real(d), dimension(2) :: erange
@@ -166,8 +181,10 @@ module parameters
 !!$**********Davidson Parameters*******************
 !!$************************************************
 
+  integer               :: maxiter,dmain,maxiter_f,&
+                           dmain_f,ndavcalls
+
   character*4 :: mtxidd
-  integer     :: dmain
   logical     :: myb0,transp
   character*2 :: GO
   character*3 :: POLARIZATION

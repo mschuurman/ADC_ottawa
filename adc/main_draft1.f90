@@ -112,7 +112,7 @@ program main
 
   call cpu_time(time)
 
-  write(ilog,'(a,1x,F9.2,1x,a)') 'Final Time:',time," s"
+  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final Time:',time," s"
 
   STOP
   

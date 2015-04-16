@@ -26,6 +26,7 @@
       ltdm_gs2i=.true.
       dmatmem=250.0d0
       lifrzcore=.false.
+      ldavfinal=.false.
 
 !-----------------------------------------------------------------------
 ! CVS-ADC parameters
@@ -43,6 +44,7 @@
 !-----------------------------------------------------------------------
 ! Davidson parameters
 !-----------------------------------------------------------------------
+      ! Initial space
       davstates=0
       maxiter=0
       dmain=0
@@ -50,12 +52,28 @@
       ladc1guess=.false.
       davname='SCRATCH/davstates'
 
+      ! Final space
+      davstates_f=0
+      maxiter_f=0
+      dmain_f=0
+      davtol_f=1d-7
+      ladc1guess_f=.false.
+      davname_f='SCRATCH/davstates_final'
+      
+      ! Common
+      ndavcalls=0
+
 !-----------------------------------------------------------------------
 ! Lanczos parameters
 !-----------------------------------------------------------------------      
       lmain=0
       ncycles=0
       lancname='SCRATCH/lancstates'
+
+!-----------------------------------------------------------------------
+! Spectrum parameters
+!-----------------------------------------------------------------------
+      gwidth=0.0d0
 
 !-----------------------------------------------------------------------
 ! I/O channels

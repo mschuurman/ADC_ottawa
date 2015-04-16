@@ -119,12 +119,27 @@
             if (keyword(1).ne.'end-lanczos_section') goto 20
             i=inkw
 
+         else if (keyword(i).eq.'davidson_final_section') then
+            ldavfinal=.true.
+25          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-davidson_final_section') goto 25
+            i=inkw
+
          else if (keyword(i).eq.'no_tdm') then
             ltdm_gs2i=.false.
 
          else if (keyword(i).eq.'istate_frozen_core') then
             lifrzcore=.true.
 
+         else if (keyword(i).eq.'convolute') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) gwidth
+            else
+               goto 100
+            endif
+            
            else
               ! Exit if the keyword is not recognised
               errmsg='Unknown keyword: '//trim(keyword(i))
@@ -166,13 +181,15 @@
         if (energyonly) method=-method
 
 !-----------------------------------------------------------------------
-! Read the Davidson section
+! Read the Davidson section(s)
 !-----------------------------------------------------------------------
         if (ldav) then
            if (statenumber.gt.0.or.energyonly) then
               call rddavinp
            endif
         endif
+
+        if (ldavfinal)  call rddavfinalinp
 
 !-----------------------------------------------------------------------
 ! Read the Lanczos section
@@ -251,7 +268,7 @@
       endif
 
 !-----------------------------------------------------------------------
-! Davidson section: only required if either:
+! Initial space Davidson section: only required if either:
 !
 ! (1) We are ionizing from an excited state, or;
 ! (2) We are performing an energy-only calculation.
@@ -278,9 +295,28 @@
       endif
 
 !-----------------------------------------------------------------------
-! Lanczos section
+! Final space Davidson section
 !-----------------------------------------------------------------------
-      if (.not.energyonly) then
+      if (ldavfinal) then
+         if (davstates_f.eq.0) then
+            msg='The number of final space Davidson states has not &
+                 been given'
+            goto 999
+         else if (maxiter_f.eq.0) then
+            msg='The maximum no. final space Davidson iterations has &
+                 not been &
+                 given'
+            goto 999
+         else if (dmain_f.eq.0) then
+            msg='The final space Davidson block size has not been given'
+            goto 999
+         endif
+      endif
+
+!-----------------------------------------------------------------------
+! Lanczos section: only required if we are considering ionization
+!-----------------------------------------------------------------------
+      if (.not.energyonly.and..not.ldavfinal) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -407,6 +443,108 @@
       return
 
     end subroutine rddavinp
+
+!#######################################################################
+
+    subroutine rddavfinalinp
+
+      use parameters
+      use parsemod
+      use iomod
+      
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Read to the Davidson section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'davidson_final_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the Davidson parameters
+!-----------------------------------------------------------------------
+5    call rdinp(iin)
+      
+      i=0
+
+      if (keyword(1).ne.'end-davidson_final_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'nstates') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) davstates_f
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'block_size') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) dmain_f
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'tol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) davtol_f
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'guess') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'adc1') then
+                  ladc1guess_f=.true.
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'maxit') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) maxiter_f
+            else
+               goto 100
+            endif
+
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+           ! then read them, else read the next line
+           if (i.lt.inkw) then
+              goto 10
+           else
+              goto 5
+           endif
+
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+
+        endif
+
+      return
+
+    end subroutine rddavfinalinp
 
 !#######################################################################
 

@@ -27,12 +27,8 @@
       logical                  :: rstr,prs
 
 !-----------------------------------------------------------------------
-! Unknown flag: this appears to never be used here...
-!-----------------------------------------------------------------------
-      fl=flag
-!!$    fl='i'
-
-!-----------------------------------------------------------------------
+! flag:    'i' or 'f' depending on whether this is an initial or final
+!          space calculation
 ! ndm:     Hamiltonian matrix dimension
 ! ndms:    No. 1h1p ISs
 ! noffdel: No. non-zero off-diagonal Hamiltonian matrix elements ???
@@ -43,7 +39,13 @@
 !-----------------------------------------------------------------------
 ! Enter block-Davidson routine
 !-----------------------------------------------------------------------
-      call davidson_diag(dmain,ndm,davstates,davname,ladc1guess,ndms)
+      if (flag.eq.'i') then
+         call davidson_diag(dmain,ndm,davstates,davname,ladc1guess,&
+              ndms,flag)
+      else if (flag.eq.'f') then
+         call davidson_diag(dmain_f,ndm,davstates_f,davname_f,&
+              ladc1guess_f,ndms,flag)
+      endif
 
       return
 

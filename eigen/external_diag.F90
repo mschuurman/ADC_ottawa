@@ -2,10 +2,11 @@
 ! davidson_diag: SLEPc block-Davidson eigensolver
 !#######################################################################
 
- subroutine davidson_diag(blckdim,matdim,davstates,davname,ladc1guess,&
-      ndms)
+ subroutine davidson_diag(blckdim,matdim,davstates,vecfile,ladc1guess,&
+      ndms,flag)
 
-   use parameters, only: davtol,maxiter,lfakeip,ilog
+   use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
+        ilog,ndavcalls
 
    use constants
 
@@ -23,7 +24,9 @@
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
    double precision, dimension(matdim) :: vec
-   character(36)                       :: davname
+   character(36)                       :: vecfile
+   character(70)                       :: aout
+   character(1)                        :: flag
    logical                             :: ladc1guess
 
 !-----------------------------------------------------------------------
@@ -71,9 +74,25 @@
       PetscInt  niter               ! Max. no. iterations
 
       write(ilog,'(/,70a)') ('-',kk=1,70)
-      write(ilog,'(2x,a)') &
-           'Block-Davidson diagonalisation in the initial space'
+
+      if (flag.eq.'i') then
+         write(ilog,'(2x,a)') &
+              'Block-Davidson diagonalisation in the initial space'
+      else if (flag.eq.'f') then
+         write(ilog,'(2x,a)') &
+              'Block-Davidson diagonalisation in the final space'
+      endif
+
       write(ilog,'(70a,/)') ('-',kk=1,70)
+
+!-----------------------------------------------------------------------
+! If this is the first call to davidson_diag, then call mpi_init.
+! It is crucial that we call mpi_init once before slepcinitialize is
+! called for the first time, otherwise we cannot make multiple calls
+! to slepcinitialize/slepcfinalize.
+!-----------------------------------------------------------------------
+      ndavcalls=ndavcalls+1
+      if (ndavcalls.eq.1) call mpi_init()
 
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
@@ -92,7 +111,7 @@
 ! We here store the no. non-zero elements per row in the PetscInt
 ! array nnz: nnz(i)=no. non-zero elements in the ith row.
 !-----------------------------------------------------------------------
-      call get_nonzeros(nnz,matdim)
+      call get_nonzeros(nnz,matdim,flag)
 
 !-----------------------------------------------------------------------
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
@@ -112,10 +131,10 @@
 !      and subsequently passed to fill_offdiag
 !-----------------------------------------------------------------------
       ! (i) Diagonal elements
-      call fill_ondiag(ham,maxbl,nrec,matdim)
+      call fill_ondiag(ham,maxbl,nrec,matdim,flag)
 
       ! (ii) Off-diagonal elements      
-      call fill_offdiag(maxbl,nrec,ham)
+      call fill_offdiag(maxbl,nrec,ham,flag)
 
       ! Assemble the PETSc matrix
       call matassemblybegin(ham,mat_final_assembly,ierr)
@@ -167,21 +186,25 @@
 !-----------------------------------------------------------------------
 ! Set the error tolerance and max. no. iterations
 !-----------------------------------------------------------------------
-      tol=davtol
-      niter=maxiter
+      if (flag.eq.'i') then
+         tol=davtol
+         niter=maxiter
+      else if (flag.eq.'f') then
+         tol=davtol_f
+         niter=maxiter_f
+      endif
+         
       call epssettolerances(eps,tol,niter,ierr)
 
 !-----------------------------------------------------------------------
-! Set the initial vectors: Davidson diagonalisation is only ever used
-! for the initial space, so the initial vectors will always correspond
-! to a set of 1h1p unit vectors
+! Set the initial vectors
 !-----------------------------------------------------------------------
       if (lfakeip) then
          call guess_vecs_fakeip(blckdim,matdim,ivec)
       else if (ladc1guess) then
          call load_adc1_vecs(blckdim,matdim,ivec,ndms)
       else
-         call guess_vecs_ondiag(blckdim,matdim,ivec)
+         call guess_vecs_ondiag(blckdim,matdim,ivec,flag)
       endif
 
       ! Set the initial vector space
@@ -217,7 +240,7 @@
       ! Open file
       unit=77
 
-      open(unit=unit,file=davname,status='unknown',&
+      open(unit=unit,file=vecfile,status='unknown',&
            access='sequential',form='unformatted')
       
       do i=0,nconv-1
@@ -251,7 +274,8 @@
 !-----------------------------------------------------------------------
       call slepcfinalize(ierr)
 
-!      call full_diag(matdim)
+! Full diagonalisation for debugging purposes
+!      call full_diag(matdim,flag)
 
    return
 
@@ -262,7 +286,7 @@
 !              of the ADC Hamiltonian matrix
 !#######################################################################
 
- subroutine fill_ondiag(ham,maxbl,nrec,matdim)
+ subroutine fill_ondiag(ham,maxbl,nrec,matdim,flag)
 
    use constants
 
@@ -276,6 +300,7 @@
 
    integer                    :: matdim,maxbl,nrec
    real(d), dimension(matdim) :: hii
+   character(1)               :: flag
 
 !-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -288,7 +313,7 @@
 !-----------------------------------------------------------------------
 ! Read the diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-   call rdham_diag(hii,matdim,maxbl,nrec)
+   call rdham_diag(hii,matdim,maxbl,nrec,flag)
 
 !-----------------------------------------------------------------------
 ! Pass the diagonal elements of the Hamiltonian matrix to
@@ -311,7 +336,7 @@
 !             file
 !#######################################################################
 
- subroutine rdham_diag(hii,matdim,maxbl,nrec)
+ subroutine rdham_diag(hii,matdim,maxbl,nrec,flag)
 
    use constants
 
@@ -320,12 +345,21 @@
    integer                    :: matdim,maxbl,nrec
    integer*8                  :: unit
    real(d), dimension(matdim) :: hii
+   character(1)               :: flag
+   character(70)              :: filename
 
 !-----------------------------------------------------------------------
 ! Open file
 !-----------------------------------------------------------------------
    unit=77
-   open(unit,file='SCRATCH/hmlt.diai',status='old',access='sequential',&
+
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.diai'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.diac'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
 !-----------------------------------------------------------------------
@@ -349,7 +383,7 @@
 !               of the ADC Hamiltonian matrix
 !#######################################################################
 
- subroutine fill_offdiag(maxbl,nrec,ham)
+ subroutine fill_offdiag(maxbl,nrec,ham,flag)
 
    use constants
 
@@ -363,8 +397,10 @@
 
    integer                   :: maxbl,nrec,nlim,k,l
    integer*8                 :: unit
-   real(d), dimension(maxbl) :: hij
    integer, dimension(maxbl) :: indxi,indxj
+   real(d), dimension(maxbl) :: hij
+   character(1)              :: flag
+   character(70)             :: filename
 
 !----------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -378,7 +414,14 @@
 ! Open file
 !-----------------------------------------------------------------------
    unit=78
-   open(unit,file='SCRATCH/hmlt.offi',status='old',access='sequential',&
+
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.offi'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.offc'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
 !-----------------------------------------------------------------------
@@ -416,7 +459,7 @@
 !            the LAPACK routine dsyev
 !#######################################################################
 
- subroutine full_diag(matdim)
+ subroutine full_diag(matdim,flag)
 
    use constants
    use parameters, only: ilog
@@ -429,7 +472,8 @@
    real(d), dimension(matdim,matdim)  :: hmat,umat
    real(d), dimension(:), allocatable :: hij
    integer, dimension(:), allocatable :: indxi,indxj
-
+   character(1)                       :: flag
+   character(70)                      :: filename
 
    integer*4                   :: e2
    real*8, dimension(3*matdim) :: work
@@ -442,7 +486,14 @@
 ! Read the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
    unit=77
-   open(unit,file='SCRATCH/hmlt.diai',status='old',access='sequential',&
+
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.diai'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.diac'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
    rewind(unit)
@@ -458,7 +509,13 @@
 !-----------------------------------------------------------------------
 ! Read the off-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-   open(unit,file='SCRATCH/hmlt.offi',status='old',access='sequential',&
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.offi'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.offc'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
    allocate(hij(maxbl))
@@ -505,7 +562,7 @@
 
 !#######################################################################
 
- subroutine get_nonzeros(nnz,matdim)
+ subroutine get_nonzeros(nnz,matdim,flag)
 
    use constants
 
@@ -521,8 +578,10 @@
    integer                            :: matdim,maxbl,nrec,nlim,k,l,&
                                          tot,tot0
    integer*8                          :: unit
-   real(d), dimension(:), allocatable :: hij
    integer, dimension(:), allocatable :: indxi,indxj
+   real(d), dimension(:), allocatable :: hij
+   character(1)                       :: flag
+   character(len=70)                  :: filename
 
 !-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -534,8 +593,15 @@
 !-----------------------------------------------------------------------
    unit=78
 
-   open(unit,file='SCRATCH/hmlt.diai',status='old',access='sequential',&
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.diai'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.diac'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
+
    read(unit) maxbl,nrec
 
    close(unit)
@@ -551,7 +617,13 @@
 ! Read the off-diagonal Hamiltonian matrix elements and determine the
 ! no. non-zero elements per row (nnz)
 !-----------------------------------------------------------------------
-   open(unit,file='SCRATCH/hmlt.offi',status='old',access='sequential',&
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.offi'
+   else if (flag.eq.'f') then
+      filename='SCRATCH/hmlt.offc'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
    nnz=1
@@ -713,7 +785,7 @@
 
 !#######################################################################
 
- subroutine guess_vecs_ondiag(blckdim,matdim,ivec)
+ subroutine guess_vecs_ondiag(blckdim,matdim,ivec,flag)
 
    use constants
    use misc, only: dsortindxa1
@@ -730,6 +802,8 @@
    integer                    :: blckdim,matdim,unit,maxbl,nrec,k
    integer, dimension(matdim) :: indx_hii
    real(d), dimension(matdim) :: hii
+   character(1)               :: flag
+   character(70)              :: filename
 
 !-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -744,7 +818,14 @@
 ! Open file
 !-----------------------------------------------------------------------
    unit=77
-   open(unit,file='SCRATCH/hmlt.diai',status='old',access='sequential',&
+
+   if (flag.eq.'i') then
+      filename='SCRATCH/hmlt.diai'
+   else if (flag.eq.'c') then
+      filename='SCRATCH/hmlt.diac'
+   endif
+
+   open(unit,file=filename,status='old',access='sequential',&
         form='unformatted')
 
 !-----------------------------------------------------------------------
