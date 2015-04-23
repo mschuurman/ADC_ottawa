@@ -220,7 +220,7 @@
   allocate(x_dipole(nmo,nmo),y_dipole(nmo,nmo),z_dipole(nmo,nmo),dpl(nmo,nmo))
 
   ! assume for the time being ao integrals stored in core
-  ao_mode = 'incore'
+  ao_mode = 'conventional'
   call prepare_2e(int2e,gam,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
 
   ! form 1e Hamiltonian (in AO basis)
@@ -233,7 +233,7 @@
   mos_real = realpart(mos_cmplx)
 
   ! load up variables depending on RHF/UHF case 
-  if(nmo == nao) then         ! RHF case
+  if(nmo <= nao) then         ! RHF case, allowing for dropped orbitals
       nocc_spin = nelec / 2
       d_cf = 2._xrk
    else if(nmo == nao_spin) then ! UHF case

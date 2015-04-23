@@ -103,7 +103,11 @@
   nvec = gam%nvectors
   nao_spin = 2*nao
   enuc = nuc_repulsion(gam)
-  nmo = nao_spin
+  if(nvec <= nao)then
+   nmo = 2*nvec ! RHF case
+  else
+   nmo = nvec   ! UHF case
+  endif
 
   allocate(mo_occ(nmo),mo_energy(nmo),mos(nao_spin,nmo,2),mosg(nao_spin,nmo,2),tmp(nao,nao), &
            rho(nao_spin,nao_spin),rho_old(nao_spin,nao_spin),fmat(nao_spin,nao_spin),fmat_old(nao_spin,nao_spin), &
@@ -123,13 +127,13 @@
   ! load gamess orbitals into starting guess as well as orbital occupations
   mosg(:,:,1) = 0
   mo_occ = 0
-  if(nvec == nao) then    ! Cartesian RHF case
-   mosg(    1:nao     ,1:nao_spin-1:2,1) = gam%vectors(1:nao,1:nao)
-   mosg(nao+1:nao_spin,2:nao_spin  :2,1) = gam%vectors(1:nao,1:nao)
+  if(nvec <= nao) then    ! Cartesian RHF case
+   mosg(    1:nao     ,1:nmo-1:2,1) = gam%vectors(1:nao,1:nvec)
+   mosg(nao+1:nao_spin,2:nmo  :2,1) = gam%vectors(1:nao,1:nvec)
    do i = 1,nelec
     mo_occ(i) = 1.
    enddo
-  else if(nvec == nao_spin) then ! Cartesian UHF case
+  else if(nvec > nao) then ! Cartesian UHF case
    mosg(1:nao         ,1:nmo:2,1) = gam%vectors(1:nao,1:nao)
    mosg(nao+1:nao_spin,2:nmo:2,1) = gam%vectors(1:nao,nao+1:nmo)
    do i = 1,nelec
@@ -162,7 +166,7 @@
      ! form new fock matrix
      fmat = hmat + gmat
 
-     fock_diagonal: do i=1,nao_spin
+     fock_diagonal: do i=1,nmo
        mo_energy(i) = dot_product(mos(:,i,1),matmul(fmat,mos(:,i,2)))
      end do fock_diagonal
      efock = sum(rho * fmat)
@@ -192,8 +196,8 @@
 
   if(.not.converged)stop 'unable to determine converged orbitals'
 
-  if(nvec /= nao_spin) then
-   mos_conv = mos(1:nao_spin,1:nao_spin:2,1) ! for RHF case simply pull out the alpha orbitals
+  if(nvec <= nao) then
+   mos_conv = mos(1:nao_spin,1:nmo:2,1) ! for RHF case simply pull out the alpha orbitals
   else
    mos_conv = mos(:,:,1)                     ! for UHF case, take all orbitals
   endif
