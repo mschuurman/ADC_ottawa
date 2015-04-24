@@ -80,6 +80,7 @@
   logical                 :: converged
   real(rk)                :: drho
   real(xrk)                :: nuc_repulsion
+  real(rk)                :: null_cutoff
   integer(ik)             :: i,iter,nao_spin,nmo,nao,nvec,nmo_null,nmo_act
   complex(rk)             :: efock,eg,escf, escf_old, enuc, de
 
@@ -99,17 +100,16 @@
   real(rk), allocatable       :: mo_occ(:)       ! MO occupation vector
 
 
+  null_cutoff = 1.e-6
   nao = gam%nbasis
   nvec = gam%nvectors
   nao_spin = 2*nao
   enuc = nuc_repulsion(gam)
-  if(nvec <= nao)then
-   nmo = 2*nvec ! RHF case
-  else
-   nmo = nvec   ! UHF case
-  endif
 
-  allocate(mo_occ(nmo),mo_energy(nmo),mos(nao_spin,nmo,2),mosg(nao_spin,nmo,2),tmp(nao,nao), &
+  nmo = nvec                  ! number of spin orbitals, UHF case
+  if(nvec <= nao)nmo = 2*nvec ! RHF case
+
+  allocate(mo_occ(nao_spin),mo_energy(nao_spin),mos(nao_spin,nao_spin,2),mosg(nao_spin,nao_spin,2),tmp(nao,nao), &
            rho(nao_spin,nao_spin),rho_old(nao_spin,nao_spin),fmat(nao_spin,nao_spin),fmat_old(nao_spin,nao_spin), &
            gmat(nao_spin,nao_spin),smat(nao_spin,nao_spin),sphalf(nao_spin,nao_spin),smhalf(nao_spin,nao_spin))
 
@@ -122,12 +122,12 @@
   smat(1:nao,1:nao)                   = tmp(1:nao,1:nao)
   smat(nao+1:nao_spin,nao+1:nao_spin) = tmp(1:nao,1:nao)
   ! construct S^(1/2) and S^(-1/2)
-  call st_invert_smat(nmo_null,smat,smhalf,sphalf)
+  call st_invert_smat(nmo_null,smat,smhalf,sphalf,eps_smat=null_cutoff)
 
   ! load gamess orbitals into starting guess as well as orbital occupations
   mosg(:,:,1) = 0
   mo_occ = 0
-  if(nvec <= nao) then    ! Cartesian RHF case
+  if(nvec <= nao) then     ! Cartesian RHF case
    mosg(    1:nao     ,1:nmo-1:2,1) = gam%vectors(1:nao,1:nvec)
    mosg(nao+1:nao_spin,2:nmo  :2,1) = gam%vectors(1:nao,1:nvec)
    do i = 1,nelec
@@ -175,10 +175,11 @@
 
      ! extrapolate fock matrix and diagonalize
      call diis_extrapolate(diis_st,iter,smat,rho,fmat)
+
      call st_diagonalize_fmat(smhalf,sphalf,fmat,nmo_null,eps_geev,mos,mo_energy)
 
      ! update the (non-null space) MOs
-     nmo_act = nmo - nmo_null
+     nmo_act = nao_spin - nmo_null
      call bt_follow_mos(nmo_act,mo_occ,eps_geev,sphalf,mosg,mo_energy,mos)
 
      if (iter<=1) cycle iterate_scf
@@ -195,6 +196,8 @@
   end do iterate_scf
 
   if(.not.converged)stop 'unable to determine converged orbitals'
+
+  call print_matrix(realpart(mos(1:nao_spin,1:nao_spin,1)),11,'f10.5')
 
   if(nvec <= nao) then
    mos_conv = mos(1:nao_spin,1:nmo:2,1) ! for RHF case simply pull out the alpha orbitals
