@@ -327,82 +327,73 @@
 1004 format('  total energy:             ',f17.10)
  end subroutine load_mo_integrals
 
- ! 
- ! 
- !
- subroutine phis_init
-  implicit none
+!#######################################################################
+! rdgeom: reads the nuclear geometry from the GAMESS log file
+!#######################################################################
+ subroutine rdgeom(filename)
 
-  return
- end subroutine
+   use parameters
+   use iomod, only: freeunit
 
- ! 
- ! Determine the number of irreps, number of basis functions and number of atoms
- !
- subroutine phis_get_info(nirr,symlab,nbas,ncen)
-  implicit none
-  integer       :: nirr
-  character(2)  :: symlab 
-  integer       :: nbas
-  integer       :: ncen
- 
-  return
- end subroutine
+   implicit none
+   
+   integer           :: igms,i,j
+   character(len=72) :: filename
+   character(len=80) :: string
 
- ! 
- ! Get Hartree-Fock energy information: total energy, and energy of the orbitals
- !
- subroutine phis_get_epsi(ehf,earr,nbas)
-  use constants
-  implicit none
-  integer*4,intent(in)   :: nbas     ! The number of basis functions
-  real(d),intent(out)    :: ehf      ! The Hf energy
-  real(d),intent(out)    :: earr(nbas)  ! The orbital energies
+!-----------------------------------------------------------------------
+! Open GAMESS output file
+!-----------------------------------------------------------------------
+   call freeunit(igms)
+   open(igms,file=filename,form='formatted',status='old')
 
-  return
- end subroutine
+!-----------------------------------------------------------------------
+! Read the Cartesian coordinates
+!-----------------------------------------------------------------------
+   ! Read to the coordinate section
+5  read(igms,'(a)') string
+   if (index(string,'COORDINATES').eq.0) goto 5
+   read(igms,*)
 
- !
- ! Get symmetries of each of the orbitals
- !
- subroutine phis_get_sym(orbsym,symlab,nbas)
-  implicit none
-  integer*4,intent(in)    :: nbas      ! The number of  basis functions
-  integer*4,intent(inout) :: orbsym(nbas) ! Symmetry each orbital
-  character*2,intent(in):: symlab(1024)
+   ! Determine the no. atoms and allocate arrays
+   natm=0
+10 read(igms,'(a)') string
+   if (string.ne.'') then
+      natm=natm+1
+      goto 10
+   endif
+   allocate(xcoo(natm*3))
+   allocate(aatm(natm))
 
-  return
- end subroutine
+   ! Read the Cartesian coordinates and atom labels
+   do i=1,natm+1
+      backspace(igms)
+   enddo
+   do i=1,natm
+      read(igms,'(1x,a2,10x,3(6x,F14.10))') aatm(i),&
+           (xcoo(j),j=i*3-2,i*3)
+   enddo
 
- !
- ! Get the occupation number for each orbital
- !
- subroutine phis_get_occ(occnum,nbas)
-  use constants
-  implicit none
-  integer*4,intent(in)    :: nbas      ! The total number of basis functions
-  real(d),intent(inout) :: occnum(nbas) ! The occupation number for each orbital 
+!-----------------------------------------------------------------------
+! Close the GAMESS output file
+!-----------------------------------------------------------------------
+   close(igms)
 
-  return
- end subroutine
+!-----------------------------------------------------------------------
+! Write the coordinates to the log file
+!-----------------------------------------------------------------------
+   write(ilog,'(/,82a)') ('-',i=1,82)
+   write(ilog,'(27x,a)') 'Atomic Coordinates (Angstrom)'
+   write(ilog,'(82a)') ('-',i=1,82)
+   write(ilog,'(a4,22x,a1,18x,a1,20x,a1)') 'Atom','X','Y','Z'
+   write(ilog,'(82a)') ('-',i=1,82)
+   do i=1,natm
+      write(ilog,'(1x,a2,10x,3(6x,F14.10))') aatm(i),&
+           (xcoo(j)*0.529177249d0,j=i*3-2,i*3)
+   enddo
+   write(ilog,'(82a,/)') ('-',i=1,82)
 
- !
- ! Load up the 
- !
- subroutine phis_mc_dip(xdip,ydip,zdip,nbas)
-  implicit none
-  integer,intent(in)  :: nbas
-  real,intent(inout)  :: xdip(nbas,nbas),ydip(nbas,nbas),zdip(nbas,nbas)
+   return
 
-  return
- end subroutine
-
- !
- ! Load the MO integrals into memory
- !
- subroutine phis_load_vpqrs
-  implicit none
-
-  return
- end subroutine
+ end subroutine rdgeom
 

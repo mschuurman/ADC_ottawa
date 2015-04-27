@@ -218,7 +218,10 @@ integer                            :: CHECK_dip
 !!$************************************************
 !!$**********Other Parameters**********************
 !!$************************************************
-character(len=3) :: pntgroup
+integer                                     :: natm
+real(d), dimension(:), allocatable          :: xcoo
+character(len=2), dimension(:), allocatable :: aatm
+character(len=3)                            :: pntgroup
 
 !-----------------------------------------------------------------------
 ! I/O parameters
