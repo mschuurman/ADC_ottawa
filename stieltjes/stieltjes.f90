@@ -40,7 +40,7 @@
 !-----------------------------------------------------------------------
       asiinp=''
       aosc=''
-      erange=0.0d0
+      erange=-999.9d0
 
 !-----------------------------------------------------------------------
 ! Determine the input file name
@@ -121,13 +121,13 @@
            STOP
         endif
 
-        if (erange(1).eq.0.0d0) then
+        if (erange(1).eq.-999.9d0) then
            errmsg='The energy bounds have not been given'
            write(6,'(/,a,/)') trim(errmsg)
            STOP
         endif
 
-        if (erange(2).eq.0.0d0) then
+        if (erange(2).eq.-999.9d0) then
            errmsg='The upper energy bound has not been given'
            write(6,'(/,a,/)') trim(errmsg)
            STOP

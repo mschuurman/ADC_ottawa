@@ -244,7 +244,7 @@
       stop 'load_mo_integrals - confusing number of mos'
    endif 
 
-  ! Set the ADC nbas variable
+  ! Set the ADC variable nbas
   nbas=nmo
 
   ! actual call to general integrals in MO basis 
