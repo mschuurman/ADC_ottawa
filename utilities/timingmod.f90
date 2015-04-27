@@ -12,7 +12,7 @@
 
       subroutine get_time(it)
 
-        use parameters, only: ilog
+        use channels, only: ilog
 
         implicit none
 

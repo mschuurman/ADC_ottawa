@@ -3,6 +3,7 @@ module photoionisation
   use constants 
   use parameters
   use misc
+  use channels
   
   implicit none
   

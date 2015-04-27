@@ -4,6 +4,7 @@ module select_fano
   use parameters
   use adc_ph
   use misc
+  use channels
   
   implicit none
   

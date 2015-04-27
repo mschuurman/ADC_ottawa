@@ -6,9 +6,10 @@
       ndms,flag)
 
    use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
-        ilog,ndavcalls
+                         ndavcalls
 
    use constants
+   use channels
 
    implicit none
 
@@ -462,11 +463,12 @@
  subroutine full_diag(matdim,flag)
 
    use constants
-   use parameters, only: ilog
+   use parameters
+   use channels
 
    implicit none
 
-   integer                            :: matdim,unit,maxbl,nrec,nlim,&
+   integer                            :: matdim,iham,maxbl,nrec,nlim,&
                                          i,k,i1,i2
    real(d), dimension(matdim)         :: hii
    real(d), dimension(matdim,matdim)  :: hmat,umat
@@ -485,7 +487,7 @@
 !-----------------------------------------------------------------------
 ! Read the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-   unit=77
+   iham=77
 
    if (flag.eq.'i') then
       filename='SCRATCH/hmlt.diai'
@@ -493,18 +495,18 @@
       filename='SCRATCH/hmlt.diac'
    endif
 
-   open(unit,file=filename,status='old',access='sequential',&
+   open(iham,file=filename,status='old',access='sequential',&
         form='unformatted')
 
-   rewind(unit)
-   read(77) maxbl,nrec
-   read(77) hii
+   rewind(iham)
+   read(iham) maxbl,nrec
+   read(iham) hii
 
    do i=1,matdim
       hmat(i,i)=hii(i)
    enddo
 
-   close(unit)
+   close(iham)
 
 !-----------------------------------------------------------------------
 ! Read the off-diagonal elements of the Hamiltonian matrix
@@ -515,7 +517,7 @@
       filename='SCRATCH/hmlt.offc'
    endif
 
-   open(unit,file=filename,status='old',access='sequential',&
+   open(iham,file=filename,status='old',access='sequential',&
         form='unformatted')
 
    allocate(hij(maxbl))
@@ -523,7 +525,7 @@
    allocate(indxj(maxbl))
 
    do i=1,nrec
-      read(unit) hij(:),indxi(:),indxj(:),nlim
+      read(iham) hij(:),indxi(:),indxj(:),nlim
       do k=1,nlim
          i1=indxi(k)
          i2=indxj(k)
@@ -532,7 +534,7 @@
       enddo
    enddo
    
-   close(unit)
+   close(iham)
 
 !-----------------------------------------------------------------------
 ! Diagonalise the Hamiltonian matrix

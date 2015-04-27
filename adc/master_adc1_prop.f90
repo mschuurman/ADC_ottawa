@@ -11,6 +11,7 @@ subroutine master_adc1_prop()
   use get_matrix
   use get_matrix_DIPOLE
   use propagate_prepare
+  use channels
  
   implicit none
 

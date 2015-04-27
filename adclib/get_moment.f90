@@ -4,6 +4,7 @@ module get_moment
   use parameters
   use dipole_ph
   use get_matrix_DIPOLE
+  use channels
 
   implicit none
   

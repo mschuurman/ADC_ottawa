@@ -7,6 +7,7 @@
   use parameters
   use integral_tools
   use import_gamess
+  use channels, only: ilog
   implicit none
   type(gam_structure),intent(in)         :: gam ! gamess info (orbitals, geom,etc.) 
   real(rk),intent(out)                   :: hmat(gam%nbasis,gam%nbasis)  ! Current 1-electron Hamiltonian matrix

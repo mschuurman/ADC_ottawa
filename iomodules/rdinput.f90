@@ -9,6 +9,7 @@
       use parameters
       use parsemod
       use iomod
+      use channels
 
       implicit none
       
@@ -349,7 +350,8 @@
       use parameters
       use parsemod
       use iomod
-      
+      use channels
+
       implicit none
 
       integer :: i
@@ -451,6 +453,7 @@
       use parameters
       use parsemod
       use iomod
+      use channels
       
       implicit none
 
@@ -553,6 +556,7 @@
       use parameters
       use parsemod
       use iomod
+      use channels
 
       implicit none
 

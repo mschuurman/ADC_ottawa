@@ -55,6 +55,7 @@ MULTI = multi/accuracy.o \
 
 INCLUDE=include/constants.o \
 	include/parameters.o \
+	include/channels.o \
 
 UTILITIES=utilities/timingmod.o \
 	utilities/misc.o \
@@ -126,6 +127,7 @@ ADC_OBJ=accuracy.o \
         fock_tools.o \
         constants.o \
 	parameters.o \
+	channels.o \
 	misc.o \
 	iomod.o \
 	parsemod.o \
@@ -161,19 +163,25 @@ ADC_OBJ=accuracy.o \
 	main_draft1.o
 
 # Stieltjes imaging code
-STIELTJES = stieltjes/qmath.o \
+STIELTJES = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	stieltjes/qmath.o \
 	stieltjes/pythag_quad.o \
 	stieltjes/tql2_quad.o \
-        stieltjes/globalmod.o \
-	stieltjes/stieltjes_s3_modified.o \
-	stieltjes/main_stieltjes.o 
+        stieltjes/simod.o \
+        stieltjes/stieltjes.o 
 
-STIELTJES_OBJ = qmath.o \
+STIELTJES_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	qmath.o \
 	pythag_quad.o \
 	tql2_quad.o \
-        globalmod.o \
-	stieltjes_s3_modified.o \
-	main_stieltjes.o 
+        simod.o \
+        stieltjes.o 
 
 #-----------------------------------------------------------------------
 # Rules to create the program

@@ -1,5 +1,4 @@
 module get_matrix_DIPOLE
-
   
   use constants
   use parameters
@@ -8,7 +7,8 @@ module get_matrix_DIPOLE
   use filetools
   use dipole_ph
   use iomod
-
+  use channels
+  
   implicit none
 
   integer, parameter :: buf_size=8192

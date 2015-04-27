@@ -3,6 +3,7 @@ module read_param
   use constants
   use parameters
   use misc
+  use channels
 
   implicit none
   
@@ -15,7 +16,7 @@ subroutine load_gamess(chkpt_file,log_file)
   use accuracy
   use parameters
   use import_gamess
-  character(len=72),intent(inout)      :: chkpt_file,log_file
+  character(len=72),intent(inout)   :: chkpt_file,log_file
   type(gam_structure)               :: gamess_info       ! Default GAMESS
   integer                           :: j,naos
 

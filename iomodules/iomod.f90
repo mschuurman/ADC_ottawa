@@ -11,7 +11,7 @@
     subroutine open_files
 
       use constants
-      use parameters
+      use channels
 
       implicit none
 
@@ -94,7 +94,7 @@
 
     subroutine error_control
 
-      use parameters
+      use channels, only: ilog
 
       implicit none
       

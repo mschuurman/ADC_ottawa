@@ -8,6 +8,7 @@ module adc_ph
   use constants
   use parameters
   use misc
+  use channels
   
   implicit none
   

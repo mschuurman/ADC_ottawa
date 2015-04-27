@@ -2,12 +2,13 @@ module D_matrix
 
 !!$The module contains an assortment of functions needed to calculate
 !!$matrix elements of the ADC matrix of the polarization propagator.
-!!$For the spin-orbital expressions see A.B. Trofimov et al, JCP 111,9982 (1999).
+!!$For the spin-orbital expressions see A.B. Trofimov et al, JCP 111,9982 (1999)
 !!$Spin free expressions were taken from the Ph.D. thesis of A.B. Trofimov.
   
   use constants
   use parameters
   use misc
+  use channels
   
   implicit none
 

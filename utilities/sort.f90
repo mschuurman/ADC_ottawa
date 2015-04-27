@@ -2,6 +2,8 @@ program main
 
   use parameters, only: ilog
   use constants
+  use channels
+
   implicit none
   
     integer :: ndim,i

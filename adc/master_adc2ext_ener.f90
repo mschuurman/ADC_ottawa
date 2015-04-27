@@ -13,6 +13,7 @@
     use get_matrix_DIPOLE
     use propagate_prepare
     use guessvecs
+    use channels
 
     implicit none
 

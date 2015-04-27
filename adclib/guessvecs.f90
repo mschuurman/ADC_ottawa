@@ -13,6 +13,7 @@
       use select_fano
       use fspace
       use fspace2
+      use channels
 
       implicit none
 
@@ -88,6 +89,7 @@
       use select_fano
       use fspace
       use fspace2
+      use channels
 
       implicit none
 
@@ -161,6 +163,7 @@
       use constants
       use parameters
       use misc
+      use channels
 
       implicit none
       

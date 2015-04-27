@@ -9,6 +9,7 @@ module fspace2
   use misc
   use get_matrix_DIPOLE  
   use fspace
+  use channels
 
   implicit none
   

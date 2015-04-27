@@ -8,7 +8,7 @@ module fspace
   use filetools
   use misc
   use get_matrix_DIPOLE  
-
+  use channels
 
   implicit none
   

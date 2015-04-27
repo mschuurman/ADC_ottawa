@@ -29,7 +29,7 @@
 
     subroutine rdinp(unit)
 
-      use iomod
+      use iomod, only: errmsg,error_control
 
       implicit none
 

@@ -223,9 +223,4 @@ real(d), dimension(:), allocatable          :: xcoo
 character(len=2), dimension(:), allocatable :: aatm
 character(len=3)                            :: pntgroup
 
-!-----------------------------------------------------------------------
-! I/O parameters
-!-----------------------------------------------------------------------
-integer :: ilog,iin
-
 end module parameters

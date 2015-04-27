@@ -10,6 +10,7 @@ program main
   use orbindx
   use defaults
   use iomod
+  use channels
 
   implicit none
   

@@ -27,7 +27,7 @@
 !#######################################################################
 
  subroutine errmsg(message)
-  use parameters, only: ilog
+  use channels, only: ilog
   implicit none
   character*144         :: message
 
@@ -158,7 +158,7 @@
  ! subroutine to read a line of gamess output
  !
  subroutine read_gamess_line(unitn,line)
-  use parameters, only: ilog
+  use channels, only: ilog
   implicit none
   integer,intent(in)                    :: unitn
   character(len=144),intent(out)        :: line
@@ -190,6 +190,7 @@
   use integral_tools
   use integrals_mo2e
   use printing
+  use channels, only: ilog
   implicit none
   type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
@@ -242,6 +243,9 @@
    else
       stop 'load_mo_integrals - confusing number of mos'
    endif 
+
+  ! Set the ADC nbas variable
+  nbas=nmo
 
   ! actual call to general integrals in MO basis 
   call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
@@ -334,6 +338,7 @@
 
    use parameters
    use iomod, only: freeunit
+   use channels
 
    implicit none
    

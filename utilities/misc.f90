@@ -4,6 +4,7 @@ module misc
   
   use constants
   use parameters  
+  use channels
   
   implicit none
 

@@ -3,6 +3,8 @@ module sym_allowed_exc
   
   use constants
   use parameters
+  use channels
+
   implicit none
 
 contains

@@ -1,12 +1,12 @@
 module get_matrix
 
-  
   use constants
   use parameters
   use adc_ph
   use misc
   use filetools
-  
+  use channels
+
   implicit none
 
   integer, parameter :: buf_size=8192
