@@ -96,6 +96,10 @@ module parameters
 !!                     core orbitals in the calculation of the initial
 !!                     space states
 !!
+!!$logical lffrzcore - flag used to determine whether to freeze the
+!!                     core orbitals in the calculation of the final
+!!                     space states
+!!
 !!$logical ldavfinal - flag used to determine whether to perform
 !!                     Davidson diagonalisation in the final space -
 !!                     used when considering excitation from a
@@ -143,7 +147,7 @@ module parameters
   real(d)                              :: dmatmem
   real(d), dimension(:,:), allocatable :: density
   logical                              :: ltdm_gs2i
-  logical                              :: lifrzcore
+  logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
   real(d)                              :: gwidth
 

@@ -14,7 +14,7 @@
       implicit none
       
       integer            :: i
-      character(len=120) :: ain,atmp
+      character(len=120) :: ain,atmp1,atmp2
       logical            :: iscvs,energyonly,ldav,llanc
 
 !-----------------------------------------------------------------------
@@ -132,6 +132,25 @@
 
          else if (keyword(i).eq.'istate_frozen_core') then
             lifrzcore=.true.
+
+         else if (keyword(i).eq.'fstate_frozen_core') then
+            lffrzcore=.true.
+
+         else if (keyword(i).eq.'frozen_core') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               atmp1=keyword(i)               
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  atmp2=keyword(i)
+               endif
+               if (atmp1.eq.'initial'.or.atmp2.eq.'initial') &
+                    lifrzcore=.true.
+               if (atmp1.eq.'final'.or.atmp2.eq.'final') &
+                    lffrzcore=.true.
+            else
+               goto 100
+            endif
 
          else if (keyword(i).eq.'convolute') then
             if (keyword(i+1).eq.'=') then

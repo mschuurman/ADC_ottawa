@@ -27,6 +27,7 @@
       ltdm_gs2i=.true.
       dmatmem=250.0d0
       lifrzcore=.false.
+      lffrzcore=.false. 
       ldavfinal=.false.
 
 !-----------------------------------------------------------------------
