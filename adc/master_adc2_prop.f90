@@ -451,6 +451,11 @@
            call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
         endif
 
+!-----------------------------------------------------------------------
+! Perform the band-Lanczos calculation
+!-----------------------------------------------------------------------
+        call master_lancdiag(ndimf,noffdf,'c')
+
         return
 
       end subroutine lanczos_final_space_diag
