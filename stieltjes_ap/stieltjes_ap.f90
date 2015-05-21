@@ -40,7 +40,7 @@
 !-----------------------------------------------------------------------
       asiinp=''
       aosc=''
-      erange=-999.9d0
+      erange=0.0d0
 
 !-----------------------------------------------------------------------
 ! Determine the input file name
@@ -121,13 +121,13 @@
            STOP
         endif
 
-        if (erange(1).eq.-999.9d0) then
+        if (erange(1).eq.0.0d0) then
            errmsg='The energy bounds have not been given'
            write(6,'(/,a,/)') trim(errmsg)
            STOP
         endif
 
-        if (erange(2).eq.-999.9d0) then
+        if (erange(2).eq.0.0d0) then
            errmsg='The upper energy bound has not been given'
            write(6,'(/,a,/)') trim(errmsg)
            STOP
@@ -366,7 +366,7 @@
 ! For the purposes of checking orthogonality, calculate the ntrial-th 
 ! order polynomial
 !-----------------------------------------------------------------------
-      do j=1,npoints
+      do j=1,ntrial
          Q(ntrial,j)=(1.0q0/e(j)-a(ntrial))*Q(ntrial-1,j)&
               -b(ntrial-1)*Q(ntrial-2,j)
       enddo
@@ -393,10 +393,8 @@
       binf=1.0d0/((4.0d0*e(1))**2)
 
       do i=0,ntrial
-!         write(aunit,*) i,abs(a(i)-ainf)
-!         write(bunit,*) i,abs(b(i)-binf)
-         write(aunit,*) i,a(i)
-         write(bunit,*) i,b(i)
+         write(aunit,*) i,abs(a(i)-ainf)
+         write(bunit,*) i,abs(b(i)-binf)
       enddo
 
       close(aunit)

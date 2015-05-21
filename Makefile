@@ -183,6 +183,43 @@ STIELTJES_OBJ = constants.o \
         simod.o \
         stieltjes.o 
 
+# Arbitrary precision Stieltjes imaging code
+STIELTJES_AP = mpfun/second.o \
+	mpfun/mpfuna.o \
+	mpfun/mpfunbq.o \
+	mpfun/mpfunc.o \
+	mpfun/mpfund.o \
+	mpfun/mpfune.o \
+	mpfun/mpfunfq1.o \
+	mpfun/mpmodule.o \
+	include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	stieltjes_ap/qmath.o \
+	stieltjes_ap/pythag_quad.o \
+	stieltjes_ap/tql2_quad.o \
+        stieltjes_ap/simod.o \
+        stieltjes_ap/stieltjes.o 
+
+STIELTJES_AP_OBJ = second.o \
+	mpfuna.o \
+	mpfunbq.o \
+	mpfunc.o \
+	mpfund.o \
+	mpfune.o \
+	mpfunfq1.o \
+	mpmodule.o \
+	constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	qmath.o \
+	pythag_quad.o \
+	tql2_quad.o \
+        simod.o \
+        stieltjes.o 
+
 #-----------------------------------------------------------------------
 # Rules to create the program
 #-----------------------------------------------------------------------
@@ -192,6 +229,10 @@ adc: $(OBJECTS)
 
 stieltjes: $(STIELTJES)
 	$(F90) $(F90OPTS) $(STIELTJES_OBJ) -o stieltjes.x
+	rm -f *.o *~ *.mod
+
+stieltjes_ap: $(STIELTJES_AP)
+	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
