@@ -835,8 +835,9 @@
          enddo
          
       enddo
-      
-      ! Remaining n Ritz vectors from the incomplete block
+
+      ! Remaining n Ritz vectors from the (potentially) incomplete 
+      ! block
       n=dim-blcksize*(nblcks-1)
       ritzvec=0.0d0
       rewind(lanunit)
