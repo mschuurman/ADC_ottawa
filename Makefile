@@ -200,7 +200,7 @@ STIELTJES_AP = mpfun/second.o \
 	stieltjes_ap/pythag_quad.o \
 	stieltjes_ap/tql2_quad.o \
         stieltjes_ap/simod.o \
-        stieltjes_ap/stieltjes.o 
+        stieltjes_ap/stieltjes_ap.o 
 
 STIELTJES_AP_OBJ = second.o \
 	mpfuna.o \
@@ -218,7 +218,7 @@ STIELTJES_AP_OBJ = second.o \
 	pythag_quad.o \
 	tql2_quad.o \
         simod.o \
-        stieltjes.o 
+        stieltjes_ap.o 
 
 #-----------------------------------------------------------------------
 # Rules to create the program
