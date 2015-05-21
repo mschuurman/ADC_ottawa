@@ -835,23 +835,28 @@
          enddo
          
       enddo
-      
-      ! Remaining n Ritz vectors from the incomplete block
+
+      ! Remaining n Ritz vectors from the (potentially) incomplete 
+      ! block
       n=dim-blcksize*(nblcks-1)
       ritzvec=0.0d0
       rewind(lanunit)
       do k=1,dim
          read(lanunit) lvec
          count=0
-         do v=dim-n,dim
+
+         do v=dim-n+1,dim
             count=count+1
+
+            print*,count
+            
             do m=1,matdim
                ritzvec(m,count)=ritzvec(m,count)+lvec(m)*umat(k,v)
             enddo
          enddo
       enddo
       count=0
-      do v=dim-n,dim
+      do v=dim-n+1,dim
          count=count+1
          write(ritzunit) v,eigval(v),ritzvec(:,count)
       enddo
