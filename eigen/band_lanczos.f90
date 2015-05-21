@@ -844,12 +844,8 @@
       do k=1,dim
          read(lanunit) lvec
          count=0
-
          do v=dim-n+1,dim
             count=count+1
-
-            print*,count
-            
             do m=1,matdim
                ritzvec(m,count)=ritzvec(m,count)+lvec(m)*umat(k,v)
             enddo
