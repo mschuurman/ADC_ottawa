@@ -83,7 +83,7 @@ echo "SLEPC_PATH=$slepcpath" >>ADC.CONFIG
 #-----------------------------------------------------------------------
 # Calls to make
 #-----------------------------------------------------------------------
-list=(clean_all adc stieltjes stieltjes_ap)
+list=(clean_all adc stieltjes stieltjes_ap mcspline)
 
 if [ -z $target ]; then
     for T in "${list[@]}"; do

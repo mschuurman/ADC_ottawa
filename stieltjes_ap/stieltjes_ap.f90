@@ -422,8 +422,8 @@
 !-----------------------------------------------------------------------
       write(6,'(/,2x,a)') 'Checking orthogonality...'
 
-      thrsh=mpreald(1.d-200)
-      upper='100.0'
+      thrsh=mpreald(1.d-300)
+      upper='10.0'
 
       nord=0
       ! Loop over polynomial orders
@@ -472,7 +472,7 @@
 
       implicit none
 
-      integer                       :: min,max,iord,i,iout,ierr
+      integer                       :: min,max,iord,i,j,iout,ierr,ioutF
       real*16, dimension(0:ntrial)  :: a,b
       real*16, dimension(nord,nord) :: abvec
       real*16, dimension(nord)      :: diag,offdiag
@@ -484,14 +484,22 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      ! Stieltjes energies
+      ! Gaussian quadrature points (Stieltjes energies)
       allocate(si_e(ntrial))
-      
-      ! Stieltjes cumulative oscilator strengths
-      allocate(si_F(ntrial))
+
+      ! Gaussian quadrature weights
+      allocate(si_f(ntrial))
 
       ! Stieltjes oscillator strengths
       allocate(si_osc(ntrial))
+
+      ! Stieltjes cumulative oscillator strengths:
+      !  si_cosc1: histogram (see Eq. 3.5.1 of the Muller-Plathe and
+      !                      Diercksen paper)
+      !  si_cosc2: LHS-RHS average at the midpoints (see Eq. 3.5.2 of
+      !            the Muller-Plathe and Diercksen paper)
+      allocate(si_cosc1(ntrial))
+      allocate(si_cosc2(ntrial))
 
 !-----------------------------------------------------------------------
 ! Set the minimum and maximum orders
@@ -512,10 +520,11 @@
 ! approximation orders from min to max
 !-----------------------------------------------------------------------
         iout=20
+        ioutF=30
 
         do iord=min,max
 
-           ! Open the output file
+           ! Open the output files
            if (iord.lt.10) then
               write(outfile,'(a12,i1)') 'xsec_order00',iord
            else if (iord.lt.100) then
@@ -524,6 +533,14 @@
               write(outfile,'(a10,i3)') 'xsec_order',iord
            endif
            open(iout,file=outfile,form='formatted',status='unknown')
+           if (iord.lt.10) then
+              write(outfile,'(a9,i1)') 'F_order00',iord
+           else if (iord.lt.100) then
+              write(outfile,'(a8,i2)') 'F_order0',iord
+           else
+              write(outfile,'(a7,i3)') 'F_order',iord
+           endif
+           open(ioutF,file=outfile,form='formatted',status='unknown')
 
            ! Construct the tridiagonal recursion coefficient matrix
            !
@@ -555,7 +572,8 @@
            ! matrix are the inverse energies in ascending order
            do i=1,iord
               si_e(i)=1.0q0/diag(iord+1-i)
-              si_F(i)=b(0)*abvec(1,iord+1-i)**2
+              si_f(i)=b(0)*abvec(1,iord+1-i)**2
+!              write(ioutF,*) si_e(i)*27.211d0,si_F(i)
           enddo
           
           ! Calculate and output the oscillator strengths using 
@@ -563,12 +581,27 @@
           ! function F
           do i=1,iord-1
              ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
-             si_osc(i)=(si_F(i+1)+si_F(i))/(2.d0*(si_e(i+1)-si_e(i)))
+             si_osc(i)=(si_f(i+1)+si_f(i))/(2.d0*(si_e(i+1)-si_e(i)))
              write(iout,*) ecent(i)*27.211d0,si_osc(i)
           enddo
 
-          ! Close the output file
+          ! Calculate the Stieltjes distribution function, i.e., the
+          ! cumulative oscillator strength distribution
+          si_cosc1=0.0q0
+          do i=1,iord
+             do j=1,i
+                si_cosc1(i)=si_cosc1(i)+si_f(j)
+             enddo
+          enddo          
+          si_cosc2=0.0q0
+          do i=1,iord-1
+             si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0q0
+             write(ioutF,*) ecent(i)*27.211d0,si_cosc2(i)
+          enddo
+
+          ! Close the output files
           close(iout)
+          close (ioutF)
 
        enddo
 

@@ -218,10 +218,22 @@ STIELTJES_AP_OBJ = second.o \
 	pythag_quad.o \
 	tql2_quad.o \
         simod.o \
-        stieltjes_ap.o 
+        stieltjes_ap.o
+
+MCSPLINE = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	stieltjes_ap/mcspline.o
+
+MCSPLINE_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	mcspline.o
 
 #-----------------------------------------------------------------------
-# Rules to create the program
+# Rules to create the programs
 #-----------------------------------------------------------------------
 adc: $(OBJECTS)
 	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) $(SLEPC_LIBS) -o adc.x 
@@ -233,6 +245,10 @@ stieltjes: $(STIELTJES)
 
 stieltjes_ap: $(STIELTJES_AP)
 	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
+	rm -f *.o *~ *.mod
+
+mcspline: $(MCSPLINE)
+	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
