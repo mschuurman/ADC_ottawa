@@ -162,27 +162,6 @@ ADC_OBJ=accuracy.o \
 	master_adc2ext_ener.o \
 	main_draft1.o
 
-# Stieltjes imaging code
-STIELTJES = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	stieltjes/qmath.o \
-	stieltjes/pythag_quad.o \
-	stieltjes/tql2_quad.o \
-        stieltjes/simod.o \
-        stieltjes/stieltjes.o 
-
-STIELTJES_OBJ = constants.o \
-	channels.o \
-	iomod.o \
-	parsemod.o \
-	qmath.o \
-	pythag_quad.o \
-	tql2_quad.o \
-        simod.o \
-        stieltjes.o 
-
 # Arbitrary precision Stieltjes imaging code
 STIELTJES_AP = mpfun/second.o \
 	mpfun/mpfuna.o \
@@ -235,10 +214,6 @@ MCSPLINE_OBJ = constants.o \
 #-----------------------------------------------------------------------
 adc: $(OBJECTS)
 	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) $(SLEPC_LIBS) -o adc.x 
-	rm -f *.o *~ *.mod
-
-stieltjes: $(STIELTJES)
-	$(F90) $(F90OPTS) $(STIELTJES_OBJ) -o stieltjes.x
 	rm -f *.o *~ *.mod
 
 stieltjes_ap: $(STIELTJES_AP)
