@@ -209,8 +209,9 @@
 
       implicit none
 
-      integer                      :: i
-      real*16, dimension(0:ntrial) :: aquad,bquad
+      integer                     :: i
+      real*8, dimension(0:ntrial) :: adbl,bdbl
+      real*16                     :: tmp
 
 !-----------------------------------------------------------------------
 ! MPFUN variables
@@ -247,15 +248,17 @@
 !-----------------------------------------------------------------------
 ! Calculate the cross-sections for successive orders up to nord
 !
-! From here on in, we convert the coefficients a and b to quadruple
+! From here on in, we convert the coefficients a and b to double
 ! precision
 !-----------------------------------------------------------------------
       do i=0,ntrial
-         aquad(i)=qreal(a(i))
-         bquad(i)=qreal(b(i))
+         tmp=qreal(a(i))
+         adbl(i)=tmp
+         tmp=qreal(b(i))
+         bdbl(i)=tmp
       enddo
 
-      call image_osc(aquad,bquad)
+      call image_osc(adbl,bdbl)
 
       return
 
@@ -282,7 +285,6 @@
     subroutine Qrecursion(a,b,e,f,Q)
 
       use mpmodule
-      use qmath
       use simod
 
       implicit none
@@ -303,6 +305,8 @@
 !-----------------------------------------------------------------------
 ! (1) Special cases
 !-----------------------------------------------------------------------
+      mpone='1.0'
+
       do i=0,ntrial
          a(i)='0.0'
          b(i)='0.0'
@@ -316,8 +320,7 @@
 
       do i=1,npoints
          Q(0,i)='1.0'
-         Q(1,i)='1.0'
-         Q(1,i)=Q(1,i)/e(i)-a(1)
+         Q(1,i)=mpone/e(i)-a(1)
       enddo
 
       b(1)='0.0'
@@ -332,12 +335,10 @@
 !-----------------------------------------------------------------------
 ! (2) Remaining coefficients and polynomials
 !-----------------------------------------------------------------------
-      mpone='1.0'
-
       asum=a(1)
       do i=3,ntrial
 
-         print*,i,ntrial
+!         print*,i,ntrial
 
          asum=asum+a(i-1)
 
@@ -462,22 +463,21 @@
 !#######################################################################
 ! image_osc: Performs the imaging of the oscillator strengths
 !
-! Note that in this subroutine the a and b coefficients are in quad.
+! Note that in this subroutine the a and b coefficients are in double
 ! precision
 !#######################################################################
     subroutine image_osc(a,b)
 
       use simod
-      use qmath
 
       implicit none
 
-      integer                       :: min,max,iord,i,j,iout,ierr,ioutF
-      real*16, dimension(0:ntrial)  :: a,b
-      real*16, dimension(nord,nord) :: abvec
-      real*16, dimension(nord)      :: diag,offdiag
-      real*8, dimension(nord)       :: ecent
-      character(len=120)            :: outfile
+      integer                      :: min,max,iord,i,j,iout,ierr,ioutF
+      real*8, dimension(0:ntrial)  :: a,b
+      real*8, dimension(nord,nord) :: abvec
+      real*8, dimension(nord)      :: diag,offdiag
+      real*8, dimension(nord)      :: ecent
+      character(len=120)           :: outfile
 
       write(6,'(/,2x,a)') 'Calculating the cross-sections...'
 
@@ -495,7 +495,7 @@
 
       ! Stieltjes cumulative oscillator strengths:
       !  si_cosc1: histogram (see Eq. 3.5.1 of the Muller-Plathe and
-      !                      Diercksen paper)
+      !            Diercksen paper)
       !  si_cosc2: LHS-RHS average at the midpoints (see Eq. 3.5.2 of
       !            the Muller-Plathe and Diercksen paper)
       allocate(si_cosc1(ntrial))
@@ -550,13 +550,13 @@
            enddo
            ! (2) Off-diagonal elements
            do i=2,iord
-              offdiag(i)=-qsqrt(b(i-1))
+              offdiag(i)=-sqrt(b(i-1))
            enddo
 
            ! Diagonalise the tridiagonal recursion coefficient matrix
-           abvec=0.0q0
+           abvec=0.0d0
            do i=1,nord
-              abvec(i,i)=1.0q0
+              abvec(i,i)=1.0d0
            enddo
            call tql2(nord,iord,diag,offdiag,abvec,ierr)
            if (ierr.ne.0) then              
@@ -571,9 +571,8 @@
            ! Note that the eigenvalues of the recurrence coefficient 
            ! matrix are the inverse energies in ascending order
            do i=1,iord
-              si_e(i)=1.0q0/diag(iord+1-i)
+              si_e(i)=1.0d0/diag(iord+1-i)
               si_f(i)=b(0)*abvec(1,iord+1-i)**2
-!              write(ioutF,*) si_e(i)*27.211d0,si_F(i)
           enddo
           
           ! Calculate and output the oscillator strengths using 
@@ -587,15 +586,15 @@
 
           ! Calculate the Stieltjes distribution function, i.e., the
           ! cumulative oscillator strength distribution
-          si_cosc1=0.0q0
+          si_cosc1=0.0d0
           do i=1,iord
              do j=1,i
                 si_cosc1(i)=si_cosc1(i)+si_f(j)
              enddo
           enddo          
-          si_cosc2=0.0q0
+          si_cosc2=0.0d0
           do i=1,iord-1
-             si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0q0
+             si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0d0
              write(ioutF,*) ecent(i)*27.211d0,si_cosc2(i)
           enddo
 

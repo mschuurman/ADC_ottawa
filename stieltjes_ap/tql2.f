@@ -1,10 +1,8 @@
       subroutine tql2(nm,n,d,e,z,ierr)
-
-      use qmath
 c
       integer i,j,k,l,m,n,ii,l1,l2,nm,mml,ierr
-      real*16 d(n),e(n),z(nm,n)
-      real*16 c,c2,c3,dl1,el1,f,g,h,p,r,s,s2,tst1,tst2,pythag
+      double precision d(n),e(n),z(nm,n)
+      double precision c,c2,c3,dl1,el1,f,g,h,p,r,s,s2,tst1,tst2,pythag
 c
 c     this subroutine is a translation of the algol procedure tql2,
 c     num. math. 11, 293-306(1968) by bowdler, martin, reinsch, and
@@ -74,11 +72,11 @@ c
 c
       do 240 l = 1, n
          j = 0
-         h = qabs(d(l)) + qabs(e(l))
+         h = dabs(d(l)) + dabs(e(l))
          if (tst1 .lt. h) tst1 = h
 c     .......... look for small sub-diagonal element ..........
          do 110 m = l, n
-            tst2 = tst1 + qabs(e(m))
+            tst2 = tst1 + dabs(e(m))
             if (tst2 .eq. tst1) go to 120
 c     .......... e(n) is always zero, so there is no exit
 c                through the bottom of the loop ..........
@@ -93,8 +91,8 @@ c     .......... form shift ..........
          g = d(l)
          p = (d(l1) - g) / (2.0d0 * e(l))
          r = pythag(p,1.0d0)
-         d(l) = e(l) / (p + qsign(r,p))
-         d(l1) = e(l) * (p + qsign(r,p))
+         d(l) = e(l) / (p + dsign(r,p))
+         d(l1) = e(l) * (p + dsign(r,p))
          dl1 = d(l1)
          h = g - d(l)
          if (l2 .gt. n) go to 145
@@ -136,7 +134,7 @@ c
          p = -s * s2 * c3 * el1 * e(l) / dl1
          e(l) = s * p
          d(l) = c * p
-         tst2 = tst1 + qabs(e(l))
+         tst2 = tst1 + dabs(e(l))
          if (tst2 .gt. tst1) go to 130
   220    d(l) = d(l) + f
   240 continue

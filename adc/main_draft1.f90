@@ -4,6 +4,7 @@ program main
   use parameters
   use read_param
   use guessvecs
+  use adc1mod
   use adc2mod
   use adc2extmod
   use rdinput
@@ -90,7 +91,7 @@ program main
 !-----------------------------------------------------------------------    
   select case(method)
 
-  case(1) ! ADC(1), Lanczos pseudo spectrum
+  case(1) ! ADC(1), full diagonalisation
      call master_adc1_prop()
 
   case(2) ! ADC(2)-s, Lanczos pseudo spectrum

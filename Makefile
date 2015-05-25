@@ -196,9 +196,8 @@ STIELTJES_AP = mpfun/second.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	stieltjes_ap/qmath.o \
-	stieltjes_ap/pythag_quad.o \
-	stieltjes_ap/tql2_quad.o \
+	stieltjes_ap/pythag.o \
+	stieltjes_ap/tql2.o \
         stieltjes_ap/simod.o \
         stieltjes_ap/stieltjes_ap.o 
 
@@ -214,9 +213,8 @@ STIELTJES_AP_OBJ = second.o \
 	channels.o \
 	iomod.o \
 	parsemod.o \
-	qmath.o \
-	pythag_quad.o \
-	tql2_quad.o \
+	pythag.o \
+	tql2.o \
         simod.o \
         stieltjes_ap.o
 
