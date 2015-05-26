@@ -201,12 +201,14 @@ MCSPLINE = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
+	stieltjes_ap/mcspmod.o \
 	stieltjes_ap/mcspline.o
 
 MCSPLINE_OBJ = constants.o \
 	channels.o \
 	iomod.o \
 	parsemod.o \
+	mcspmod.o \
 	mcspline.o
 
 #-----------------------------------------------------------------------

@@ -8,6 +8,7 @@
     integer, parameter                   :: maxkw=60
     integer, dimension(maxkw)            :: ilkw
     character(len=120), dimension(maxkw) :: keyword
+    logical(kind=4)                      :: lend
 
   contains
 
@@ -42,11 +43,13 @@
       keyword=''
       ilkw=0
 
+      lend=.false.
+
 !------------------------------------------------------------------------
 ! Read the next line that is not blank and does not start with a comment
 !------------------------------------------------------------------------
 5     continue
-      read(unit,'(a)') string
+      read(unit,'(a)',end=200) string
     
       ! Skip blank lines
       if (string.eq.'') goto 5
@@ -122,6 +125,10 @@
       k=len_trim(string)
       errmsg='Number of keywords on line'//string(1:k)//' exceeds maxkw'
       call error_control
+
+200   continue
+      lend=.true.
+      return
 
     end subroutine rdinp
 
