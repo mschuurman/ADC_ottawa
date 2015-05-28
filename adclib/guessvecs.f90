@@ -24,11 +24,11 @@
 
       if (lcvs) then
          write(ilog,'(/,2x,a,/)') &
-              'Generating guess Davidson vectors by diagonalising &
+              'Generating guess vectors by diagonalising &
               the CVS-ADC(1) Hamiltonian'
       else
          write(ilog,'(/,2x,a,/)') &
-              'Generating guess Davidson vectors by diagonalising &
+              'Generating guess vectors by diagonalising &
               the ADC(1) Hamiltonian'
       endif
 
@@ -100,11 +100,11 @@
 
       if (lcvsfinal) then
          write(ilog,'(/,2x,a,/)') &
-              'Generating guess Davidson vectors by diagonalising &
+              'Generating guess vectors by diagonalising &
               the CVS-ADC(1) Hamiltonian'
       else
          write(ilog,'(/,2x,a,/)') &
-              'Generating guess Davidson vectors by diagonalising &
+              'Generating guess vectors by diagonalising &
               the ADC(1) Hamiltonian'
       endif
 
@@ -115,7 +115,7 @@
 
       kpqf(:,:)=-1
 
-      if (lcvs) then
+      if (lcvsfinal) then
          call select_atom_is_cvs(kpqf(:,:))
       else
          call select_atom_isf(kpqf(:,:))

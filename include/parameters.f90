@@ -105,9 +105,6 @@ module parameters
 !!                     used when considering excitation from a
 !!                     valence-excited neutral state to a
 !!                     core-excited neutral state
-!!
-!!$real*8 gwidth - width of Gaussian function used in the broadening
-!!                 of the valence-excited-to-core-excited spectrum
 
 
   logical                              :: debug
@@ -132,7 +129,7 @@ module parameters
   logical                              :: readband
   integer, dimension(400)              :: stvc_lbl
   integer                              :: ninista
-  logical                              :: ladc1guess,ladc1guess_f
+  logical                              :: ladc1guess,ladc1guess_f,ladc1guess_l
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
   integer, dimension(nhcentre)         :: icore
@@ -149,7 +146,6 @@ module parameters
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
-  real(d)                              :: gwidth
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
@@ -218,6 +214,11 @@ integer, dimension(:), allocatable :: RECINI_VECT
 integer, dimension(3)              :: DIPOLESYM
 REAL*8 , dimension(3)              :: ELECTRIC_FIELD
 integer                            :: CHECK_dip
+
+!!$************************************************
+!!$**********SCF Parameters************************
+!!$************************************************
+integer :: scfiter
 
 !!$************************************************
 !!$**********Other Parameters**********************

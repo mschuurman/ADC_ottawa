@@ -152,10 +152,10 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'convolute') then
+         else if (keyword(i).eq.'scf_iter') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) gwidth
+               read(keyword(i),*) scfiter
             else
                goto 100
             endif
@@ -613,6 +613,19 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) ncycles
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'guess') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'adc1') then
+                  ladc1guess_l=.true.
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
             else
                goto 100
             endif

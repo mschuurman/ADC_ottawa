@@ -41,6 +41,7 @@
       asiinp=''
       aosc=''
       erange=-999.9d0
+      ntrial=100
 
 !-----------------------------------------------------------------------
 ! Determine the input file name
@@ -86,6 +87,14 @@
                   i=i+1
                   read(keyword(i),*) erange(2)
                endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'maxpol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) ntrial
             else
                goto 100
             endif

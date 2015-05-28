@@ -146,7 +146,8 @@
   mosg(:,:,2) = mosg(:,:,1)
 
   converged = .false.
-  itermax = 10
+  itermax = scfiter
+
   escf = 0
   rho = 0
   fmat = 0

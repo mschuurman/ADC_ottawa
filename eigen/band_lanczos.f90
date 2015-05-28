@@ -7,8 +7,8 @@
     implicit none
 
     integer                            :: main,nsat,mdim,noffdel
-    real(d), dimension(:), allocatable :: diag, offdiag
-    integer, dimension(:), allocatable :: indi, indj
+    real(d), dimension(:), allocatable :: diag,offdiag
+    integer, dimension(:), allocatable :: indi,indj
 
 !-----------------------------------------------------------------------
 ! matdim:   matrix dimension
@@ -121,15 +121,54 @@
 
     subroutine init_vec
 
+      use iomod, only: freeunit
+
       implicit none
 
-      integer*8 :: i,k
+      integer*8                            :: i,j,k
+      integer                              :: iadc1,idim
+      real(d), dimension(:,:), allocatable :: adc1vec
 
-      do i=1,iblckdim
-         k=stvc_lbl(i)
-         kryvec(k,i)=1.0d0
-      enddo
-      
+!-----------------------------------------------------------------------
+! Construction of the initial vectors from the ADC(1) vectors with the 
+! greatest transition dipoles with the initial state
+!-----------------------------------------------------------------------
+      if (ladc1guess_l) then
+         ! (1) Read the ADC(1) eigenvectors from file
+         call freeunit(iadc1)
+         
+         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+              status='old')
+         
+         read(iadc1) idim
+
+         allocate(adc1vec(idim,idim))
+         
+         rewind(iadc1)
+
+         read(iadc1) idim,adc1vec
+         
+         close(iadc1)
+
+         ! (2) Copy the ADC(1) vectors of interest into the kryvec array
+         do i=1,iblckdim
+            k=stvc_lbl(i)
+            do j=1,idim
+               kryvec(j,i)=adc1vec(j,k)
+            enddo
+         enddo
+
+!-----------------------------------------------------------------------
+! Construction the initial vectors as the 1h1p unit vectors with the 
+! greatest transition dipoles with the initial state
+!-----------------------------------------------------------------------
+      else
+         do i=1,iblckdim
+            k=stvc_lbl(i)
+            kryvec(k,i)=1.0d0
+         enddo
+      endif
+
       return
 
     end subroutine init_vec

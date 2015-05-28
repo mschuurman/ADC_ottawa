@@ -415,6 +415,7 @@
 
         use constants
         use parameters
+        use guessvecs
         use fspace
         use band_lanczos
 
@@ -424,6 +425,12 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+
+!-----------------------------------------------------------------------        
+! If requested, determine the initial vectors Lanczos vectors by 
+! diagonalising the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------        
+        if (ladc1guess_l) call adc1_guessvecs_final
 
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
@@ -504,8 +511,11 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf
+        integer                                   :: i,ndimf,ndimsf,&
+                                                     iadc1,itmp
         real(d), dimension(:), allocatable        :: mtmf
+        real(d), dimension(ndimsf)                :: tmpvec
+        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------        
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
@@ -518,11 +528,27 @@
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of mtmf, determine which 1h1p 
-! unit vectors will form the initial Lanczos vectors
+! vectors will form the initial Lanczos vectors
 ! 
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        call fill_stvc(ndimsf,mtmf(1:ndimsf))
+        if (ladc1guess_l) then           
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
+           enddo
+        else
+           tmpvec=mtmf(1:ndimsf)
+        endif
+
+        call fill_stvc(ndimsf,tmpvec(1:ndimsf))
 
         return
 
@@ -542,10 +568,13 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: j,ndim,ndimf,ndimsf
+        integer                                   :: i,ndim,ndimf,&
+                                                     ndimsf,iadc1,itmp
         integer, dimension(:), allocatable        :: indx_tra
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
+        real(d), dimension(ndimsf)                :: tmpvec
+        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
@@ -556,10 +585,26 @@
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of travec, determine which 1h1p 
-! unit vectors will form the initial Lanczos vectors
+! vectors will form the initial Lanczos vectors
 ! 
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
+        if (ladc1guess_l) then           
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the product of the 
+           ! 1h1p part of travec
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+           enddo
+        else
+           tmpvec=travec(1:ndimsf)
+        endif
+
         call fill_stvc(ndimsf,travec(1:ndimsf))
 
         return
@@ -824,11 +869,6 @@
         enddo
 
 !-----------------------------------------------------------------------
-! Output the convoluted spectrum
-!-----------------------------------------------------------------------
-        if (gwidth.ne.0.0d0) call convolute(osc_str,ener)
-
-!-----------------------------------------------------------------------
 ! Close the file containing the final space Davidson states
 !-----------------------------------------------------------------------
         close(idavf)
@@ -836,57 +876,6 @@
         return
 
       end subroutine tdm_davstates_final
-
-!#######################################################################
-
-      subroutine convolute(osc_str,ener)
-
-        use constants
-        use parameters
-        use iomod, only: freeunit
-
-        implicit none
-
-        integer                         :: i,n,npoints,ispec
-        real(d), dimension(davstates_f) :: osc_str,ener
-        real(d)                         :: alpha,ftmp,de,range,curren,&
-                                           func
-
-        call freeunit(ispec)
-        open(ispec,file='spec.dat',form='formatted',status='unknown')
-
-
-        ftmp=(8.0d0*log(2.0d0))**0.5d0
-        alpha=gwidth/ftmp
-
-        npoints=1000
-        
-!        ftmp=0.1d0*(ener(davstates_f)-ener(1))
-
-        ftmp=2.0d0
-
-        de=27.211d0*(ener(davstates_f)-ener(1))+2*ftmp
-        de=de/npoints
-
-
-        do n=1,npoints
-
-           curren=ener(1)*27.211d0-ftmp+de*n
-           func=0.0d0
-
-           do i=1,davstates_f
-              func=func+osc_str(i)*exp(-(curren-ener(i)*27.211d0)**2/2*alpha)
-           enddo
-
-           write(ispec,*) curren,func
-
-        enddo
-
-        close(ispec)
-
-        return
-
-      end subroutine convolute
 
 !#######################################################################
 

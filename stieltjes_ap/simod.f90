@@ -3,7 +3,7 @@
     save
 
     integer                           :: npoints,nord
-    integer, parameter                :: ntrial=100
+    integer                           :: ntrial
     real*8, dimension(2)              :: erange
     real*8, dimension(:), allocatable :: ener,osc
     real*8, dimension(:), allocatable :: si_e,si_f,si_osc,si_cosc1,&

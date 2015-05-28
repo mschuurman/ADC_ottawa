@@ -105,6 +105,11 @@
 ! the ISs and the initial state are calculated in lanczos_guess_vecs
 ! and passed back in the travec array
 !-----------------------------------------------------------------------
+        
+        ! If requested, determine the initial vectors Lanczos vectors by 
+        ! diagonalising the ADC(1) Hamiltonian matrix
+        if (ladc1guess_l) call adc1_guessvecs_final
+
         allocate(travec(ndimf))
 
         call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
@@ -385,8 +390,11 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf
+        integer                                   :: ndimf,ndimsf,&
+                                                     i,iadc1,itmp
         real(d), dimension(:), allocatable        :: mtmf
+        real(d), dimension(ndimf)                 :: tmpvec
+        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
@@ -403,7 +411,22 @@
 !
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        call fill_stvc(ndimsf,mtmf(1:ndimf))
+        if (ladc1guess_l) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! mtmf
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
+           enddo
+           call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+        else
+           call fill_stvc(ndimf,mtmf(1:ndimf))
+        endif
 
         return
 
@@ -423,10 +446,14 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: j,ndim,ndimf,ndimsf
+        integer                                   :: i,ndim,ndimf,&
+                                                     ndimsf,iadc1,&
+                                                     itmp
         integer, dimension(:), allocatable        :: indx_tra
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
+        real(d), dimension(ndimf)                 :: tmpvec
+        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
@@ -441,7 +468,22 @@
 !
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        call fill_stvc(ndimsf,travec(1:ndimf))
+        if (ladc1guess_l) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! travec
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+           enddo
+           call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+        else
+           call fill_stvc(ndimf,travec(1:ndimf))
+        endif
 
         return
 
