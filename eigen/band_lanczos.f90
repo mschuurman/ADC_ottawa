@@ -128,12 +128,33 @@
       integer*8                            :: i,j,k
       integer                              :: iadc1,idim
       real(d), dimension(:,:), allocatable :: adc1vec
+      real(d)                              :: fac
 
 !-----------------------------------------------------------------------
-! Construction of the initial vectors from the ADC(1) vectors with the 
-! greatest transition dipoles with the initial state
+! lancguess = 1 <-> Construction the initial vectors as the IS unit
+!                   vectors with the greatest transition dipoles with 
+!                   the initial state
+!
+!             2 <-> Construction of the initial vectors from the
+!                   ADC(1) vectors with the greatest transition
+!                   dipoles with the initial state
+!
+!             3 <-> Construction of the initial vectors from linear
+!                   combinations of the most important 1h1p and 2h2p 
+!                   IS unit vectors
 !-----------------------------------------------------------------------
-      if (ladc1guess_l) then
+
+      if (lancguess.eq.1) then
+         ! 
+         ! 
+         do i=1,iblckdim
+            k=stvc_lbl(i)
+            kryvec(k,i)=1.0d0
+         enddo
+         
+      else if (lancguess.eq.2) then
+         
+         !
          ! (1) Read the ADC(1) eigenvectors from file
          call freeunit(iadc1)
          
@@ -158,14 +179,17 @@
             enddo
          enddo
 
-!-----------------------------------------------------------------------
-! Construction the initial vectors as the 1h1p unit vectors with the 
-! greatest transition dipoles with the initial state
-!-----------------------------------------------------------------------
-      else
+      else if (lancguess.eq.3) then
+         fac=1.0d0/sqrt(2.0d0)
          do i=1,iblckdim
-            k=stvc_lbl(i)
-            kryvec(k,i)=1.0d0
+            k=stvc_mxc(i*3-1)
+            kryvec(k,i)=fac            
+            k=stvc_mxc(i*3)
+            if (stvc_mxc(i*3-2).gt.0) then  
+               kryvec(k,i)=fac
+            else
+               kryvec(k,i)=-fac
+            endif
          enddo
       endif
 
@@ -346,7 +370,7 @@
 !-----------------------------------------------------------------------
 ! Write the jth Lanczos vector to file
 !-----------------------------------------------------------------------
-      call wrlanvec(j,lanunit,lanvec(:,cblckdim+1),matdim)
+      call wrlanvec(j,lanunit,lanvec(:,cblckdim+1),matdim,maxit*iblckdim)
 
 !-----------------------------------------------------------------------
 ! Goto the next iteration if we haven't reached the max. no. vectors
@@ -360,6 +384,9 @@
 20    continue
       lancstates=j
       close(lanunit)
+
+      call cpu_time(t2)
+      write(ilog,'(/,2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
 !-----------------------------------------------------------------------
 ! Deallocate Krylov and Lanczos vector arrays now that they are no
@@ -576,11 +603,11 @@
 
 !#######################################################################
 
-    subroutine wrlanvec(j,lanunit,lanvec,matdim)
+    subroutine wrlanvec(j,lanunit,lanvec,matdim,maxvec)
 
       implicit none
 
-      integer*8                 :: j,i,lanunit,matdim,irec
+      integer*8                 :: j,i,lanunit,matdim,irec,maxvec
       real*8, dimension(matdim) :: lanvec
 
 !-----------------------------------------------------------------------
@@ -640,8 +667,7 @@
 
       call cpu_time(t1)
       
-!      call calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
-      call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
+     call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
  
       call cpu_time(t2)
       
@@ -747,7 +773,7 @@
       real*8, dimension(dim)     :: eigval
       real*8, dimension(matdim)  :: lvec,ritzvec
 
-      real*8, dimension(matdim,dim) :: lvec2
+      real*8, dimension(matdim,dim) :: lvec2,yvec
       real*8, dimension(matdim)     :: rvec
       real*8                        :: ftmp
 
@@ -806,16 +832,19 @@
       implicit none
 
       integer                              :: v
-      integer*8                            :: i,k,m,n,count,lanunit,&
+      integer*8                            :: i,j,k,m,n,count,lanunit,&
                                               dim,matdim,ritzunit,&
                                               iblckdim,nblcks,last
-
       integer*8                            :: blcksize
       real*8, dimension(dim,dim)           :: umat
       real*8, dimension(dim)               :: eigval
       real*8, dimension(matdim)            :: lvec
       real*8, dimension(:,:), allocatable  :: ritzvec
       real*8                               :: maxmem
+
+      
+      integer*8                    :: il,ik
+      real*8, dimension(matdim,10) :: lvecblck
 
 !-----------------------------------------------------------------------
 ! Determine the maximum number of Ritz vectors that we can compute
@@ -848,7 +877,7 @@
          
          ritzvec=0.0d0
 
-         ! Calculate the curent block of 2*iblckdim+2 Ritz vectors
+         ! Calculate the curent block of blcksize Ritz vectors
          rewind(lanunit)
 
          do k=1,dim ! Loop over Lanczos vectors

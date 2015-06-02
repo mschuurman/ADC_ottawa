@@ -108,7 +108,7 @@
         
         ! If requested, determine the initial vectors Lanczos vectors by 
         ! diagonalising the ADC(1) Hamiltonian matrix
-        if (ladc1guess_l) call adc1_guessvecs_final
+        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
 
         allocate(travec(ndimf))
 
@@ -411,7 +411,9 @@
 !
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        if (ladc1guess_l) then
+        if (lancguess.eq.1) then
+           call fill_stvc(ndimf,mtmf(1:ndimf))
+        else if (lancguess.eq.2) then
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -424,8 +426,6 @@
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
            enddo
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
-        else
-           call fill_stvc(ndimf,mtmf(1:ndimf))
         endif
 
         return
@@ -468,7 +468,9 @@
 !
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        if (ladc1guess_l) then
+        if (lancguess.eq.1) then
+           call fill_stvc(ndimf,travec(1:ndimf))
+        else if (lancguess.eq.2) then
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -481,8 +483,6 @@
               tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
            enddo
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
-        else
-           call fill_stvc(ndimf,travec(1:ndimf))
         endif
 
         return

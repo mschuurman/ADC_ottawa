@@ -105,6 +105,20 @@ module parameters
 !!                     used when considering excitation from a
 !!                     valence-excited neutral state to a
 !!                     core-excited neutral state
+!!
+!!$integer lancguess - integer value used to determine how the initial
+!!                     Lanczos vectors are set:
+!!
+!!                     lancguess=1 <-> 1h1p (1h1p, 2h2p) unit vectors
+!!                                     for ADC(2)-s (ADC(2)-x)
+!!                               2 <-> ADC(1) eigenvectors for
+!!                                     ADC(2)-s (plus 2h2p unit
+!!                                     vectors for ADC(s)-x)
+!!                               3 <-> linear combinations of 1h1p and
+!!                                     2h2p unit vectors for ADC(2)-s
+!!                               4 <-> linear combinations of ADC(1)
+!!                                     eigenvectors and 2h2p unit
+!!                                     vectors for ADC(2)-s
 
 
   logical                              :: debug
@@ -128,8 +142,9 @@ module parameters
   integer, dimension(8,8)              :: MT
   logical                              :: readband
   integer, dimension(400)              :: stvc_lbl
+  integer, dimension(:), allocatable   :: stvc_mxc
   integer                              :: ninista
-  logical                              :: ladc1guess,ladc1guess_f,ladc1guess_l
+  logical                              :: ladc1guess,ladc1guess_f
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
   integer, dimension(nhcentre)         :: icore
@@ -146,6 +161,7 @@ module parameters
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
+  integer                              :: lancguess
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************

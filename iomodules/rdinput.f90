@@ -621,7 +621,11 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'adc1') then
-                  ladc1guess_l=.true.
+                  lancguess=2
+               else if (keyword(i).eq.'is_mix') then
+                  lancguess=3
+               else if (keyword(i).eq.'adc1_mix') then
+                  lancguess=4
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -629,6 +633,11 @@
             else
                goto 100
             endif
+            ! Taking linear combinations of 1h1p and 2h2p unit vectors
+            ! doesn't make much sense for ADC(2)-x, so reset lancguess
+            ! accordingly if necessary
+            if (method.eq.3.and.lancguess.eq.3) lancguess=1
+            if (method.eq.3.and.lancguess.eq.4) lancguess=2
 
          else
             ! Exit if the keyword is not recognised

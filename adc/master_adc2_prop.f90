@@ -430,7 +430,7 @@
 ! If requested, determine the initial vectors Lanczos vectors by 
 ! diagonalising the ADC(1) Hamiltonian matrix
 !-----------------------------------------------------------------------        
-        if (ladc1guess_l) call adc1_guessvecs_final
+        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
 
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
@@ -511,8 +511,10 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: i,ndimf,ndimsf,&
-                                                     iadc1,itmp
+        integer                                   :: ndimf,ndimsf,&
+                                                     iadc1,itmp,dim2,&
+                                                     i,k1,k2
+        integer, dimension(:), allocatable        :: indx1,indx2
         real(d), dimension(:), allocatable        :: mtmf
         real(d), dimension(ndimsf)                :: tmpvec
         real(d), dimension(ndimsf,ndimsf)         :: adc1vec
@@ -532,7 +534,10 @@
 ! 
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        if (ladc1guess_l) then           
+        if (lancguess.eq.1) then
+           tmpvec=mtmf(1:ndimsf)
+           call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+        else if (lancguess.eq.2) then           
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -544,11 +549,45 @@
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
            enddo
-        else
-           tmpvec=mtmf(1:ndimsf)
-        endif
+           call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+        else if (lancguess.eq.3) then
 
-        call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+           ! 1h1p ISs
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,mtmf(1:ndimsf)**2,indx1(:))
+
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,mtmf(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! 1h1p IS plus or minus th 2h2p IS (chosen st the
+              ! resulting vector has the greates TDM with the initial
+              ! state)
+              if (mtmf(k1).gt.0.and.mtmf(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        endif
 
         return
 
@@ -569,8 +608,10 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: i,ndim,ndimf,&
-                                                     ndimsf,iadc1,itmp
-        integer, dimension(:), allocatable        :: indx_tra
+                                                     ndimsf,iadc1,&
+                                                     itmp,k1,k2,dim2
+        integer, dimension(:), allocatable        :: indx_tra,indx1,&
+                                                     indx2
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
         real(d), dimension(ndimsf)                :: tmpvec
@@ -589,7 +630,10 @@
 ! 
 ! N.B. the corresponding indices are written to the stvc_lbl array
 !-----------------------------------------------------------------------
-        if (ladc1guess_l) then           
+        if (lancguess.eq.1) then
+           tmpvec=travec(1:ndimsf)
+           call fill_stvc(ndimsf,travec(1:ndimsf))
+        else if (lancguess.eq.2) then           
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -601,11 +645,45 @@
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
            enddo
-        else
-           tmpvec=travec(1:ndimsf)
-        endif
+           call fill_stvc(ndimsf,travec(1:ndimsf))
 
-        call fill_stvc(ndimsf,travec(1:ndimsf))
+        else if (lancguess.eq.3) then
+           ! 1h1p ISs
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
+
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! 1h1p IS plus or minus th 2h2p IS (chosen st the
+              ! resulting vector has the greates TDM with the initial
+              ! state)
+              if (travec(k1).gt.0.and.travec(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        endif
 
         return
 
