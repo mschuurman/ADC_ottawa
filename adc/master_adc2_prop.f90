@@ -529,15 +529,17 @@
         call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of mtmf, determine which 1h1p 
-! vectors will form the initial Lanczos vectors
-! 
-! N.B. the corresponding indices are written to the stvc_lbl array
+! From the values of the elements of mtmf (and/or the ADC(1)
+! eigenvectors), determine which vectors will form the initial Lanczos
+! vectors
 !-----------------------------------------------------------------------
         if (lancguess.eq.1) then
+
            tmpvec=mtmf(1:ndimsf)
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+
         else if (lancguess.eq.2) then           
+
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -550,6 +552,7 @@
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
            enddo
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+
         else if (lancguess.eq.3) then
 
            ! 1h1p ISs
@@ -568,7 +571,7 @@
               k1=indx1(i)
               k2=ndimsf+indx2(i)
 
-              ! 1h1p IS plus or minus th 2h2p IS (chosen st the
+              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
               ! resulting vector has the greates TDM with the initial
               ! state)
               if (mtmf(k1).gt.0.and.mtmf(k2).gt.0) then
@@ -578,6 +581,56 @@
               endif
 
               ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        else if (lancguess.eq.4) then
+           
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
+           enddo
+           
+           ! ADC(1) eigenvectors
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+           
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,mtmf(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
+              ! the resulting vector has the greates TDM with the
+              ! initial state)
+              if (tmpvec(k1).gt.0.and.mtmf(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the ADC(1) eigenvector
               stvc_mxc(i*3-1)=k1
 
               ! Index of the 2h2p IS
@@ -625,15 +678,17 @@
              travec)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of travec, determine which 1h1p 
-! vectors will form the initial Lanczos vectors
-! 
-! N.B. the corresponding indices are written to the stvc_lbl array
+! From the values of the elements of travec (and/or the ADC(1)
+! eigenvectors), determine which vectors will form the initial Lanczos
+! vectors
 !-----------------------------------------------------------------------
         if (lancguess.eq.1) then
+
            tmpvec=travec(1:ndimsf)
            call fill_stvc(ndimsf,travec(1:ndimsf))
+
         else if (lancguess.eq.2) then           
+
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
            open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -648,6 +703,7 @@
            call fill_stvc(ndimsf,travec(1:ndimsf))
 
         else if (lancguess.eq.3) then
+
            ! 1h1p ISs
            allocate(indx1(ndimsf))           
            call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
@@ -674,6 +730,56 @@
               endif
 
               ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        else if (lancguess.eq.4) then
+
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+           enddo
+           
+           ! ADC(1) eigenvectors
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+           
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
+              ! the resulting vector has the greates TDM with the
+              ! initial state)
+              if (tmpvec(k1).gt.0.and.travec(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the ADC(1) eigenvector
               stvc_mxc(i*3-1)=k1
 
               ! Index of the 2h2p IS

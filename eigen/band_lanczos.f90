@@ -136,17 +136,22 @@
 !                   the initial state
 !
 !             2 <-> Construction of the initial vectors from the
-!                   ADC(1) vectors with the greatest transition
+!                   ADC(1) eigenvectors with the greatest transition
 !                   dipoles with the initial state
 !
 !             3 <-> Construction of the initial vectors from linear
 !                   combinations of the most important 1h1p and 2h2p 
 !                   IS unit vectors
+!
+!             4 <-> Construction of the initial vectors from linear
+!                   combinations of the most important ADC(1)
+!                   eigenvectors and 2h2p IS unit vectors
 !-----------------------------------------------------------------------
 
       if (lancguess.eq.1) then
-         ! 
-         ! 
+
+         ! Copy the 1h1p of interest into the kryvec array
+
          do i=1,iblckdim
             k=stvc_lbl(i)
             kryvec(k,i)=1.0d0
@@ -154,8 +159,7 @@
          
       else if (lancguess.eq.2) then
          
-         !
-         ! (1) Read the ADC(1) eigenvectors from file
+         ! Read the ADC(1) eigenvectors from file
          call freeunit(iadc1)
          
          open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
@@ -171,7 +175,7 @@
          
          close(iadc1)
 
-         ! (2) Copy the ADC(1) vectors of interest into the kryvec array
+         ! Copy the ADC(1) vectors of interest into the kryvec array
          do i=1,iblckdim
             k=stvc_lbl(i)
             do j=1,idim
@@ -180,6 +184,9 @@
          enddo
 
       else if (lancguess.eq.3) then
+
+         ! Copy the linear combinations of the 1h1p and 2h2p ISs into
+         ! the kryvec array
          fac=1.0d0/sqrt(2.0d0)
          do i=1,iblckdim
             k=stvc_mxc(i*3-1)
@@ -191,6 +198,45 @@
                kryvec(k,i)=-fac
             endif
          enddo
+      
+      else if (lancguess.eq.4) then
+
+         ! Read the ADC(1) eigenvectors from file
+         call freeunit(iadc1)
+         
+         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+              status='old')
+         
+         read(iadc1) idim
+
+         allocate(adc1vec(idim,idim))
+         
+         rewind(iadc1)
+
+         read(iadc1) idim,adc1vec
+         
+         close(iadc1)
+
+         ! Copy the linear combinations of the ADC(1) vectors and 2h2p
+         ! ISs into the kryvec array
+         fac=1.0d0/sqrt(2.0d0)
+         do i=1,iblckdim
+
+            k=stvc_mxc(i*3-1)
+
+            do j=1,idim
+               kryvec(j,i)=fac*adc1vec(j,k)
+            enddo
+
+            k=stvc_mxc(i*3)
+            if (stvc_mxc(i*3-2).gt.0) then  
+               kryvec(k,i)=fac
+            else
+               kryvec(k,i)=-fac
+            endif
+
+         enddo
+
       endif
 
       return
