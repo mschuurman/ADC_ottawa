@@ -119,7 +119,7 @@ module parameters
 !!                               4 <-> linear combinations of ADC(1)
 !!                                     eigenvectors and 2h2p unit
 !!                                     vectors for ADC(2)-s
-
+!!
 
   logical                              :: debug
   character(1)                         :: tranmom,tranflag,tranmom2

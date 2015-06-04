@@ -684,6 +684,9 @@
       real*8, dimension(dim,dim) :: matrix,umat
       real*8, dimension(dim)     :: eigval
 
+      real*8, dimension(:,:), allocatable :: lvec,rvec
+      integer                             :: ierr
+
 !-----------------------------------------------------------------------
 ! Diagonalise the projection of the Hamiltonian onto the space spanned
 ! by the Lanczos vectors.
@@ -708,15 +711,24 @@
 
 !-----------------------------------------------------------------------
 ! Calculate and save to file the Ritz vectors
+!
+! If we have enough memory available, then we will calculate the Ritz 
+! vectors in-core, otherwise the calculation will proceed using 
+! external memory
 !-----------------------------------------------------------------------
       write(ilog,'(/,2x,a,/)') 'Calculating the Lanczos state vectors...'
-
       call cpu_time(t1)
-      
-     call calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
- 
+
+      allocate(lvec(matdim,dim),rvec(matdim,dim),stat=ierr)
+
+      if (ierr.eq.0) then
+         call ritzvecs_incore(lanunit,umat,eigval,lvec,rvec,dim,matdim)
+         deallocate(lvec,rvec)
+      else
+         call ritzvecs_ext(lanunit,umat,dim,matdim,eigval,iblckdim)
+      endif
+
       call cpu_time(t2)
-      
       write(ilog,'(2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
       return
@@ -805,72 +817,7 @@
 
 !#######################################################################
 
-    subroutine calc_ritzvecs(lanunit,umat,dim,matdim,eigval)
-
-      use constants
-      use parameters, only: lancname
-
-      implicit none
-
-      integer                    :: i
-      integer*8                  :: lanunit,dim,matdim,ritzunit,k,m,&
-                                    irec
-      real*8, dimension(dim,dim) :: umat
-      real*8, dimension(dim)     :: eigval
-      real*8, dimension(matdim)  :: lvec,ritzvec
-
-      real*8, dimension(matdim,dim) :: lvec2,yvec
-      real*8, dimension(matdim)     :: rvec
-      real*8                        :: ftmp
-
-!-----------------------------------------------------------------------
-! Open the Lanzcos and Ritz vector files
-!-----------------------------------------------------------------------
-      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',status='old')
-
-      ritzunit=lanunit+1
-      open(ritzunit,file=lancname,access='sequential',&
-           form='unformatted',status='unknown')
-
-!-----------------------------------------------------------------------
-! Calculate the Ritz vectors
-!-----------------------------------------------------------------------
-      ! Loop over Ritz vectors
-      do i=1,dim
-         ritzvec=0.0d0
-
-         ! Calculate the ith Ritz vector
-         rewind(lanunit)
-         do k=1,dim ! Loop over Lanczos vectors
-            read(lanunit) lvec
-
-            ! The kth Lanczos vector contributes to all components
-            ! of the current Ritz vector
-            do m=1,matdim
-               ritzvec(m)=ritzvec(m)+lvec(m)*umat(k,i) 
-           enddo
-
-         enddo
-           
-         ! Write the current Ritz vector to file along with the
-         ! corresponding Ritz value
-         write(ritzunit) i,eigval(i),ritzvec
-         
-      enddo
-
-!-----------------------------------------------------------------------
-! Close the Lanczos and Ritz vector files
-!-----------------------------------------------------------------------
-      close(lanunit)
-      close(ritzunit)
-      
-      return
-      
-    end subroutine calc_ritzvecs
-
-!#######################################################################
-
-    subroutine calc_ritzvecs2(lanunit,umat,dim,matdim,eigval,iblckdim)
+    subroutine ritzvecs_ext(lanunit,umat,dim,matdim,eigval,iblckdim)
 
       use constants
       use parameters, only: lancname
@@ -979,7 +926,55 @@
 
       return
 
-    end subroutine calc_ritzvecs2
+    end subroutine ritzvecs_ext
+
+!#######################################################################
+
+    subroutine ritzvecs_incore(lanunit,umat,eigval,lvec,rvec,dim,matdim)
+
+      implicit none
+
+      integer*8                     :: lanunit,ritzunit,dim,matdim,i
+      integer                       :: v
+      real*8, dimension(matdim,dim) :: lvec,rvec
+      real*8, dimension(dim,dim)    :: umat
+      real*8, dimension(dim)        :: eigval
+
+!-----------------------------------------------------------------------
+! Open the Lanzcos and Ritz vector files
+!-----------------------------------------------------------------------
+      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',status='old')
+
+      ritzunit=lanunit+1
+      open(ritzunit,file=lancname,access='sequential',&
+           form='unformatted',status='unknown')
+
+!-----------------------------------------------------------------------
+! Read the Lanczos vectors from file
+!-----------------------------------------------------------------------
+      do i=1,dim
+         read(lanunit) lvec(:,i)         
+      enddo
+
+!-----------------------------------------------------------------------
+! Calculate and output the Ritz vectors
+!-----------------------------------------------------------------------
+      call dgemm('N','N',matdim,dim,dim,1.0d0,lvec,matdim,umat,dim,&
+           0.0d0,rvec,matdim)
+
+      do v=1,dim
+         write(ritzunit) v,eigval(v),rvec(:,v)
+      enddo
+      
+!-----------------------------------------------------------------------
+! Close the Lanczos and Ritz vector files
+!-----------------------------------------------------------------------
+      close(lanunit)
+      close(ritzunit)
+
+      return
+
+    end subroutine ritzvecs_incore
 
 !#######################################################################
 
