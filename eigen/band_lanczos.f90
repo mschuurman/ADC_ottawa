@@ -680,12 +680,9 @@
         
       integer*8                  :: blckdim,dim,ndfl,lanunit,matdim,i,&
                                     iblckdim
-      real*8                     :: t1,t2
+      real*8                     :: t1,t2,mem
       real*8, dimension(dim,dim) :: matrix,umat
       real*8, dimension(dim)     :: eigval
-
-      real*8, dimension(:,:), allocatable :: lvec,rvec
-      integer                             :: ierr
 
 !-----------------------------------------------------------------------
 ! Diagonalise the projection of the Hamiltonian onto the space spanned
@@ -719,12 +716,13 @@
       write(ilog,'(/,2x,a,/)') 'Calculating the Lanczos state vectors...'
       call cpu_time(t1)
 
-      allocate(lvec(matdim,dim),rvec(matdim,dim),stat=ierr)
+      mem=16.0d0*matdim*dim/1024.0d0**2
 
-      if (ierr.eq.0) then
-         call ritzvecs_incore(lanunit,umat,eigval,lvec,rvec,dim,matdim)
-         deallocate(lvec,rvec)
+      if (mem.le.lancmem) then
+         write(ilog,'(2x,a,/)') 'Calculation will proceed in-core'
+         call ritzvecs_incore(lanunit,umat,eigval,dim,matdim)
       else
+         write(ilog,'(2x,a,/)') 'Calculation will proceed out-of-core'
          call ritzvecs_ext(lanunit,umat,dim,matdim,eigval,iblckdim)
       endif
 
@@ -930,7 +928,7 @@
 
 !#######################################################################
 
-    subroutine ritzvecs_incore(lanunit,umat,eigval,lvec,rvec,dim,matdim)
+    subroutine ritzvecs_incore(lanunit,umat,eigval,dim,matdim)
 
       implicit none
 

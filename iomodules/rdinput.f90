@@ -639,6 +639,14 @@
             if (method.eq.3.and.lancguess.eq.3) lancguess=1
             if (method.eq.3.and.lancguess.eq.4) lancguess=2
 
+         else if (keyword(i).eq.'mem') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) lancmem
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

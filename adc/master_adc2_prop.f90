@@ -106,7 +106,7 @@
 !
 ! Note that if we are NOT considering ionization, then we will also
 ! output the final Davidson state energies and configurations here
-!-----------------------------------------------------------------------            
+!-----------------------------------------------------------------------
         call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
 
 !-----------------------------------------------------------------------

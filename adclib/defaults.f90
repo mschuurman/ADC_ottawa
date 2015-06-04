@@ -71,7 +71,8 @@
       lmain=0
       ncycles=0
       lancguess=1
-      lancname='SCRATCH/lancstates'
+      lancmem=250.0d0
+      lancname='SCRATCH/lancstates'      
 
 !-----------------------------------------------------------------------
 ! I/O channels

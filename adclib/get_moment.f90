@@ -79,7 +79,7 @@ contains
 !!$----------------------------------------------
 
   subroutine get_modifiedtm_adc2(ndim,kpq,mtm,ista)
-    
+
     integer, intent(in)                                   :: ndim,ista
     integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
     real*8, dimension(ndim), intent(out)                  :: mtm

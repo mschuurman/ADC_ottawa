@@ -162,6 +162,7 @@ module parameters
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
   integer                              :: lancguess
+  real(d)                              :: lancmem
 
 !!$************************************************
 !!$**********Physical Cobnstants*******************
