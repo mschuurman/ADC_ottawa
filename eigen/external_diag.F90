@@ -19,7 +19,7 @@
 #include "finclude/slepcsys.h"
 #include "finclude/slepceps.h"
 #include "finclude/petscvec.h90"
-
+   
    integer                             :: blckdim,matdim,davstates,&
                                           maxbl,nrec,unit,num,ndms,kk
    real(d), dimension(matdim)          :: hii
@@ -94,12 +94,12 @@
 !-----------------------------------------------------------------------
       ndavcalls=ndavcalls+1
       if (ndavcalls.eq.1) call mpi_init()
-
+      
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
 !-----------------------------------------------------------------------
       call slepcinitialize(petsc_null_character,ierr)
-
+      
 !-----------------------------------------------------------------------
 ! MPI
 !-----------------------------------------------------------------------
@@ -113,18 +113,19 @@
 ! array nnz: nnz(i)=no. non-zero elements in the ith row.
 !-----------------------------------------------------------------------
       call get_nonzeros(nnz,matdim,flag)
-
+      
 !-----------------------------------------------------------------------
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
 !-----------------------------------------------------------------------
       n=matdim
-      
-      call matcreateseqaij(petsc_comm_world,n,n,nz,nnz,ham,ierr)
+
+!      call matcreateseqaij(petsc_comm_world,n,n,nz,nnz,ham,ierr)
+      call matcreateseqaij(MPI_COMM_WORLD,n,n,nz,nnz,ham,ierr)
 
       call matsetfromoptions(ham,ierr)
 
       call matsetup(ham,ierr)
-
+      
 !-----------------------------------------------------------------------
 ! Set the values of the non-zero elements of the ADC Hamiltonian matrix
 !
@@ -140,18 +141,18 @@
       ! Assemble the PETSc matrix
       call matassemblybegin(ham,mat_final_assembly,ierr)
       call matassemblyend(ham,mat_final_assembly,ierr)
-
+      
 !-----------------------------------------------------------------------
 ! Create vectors xr and xi (real and imaginary parts of an eigenvector) 
 ! of dimensions compatible with the matrix ham
 !-----------------------------------------------------------------------
       call matgetvecs(ham,xr,xi,ierr)
-
+      
 !-----------------------------------------------------------------------
 ! Create the eigensolver context
 !-----------------------------------------------------------------------
-      call epscreate(petsc_comm_world,eps,ierr)
-
+      call epscreate(mpi_comm_world,eps,ierr)
+      
 !-----------------------------------------------------------------------
 ! Set operators
 ! N.B. Standard eigenvalue problem so one matrix only
@@ -203,7 +204,7 @@
       if (lfakeip) then
          call guess_vecs_fakeip(blckdim,matdim,ivec)
       else if (ladc1guess) then
-         call load_adc1_vecs(blckdim,matdim,ivec,ndms)
+         call load_adc1_vecs(blckdim,matdim,ivec)
       else
          call guess_vecs_ondiag(blckdim,matdim,ivec,flag)
       endif
@@ -652,7 +653,7 @@
 
 !#######################################################################
 
- subroutine load_adc1_vecs(blckdim,matdim,ivec,ndms)
+ subroutine load_adc1_vecs(blckdim,matdim,ivec)
 
    use constants
 
@@ -666,7 +667,7 @@
 #include "finclude/petscvec.h90"
 
    integer                              :: blckdim,matdim,unit,dim1,&
-                                           curr,ndms
+                                           curr
    integer, dimension(:), allocatable   :: indx1
    real(d), dimension(:,:), allocatable :: vec1
 
@@ -717,7 +718,8 @@
    do i=1,nvecs
       curr=curr+1
       ! Create the ith initial vector (of dimension dim2=matdim)
-      call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)
+!      call veccreateseq(PETSC_COMM_SELF,dim2,ivec(i),ierr)
+      call veccreateseq(MPI_COMM_SELF,dim2,ivec(i),ierr)
       ! Assign the components of the ith initial vector
       call setvec(i,ivec,dim1,vec1(:,curr),blckdim,indx1)
    enddo
@@ -849,7 +851,8 @@
 
    do i=1,nvecs
       ! Create the ith initial vector
-      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+!      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+      call veccreateseq(MPI_COMM_SELF,dim,ivec(i),ierr)
       ! Assign the components of the ith initial vector
       ftmp=1.0d0
       ! PETSc indices start from zero...
@@ -904,8 +907,9 @@
    do i=1,nvecs
 
       ! Create the ith initial vector
-      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
-
+!      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
+      call veccreateseq(MPI_COMM_SELF,dim,ivec(i),ierr)
+      
       ! Assign the components of the ith initial vector
       ftmp=1.0d0
 

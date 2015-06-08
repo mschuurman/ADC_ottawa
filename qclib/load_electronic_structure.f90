@@ -2,27 +2,34 @@
  ! A little hack-y, but temporary for debugging purposes. Simply return the
  ! value of the integral buffer using the native spin-indices.
  !
- function vpqrs(r,s,u,v)
-   use parameters
-   implicit none
-   integer,intent(in) :: r,s,u,v
-   integer            :: r2
-   real(d)            :: vpqrs
-
-   if(moType == 'disk') then
-     r2 = u
-     if(moIntegrals%mo_l /= v .and. moIntegrals%mo_l /= u)then
-       call fetch_moint2e(moIntegrals,v)
-     else
-       if(moIntegrals%mo_l == u)r2 = v
-     endif
-     vpqrs = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
-   else
-      vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
-   endif
-
-   return
- end function vpqrs
+! function vpqrs(r,s,u,v)
+!
+!   use vpqrsmod
+!   
+!   use parameters
+!   implicit none
+!   integer,intent(in) :: r,s,u,v
+!   integer            :: r2
+!   real(d)            :: vpqrs
+!
+!!   if(moType == 'disk') then
+!!     r2 = u
+!!     if(moIntegrals%mo_l /= v .and. moIntegrals%mo_l /= u)then
+!!       call fetch_moint2e(moIntegrals,v)
+!!     else
+!!       if(moIntegrals%mo_l == u)r2 = v
+!!     endif
+!!     vpqrs = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
+!!   else
+!!      vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+!!   endif
+!
+!!   call vpqrs_incore(vpqrs,r,s,u,v)
+!
+!   call vpqrs_sub(vpqrs,r,s,u,v)
+!   
+!   return
+! end function vpqrs
 
 !#######################################################################
 
@@ -191,6 +198,7 @@
   use integrals_mo2e
   use printing
   use channels, only: ilog
+  use vpqrsmod, only: vpqrs
   implicit none
   type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
@@ -201,7 +209,7 @@
   complex(xrk),dimension(:,:),allocatable                     :: mos_cmplx,hao_cmplx
   character(len=clen)                                         :: ao_mode,int_type
   integer(ik)                                                 :: a,i,j,nmo,nao,nao_spin,nocc_spin
-  real(d)                                                     :: vpqrs
+!  real(d)                                                     :: vpqrs
   real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1,e2
   real(xrk)                                                   :: nuc_repulsion
 

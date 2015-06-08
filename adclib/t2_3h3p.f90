@@ -1,5 +1,7 @@
  real(d) function t2_3h3p_hc(apr,bpr,cpr,kpr,lpr,mpr)
 
+   use vpqrsmod
+   
  integer, intent(in) :: kpr,apr,bpr,lpr,cpr,mpr
 
 

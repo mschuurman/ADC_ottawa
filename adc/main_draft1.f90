@@ -12,7 +12,8 @@ program main
   use defaults
   use iomod
   use channels
-
+  use vpqrsmod
+  
   implicit none
   
   integer, dimension(2) :: shp
@@ -44,6 +45,15 @@ program main
   call read_input
 
   close(iin)
+
+!-----------------------------------------------------------------------
+! Set the pointer to the vpqrs function
+!-----------------------------------------------------------------------
+  if (motype.eq.'disk') then
+     vpqrs => vpqrs_ext
+  else if (motype.eq.'incore') then
+     vpqrs => vpqrs_incore
+  endif
 
 !-----------------------------------------------------------------------
 ! GAMESS interface

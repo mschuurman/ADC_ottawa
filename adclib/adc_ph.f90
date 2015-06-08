@@ -9,6 +9,7 @@ module adc_ph
   use parameters
   use misc
   use channels
+  use vpqrsmod
   
   implicit none
   
@@ -27,9 +28,9 @@ contains
     
     integer :: c,dd,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
     real(d) :: DA,eijc,term
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
 
-    external vpqrs
+!    external vpqrs
 
 
     E_MP2 = 0._d
@@ -93,9 +94,9 @@ contains
   real(d) function C1_ph_ph(a,k,a1,k1)
     
     integer, intent(in) :: a,k,a1,k1
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
       
-    external vpqrs
+!    external vpqrs
 
     C1_ph_ph=2._d*vpqrs(a,k,a1,k1)-vpqrs(a,a1,k,k1)
 
@@ -110,9 +111,9 @@ contains
     
     integer :: c,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
     real(d) :: DA,eijc,term
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
 
 !!$ Faster version (taking symmetries into account)
@@ -218,9 +219,9 @@ contains
     
     integer :: c,dd,i, nsym1, nsym2, nsym3,u,r,s
     real(d) :: DB,eicd,term
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
 !!$    CB_ph_ph=0._d             
   
@@ -318,11 +319,11 @@ contains
     
     integer :: c,i, nsym1, nsym2, nsym3,r,s
     real(d) :: DC,eic,term
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
     real(d), dimension(nocc) :: tau
 
-    external vpqrs
+!    external vpqrs
     
     CC_ph_ph=0._d
 
@@ -372,9 +373,9 @@ contains
     
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C1_ph_2p2h=0._d
     
@@ -398,9 +399,9 @@ contains
     
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C2_ph_2p2h=0._d 
     
@@ -423,9 +424,9 @@ contains
     
     integer, intent(in) :: j,k,ipr,kpr,lpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C3_ph_2p2h=0._d
     
@@ -446,9 +447,9 @@ contains
     
     integer, intent(in) :: a,k,apr,bpr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C4_ph_2p2h=0._d
 
@@ -469,9 +470,9 @@ contains
     
     integer, intent(in) :: a,k,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C5_ph_2p2h=0._d
      
@@ -511,9 +512,9 @@ contains
     
     integer, intent(in) :: a,k,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
     
     C_1_1=0._d
     
@@ -533,9 +534,9 @@ contains
     
     integer, intent(in) :: a,b,k,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
     
     C_2_1=0._d
     
@@ -558,9 +559,9 @@ contains
     
     integer, intent(in) :: a,k,l,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
     
     C_3_1=0._d
     
@@ -585,9 +586,9 @@ contains
     
     integer, intent(in) :: a,b,k,l,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
     
     C_4i_1=0._d
     
@@ -612,9 +613,9 @@ contains
     
     integer, intent(in) :: a,b,k,l,apr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
     
     C_4ii_1=0._d
     
@@ -637,9 +638,9 @@ contains
     
     integer, intent(in) :: a,b,k,apr,bpr,kpr
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C_2_2=0._d
     
@@ -666,9 +667,9 @@ contains
     
     integer, intent(in) ::a,k,l,apr,bpr,kpr 
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C_3_2=0._d
     
@@ -695,9 +696,9 @@ contains
     
     integer, intent(in) ::a,b,k,l,apr,bpr,kpr 
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C_4i_2=0._d  
   
@@ -735,9 +736,9 @@ contains
     
     integer, intent(in) ::a,b,k,l,apr,bpr,kpr 
     
-    real(d) :: vpqrs
+!    real(d) :: vpqrs
     
-    external vpqrs
+!    external vpqrs
 
     C_4ii_2=0._d  
     
@@ -770,9 +771,9 @@ contains
     
       integer, intent(in) ::a,k,l,apr,kpr,lpr 
     
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
     
-      external vpqrs
+!      external vpqrs
 
       C_3_3=0._d
       
@@ -799,9 +800,9 @@ contains
     
       integer, intent(in) ::a,b,k,l,apr,kpr,lpr 
       
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
     
-      external vpqrs
+!      external vpqrs
 
       C_4i_3=0._d 
     
@@ -838,9 +839,9 @@ contains
     
       integer, intent(in) ::a,b,k,l,apr,kpr,lpr 
     
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
     
-      external vpqrs
+!      external vpqrs
 
       C_4ii_3=0._d
       
@@ -873,9 +874,9 @@ contains
     
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
     
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
     
-      external vpqrs
+!      external vpqrs
 
       C_4ii_4ii=0._d    
 
@@ -930,9 +931,9 @@ contains
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
       
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
       
-      external vpqrs
+!      external vpqrs
       
       C_4i_4ii=0._d
 
@@ -985,9 +986,9 @@ contains
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
       
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
       
-      external vpqrs
+!      external vpqrs
       
       C_4ii_4i=0._d
 
@@ -1041,9 +1042,9 @@ contains
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
       
-      real(d) :: vpqrs
+!      real(d) :: vpqrs
       
-      external vpqrs
+!      external vpqrs
       
       C_4i_4i=0._d    
 

@@ -10,7 +10,7 @@
       use parsemod
       use iomod
       use channels
-
+      
       implicit none
       
       integer            :: i
@@ -105,7 +105,7 @@
             else
                goto 100
             endif
-
+            
          else if (keyword(i).eq.'davidson_section') then
             ldav=.true.
 15          continue

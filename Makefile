@@ -25,7 +25,8 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
+#LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
+LIBS= ${LIB_LAPACK} ${LIB_BLAS}
 
 SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
 
@@ -65,7 +66,8 @@ IOMODULES=iomodules/iomod.o \
 	iomodules/rdinput.o \
 	iomodules/read_param.o \
 
-QCLIB=  qclib/load_electronic_structure.o \
+QCLIB=	qclib/vpqrsmod.o \
+	qclib/load_electronic_structure.o \
 	qclib/scf_electronic_structure.o \
 
 EIGEN=  eigen/external_diag.o \
@@ -135,6 +137,7 @@ ADC_OBJ=accuracy.o \
 	timingmod.o \
 	defaults.o \
 	orbindx.o \
+	vpqrsmod.o \
 	load_electronic_structure.o \
         scf_electronic_structure.o \
 	eigen/external_diag.o \

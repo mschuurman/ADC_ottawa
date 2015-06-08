@@ -9,11 +9,12 @@ module D_matrix
   use parameters
   use misc
   use channels
+  use vpqrsmod
   
   implicit none
 
-  real(d) :: vpqrs
-  external vpqrs
+!  real(d) :: vpqrs
+!  external vpqrs
 
   
 contains

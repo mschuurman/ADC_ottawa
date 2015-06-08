@@ -28,7 +28,8 @@ module parameters
   real(d), dimension(:,:), allocatable :: density_matrix
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
   character*100                        :: moType ! Either 'incore' or 'disk'
- 
+  integer                              :: imotype
+  
 !!$**************************************************
 !!$*********User provided variables******************
 !!$**************************************************
@@ -244,5 +245,7 @@ integer                                     :: natm
 real(d), dimension(:), allocatable          :: xcoo
 character(len=2), dimension(:), allocatable :: aatm
 character(len=3)                            :: pntgroup
+
+real(d), dimension(:,:,:,:), allocatable :: fvpqrs
 
 end module parameters
