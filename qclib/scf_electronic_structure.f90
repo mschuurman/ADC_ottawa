@@ -10,11 +10,11 @@
   use channels, only: ilog
   implicit none
   type(gam_structure),intent(in)         :: gam ! gamess info (orbitals, geom,etc.) 
-  real(rk),intent(out)                   :: hmat(gam%nbasis,gam%nbasis)  ! Current 1-electron Hamiltonian matrix
+  real(xrk),intent(out)                   :: hmat(gam%nbasis,gam%nbasis)  ! Current 1-electron Hamiltonian matrix
 
   integer(ik)                            :: i,nao
-  real(rk)                               :: xyz(3),q
-  real(rk), allocatable                  :: tmp(:,:)         ! Overlap matrix (AObasis),null-space projected out
+  real(xrk)                               :: xyz(3),q
+  real(xrk), allocatable                  :: tmp(:,:)         ! Overlap matrix (AObasis),null-space projected out
 
   nao = gam%nbasis
   allocate(tmp(nao,nao))
@@ -62,44 +62,45 @@
   use fock_tools
   use scf_tools
   use printing
+  use channels, only : ilog
   implicit none
   type(int2e_cache),intent(inout)    :: int2e    ! Currently active integrals context
   type(gam_structure),intent(in)     :: gam ! gamess info (orbitals, geom,etc.) 
-  complex(rk),intent(in)             :: hmat(2*gam%nbasis,2*gam%nbasis) ! 1e Hamiltonian
-  complex(rk),intent(out)            :: mos_conv(2*gam%nbasis,gam%nvectors) ! converged mos
+  complex(xrk),intent(in)             :: hmat(2*gam%nbasis,2*gam%nbasis) ! 1e Hamiltonian
+  complex(xrk),intent(inout)          :: mos_conv(2*gam%nbasis,gam%nvectors) ! initially contain guess orbitals converged mos
 
   type(diis_state)        :: diis_st           ! DIIS state, see diis.f90
-  integer(ik)             :: itermax         = 10
+  integer(ik)             :: itermax         = 30
   integer(ik)             :: max_diis_nvec   = 50      ! Maximum number of DIIS vectors allowed
-  real(rk)                :: max_diis_coeff  = 20._rk  ! Restart DIIS if any of the coefficients exceed this threshold
-  real(rk)                :: eps_geev        = 1e-7_rk        ! Threshold for declaring ZGEEV eigenvalues degenerate;
+  real(xrk)                :: max_diis_coeff  = 20._xrk  ! Restart DIIS if any of the coefficients exceed this threshold
+  real(xrk)                :: eps_geev        = 1e-7_xrk        ! Threshold for declaring ZGEEV eigenvalues degenerate;
   integer(ik), parameter  :: iu_2e_ao        = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
   integer(hik)            :: iosize_2e       = 220000000   ! Integral I/O
-  real(rk)                :: energy_toler    = 1e-12_rk        ! Desired SCF convergence for the total energy
-  real(rk)                :: rho_toler       = 1e-8_rk        ! Desired SCF convergence for the density matrix
-
+  real(xrk)                :: energy_toler    = 1e-12_xrk        ! Desired SCF convergence for the total energy
+  real(xrk)                :: rho_toler       = 1e-8_xrk        ! Desired SCF convergence for the density matrix
+  complex(xrk)             :: cz=(0._xrk,0._xrk)
+ 
   logical                 :: converged
-  real(rk)                :: drho
+  real(xrk)                :: drho
   real(xrk)                :: nuc_repulsion
-  real(rk)                :: null_cutoff
+  real(xrk)                :: null_cutoff
   integer(ik)             :: i,iter,nao_spin,nmo,nao,nvec,nmo_null,nmo_act
-  complex(rk)             :: efock,eg,escf, escf_old, enuc, de
+  complex(xrk)             :: efock,eg,escf, escf_old, enuc, de
 
-  complex(rk), allocatable    :: mosg(:,:,:)     ! guess molecular orbitals
-  complex(rk), allocatable    :: mos(:,:,:)      ! molecular orbitals
-  complex(rk), allocatable    :: rho (:,:)       ! Electronic density matrix (AObasis)
-  complex(rk), allocatable    :: rho_old(:,:)    ! Electronic density matrixfrom previous SCF iteration
-  complex(rk), allocatable    :: fmat(:,:)       ! Fock matrix
-  complex(rk), allocatable    :: fmat_old(:,:)   ! Fock matrix from the previous iteration
-  complex(rk), allocatable    :: gmat(:,:)       ! 2-electron contribution tothe Fock matrix
-  complex(rk), allocatable    :: mo_energy(:)    ! MO orbital energies
+  complex(xrk), allocatable    :: mos_init(:,:,:)     ! guess molecular orbitals
+  complex(xrk), allocatable    :: mos(:,:,:)      ! molecular orbitals
+  complex(xrk), allocatable    :: rho (:,:)       ! Electronic density matrix (AObasis)
+  complex(xrk), allocatable    :: rho_old(:,:)    ! Electronic density matrixfrom previous SCF iteration
+  complex(xrk), allocatable    :: fmat(:,:)       ! Fock matrix
+  complex(xrk), allocatable    :: fmat_old(:,:)   ! Fock matrix from the previous iteration
+  complex(xrk), allocatable    :: gmat(:,:)       ! 2-electron contribution tothe Fock matrix
+  complex(xrk), allocatable    :: mo_energy(:)    ! MO orbital energies
 
-  real(rk), allocatable       :: tmp(:,:)        ! temporary matrix
-  real(rk), allocatable       :: smat(:,:)       ! Overlap matrix (AObasis),null-space projected out
-  real(rk), allocatable       :: sphalf(:,:)     ! S^{+1/2}, null-space isprojected out
-  real(rk), allocatable       :: smhalf(:,:)     ! S^{-1/2}, null-space isprojected out
-  real(rk), allocatable       :: mo_occ(:)       ! MO occupation vector
-
+  real(xrk), allocatable       :: tmp(:,:)        ! temporary matrix
+  real(xrk), allocatable       :: smat(:,:)       ! Overlap matrix (AObasis),null-space projected out
+  real(xrk), allocatable       :: sphalf(:,:)     ! S^{+1/2}, null-space isprojected out
+  real(xrk), allocatable       :: smhalf(:,:)     ! S^{-1/2}, null-space isprojected out
+  real(xrk), allocatable       :: mo_occ(:)       ! MO occupation vector
 
   null_cutoff = 1.e-6
   nao = gam%nbasis
@@ -110,7 +111,7 @@
   nmo = nvec                  ! number of spin orbitals, UHF case
   if(nvec <= nao)nmo = 2*nvec ! RHF case
 
-  allocate(mo_occ(nao_spin),mo_energy(nao_spin),mos(nao_spin,nao_spin,2),mosg(nao_spin,nao_spin,2),tmp(nao,nao), &
+  allocate(mo_occ(nao_spin),mo_energy(nao_spin),mos(nao_spin,nao_spin,2),mos_init(nao_spin,nao_spin,2),tmp(nao,nao), &
            rho(nao_spin,nao_spin),rho_old(nao_spin,nao_spin),fmat(nao_spin,nao_spin),fmat_old(nao_spin,nao_spin), &
            gmat(nao_spin,nao_spin),smat(nao_spin,nao_spin),sphalf(nao_spin,nao_spin),smhalf(nao_spin,nao_spin))
 
@@ -119,39 +120,37 @@
 
   ! load the overlap matrix into memory
   call gamess_1e_integrals('AO OVERLAP',tmp,bra=gam,ket=gam )
-  smat                                = 0.
+  smat                                = 0._xrk
   smat(1:nao,1:nao)                   = tmp(1:nao,1:nao)
   smat(nao+1:nao_spin,nao+1:nao_spin) = tmp(1:nao,1:nao)
   ! construct S^(1/2) and S^(-1/2)
   call st_invert_smat(nmo_null,smat,smhalf,sphalf,eps_smat=null_cutoff)
 
-  ! load gamess orbitals into starting guess as well as orbital occupations
-  mosg(:,:,1) = 0
-  mo_occ = 0
-  if(nvec <= nao) then     ! Cartesian RHF case
-   mosg(    1:nao     ,1:nmo-1:2,1) = gam%vectors(1:nao,1:nvec)
-   mosg(nao+1:nao_spin,2:nmo  :2,1) = gam%vectors(1:nao,1:nvec)
-   do i = 1,nelec
-    mo_occ(i) = 1.
-   enddo
-  else if(nvec > nao) then ! Cartesian UHF case
-   mosg(1:nao         ,1:nmo:2,1) = gam%vectors(1:nao,1:nao)
-   mosg(nao+1:nao_spin,2:nmo:2,1) = gam%vectors(1:nao,nao+1:nmo)
-   do i = 1,nelec
-    mo_occ(i) = 1.
-   enddo
-  else                   ! Anything else..
-   stop 'confusing number of MOs read from gamess output'
+  ! load starting guess orbitals
+  mos_init = cz
+  if(nvec==nmo) then
+    ! UHF case -- alpha and beta spin orbitals present
+    mos_init(:,:,1) = mos_conv
+  else
+    ! RHF case -- only alpha orbitals present in mos_conv
+    mos_init(1:nao         ,1:nmo:2,1) = mos_conv(1:nao,1:nvec)
+    mos_init(nao+1:nao_spin,2:nmo:2,1) = mos_conv(1:nao,1:nvec)
   endif
-  mosg(:,:,2) = mosg(:,:,1)
+  mos_init(:,:,2) = mos_init(:,:,1)
+
+  ! load up orbital occupations.  Assume ordered by energy for now
+  mo_occ = 0
+  do i=1,nelec
+    mo_occ(i) = 1._xrk
+  enddo
 
   converged = .false.
   itermax = scfiter
-
-  escf = 0
-  rho = 0
-  fmat = 0
-  mos = mosg
+  escf = cz
+  rho = cz 
+  fmat = cz
+  mos = mos_init
+  
   iterate_scf: do iter=1,itermax
      ! reset quantities from previous interation
      rho_old  = rho
@@ -162,7 +161,7 @@
      call st_density_matrix(mo_occ,mos,rho)
 
      ! construct the gmatrix (2e contribution to fock matrix)
-     gmat = 0
+     gmat = cz
      call fock_g_matrix(int2e,rho,gmat)
 
      ! form new fock matrix
@@ -173,7 +172,7 @@
      end do fock_diagonal
      efock = sum(rho * fmat)
      eg    = sum(rho * gmat)
-     escf  = efock - 0.5_rk*eg + enuc
+     escf  = efock - 0.5_xrk*eg + enuc
 
      ! extrapolate fock matrix and diagonalize
      call diis_extrapolate(diis_st,iter,smat,rho,fmat)
@@ -182,9 +181,9 @@
 
      ! update the (non-null space) MOs
      nmo_act = nao_spin - nmo_null
-     call bt_follow_mos(nmo_act,mo_occ,eps_geev,sphalf,mosg,mo_energy,mos)
+     call bt_follow_mos(nmo_act,mo_occ,eps_geev,sphalf,mos_init,mo_energy,mos)
 
-     if (iter<=1) cycle iterate_scf
+!     if (iter<=1) cycle iterate_scf
      de   = escf - escf_old
      drho = maxval(abs(rho-rho_old))
      write (out,"('SCF Iteration ',i4,' escf=',2(1x,g20.12),'de=',2(1x,g12.5),'drho= ',g12.5)") iter, escf, de, drho
@@ -199,7 +198,7 @@
 
   if(.not.converged)stop 'unable to determine converged orbitals'
 
-  call print_matrix(realpart(mos(1:nao_spin,1:nao_spin,1)),11,'f10.5')
+ !  call print_matrix(realpart(mos(1:nao_spin,1:nao_spin,1)),11,'f10.5')
 
   if(nvec <= nao) then
    mos_conv = mos(1:nao_spin,1:nmo:2,1) ! for RHF case simply pull out the alpha orbitals
@@ -207,7 +206,7 @@
    mos_conv = mos(:,:,1)                     ! for UHF case, take all orbitals
   endif
 
-  deallocate(mo_occ,mo_energy,mos,mosg,tmp,rho,rho_old,fmat,fmat_old,gmat,smat,sphalf,smhalf)
+  deallocate(mo_occ,mo_energy,mos,mos_init,tmp,rho,rho_old,fmat,fmat_old,gmat,smat,sphalf,smhalf)
 
   return
  end subroutine scf_loop
@@ -223,6 +222,7 @@
   integer                           :: i,j
   real(xrk)                         :: xyz(3),q,r
 
+  nuc_repulsion = 0._xrk
   loop_atom1: do i=1,gam%natoms-1
     xyz = real(gam%atoms(i)%xyz, kind=kind(xyz))
       q = real(gam%atoms(i)%znuc,kind=kind(q))
@@ -246,9 +246,9 @@
    type(gam_structure),intent(in)  :: gam ! gamess info (orbitals, geom, etc.) 
    character(clen),intent(in)      :: int_type
    integer(ik),intent(in)          :: nbas,nmo
-   real(rk),intent(out)            :: int_dipole(nmo,nmo)
-   real(rk),intent(in)             :: mos(nbas,nmo)
-   real(rk),allocatable            :: dao(:,:),dao_spin(:,:)
+   real(xrk),intent(out)            :: int_dipole(nmo,nmo)
+   real(xrk),intent(in)             :: mos(nbas,nmo)
+   real(xrk),allocatable            :: dao(:,:),dao_spin(:,:)
    integer(ik)                     :: nao,nao_spin
 
    nao      = gam%nbasis

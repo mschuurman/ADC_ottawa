@@ -22,7 +22,7 @@ module parameters
   real(d)                              :: Ehf
   real(d)                              :: E_MP2
   integer*4, dimension(:), allocatable :: orbSym
-  character*2,dimension(3)             :: labSym
+  character*3,dimension(8)             :: labSym
   real(d), dimension(:), allocatable   :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
   real(d), dimension(:,:), allocatable :: density_matrix

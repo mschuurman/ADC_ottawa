@@ -25,54 +25,61 @@ contains
   subroutine MP2(E_MP2)
 
     real(d), intent(out) :: E_MP2
-    
-    integer :: c,dd,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
-    real(d) :: DA,eijc,term
+
+    integer :: r,s,u,v,nsym1,nsym2,i,j,a,b,cnt
+    real(d) :: DA,eijc,term,etotal
 !    real(d) :: vpqrs
 
 !    external vpqrs
 
 
     E_MP2 = 0._d
-
+    etotal = 0._d
     cnt=0
+    do r=nOcc+1,nBas
+       a=roccnum(r)  !r
 
-    do c=nOcc+1,nBas
-       r=roccnum(c)
+       do s=nOcc+1,nBas
+          b=roccnum(s) !s
 
-       do dd=nOcc+1,nBas
-          s=roccnum(dd)
+          do u=1,nOcc
+             i=roccnum(u) !u
 
-          do i=1,nOcc
-             u=roccnum(i)
+             do v=1,nOcc
+                j=roccnum(v) !v
 
-             do j=1,nOcc
-                v=roccnum(j)
+             nsym1=MT(orbSym(i),orbSym(a))
+             nsym2=MT(orbSym(j),orbSym(b))
 
-             nsym1=MT(orbSym(u),orbSym(v))
-             nsym2=MT(orbSym(s),orbSym(r))
-             
-             
+
              if  (MT(nsym1,nsym2) .eq. 1)  then
-                
+
                 cnt=cnt+1
-                term=0._d
 
-                eijc=e(u)+e(v)-e(r)-e(s)
+                eijc=e(i)+e(j)-e(a)-e(b)
 
-                term=term + vpqrs(r,u,s,v)*(2._d*vpqrs(r,u,s,v)-vpqrs(r,v,s,u))
+                term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a))
 
                 term=term/eijc
-                
+
                 E_MP2 = E_MP2 + term
-                
-             end if
+
+             else
+
+                 eijc=e(i)+e(j)-e(a)-e(b)
+                term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a)) / eijc
+                etotal = etotal + term
+                if(abs(term).gt.1e-5)write(ilog,100)labsym(orbsym(i)),i,labsym(orbsym(j)),j,labsym(orbsym(a)),a,labsym(orbsym(b)),b,MT(nsym1,nsym2),term
+
+
+             endif
 
           end do
        end do
     end do 
   end do
-  
+  if(Etotal.gt.1e-5)write(ilog,*)'E[sym residual]=',Etotal
+100 format(a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') sym=',i3,'term=',f15.8)
   end subroutine MP2
 
 

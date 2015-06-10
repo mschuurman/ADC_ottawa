@@ -16,9 +16,11 @@ subroutine load_gamess(chkpt_file,log_file)
   use accuracy
   use parameters
   use import_gamess
+  use math
   character(len=72),intent(inout)   :: chkpt_file,log_file
   type(gam_structure)               :: gamess_info       ! Default GAMESS
   integer                           :: j,naos
+  real(xrk)                         :: q
 
   ! determine the number of aos, mos, and read in the mos
   write(ilog,'(a)') 'chk='//trim(chkpt_file)
@@ -26,14 +28,13 @@ subroutine load_gamess(chkpt_file,log_file)
   call gamess_load_orbitals(file=trim(chkpt_file),structure=gamess_info)
   write (ilog,"(/'Loaded GAMESS checkpoint file ',a/)") trim(chkpt_file)
 
-  nBas  = gamess_info%nbasis
+  nBas  = gamess_info%nvectors
   naos  = gamess_info%nbasis
 
-  allocate(e(nBas),occNum(nBas),orbSym(nBas),roccnum(nBas))
+  allocate(orbSym(nBas),e(nBas))
 
   ! determine various electronic structure variables
-  call read_gamess_output(nBas,nelec,nCen,nIrr,orbSym,labSym,Ehf,e,&
-       occnum,pntgroup)
+  call read_gamess_output(nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
   write (ilog,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
 
   ! load MO integrals into memory
@@ -48,7 +49,7 @@ subroutine load_gamess(chkpt_file,log_file)
   end do  
 
 100 FORMAT(/,10x,A3,5x,A3,5x,A9,5x,A3,5x,A16)
-101 FORMAT(/,10x,I3,5x,I3,5x,A2,5x,F3.1,5x,F16.10)
+101 FORMAT(/,10x,I3,5x,I3,5x,A3,5x,F3.0,5x,F16.10)
 102 FORMAT(/,3("-"),A30,5x,F16.10,1x,A4)
 end subroutine load_gamess
 !-----------------------------------------------------------------------
@@ -166,7 +167,7 @@ subroutine rearrange_occ()
   j=0
   k=0
   do i=1,nBas
-     if (nint(occNum(i)).eq.2) then
+     if (occNum(i).eq.2) then
         j=j+1
 !        roccNum(j)=i
      else
@@ -190,8 +191,9 @@ subroutine rearrange_occ()
   
 !!$  call dsortqx("A",nBas,e(:),1,indx(:))
   
-  call dsortindxa1('A',nBas,e(:),indx(:))
-
+!  call dsortindxa1('A',nBas,e(:),indx(:))
+  indx = (/(i, i=1,nBas )/)
+  write(ilog,*)'index=',indx
   roccNum(:)=indx(:)
   
 end subroutine rearrange_occ
