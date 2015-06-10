@@ -199,7 +199,7 @@
 
   if(.not.converged)stop 'unable to determine converged orbitals'
 
-  call print_matrix(realpart(mos(1:nao_spin,1:nao_spin,1)),11,'f10.5')
+  call print_matrix(real(mos(1:nao_spin,1:nao_spin,1)),11,'f10.5')
 
   if(nvec <= nao) then
    mos_conv = mos(1:nao_spin,1:nmo:2,1) ! for RHF case simply pull out the alpha orbitals

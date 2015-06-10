@@ -4,7 +4,7 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state=0
+initial_state=1
 
 dipole_component = x
 

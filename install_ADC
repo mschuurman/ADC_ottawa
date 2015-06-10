@@ -25,6 +25,15 @@ if [ -f "ADC.CONFIG" ]; then
     slepcpath=`cat ADC.CONFIG | grep SLEPC_DIR | sed 's/.*=//g'`
 fi
 
+#blasflag='-mkl=sequential'
+#lapackflag='-mkl=sequential'
+
+#blasflag='-mkl=parallel'  
+#lapackflag='-mkl=parallel'
+
+blasflag='-mkl'  
+lapackflag='-mkl'
+
 #-----------------------------------------------------------------------
 # Determine the path to the SLEPc install directory
 #-----------------------------------------------------------------------

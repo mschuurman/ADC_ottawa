@@ -72,7 +72,7 @@
 !-----------------------------------------------------------------------
 ! Calculate the band Lanczos pseudospectrum
 !-----------------------------------------------------------------------
-      call run_band_lanczos
+      call run_band_lanczos(ndim,noff)
 
       return
       
@@ -247,13 +247,23 @@
 ! run_band_lanczos: main band-Lanczos routine
 !#######################################################################
     
-    subroutine run_band_lanczos
+    subroutine run_band_lanczos(ndim,noff)
 
       implicit none
 
-      integer*8 :: i,j,n,k,kt,k0,indx,kcount,lcount
-      real*8    :: norm,frac,t1,t2
+      integer, intent(in)                :: ndim
+      integer*8, intent(in)              :: noff
+      integer*8                          :: i,j,n,k,kt,k0,indx,kcount,&
+                                            lcount
+      real*8                             :: norm,frac,t1,t2,mem
 
+      real*8, dimension(:), allocatable  :: hii,hij
+      integer, dimension(:), allocatable :: indxi,indxj
+      logical                            :: lincore
+
+      real*8 :: ddot
+      external ddot
+      
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
            'Band-Lanczos Diagonalisation in the Final Space'
@@ -263,6 +273,32 @@
            maxit*iblckdim,'vectors)'
 
       call cpu_time(t1)
+
+!-----------------------------------------------------------------------
+! Determine whether we can run the Lanczos vector generation in-core
+!-----------------------------------------------------------------------
+      ! On-diagonal elements
+      mem=8.0d0*ndim/1024.0d0**2
+
+      ! Off-diagonal elements
+      mem=mem+8.0d0*noff/1024.0d0**2
+
+      ! Off-diagonal indices (2 times integer*4 for each element)
+      mem=mem+8.0d0*noff/1024.0d0**2
+
+      ! Set the logical flag lincore to true if we can fit the
+      ! Hamiltonian matrix in memory
+      if (mem.le.lancmem) then
+         lincore=.true.
+      else
+         lincore=.false.
+      endif
+
+!-----------------------------------------------------------------------
+! If we are to calculate the Lanczos vectors in-core, then read the
+! Hamiltonian matrix from file
+!-----------------------------------------------------------------------
+      if (lincore) call rdham(ndim,noff,hii,hij,indxi,indxj)
 
 !-----------------------------------------------------------------------
 ! Initialise current block size and the number of deflations, and set
@@ -341,8 +377,13 @@
       do k=j+1,j+cblckdim-1
          kcount=kcount+1
          if (k-cblckdim.lt.1) cycle
+
          tmat(j,k-cblckdim)=&
-              dot_product(lanvec(:,cblckdim+1),kryvec(:,kcount))
+              dot_product(lanvec(:,cblckdim+1),kryvec(:,kcount))         
+
+!         tmat(j,k-cblckdim)=&
+!              ddot(matdim,lanvec(:,cblckdim+1),1,kryvec(:,kcount),1)
+
          kryvec(:,kcount)=kryvec(:,kcount)&
               -tmat(j,k-cblckdim)*lanvec(:,cblckdim+1)
       enddo
@@ -350,7 +391,12 @@
 !-----------------------------------------------------------------------
 ! Calculate the j+pc'th Krylov vector
 !-----------------------------------------------------------------------
-      kryvec(:,cblckdim+1)=hxlanvec()
+      if (lincore) then
+         kryvec(:,cblckdim+1)=hxlanvec_incore(ndim,noff,hii,hij,indxi,&
+              indxj)
+      else
+         kryvec(:,cblckdim+1)=hxlanvec_ext()
+      endif
 
 !-----------------------------------------------------------------------
 ! Orthogonalise the j+pc'th Krylov vector against the previous Lanczos
@@ -433,13 +479,15 @@
 
       call cpu_time(t2)
       write(ilog,'(/,2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays that are no longer needed
+!-----------------------------------------------------------------------
+      deallocate(kryvec,lanvec)
 
-!-----------------------------------------------------------------------
-! Deallocate Krylov and Lanczos vector arrays now that they are no
-! longer needed
-!-----------------------------------------------------------------------
-      deallocate(kryvec)
-      deallocate(lanvec)
+      if (lincore) then
+         deallocate(hii,hij,indxi,indxj)
+      endif
 
 !      call chkortho(j,matdim)
 !      STOP
@@ -551,7 +599,7 @@
 
 !#######################################################################
 
-    function hxlanvec() result(kvec)
+    function hxlanvec_ext() result(kvec)
 
       implicit none
       
@@ -591,7 +639,7 @@
          read(unit) hij(:),indxi(:),indxj(:),nlim
          do l=1,nlim           
             kvec(indxi(l))=&
-                 kvec(indxi(l))+hij(l)*lanvec(indxj(l),cblckdim+1)            
+                 kvec(indxi(l))+hij(l)*lanvec(indxj(l),cblckdim+1)
             kvec(indxj(l))=&
                  kvec(indxj(l))+hij(l)*lanvec(indxi(l),cblckdim+1)
          enddo
@@ -603,7 +651,109 @@
 
       return
 
-    end function hxlanvec
+    end function hxlanvec_ext
+
+!#######################################################################
+
+    subroutine rdham(ndim,noff,hii,hij,indxi,indxj)
+
+      use iomod, only: freeunit
+
+      implicit none
+
+      integer, intent(in)                :: ndim
+      integer*8, intent(in)              :: noff
+      integer, dimension(:), allocatable :: indxi,indxj
+      real*8, dimension(:), allocatable  :: hii,hij
+
+      integer                            :: unit,maxbl,nrec,count,k,&
+                                            nlim
+      integer, dimension(:), allocatable :: itmp1,itmp2
+      real(d), dimension(:), allocatable :: ftmp
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(hii(ndim))
+      allocate(hij(noff))
+      allocate(indxi(noff))
+      allocate(indxj(noff))
+      
+!-----------------------------------------------------------------------
+! On-diagonal elements
+!-----------------------------------------------------------------------
+      call freeunit(unit)
+
+      open(unit,file='SCRATCH/hmlt.diac',status='old',&
+           access='sequential',form='unformatted')
+      
+      read(unit) maxbl,nrec
+      read(unit) hii
+
+      close(unit)
+
+!-----------------------------------------------------------------------
+! Off-diagonal elements
+!-----------------------------------------------------------------------
+      allocate(ftmp(maxbl))
+      allocate(itmp1(maxbl))
+      allocate(itmp2(maxbl))
+
+      open(unit,file='SCRATCH/hmlt.offc',status='old',&
+           access='sequential',form='unformatted')
+
+      count=0
+      do k=1,nrec         
+         read(unit) ftmp(:),itmp1(:),itmp2(:),nlim
+         hij(count+1:count+nlim)=ftmp(1:nlim)
+         indxi(count+1:count+nlim)=itmp1(1:nlim)
+         indxj(count+1:count+nlim)=itmp2(1:nlim)
+         count=count+nlim
+      enddo
+
+      close(unit)
+
+      deallocate(ftmp,itmp1,itmp2)
+
+      return
+
+    end subroutine rdham
+
+!#######################################################################
+
+    function hxlanvec_incore(ndim,noff,hii,hij,indxi,indxj) result(kvec)
+
+      implicit none
+
+      integer, intent(in)       :: ndim
+      integer*8, intent(in)     :: noff
+      integer, dimension(noff)  :: indxi,indxj
+      integer                   :: k
+      real*8, dimension(ndim)   :: hii
+      real*8, dimension(noff)   :: hij
+      real*8, dimension(matdim) :: kvec
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      kvec=0.0d0
+      do k=1,matdim
+         kvec(k)=hii(k)*lanvec(k,cblckdim+1)
+      enddo
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      do k=1,noff
+         kvec(indxi(k))=&
+                 kvec(indxi(k))+hij(k)*lanvec(indxj(k),cblckdim+1)
+         kvec(indxj(k))=&
+                 kvec(indxj(k))+hij(k)*lanvec(indxi(k),cblckdim+1)
+      enddo
+
+      return
+
+    end function hxlanvec_incore
 
 !#######################################################################
 

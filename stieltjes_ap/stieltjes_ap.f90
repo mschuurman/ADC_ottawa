@@ -347,8 +347,6 @@
       asum=a(1)
       do i=3,ntrial
 
-!         print*,i,ntrial
-
          asum=asum+a(i-1)
 
          do j=1,npoints
@@ -413,10 +411,10 @@
       mptmp='16.0'
       binf=mpone/(mptmp*e(1)*e(1))
 
-      print*,
+      write(6,'(/,2x,a)') "a_inf, b_inf:"
       call mpwrite(6,20,10,ainf)
       call mpwrite(6,20,10,binf)
-      print*,
+      write(6,'(/)')
 
       do i=0,ntrial
          call mpwrite(aunit,20,10,a(i))
@@ -433,6 +431,7 @@
       write(6,'(/,2x,a)') 'Checking orthogonality...'
 
       thrsh=mpreald(1.d-300)
+
       upper='10.0'
 
       nord=0

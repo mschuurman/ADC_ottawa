@@ -1145,7 +1145,7 @@ else
 endif
 
 return
-end
+end subroutine mpdivd40
 
 subroutine mpdmc (a, n, b, mpnw)
 
@@ -1749,7 +1749,7 @@ else
 endif
 
 return
-end
+end subroutine mpmuld40
 
 subroutine mpnint (a, b, mpnw)
 

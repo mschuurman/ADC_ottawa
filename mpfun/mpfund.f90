@@ -376,7 +376,7 @@ call mpclogx (s0, s1, mpnw)
 call mpeq (s1(mp7), a, mpnw)
 
 return
-end
+end subroutine mpangx
 
 subroutine mpcagm (a, b, c, mpnw)
 

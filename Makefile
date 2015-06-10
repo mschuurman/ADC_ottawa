@@ -15,18 +15,30 @@ include ${SLEPC_DIR}/conf/slepc_common
 # N.B. we now have to use the C preprocessor due to interfacing with
 # PETSc/SLEPc
 #-----------------------------------------------------------------------
-F90	= gfortran
-F77	= gfortran
-CC	= gcc
 
-F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
+#
+# gfortran
+#
+#F90	= gfortran
+#F77	= gfortran
+#CC	= gcc
+#F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
+#CCOPTS  = -g -O0
+
+#
+# intel
+#
+F90	 = ifort
+F77	 = ifort
+CC	 = icc
+F90OPTS = -cpp -g -free -fopenmp -traceback 
+#-O2
 CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-#LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
-LIBS= ${LIB_LAPACK} ${LIB_BLAS}
+LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
 SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
 
@@ -239,4 +251,4 @@ mcspline: $(MCSPLINE)
 	$(CC) $(CCOPTS)  -c $<
 
 clean_all:
-	rm -f *.o *~ *.mod
+	rm -f *.o *~ *.mod eigen/external_diag.o

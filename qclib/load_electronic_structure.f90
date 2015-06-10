@@ -239,7 +239,7 @@
   hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = hao(1:nao,1:nao)
 
   call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
-  mos_real = realpart(mos_cmplx)
+  mos_real = real(mos_cmplx)
 
   ! load up variables depending on RHF/UHF case 
   if(nmo <= nao) then         ! RHF case, allowing for dropped orbitals
@@ -259,7 +259,7 @@
   call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
 
   ! form 1e Hamiltonian in MO basis
-  hmo = realpart(matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))
+  hmo = real(matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
   fmo = hmo
@@ -323,7 +323,7 @@
   write(ilog,1003)nuc_repulsion(gam)
   write(ilog,1004)e1+e2+nuc_repulsion(gam)
   write(ilog,"(60('-'))")
-  call flush
+!  call flush
 
   ! clear integral cache
   call clear_2e(int2e)

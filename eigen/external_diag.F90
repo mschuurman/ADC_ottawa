@@ -93,7 +93,7 @@
 ! to slepcinitialize/slepcfinalize.
 !-----------------------------------------------------------------------
       ndavcalls=ndavcalls+1
-      if (ndavcalls.eq.1) call mpi_init()
+!      if (ndavcalls.eq.1) call mpi_init()
       
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
@@ -554,7 +554,6 @@
       STOP
    endif
 
-   print*,
    do i=1,15
       print*,i,eigval(i)*27.211
    enddo

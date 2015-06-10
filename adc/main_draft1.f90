@@ -49,11 +49,11 @@ program main
 !-----------------------------------------------------------------------
 ! Set the pointer to the vpqrs function
 !-----------------------------------------------------------------------
-  if (motype.eq.'disk') then
-     vpqrs => vpqrs_ext
-  else if (motype.eq.'incore') then
-     vpqrs => vpqrs_incore
-  endif
+!  if (motype.eq.'disk') then
+!     vpqrs => vpqrs_ext
+!  else if (motype.eq.'incore') then
+!     vpqrs => vpqrs_incore
+!  endif
 
 !-----------------------------------------------------------------------
 ! GAMESS interface
