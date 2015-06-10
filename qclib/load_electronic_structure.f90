@@ -46,16 +46,13 @@
  !
  ! read a gamess output file
  !
- subroutine read_gamess_output(nbasis,nelec,ncen,nirr,orbsym,symlab,&
-      ehf,earr,occnum,pntgroup)
+ subroutine read_gamess_output(nbasis,nelec,ncen,nirr,eorb,orbsym,symlab,pntgroup)
   use constants
   integer,intent(in)            :: nbasis
-  integer*4,intent(out)         :: nelec,nirr,ncen
+  integer*4,intent(out)         :: nelec,ncen,nirr
+  real(d),intent(inout)         :: eorb(nbasis)
   integer*4,intent(out)         :: orbsym(nbasis)
-  real(d),intent(out)           :: ehf      ! The Hf energy
-  real(d),intent(out)           :: earr(nbasis)  ! The orbital energies
-  character*2,intent(out)       :: symlab(1024)
-  real(d), dimension(nbasis)    :: occnum
+  character*3,intent(out)       :: symlab(8)
 
   logical                       :: gexist
   integer*4                     :: cnt,i
@@ -64,6 +61,7 @@
   integer                       :: orbfnd
   integer                       :: gamess=11
   real(d)                       :: two = 2.
+  real(d)                       :: orbener(5)
   character(len=144)            :: line,scr
 
   character(len=3)              :: pntgroup
@@ -78,10 +76,8 @@
 
   nirr   = -1
   ncen   = -1
-  occnum = 0.0d0
-  ehf    = 0.0d0
-  earr   = 0.0d0
   orbfnd = 0
+  orbsym = 0
 
   scan_lines: do while (orbfnd==0)
    call read_gamess_line(gamess,line)
@@ -112,39 +108,35 @@
        if(index(line,'=').eq.0)exit
        nirr = nirr + 1
        off1 = index(line,'=')+1
-       symlab(nirr) = trim(adjustl(line(off1-5:off1-2)))
+       symlab(nirr) = trim(adjustl(line(off1-5:off1-3)))
        line = trim(adjustl(line(off1:len_trim(line))))
       enddo
      enddo scan_olabels
    endif
 
-   ! read in HF energy
-   if(index(line,'FINAL RHF ENERGY IS').ne.0 .and. ehf==0.) then
-    read(line,'(a20,f20.10,a20)')scr,ehf,scr
-   endif
-
+!   print *,'nbasis: ',nbasis
    ! read in orbital occupations and energies
    if (index(line,'------------').ne.0) then
       call read_gamess_line(gamess,line)
       if(index(line,'EIGENVECTORS').ne.0 .and. orbfnd==0) then
          call read_gamess_line(gamess,line) ! ---- format line
          call read_gamess_line(gamess,line) ! blank line
-         off1=1
+         off1=0
          off2=0
          scan_orbs: do while(index(line,'END OF RHF')==0)
             call read_gamess_line(gamess,line) ! orbital indices
-            read(gamess,'(a15,5(f11.4))')scr,earr(off1:min(nbasis,off1+4))
-            off1 = off1 + 5
+            read(gamess,'(a15,5(f11.4))')scr,eorb(off1+1:off1+min(nbasis-off1,5))
+            off1 = off1 + min(nbasis-off1,5)
             call read_gamess_line(gamess,line) ! irreps
             scan_irreps: do while(len_trim(line).gt.0)
                line = adjustl(line)
                cnt = 1
-               do while(line(1:2) .ne. symlab(cnt))
+               do while(line(1:3) .ne. symlab(cnt))
                   cnt = cnt + 1
                enddo
                off2 = off2 + 1
                orbsym(off2) = cnt
-               line = line(3:len_trim(line))
+               line = line(4:len_trim(line))
             enddo scan_irreps
             
             do i = 1,nbasis
@@ -157,6 +149,7 @@
    endif
 
   enddo scan_lines
+
   close(gamess)
 
  end subroutine read_gamess_output
@@ -198,26 +191,29 @@
   use integrals_mo2e
   use printing
   use channels, only: ilog
-  use vpqrsmod, only: vpqrs
   implicit none
   type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
   integer, parameter                :: iu_2e_ao   = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
-  integer(hik)                      :: iosize_2e  = 220000000   ! Integral I/O
+  integer(hik)                      :: iosize_2e  = 120000000   ! Integral I/O
 
-  real(xrk), dimension(:,:),allocatable                       :: mos_real,hao,hmo,fmo
+  real(xrk), dimension(:,:),allocatable                       :: mos_real,hao,hmo,fmo,smat
   complex(xrk),dimension(:,:),allocatable                     :: mos_cmplx,hao_cmplx
   character(len=clen)                                         :: ao_mode,int_type
-  integer(ik)                                                 :: a,i,j,nmo,nao,nao_spin,nocc_spin
-!  real(d)                                                     :: vpqrs
-  real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1,e2
+  integer(ik)                                                 :: a,i,j
+  integer(ik)                                                 :: nmo,nao,nao_spin,nocc_spin
+  integer(ik)                                                 :: factable
+  real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1, e2
   real(xrk)                                                   :: nuc_repulsion
+  real(d)                                                     :: vpqrs
+  complex(xrk)                                                :: cz = (0._xrk,0._xrk),testnum
 
   ! make a call to MathLogFactorial before we get into the parallel parts, since
   ! it isn't openmp safe...
-  q = MathFactorial(nelec)
-  q = MathLogFactorial(nelec)
-  q = MathDoubleFactorial(nelec)
+  factable = 30 ! function of the maximum angular momentum in atomic basis set
+  q = MathFactorial(factable)
+  q = MathLogFactorial(factable)
+  q = MathDoubleFactorial(factable)
 
   eps      = 1.d-5
   nao      = gam%nbasis
@@ -225,21 +221,40 @@
   nmo      = gam%nvectors
 
   ! allocate arrays
-  allocate(mos_cmplx(nao_spin,nmo),mos_real(nao_spin,nmo),hao(nao,nao),hao_cmplx(nao_spin,nao_spin),hmo(nmo,nmo),fmo(nmo,nmo))
+  allocate(occnum(nmo),roccnum(nmo))
+  allocate(mos_cmplx(nao_spin,nmo),mos_real(nao_spin,nmo),hao_cmplx(nao_spin,nao_spin),hao(nao,nao),hmo(nmo,nmo),fmo(nmo,nmo),smat(nmo,nmo))
   allocate(x_dipole(nmo,nmo),y_dipole(nmo,nmo),z_dipole(nmo,nmo),dpl(nmo,nmo))
 
+  occnum   = 0
+
   ! assume for the time being ao integrals stored in core
-  ao_mode = 'conventional'
+  ao_mode = 'incore'
   call prepare_2e(int2e,gam,ao_mode,iu_2e_ao,iosize_2e,ints_math='real')
 
   ! form 1e Hamiltonian (in AO basis)
   call core_hamiltonian(gam,hao)
-  hao_cmplx                                = 0 
-  hao_cmplx(1:nao,1:nao)                   = hao(1:nao,1:nao)
-  hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = hao(1:nao,1:nao)
+  hao_cmplx                                = cz 
+  hao_cmplx(1:nao,1:nao)                   = cmplx(hao(1:nao,1:nao),kind=xrk)
+  hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = cmplx(hao(1:nao,1:nao),kind=xrk)
 
-  call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
-  mos_real = real(mos_cmplx)
+  ! read orbitals from gamess output
+  mos_cmplx                          = cz
+  if(nmo <= nao) then     ! Cartesian RHF case
+   mos_cmplx(    1:nao     ,1:nmo)   = cmplx(gam%vectors(1:nao,1:nmo),kind=xrk)
+  else if(nmo > nao) then ! Cartesian UHF case
+   mos_cmplx(1:nao         ,1:nmo:2) = cmplx(gam%vectors(1:nao,1:nao),kind=xrk)
+   mos_cmplx(nao+1:nao_spin,2:nmo:2) = cmplx(gam%vectors(1:nao,nao+1:nmo),kind=xrk)
+  endif
+
+  ! tighten up orbitals with a couple scf runs, if requested
+  if(.true.)call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
+
+  ! ensure orbitals have not developed any complex character
+  mos_real = real(real(mos_cmplx))
+  refval = sum(real(aimag(mos_cmplx)))
+  if(refval.gt.eps)then
+   write(ilog,"(/'******* WARNING: imag part of mos_cmplx .gt. ',f14.10,': ',f14.10,' *********')")eps,refval
+  endif
 
   ! load up variables depending on RHF/UHF case 
   if(nmo <= nao) then         ! RHF case, allowing for dropped orbitals
@@ -252,14 +267,15 @@
       stop 'load_mo_integrals - confusing number of mos'
    endif 
 
-  ! Set the ADC variable nbas
-  nbas=nmo
-
-  ! actual call to general integrals in MO basis 
+  ! actual call to generate integrals in MO basis 
   call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
 
-  ! form 1e Hamiltonian in MO basis
-  hmo = real(matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))
+  ! form 1e Hamiltonian in MO basis  (only take the real part)
+  hmo = real(real((matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))))
+  refval = sum(real(aimag((matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx)))))
+  if(refval.gt.eps)then
+   write(ilog,"(/'******* WARNING: imag part of hmo .gt. ',f14.10,': ',f14.10,' *********')")eps,refval
+  endif
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
   fmo = hmo
@@ -298,13 +314,14 @@
     e2 = e2 + d_cf*vpqrs(i,i,j,j) - vpqrs(i,j,i,j)
    enddo sum_j
   enddo sum_i
-  
+  Ehf = e1 + e2 + nuc_repulsion(gam)
+
   ! in the future, we will fill orbitals using aufbau principle. However, I get
   ! the impression this code works primarily with spatial orbitals (i.e. under
   ! RHF). So, we trivially fill up the lowest nelec/2 orbitals, but this is
   ! easily changed in the future.
   do i = 1,nocc_spin
-   occNum(i) = int(2,kind=4)
+   occNum(i) = 2
   enddo
 
   ! load up the dipole moment integrals
@@ -321,15 +338,19 @@
   write(ilog,1001)e1
   write(ilog,1002)e2
   write(ilog,1003)nuc_repulsion(gam)
-  write(ilog,1004)e1+e2+nuc_repulsion(gam)
+  write(ilog,1004)Ehf
   write(ilog,"(60('-'))")
-!  call flush
 
   ! clear integral cache
   call clear_2e(int2e)
-
+ 
   ! clean up all the allocated arrays
-  deallocate(mos_real,mos_cmplx,hao_cmplx,hao,hmo,fmo)
+  deallocate(mos_real)
+  deallocate(mos_cmplx)
+  deallocate(hao_cmplx)
+  deallocate(hao)
+  deallocate(hmo)
+  deallocate(fmo)
 
   return
 1000 format(' Computation of HF energy in mo basis:')
