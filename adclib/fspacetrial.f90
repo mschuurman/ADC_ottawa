@@ -1215,10 +1215,6 @@ contains
        
 !  end subroutine get_tranmom_3
 
-
-
-
-
 !!$---------------------------------------------------------
 !!$ N.B., here ndim is the no. states
 !!$---------------------------------------------------------
@@ -1236,8 +1232,6 @@ contains
     integer :: iout
 
     allocate(sgmvc_short(ndim),ener_short(ndim))
-    
-    write(ilog,*) 'Running Stiltjes'
     
     ehole=e(hinit)
     oslimit=1.e-8
@@ -1257,23 +1251,10 @@ contains
   
     iout=112
     open(iout,file='osc.dat',form='formatted',status='unknown')
-
-    write(ilog,*) ncount,' states are to be sent to ST subroutine'
     do i=1,ncount
-       write(ilog,*) ener_short(i),sgmvc_short(i)
        write(iout,'(2x,F20.15,2x,E21.15)') ener_short(i),sgmvc_short(i)
     end do
-
     close(iout)
-
-!       write(ilog,*) 'Gamma for IS  Energy:',isen(ninista)
-    nlimit=3000
-
-    if (ncount .ge. nlimit) then
-!       call stieltjes_phi(ehole,omega,nlimit,ener_short(1:nlimit),sgmvc_short(1:nlimit),gamma0,7)
-    else
-!       call stieltjes_phi(ehole,omega,ncount,ener_short(1:ncount),sgmvc_short(1:ncount),gamma0,7)
-    end if
 
     deallocate(sgmvc_short,ener_short)
 
@@ -1289,10 +1270,14 @@ contains
     real(d), dimension(ndim), intent(in) :: ener, fosc
     
     real(d), dimension(0:50):: sums
-    integer :: i,j
+    integer :: i,j,k
     real(d) :: elev,flev,ratio
 
-!    sums(0:10)=0._d
+    character(len=8) :: atmp
+
+!-----------------------------------------------------------------------
+! Calculate the negative spectral moments
+!-----------------------------------------------------------------------
     sums=0.0d0
     do i=1,ndim
        elev=ener(i)
@@ -1301,14 +1286,26 @@ contains
        do j=0,50
           sums(j)=sums(j)+ratio
           ratio=ratio/elev
-       end do
-    end do
-    
-    write(ilog,*) 'calculating the sums'
-    write(ilog,*) 'S0 to S-50'
-    do i= 0,50
-       write(ilog,*) i,sums(i)
-    end do
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Write the negative spectral moments to the log file
+!-----------------------------------------------------------------------
+    write(ilog,'(70a)') ('-',i=1,70)
+    write(ilog,*) 'Negative spectral moments'
+    write(ilog,'(70a)') ('-',i=1,70)
+    do i=0,50
+       atmp='S(-'
+       if (i.eq.0) then
+          atmp='S(0)   ='
+       else if (i.lt.10) then
+          write(atmp(4:8),'(i1,a4)') i,')  ='
+       else
+          write(atmp(4:8),'(i2,a3)') i,') ='
+       endif
+       write(ilog,'(a8,x,E14.7)') atmp,sums(i)
+    enddo
    
   end subroutine get_sums
 !!$---------------------------------------------------------

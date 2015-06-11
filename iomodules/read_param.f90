@@ -34,7 +34,10 @@ subroutine load_gamess(chkpt_file,log_file)
   allocate(orbSym(nBas),e(nBas))
 
   ! determine various electronic structure variables
-  call read_gamess_output(nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
+!  call read_gamess_output(nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
+
+  call read_gamess_output(naos,nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
+
   write (ilog,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
 
   ! load MO integrals into memory

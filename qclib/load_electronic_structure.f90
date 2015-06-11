@@ -1,37 +1,3 @@
- ! 
- ! A little hack-y, but temporary for debugging purposes. Simply return the
- ! value of the integral buffer using the native spin-indices.
- !
-! function vpqrs(r,s,u,v)
-!
-!   use vpqrsmod
-!   
-!   use parameters
-!   implicit none
-!   integer,intent(in) :: r,s,u,v
-!   integer            :: r2
-!   real(d)            :: vpqrs
-!
-!!   if(moType == 'disk') then
-!!     r2 = u
-!!     if(moIntegrals%mo_l /= v .and. moIntegrals%mo_l /= u)then
-!!       call fetch_moint2e(moIntegrals,v)
-!!     else
-!!       if(moIntegrals%mo_l == u)r2 = v
-!!     endif
-!!     vpqrs = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
-!!   else
-!!      vpqrs = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
-!!   endif
-!
-!!   call vpqrs_incore(vpqrs,r,s,u,v)
-!
-!   call vpqrs_sub(vpqrs,r,s,u,v)
-!   
-!   return
-! end function vpqrs
-
-!#######################################################################
 
  subroutine errmsg(message)
   use channels, only: ilog
@@ -46,9 +12,10 @@
  !
  ! read a gamess output file
  !
- subroutine read_gamess_output(nbasis,nelec,ncen,nirr,eorb,orbsym,symlab,pntgroup)
+ subroutine read_gamess_output(naos,nbasis,nelec,ncen,nirr,eorb,orbsym,symlab,&
+      pntgroup)
   use constants
-  integer,intent(in)            :: nbasis
+  integer,intent(in)            :: nbasis,naos
   integer*4,intent(out)         :: nelec,ncen,nirr
   real(d),intent(inout)         :: eorb(nbasis)
   integer*4,intent(out)         :: orbsym(nbasis)
@@ -138,8 +105,8 @@
                orbsym(off2) = cnt
                line = line(4:len_trim(line))
             enddo scan_irreps
-            
-            do i = 1,nbasis
+!            do i = 1,nbasis
+            do i = 1,naos
                call read_gamess_line(gamess,line) ! mos
             enddo
             call read_gamess_line(gamess,line) ! blank line/termination string
@@ -191,6 +158,7 @@
   use integrals_mo2e
   use printing
   use channels, only: ilog
+  use vpqrsmod
   implicit none
   type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
@@ -205,7 +173,7 @@
   integer(ik)                                                 :: factable
   real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1, e2
   real(xrk)                                                   :: nuc_repulsion
-  real(d)                                                     :: vpqrs
+!  real(d)                                                     :: vpqrs
   complex(xrk)                                                :: cz = (0._xrk,0._xrk),testnum
 
   ! make a call to MathLogFactorial before we get into the parallel parts, since
