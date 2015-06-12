@@ -183,8 +183,8 @@
         ! Final subspace
         kpqf(:,:)=-1
         if (lcvsfinal) then
-           call select_atom_is_cvs(kpqf(:,:))
-           call select_atom_d_cvs(kpqf(:,:),-1)
+           call select_atom_isf_cvs(kpqf(:,:))
+           call select_atom_df_cvs(kpqf(:,:),-1)
         else
            call select_atom_isf(kpqf(:,:))
            call select_atom_df(kpqf(:,:),-1)

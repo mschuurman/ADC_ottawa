@@ -29,6 +29,7 @@
       lifrzcore=.false.
       lffrzcore=.false. 
       ldavfinal=.false.
+      hinit=1
 
 !-----------------------------------------------------------------------
 ! CVS-ADC parameters

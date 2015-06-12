@@ -1083,11 +1083,16 @@ contains
     deallocate(pre_vv,pre_oo)
 
     ! Deallocate four-index arrays
-    if (lincore) deallocate(D261,D262,D263,D264)
+    if (allocated(D261)) deallocate(D261)
+    if (allocated(D262)) deallocate(D262)
+    if (allocated(D263)) deallocate(D263)
+    if (allocated(D264)) deallocate(D264)
 
     call get_time(2)
 
     write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',dt,'s'
+
+    return
 
   end subroutine get_dipole_initial_product
 
@@ -1216,21 +1221,30 @@ contains
     real(d), dimension(ndim), intent(in)   :: autvec
     real(d), intent(in)                    :: vectol
 
-    real(d), dimension(2*nvirt,2*nvirt) :: tau_2_2_1,tau_2_2_2
-    real(d), dimension(2*nocc,2*nocc)   :: tau_4_2_1,tau_4_2_2
-    real(d)                             :: ftmp1,ftmp2
+    real(d), dimension(:,:), allocatable :: tau_2_2_1,tau_2_2_2,&
+                                            tau_4_2_1,tau_4_2_2
+    real(d)                              :: ftmp1,ftmp2
+
 
     call get_time(1)
 
     write(ilog,'(/,2x,a)') 'Precomputing two-index terms...'
 
 !-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(iszeroa(nvirt,nvirt))
+    allocate(iszerok(nocc,nocc))
+    allocate(tau_2_2_1(2*nvirt,2*nvirt))
+    allocate(tau_2_2_2(2*nvirt,2*nvirt))
+    allocate(tau_4_2_1(2*nocc,2*nocc))
+    allocate(tau_4_2_2(2*nocc,2*nocc))
+
+!-----------------------------------------------------------------------
 ! Here we only bother computing terms that multiply elements of the
 ! initial state vector (autvec) whose magnitude is above the threshold 
 ! value (vectol)
 !-----------------------------------------------------------------------
-    allocate(iszeroa(nvirt,nvirt))
-    allocate(iszerok(nocc,nocc))
     iszeroa=0
     iszerok=0
 
@@ -1335,8 +1349,15 @@ contains
        enddo
     enddo
 
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
     deallocate(iszeroa)
     deallocate(iszerok)
+    deallocate(tau_2_2_1)
+    deallocate(tau_2_2_2)
+    deallocate(tau_4_2_1)
+    deallocate(tau_4_2_2)
 
     call get_time(2)
 

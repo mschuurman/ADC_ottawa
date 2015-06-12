@@ -15,7 +15,7 @@ module parameters
 !!$orbSym - int*4 array(nBas) containing irrep labels of MO's
 !!$e - real*8 array(nBas) containing MO's energies
 !!$occNum - real*8 array(nBas) containing MO's occupation numbers 
-!!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements 
+!!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements
   
   integer*4                            :: nelec,nIrr,nBas,nCen
   integer                              :: nOcc,nVirt

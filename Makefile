@@ -18,7 +18,6 @@ include ${SLEPC_DIR}/conf/slepc_common
 
 #
 # gfortran
-#
 #F90	= gfortran
 #F77	= gfortran
 #CC	= gcc
@@ -31,8 +30,7 @@ include ${SLEPC_DIR}/conf/slepc_common
 F90	 = ifort
 F77	 = ifort
 CC	 = icc
-F90OPTS = -cpp -g -free -fopenmp -traceback 
-#-O2
+F90OPTS = -cpp -g -free -fopenmp -traceback -O1 -unroll0
 CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------

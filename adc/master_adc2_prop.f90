@@ -156,8 +156,8 @@
         ! Final subspace
         kpqf(:,:)=-1
         if (lcvsfinal) then
-           call select_atom_is_cvs(kpqf(:,:))
-           call select_atom_d_cvs(kpqf(:,:),-1)
+           call select_atom_isf_cvs(kpqf(:,:))
+           call select_atom_df_cvs(kpqf(:,:),-1)
         else
            call select_atom_isf(kpqf(:,:))
            call select_atom_df(kpqf(:,:),-1)
@@ -421,10 +421,29 @@
 
         implicit none
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: ndim,ndimf,ndimsf
+        integer                                   :: ndim,ndimf,ndimsf,&
+                                                     n
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+
+!-----------------------------------------------------------------------        
+! Acknowledging that we cannot use 2h2p unit vectors as initial
+! Lanczos vectors, reduce lmain if it is greater than the number
+! of final space 1h1p configurations
+!-----------------------------------------------------------------------        
+        if (lmain.gt.ndimsf) then
+           write(ilog,'(/,2x,a,/)') 'Resetting the Lanczos block size &
+                s.t. it is not greater than the dimension of the 1h1p &
+                subspace'
+           ! Number of Lanczos vectors requested
+           n=lmain*ncycles
+           ! Reset lmain
+           lmain=ndimsf   
+           ! Change ncycles s.t. the number of Lanczos vectors 
+           ! generated does not change
+           ncycles=n/lmain
+        endif
 
 !-----------------------------------------------------------------------        
 ! If requested, determine the initial vectors Lanczos vectors by 
@@ -605,7 +624,7 @@
            enddo
            
            ! ADC(1) eigenvectors
-           allocate(indx1(ndimsf))           
+           allocate(indx1(ndimsf))
            call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
            
            ! 2h2p ISs
