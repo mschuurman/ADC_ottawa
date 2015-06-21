@@ -4,7 +4,7 @@
     use parameters
     use select_fano
     use davmod
-    use band_lanczos
+    use lancmod
     use fspace
     use get_moment
     use misc
@@ -101,7 +101,7 @@
     allocate(ener(davstates),rvec(ndim,davstates))
     allocate(vec_init(ndim))
 
-    call master_dav(ndim,noffd,'i',ndims)
+    call master_dav(ndim,noffd,'i')
     
     call readdavvc(davstates,ener,rvec)
 

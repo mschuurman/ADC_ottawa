@@ -10,7 +10,7 @@
 
         use constants
         use parameters
-        use band_lanczos
+        use lancmod
         use fspace
         use misc
         use guessvecs
@@ -283,7 +283,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation
 !-----------------------------------------------------------------------
-        call master_dav(ndim,noffd,'i',ndims)
+        call master_dav(ndim,noffd,'i')
 
         return
 

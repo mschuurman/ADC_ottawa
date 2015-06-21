@@ -18,20 +18,21 @@ include ${SLEPC_DIR}/conf/slepc_common
 
 #
 # gfortran
-#F90	= gfortran
-#F77	= gfortran
-#CC	= gcc
-#F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
-#CCOPTS  = -g -O0
+#
+F90	= gfortran
+F77	= gfortran
+CC	= gcc
+F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
+CCOPTS  = -g -O0
 
 #
 # intel
 #
-F90	 = ifort
-F77	 = ifort
-CC	 = icc
-F90OPTS = -cpp -g -free -fopenmp -traceback -O1 -unroll0
-CCOPTS  = -g -O0
+#F90	 = ifort
+#F77	 = ifort
+#CC	 = icc
+#F90OPTS = -cpp -g -free -fopenmp -traceback -O1 -unroll0
+#CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------
 # External libraries
@@ -83,6 +84,8 @@ QCLIB=	qclib/vpqrsmod.o \
 EIGEN=  eigen/external_diag.o \
 	eigen/davmod.o \
 	eigen/band_lanczos.o \
+	eigen/block_lanczos.o \
+	eigen/lancmod.o
 
 ADCLIB= adclib/defaults.o \
 	adclib/orbindx.o \
@@ -165,6 +168,8 @@ ADC_OBJ=accuracy.o \
 	fspace2.o \
 	davmod.o \
 	band_lanczos.o \
+	block_lanczos.o \
+	lancmod.o \
 	photoionisation.o \
 	Propagate.o \
         guessvecs.o \

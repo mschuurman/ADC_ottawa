@@ -18,9 +18,9 @@
 
 !#######################################################################
 
-    subroutine master_dav(ndim,noffd,flag,ndims)
+    subroutine master_dav(ndim,noffd,flag)
     
-      integer, intent(in)      :: ndim,ndims
+      integer, intent(in)      :: ndim
       integer*8, intent(in)    :: noffd
       character(1), intent(in) :: flag
 
@@ -42,10 +42,10 @@
 !-----------------------------------------------------------------------
       if (flag.eq.'i') then
          call davidson_diag(dmain,ndm,davstates,davname,ladc1guess,&
-              ndms,flag)
+              flag)
       else if (flag.eq.'f') then
          call davidson_diag(dmain_f,ndm,davstates_f,davname_f,&
-              ladc1guess_f,ndms,flag)
+              ladc1guess_f,flag)
       endif
 
       return

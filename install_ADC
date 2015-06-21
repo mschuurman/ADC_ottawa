@@ -31,8 +31,8 @@ fi
 #blasflag='-mkl=parallel'  
 #lapackflag='-mkl=parallel'
 
-blasflag='-mkl'  
-lapackflag='-mkl'
+#blasflag='-mkl'  
+#lapackflag='-mkl'
 
 #-----------------------------------------------------------------------
 # Determine the path to the SLEPc install directory

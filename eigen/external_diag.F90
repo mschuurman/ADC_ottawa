@@ -3,7 +3,7 @@
 !#######################################################################
 
  subroutine davidson_diag(blckdim,matdim,davstates,vecfile,ladc1guess,&
-      ndms,flag)
+      flag)
 
    use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
                          ndavcalls
@@ -21,7 +21,7 @@
 #include "finclude/petscvec.h90"
    
    integer                             :: blckdim,matdim,davstates,&
-                                          maxbl,nrec,unit,num,ndms,kk
+                                          maxbl,nrec,unit,num,kk
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
    double precision, dimension(matdim) :: vec

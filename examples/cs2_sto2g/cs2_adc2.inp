@@ -17,6 +17,7 @@ davidson_section
 end-davidson_section
 
 lanczos_section
+ type=block
  block_size=10
  iter=20
 end-lanczos_section

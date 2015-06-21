@@ -121,6 +121,11 @@ module parameters
 !!                                     eigenvectors and 2h2p unit
 !!                                     vectors for ADC(2)-s
 !!
+!!$integer lanctype - integer value used to determine the Lanczos algorithm to be
+!!                    used:
+!!
+!!                    lanctype=1 <-> band Lanczos
+!!                             2 <-> block Lanczos
 
   logical                              :: debug
   character(1)                         :: tranmom,tranflag,tranmom2
@@ -164,7 +169,8 @@ module parameters
   logical                              :: ldavfinal
   integer                              :: lancguess
   real(d)                              :: lancmem
-
+  integer                              :: lanctype
+  
 !!$************************************************
 !!$**********Physical Cobnstants*******************
 !!$************************************************

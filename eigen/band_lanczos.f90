@@ -44,7 +44,7 @@
 ! flag: ???
 !#######################################################################
 
-    subroutine master_lancdiag(ndim,noff,flag)
+    subroutine lancdiag_band(ndim,noff,flag)
     
       integer, intent(in)     :: ndim
       integer*8, intent(in)   :: noff
@@ -76,7 +76,7 @@
 
       return
       
-    end subroutine master_lancdiag
+    end subroutine lancdiag_band
 
 !#######################################################################
 ! alloc_blanc: allocates and initialises arrays used by the 

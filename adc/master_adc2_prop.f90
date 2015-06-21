@@ -10,7 +10,7 @@
 
         use constants
         use parameters
-        use band_lanczos
+        use lancmod
         use fspace
         use misc
         use guessvecs
@@ -256,7 +256,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation
 !-----------------------------------------------------------------------
-        call master_dav(ndim,noffd,'i',ndims)
+        call master_dav(ndim,noffd,'i')
 
         return
 
@@ -327,7 +327,7 @@
         use constants
         use parameters
         use fspace
-        use band_lanczos
+        use lancmod
 
         implicit none
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
@@ -402,7 +402,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation in the final space
 !-----------------------------------------------------------------------
-        call master_dav(ndimf,noffdf,'f',ndimsf)
+        call master_dav(ndimf,noffdf,'f')
 
         return
 
@@ -417,7 +417,7 @@
         use parameters
         use guessvecs
         use fspace
-        use band_lanczos
+        use lancmod
 
         implicit none
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
