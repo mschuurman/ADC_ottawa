@@ -7,7 +7,7 @@
 !#######################################################################
 
       subroutine master_adc2_prop()
-
+        
         use constants
         use parameters
         use lancmod
@@ -958,8 +958,8 @@
         allocate(osc_strf(nstates),excit(nstates))
 
         do i=1,nstates
-           excit(i)=enerf(i)-e_init
-        end do
+           excit(i)=enerf(i)-e_init           
+        enddo
 
         osc_strf=0.0d0
         do i=1,nstates
