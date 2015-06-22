@@ -206,7 +206,8 @@ module parameters
 !!$************************************************
 
   integer               :: maxiter,dmain,maxiter_f,&
-                           dmain_f,ndavcalls
+                           dmain_f,ndavcalls,eigentype
+  real(d)               :: davtarg
 
   character*4 :: mtxidd
   logical     :: myb0,transp

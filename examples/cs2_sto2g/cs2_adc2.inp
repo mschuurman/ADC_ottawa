@@ -9,8 +9,8 @@ initial_state=1
 dipole_component = x
 
 davidson_section
- nstates = 11
- block_size = 30
+ nstates = 2
+ block_size = 4
  tol=1d-5
  maxit=700
  guess=adc1

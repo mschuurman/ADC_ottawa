@@ -6,7 +6,7 @@
       flag)
 
    use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
-                         ndavcalls
+                         ndavcalls,davtarg,eigentype
 
    use constants
    use channels
@@ -56,8 +56,6 @@
       PetscScalar elval         ! Real array used for assigning values
                                 ! to the matrix elements      
 
-      PetscScalar b1,b2         ! Bounds of a closesd interval in which
-                                ! to find eigenvalues
       PetscScalar targ          ! Target value for the eigensolver
 
 
@@ -99,7 +97,7 @@
 ! Initialise SLEPc
 !-----------------------------------------------------------------------
       call slepcinitialize(petsc_null_character,ierr)
-      
+
 !-----------------------------------------------------------------------
 ! MPI
 !-----------------------------------------------------------------------
@@ -180,11 +178,17 @@
       call epssetdimensions(eps,neig,ncv,ncv,ierr)
 
 !-----------------------------------------------------------------------
-! Set the eigenpairs of interest: eigenvalues with the smallest
-! real part
+! Set the eigenpairs of interest: either eigenvalues with the smallest
+! real part or those eigenvalues closest to a target values
 !-----------------------------------------------------------------------
-      call epssetwhicheigenpairs(eps,EPS_SMALLEST_REAL,ierr)
-
+      if (eigentype.eq.1) then
+         call epssetwhicheigenpairs(eps,EPS_SMALLEST_REAL,ierr)
+      else if (eigentype.eq.2) then
+         call epssetwhicheigenpairs(eps,EPS_TARGET_MAGNITUDE,ierr)
+         targ=davtarg
+         call epssettarget(eps,targ,ierr)
+      endif
+         
 !-----------------------------------------------------------------------
 ! Set the error tolerance and max. no. iterations
 !-----------------------------------------------------------------------

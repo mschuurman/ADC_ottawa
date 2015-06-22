@@ -65,6 +65,7 @@
       
       ! Common
       ndavcalls=0
+      eigentype=1
 
 !-----------------------------------------------------------------------
 ! Lanczos parameters

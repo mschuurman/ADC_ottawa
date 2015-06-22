@@ -440,6 +440,16 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'target') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               eigentype=2
+               read(keyword(i),*) davtarg
+               davtarg=davtarg/27.211396d0
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -539,6 +549,16 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) maxiter_f
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'target') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               eigentype=2
+               read(keyword(i),*) davtarg
+               davtarg=davtarg/27.211396d0
             else
                goto 100
             endif
