@@ -87,14 +87,11 @@ program main
 !-----------------------------------------------------------------------  
   if (tranmom2 .eq. 'x') then
      dpl(:,:)=x_dipole(:,:)
-     tranflag='y'
   elseif (tranmom2 .eq. 'y') then
      dpl(:,:)=y_dipole(:,:)
-     tranflag='y'
   elseif (tranmom2 .eq. 'z') then
      dpl(:,:)=z_dipole(:,:)
-     tranflag='y'
-  end if
+  endif
 
 !-----------------------------------------------------------------------  
 ! Perform the ADC calculation

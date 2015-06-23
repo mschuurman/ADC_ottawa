@@ -246,4 +246,125 @@
 
 !#######################################################################
 
+    subroutine getblocksize(travec,ndimf,ndimsf)
+
+      use channels
+      use constants
+      use parameters
+      use misc, only: dsortindxa1
+      use iomod, only: freeunit
+
+      implicit none
+
+      integer                              :: ndimf,ndimsf,i,k,iadc1,&
+                                              itmp,ndim2,k1,k2
+      integer, dimension(:), allocatable   :: indx1,indx2
+      real(d), dimension(ndimf)            :: travec
+      real(d), dimension(:,:), allocatable :: adc1vec
+      real(d), dimension(:), allocatable   :: tmpvec
+      real(d)                              :: ftmp,tol
+
+      lmain=0
+
+      if (lancguess.eq.3.or.lancguess.eq.4) then
+         tol=tdtol/sqrt(2.0d0)
+      else
+         tol=tdtol
+      endif
+
+      if (lancguess.eq.1) then         
+         if (method.eq.2) then
+            allocate(indx1(ndimsf))
+            call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
+            do i=1,ndimsf
+               k=indx1(i)            
+               if (abs(travec(k)).gt.tol.and.lmain.lt.maxblock) &
+                    lmain=lmain+1
+            enddo
+         else if (method.eq.3) then            
+            allocate(indx1(ndimf))
+            call dsortindxa1('D',ndimf,travec(1:ndimf)**2,indx1(:))
+            do i=1,ndimf
+               k=indx1(i)            
+               if (abs(travec(k)).gt.tol.and.lmain.lt.maxblock) &
+                    lmain=lmain+1
+            enddo
+         endif
+
+      else if (lancguess.eq.2) then
+         allocate(indx1(ndimsf))
+         allocate(adc1vec(ndimsf,ndimsf))
+         allocate(tmpvec(ndimsf))
+         call freeunit(iadc1)
+         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+              status='old')
+         read(iadc1) itmp,adc1vec
+         close(iadc1)
+         do i=1,ndimsf
+            tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+         enddo
+         call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+         do i=1,ndimsf
+            k=indx1(i)            
+            if (abs(tmpvec(k)).gt.tol.and.lmain.lt.maxblock) &
+                 lmain=lmain+1
+         enddo
+         deallocate(adc1vec)
+         deallocate(tmpvec)
+
+      else if (lancguess.eq.3) then
+         ndim2=ndimf-ndimsf
+         allocate(indx1(ndimsf))
+         allocate(indx2(ndim2))
+         call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
+         call dsortindxa1('D',ndim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+         do i=1,ndimsf
+            k1=indx1(i)
+            k2=ndimsf+indx2(i)
+            ftmp=(1.0d0/sqrt(2.0d0))*abs(travec(k1))+abs(travec(k2))
+            if (ftmp.gt.tol.and.lmain.lt.maxblock) lmain=lmain+1
+         enddo
+         deallocate(indx2)
+
+      else if (lancguess.eq.4) then
+         ndim2=ndimf-ndimsf
+         allocate(indx1(ndimsf))
+         allocate(indx2(ndim2))
+         allocate(adc1vec(ndimsf,ndimsf))
+         allocate(tmpvec(ndimsf))
+         call freeunit(iadc1)
+         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+              status='old')
+         read(iadc1) itmp,adc1vec
+         close(iadc1)
+         do i=1,ndimsf
+            tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+         enddo
+         call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+         call dsortindxa1('D',ndim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+         do i=1,ndimsf
+            k1=indx1(i)
+            k2=indx2(i)
+            ftmp=(1.0d0/sqrt(2.0d0))*abs(tmpvec(k1))+abs(travec(k2))
+            if (ftmp.gt.tol.and.lmain.lt.maxblock) lmain=lmain+1
+         enddo
+         deallocate(adc1vec)
+         deallocate(tmpvec)
+
+      endif
+
+      deallocate(indx1)
+
+      write(ilog,'(/,2x,a,2x,i4,/)') &
+           'Lanczos block size selected:',lmain
+
+      ! Reset ncycles
+      ncycles=maxblock*ncycles/lmain
+
+      return
+
+    end subroutine getblocksize
+
+!#######################################################################
+
   end module guessvecs

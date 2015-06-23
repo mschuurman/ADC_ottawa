@@ -1,4 +1,4 @@
-method = adc2
+method = adc2-s
 
 istate_symm = 1 
 
@@ -18,8 +18,9 @@ end-davidson_section
 
 lanczos_section
  type=block
- block_size=10
- iter=20
+ block_size = dynamic, 20, 1d-4
+ iter=10
+ guess=adc1
 end-lanczos_section
 
 end-input

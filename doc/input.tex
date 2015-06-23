@@ -29,7 +29,7 @@ free format.
 \vspace{0.2cm}
 \noindent
 All blank lines are ignored. All text following a \code{\#} symbol is
-ignored, that is, the \code{\#} sybol can be used to provide
+ignored, that is, the \code{\#} symbol can be used to provide
 comments.
 
 \vspace{0.2cm}
@@ -39,7 +39,7 @@ The input file must be terminated with the single keyword
 
 \subsection*{Selecting the level of perturbation theory}
 \noindent
-The level of perturbation theory is controled by the \code{method} keyword.
+The level of perturbation theory is controlled by the \code{method} keyword.
 
 \begin{table}[h]
 \vspace*{1.7ex}
@@ -107,9 +107,9 @@ The component of the dipole operator is specified using the keyword \code{dipole
 \end{center}
 \end{table}
 
-\subsection*{Contoling the block-Davidson procedure}
+\subsection*{Controlling the block-Davidson procedure}
 \noindent
-The keywords controling the block-Davidson calculation must appear in
+The keywords controlling the block-Davidson calculation must appear in
 a separate section between the keywords
 
 \vspace{0.2cm}
@@ -136,7 +136,7 @@ Possible keywords are:
 \vspace{0.2cm}
 \code{maxit =} & \code{n} & where \code{n} is the maximum number of iterations \\ 
 \vspace{0.2cm}
-\code{tol =} & \code{f} & where \code{f} is the tolerance for converence \\
+\code{tol =} & \code{f} & where \code{f} is the tolerance for convergence \\
 \vspace{0.2cm}
 \code{guess =} & \code{adc1} & requests that the initial vectors are generated from the ADC(1) eigenvectors \\
 \vspace{0.2cm}
@@ -145,9 +145,9 @@ Possible keywords are:
 \end{center}
 \end{table}
 
-\subsection*{Contoling the block-Lanczos procedure}
+\subsection*{Controlling the block-Lanczos procedure}
 \noindent
-The keywords controling the block-Lanczos calculation must appear in
+The keywords controlling the block-Lanczos calculation must appear in
 a separate section between the keywords
 
 \vspace{0.2cm}
@@ -172,8 +172,8 @@ Possible keywords are:
 \vspace{0.2cm}
 \code{ iter =} & \code{n} & where \code{n} is number of iterations to be taken \\
 \vspace{0.2cm}
-$^{\dagger}$\code{type =} & \code{band} & requests the use of the band-Lanczos algorithm (default) \\
-              & \code{block} & requests the use of the block-Lanczos algorithm \\
+$^{\dagger}$\code{type =} & \code{block} & requests the use of the block-Lanczos algorithm (default) \\
+              & \code{band} & requests the use of the block-Lanczos algorithm \\
 \vspace{0.2cm}
 \code{ mem =} & \code{M} & where M is the maximum amount of memory (in Mb) to be used (default 250 Mb) \\
 \vspace{0.2cm}
@@ -186,9 +186,10 @@ $^{\ddagger}$\code{guess =} & \code{adc1} & form the initial Lanczos vectors fro
 
 \vspace{0.2cm}
 \noindent
-$^{\dagger}$ Note that the block-Lanczos algoirthm may be significantly faster than
-the band-Lanczos algorithm (particularly if compiled using the MKL
-libraries), but requires around twice the memory.
+$^{\dagger}$ Note that the block-Lanczos algorithm may be
+significantly faster than the band-Lanczos algorithm (particularly if
+the code was compiled compiled using the MKL libraries), but requires
+around twice the amount of memory.
 
 \vspace{0.4cm}
 \noindent

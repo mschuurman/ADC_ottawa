@@ -8,10 +8,9 @@
 
     integer                              :: nvec
     real(d), dimension(:,:), allocatable :: qmat1,qmat2,umat,rmat,&
-                                            amat,bmat,tmat
-    
+                                            amat,bmat,tmat    
   contains
-
+    
 !#######################################################################
 
     subroutine lancdiag_block(matdim,noff,flag)
@@ -51,7 +50,7 @@
 !-----------------------------------------------------------------------
 ! Perform the block Lanczos calculation
 !-----------------------------------------------------------------------
-      call run_block_lanczos(matdim)
+      call run_block_lanczos(matdim,noff)
 
       return
       
@@ -101,18 +100,18 @@
          
          ! Read the ADC(1) eigenvectors from file
          call freeunit(iadc1)
-         
+            
          open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
               status='old')
-         
+            
          read(iadc1) idim
-
+            
          allocate(adc1vec(idim,idim))
-         
+            
          rewind(iadc1)
 
          read(iadc1) idim,adc1vec
-         
+            
          close(iadc1)
 
          ! Copy the ADC(1) vectors of interest into the qmat2 array
@@ -122,7 +121,7 @@
                qmat2(j,i)=adc1vec(j,k)
             enddo
          enddo
-
+            
       else if (lancguess.eq.3) then
 
          ! Copy the linear combinations of the 1h1p and 2h2p ISs into
@@ -185,23 +184,28 @@
       
 !#######################################################################
 
-    subroutine run_block_lanczos(matdim)
+    subroutine run_block_lanczos(matdim,noff)
 
       use iomod, only: freeunit
 
       implicit none
 
-      integer, intent(in)       :: matdim
-      integer                   :: lanunit,j,i,k,i1,j1,k1,k2,m,n,upper
-      integer                   :: info
-      real(d), dimension(lmain) :: tau
-      real(d), dimension(lmain) :: work
-      real(d)                   :: t1,t2
+      integer, intent(in)                :: matdim
+      integer*8                          :: noff
+      integer                            :: lanunit,j,i,k,i1,j1,k1,k2,&
+                                            m,n,upper
+      integer                            :: info
+      integer, dimension(:), allocatable :: indxi,indxj
+      real(d), dimension(:), allocatable :: hii,hij
+      real(d), dimension(lmain)          :: tau
+      real(d), dimension(lmain)          :: work
+      real(d)                            :: t1,t2,mem
+      logical                            :: lincore
 
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
            'Block-Lanczos Diagonalisation in the Final Space'
-      write(ilog,'(70a,/)') ('*',i=1,70)
+      write(ilog,'(70a)') ('*',i=1,70)
 
       call cpu_time(t1)
 
@@ -209,13 +213,50 @@
       open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
               status='unknown')
 
+!-----------------------------------------------------------------------
+! Determine whether we can run the Lanczos vector generation in-core
+!-----------------------------------------------------------------------
+      ! On-diagonal elements
+      mem=8.0d0*matdim/1024.0d0**2
+
+      ! Off-diagonal elements
+      mem=mem+8.0d0*noff/1024.0d0**2
+
+      ! Off-diagonal indices (2 times integer*4 for each element)
+      mem=mem+8.0d0*noff/1024.0d0**2
+
+      ! Set the logical flag lincore to true if we can fit the
+      ! Hamiltonian matrix in memory
+      if (mem.le.lancmem) then
+         lincore=.true.
+         write(ilog,'(/,2x,a)') 'Matrix-vector multiplication &
+              will proceed in-core'
+      else
+         lincore=.false.
+         write(ilog,'(/,2x,a)') 'Matrix-vector multiplication &
+              will proceed out-of-core'
+      endif      
+
+!-----------------------------------------------------------------------
+! If we are to calculate the Lanczos vectors in-core, then read the
+! Hamiltonian matrix from file
+!-----------------------------------------------------------------------
+      if (lincore) call rdham(matdim,noff,hii,hij,indxi,indxj)
+
+!-----------------------------------------------------------------------
+! Start the block Lanczos iterations
+!-----------------------------------------------------------------------
+      write(ilog,'(/,2x,a,1x,i4)') 'Block size:',lmain
+      write(ilog,'(/,2x,i4,1x,a,/)') ncycles*lmain,&
+           'Lanczos vectors will be generated'
+
       do j=1,ncycles
 
 !-----------------------------------------------------------------------
 ! Output progress
-!-----------------------------------------------------------------------         
+!-----------------------------------------------------------------------
          write(ilog,'(70a)') ('*',k=1,70)
-         write(ilog,'(2x,a,2x,i4)') 'Iteration number',j
+         write(ilog,'(2x,a,1x,i4)') 'Iteration number',j
 
 !-----------------------------------------------------------------------
 ! Write the latest block of Lanczos vectors to disk
@@ -225,7 +266,11 @@
 !-----------------------------------------------------------------------
 ! Calculate the current block of on-diagonal elements of the T-matrix
 !-----------------------------------------------------------------------
-         call hxq(matdim)
+         if (lincore) then
+            call hxq_incore(matdim,noff,hii,hij,indxi,indxj)
+         else
+            call hxq_ext(matdim)
+         endif
 
          umat=umat-matmul(qmat1,transpose(bmat))
 
@@ -300,6 +345,8 @@
       close(lanunit)
 
       call cpu_time(t2)
+
+      write(ilog,'(70a)') ('*',k=1,70)
       write(ilog,'(/,2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
 !-----------------------------------------------------------------------
@@ -307,13 +354,120 @@
 !-----------------------------------------------------------------------
       call calc_pseudospec(lanunit,matdim)
 
+      call cpu_time(t2)
+
+      write(ilog,'(/,2x,a,/)') 'End of the block-Lanczos routine'
+      write(ilog,'(2x,a,1x,F8.2,1x,a1,/)') 'Total time:',t2-t1,'s'
+      write(ilog,'(70a,/)') ('*',i=1,70)
+
       return
 
     end subroutine run_block_lanczos
 
 !#######################################################################
 
-    subroutine hxq(matdim)
+    subroutine rdham(ndim,noff,hii,hij,indxi,indxj)
+
+      use iomod, only: freeunit
+
+      implicit none
+
+      integer, intent(in)                :: ndim
+      integer*8, intent(in)              :: noff
+      integer, dimension(:), allocatable :: indxi,indxj
+      real(d), dimension(:), allocatable :: hii,hij
+
+      integer                            :: unit,maxbl,nrec,count,k,&
+                                            nlim
+      integer, dimension(:), allocatable :: itmp1,itmp2
+      real(d), dimension(:), allocatable :: ftmp
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(hii(ndim))
+      allocate(hij(noff))
+      allocate(indxi(noff))
+      allocate(indxj(noff))
+      
+!-----------------------------------------------------------------------
+! On-diagonal elements
+!-----------------------------------------------------------------------
+      call freeunit(unit)
+
+      open(unit,file='SCRATCH/hmlt.diac',status='old',&
+           access='sequential',form='unformatted')
+      
+      read(unit) maxbl,nrec
+      read(unit) hii
+
+      close(unit)
+
+!-----------------------------------------------------------------------
+! Off-diagonal elements
+!-----------------------------------------------------------------------
+      allocate(ftmp(maxbl))
+      allocate(itmp1(maxbl))
+      allocate(itmp2(maxbl))
+
+      open(unit,file='SCRATCH/hmlt.offc',status='old',&
+           access='sequential',form='unformatted')
+
+      count=0
+      do k=1,nrec         
+         read(unit) ftmp(:),itmp1(:),itmp2(:),nlim
+         hij(count+1:count+nlim)=ftmp(1:nlim)
+         indxi(count+1:count+nlim)=itmp1(1:nlim)
+         indxj(count+1:count+nlim)=itmp2(1:nlim)
+         count=count+nlim
+      enddo
+
+      close(unit)
+
+      deallocate(ftmp,itmp1,itmp2)
+
+      return
+
+    end subroutine rdham
+
+!#######################################################################
+
+    subroutine hxq_incore(matdim,noff,hii,hij,indxi,indxj)
+
+      implicit none
+      
+      integer, intent(in)        :: matdim
+      integer*8, intent(in)      :: noff
+      integer                    :: m,n,k
+      integer, dimension(noff)   :: indxi,indxj
+      real(d), dimension(matdim) :: hii
+      real(d), dimension(noff)   :: hij
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      umat=0.0d0
+      do m=1,matdim
+         do n=1,lmain
+            umat(m,n)=hii(m)*qmat2(m,n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      do k=1,noff
+         umat(indxi(k),:)=umat(indxi(k),:)+hij(k)*qmat2(indxj(k),:)
+         umat(indxj(k),:)=umat(indxj(k),:)+hij(k)*qmat2(indxi(k),:)
+      enddo
+
+      return
+
+    end subroutine hxq_incore
+
+!#######################################################################
+
+    subroutine hxq_ext(matdim)
 
       implicit none
 
@@ -367,7 +521,7 @@
       
       return
       
-    end subroutine hxq
+    end subroutine hxq_ext
 
 !#######################################################################
 
@@ -485,19 +639,14 @@
       real(d), dimension(dim)              :: eigval
       real(d), dimension(matdim,lmain)     :: lvec
       real(d), dimension(:,:), allocatable :: ritzvec
-      real(d)                              :: maxmem
 
 !-----------------------------------------------------------------------
 ! Determine the maximum number of Ritz vectors that we can compute
 ! per sweep
 !-----------------------------------------------------------------------
-      maxmem=250.0d0
+      blcksize=int(floor((lancmem*1024.0d0**2)/(8.0d0*matdim)))
 
-!      blcksize=int(floor((maxmem*1024.0d0**2)/(8.0d0*matdim)))
-!
-!      if (blcksize.gt.dim) blcksize=dim
-
-      blcksize=iblckdim
+      if (blcksize.gt.dim) blcksize=dim
 
       allocate(ritzvec(matdim,blcksize))
 

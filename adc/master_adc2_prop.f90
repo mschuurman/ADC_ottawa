@@ -526,6 +526,7 @@
         use parameters
         use get_moment
         use fspace
+        use guessvecs
 
         implicit none
 
@@ -546,6 +547,13 @@
 !-----------------------------------------------------------------------
         allocate(mtmf(ndimf))
         call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+
+!-----------------------------------------------------------------------
+! If requested, determine the block size based on the transition
+! matrix elements between the initial state and the intermediate
+! states (and possibly the ADC(1) eigenvectors)
+!-----------------------------------------------------------------------
+        if (ldynblock) call getblocksize(mtmf,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of mtmf (and/or the ADC(1)
@@ -675,6 +683,7 @@
         use misc
         use get_matrix_dipole
         use fspace
+        use guessvecs
 
         implicit none
 
@@ -695,6 +704,13 @@
 !-----------------------------------------------------------------------        
         call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
              travec)
+
+!-----------------------------------------------------------------------
+! If requested, determine the block size based on the transition
+! matrix elements between the initial state and the intermediate
+! states (and possibly the ADC(1) eigenvectors)
+!-----------------------------------------------------------------------
+        if (ldynblock) call getblocksize(travec,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of travec (and/or the ADC(1)
@@ -739,7 +755,7 @@
               k1=indx1(i)
               k2=ndimsf+indx2(i)
 
-              ! 1h1p IS plus or minus th 2h2p IS (chosen st the
+              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
               ! resulting vector has the greates TDM with the initial
               ! state)
               if (travec(k1).gt.0.and.travec(k2).gt.0) then

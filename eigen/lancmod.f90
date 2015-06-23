@@ -17,9 +17,9 @@
       character(1),intent(in) :: flag
 
       if (lanctype.eq.1) then
-         call lancdiag_band(ndim,noff,flag)
-      else if (lanctype.eq.2) then
          call lancdiag_block(ndim,noff,flag)
+      else if (lanctype.eq.2) then
+         call lancdiag_band(ndim,noff,flag)
       endif
       
       return

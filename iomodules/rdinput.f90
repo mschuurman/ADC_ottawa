@@ -343,7 +343,7 @@
             goto 999
          endif
 
-         if (lmain.eq.0) then
+         if (lmain.eq.0.and..not.ldynblock) then
             msg='The Lanczos block size has not been given'
             goto 999
          endif
@@ -624,7 +624,19 @@
          if (keyword(i).eq.'block_size') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) lmain
+               if (keyword(i).eq.'dynamic') then
+                  ldynblock=.true.
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) maxblock
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) tdtol
+                  endif
+               else
+                  read(keyword(i),*) lmain
+               endif
             else
                goto 100
             endif
@@ -649,7 +661,7 @@
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
-               endif
+               endif               
             else
                goto 100
             endif
@@ -670,9 +682,9 @@
          else if (keyword(i).eq.'type') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               if (keyword(i).eq.'band') then
+               if (keyword(i).eq.'block') then
                   lanctype=1
-               else if (keyword(i).eq.'block') then
+               else if (keyword(i).eq.'band') then
                   lanctype=2
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))

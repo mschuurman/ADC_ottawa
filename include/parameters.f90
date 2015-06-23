@@ -124,29 +124,22 @@ module parameters
 !!$integer lanctype - integer value used to determine the Lanczos algorithm to be
 !!                    used:
 !!
-!!                    lanctype=1 <-> band Lanczos
-!!                             2 <-> block Lanczos
+!!                    lanctype=1 <-> block Lanczos
+!!                             2 <-> band Lanczos
 
   logical                              :: debug
-  character(1)                         :: tranmom,tranflag,tranmom2
-  character(4)                         :: chrun
-  character(4)                         :: chrun2
-  character(4)                         :: WHAT
-  integer                              :: matvec
+  character(1)                         :: tranmom,tranmom2
   character(36)                        :: lancname,davname,davname_f
-  integer                              :: hinit,nirrep,nirrep2,idiag,fdiag,method,&
-                                          fmethod,davstates,lancstates,stiprilev,&
-                                          numinista,norder,info,statenumber,denord,&
+  integer                              :: hinit,nirrep,nirrep2,method,&
+                                          davstates,lancstates,numinista,&
+                                          norder,info,statenumber,denord,&
                                           davstates_f
   integer, parameter                   :: nhcentre=40
-  integer, dimension(0:nhcentre)       ::  hcentre
-  real(d)                              :: minc,mspacewi,mspacewf,eupper,elower
+  integer, dimension(0:nhcentre)       :: hcentre
+  real(d)                              :: minc,mspacewi,mspacewf
   real(d)                              :: dlim
   integer, dimension(:), allocatable   :: roccnum
-  integer                              :: mgvdim
-  real(d), dimension(:), allocatable   :: mgvec
   integer, dimension(8,8)              :: MT
-  logical                              :: readband
   integer, dimension(400)              :: stvc_lbl
   integer, dimension(:), allocatable   :: stvc_mxc
   integer                              :: ninista
@@ -167,12 +160,10 @@ module parameters
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
-  integer                              :: lancguess
-  real(d)                              :: lancmem
-  integer                              :: lanctype
+
   
 !!$************************************************
-!!$**********Physical Cobnstants*******************
+!!$**********Physical Constants********************
 !!$************************************************
 
 !!$ abohr - Bohr radius [cm]
@@ -188,18 +179,12 @@ module parameters
 !!$************************************************
 !!$**********Lanczos Parameters********************
 !!$************************************************  
-
-  
-
-  character*4           :: mtxidl
-  integer               :: ncycles,maxmem,memx,lmain
-  integer               :: mode,nprint
-  
-  integer, dimension(2) :: iparm
-  real(d)               :: wthr
-  real(d), dimension(2) :: erange
-  real(d)               :: unit
-  real(d),dimension(5)  :: fparm
+  integer :: ncycles,lmain,maxblock
+  integer :: lancguess
+  integer :: lanctype
+  real(d) :: lancmem
+  real(d) :: tdtol
+  logical :: ldynblock
 
 !!$************************************************
 !!$**********Davidson Parameters*******************
@@ -209,9 +194,6 @@ module parameters
                            dmain_f,ndavcalls,eigentype
   real(d)               :: davtarg
 
-  character*4 :: mtxidd
-  logical     :: myb0,transp
-  character*2 :: GO
   character*3 :: POLARIZATION
 
 INTEGER                            :: NSYMA
