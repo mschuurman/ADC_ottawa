@@ -8,7 +8,7 @@
 
     integer                              :: nvec
     real(d), dimension(:,:), allocatable :: qmat1,qmat2,umat,rmat,&
-                                            amat,bmat,tmat    
+                                            amat,bmat,tmat,tmpmat
   contains
     
 !#######################################################################
@@ -30,6 +30,8 @@
       allocate(rmat(matdim,lmain))
       allocate(amat(lmain,lmain))
       allocate(bmat(lmain,lmain))
+
+      allocate(tmpmat(matdim,lmain))
       
       nvec=lmain*ncycles
       allocate(tmat(nvec,nvec))
@@ -272,15 +274,28 @@
             call hxq_ext(matdim)
          endif
 
-         umat=umat-matmul(qmat1,transpose(bmat))
+!         umat=umat-matmul(qmat1,transpose(bmat))
 
-         amat=matmul(transpose(qmat2),umat)
+         call dgemm('N','T',matdim,lmain,lmain,1.0d0,qmat1,matdim,bmat,&
+              lmain,0.0d0,tmpmat,matdim)
+
+         umat=umat-tmpmat
+         
+!         amat=matmul(transpose(qmat2),umat)
+
+         call dgemm('T','N',lmain,lmain,matdim,1.0d0,qmat2,matdim,umat,&
+              matdim,0.0d0,amat,lmain)
          
 !-----------------------------------------------------------------------
 ! Calculate the next block of Krylov vectors
 !-----------------------------------------------------------------------
-         rmat=umat-matmul(qmat2,amat)
+!         rmat=umat-matmul(qmat2,amat)
 
+         call dgemm('N','N',matdim,lmain,lmain,1.0d0,qmat2,matdim,amat,&
+              lmain,0.0d0,tmpmat,matdim)
+
+         rmat=umat-tmpmat
+         
 !-----------------------------------------------------------------------
 ! Compute the QR factorization of the matrix of Krylov vectors
 !-----------------------------------------------------------------------
