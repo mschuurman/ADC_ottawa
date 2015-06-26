@@ -28,10 +28,7 @@ fi
 #blasflag='-mkl=sequential'
 #lapackflag='-mkl=sequential'
 
-#blasflag='-mkl=parallel'  
-#lapackflag='-mkl=parallel'
-
-#blasflag='-mkl'  
+#blasflag='-mkl'
 #lapackflag='-mkl'
 
 #-----------------------------------------------------------------------

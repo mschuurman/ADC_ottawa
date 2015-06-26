@@ -6,7 +6,7 @@
     
     implicit none
 
-    integer                              :: nvec
+    integer                              :: nvec,nwr,buffsize
     real(d), dimension(:,:), allocatable :: qmat1,qmat2,umat,rmat,&
                                             amat,bmat,tmat,tmpmat
   contains
@@ -30,7 +30,6 @@
       allocate(rmat(matdim,lmain))
       allocate(amat(lmain,lmain))
       allocate(bmat(lmain,lmain))
-
       allocate(tmpmat(matdim,lmain))
       
       nvec=lmain*ncycles
@@ -92,7 +91,6 @@
       if (lancguess.eq.1) then
 
          ! Copy the 1h1p of interest into the qmat2 array
-         
          do i=1,lmain
             k=stvc_lbl(i)
             qmat2(k,i)=1.0d0
@@ -192,17 +190,20 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer*8                          :: noff
-      integer                            :: lanunit,j,i,k,i1,j1,k1,k2,&
-                                            m,n,upper
-      integer                            :: info
-      integer, dimension(:), allocatable :: indxi,indxj
-      real(d), dimension(:), allocatable :: hii,hij
-      real(d), dimension(lmain)          :: tau
-      real(d), dimension(lmain)          :: work
-      real(d)                            :: t1,t2,mem
-      logical                            :: lincore
+      integer, intent(in)                  :: matdim
+      integer*8                            :: noff
+      integer                              :: lanunit,j,i,k,i1,j1,k1,k2,&
+                                              m,n,upper,reclength,&
+                                              nv,nsurplus,nprev,&
+                                              nthreads
+      integer                              :: info
+      integer, dimension(:), allocatable   :: indxi,indxj
+      real(d), dimension(:), allocatable   :: hii,hij
+      real(d), dimension(lmain)            :: tau
+      real(d), dimension(lmain)            :: work
+      real(d)                              :: t1,t2,mem
+      real(d), dimension(:,:), allocatable :: buffer
+      logical                              :: lincore
 
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
@@ -211,9 +212,26 @@
 
       call cpu_time(t1)
 
+!-----------------------------------------------------------------------
+! Determine the buffer size (in terms of the no. Lanczos vectors that
+! we can hold in memory)
+!-----------------------------------------------------------------------
+      buffsize=int(floor(((lancmem/3.0d0)*1024.0d0**2)/(8.0d0*matdim)))
+
+      if (buffsize.gt.nvec) buffsize=nvec
+      if (buffsize.lt.lmain) buffsize=lmain
+
+      allocate(buffer(matdim,buffsize))
+
+      nv=0
+      nwr=0
+
       call freeunit(lanunit)
+      
+      reclength=8*matdim*buffsize
+
       open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
-              status='unknown')
+           status='unknown',access='direct',recl=reclength)
 
 !-----------------------------------------------------------------------
 ! Determine whether we can run the Lanczos vector generation in-core
@@ -227,6 +245,10 @@
       ! Off-diagonal indices (2 times integer*4 for each element)
       mem=mem+8.0d0*noff/1024.0d0**2
 
+      ! Account for the size of the buffer that we are using to
+      ! hold the Lanczos vectors...
+      mem=mem+8.0d0*buffsize*matdim/1024.0d0**2
+
       ! Set the logical flag lincore to true if we can fit the
       ! Hamiltonian matrix in memory
       if (mem.le.lancmem) then
@@ -237,7 +259,7 @@
          lincore=.false.
          write(ilog,'(/,2x,a)') 'Matrix-vector multiplication &
               will proceed out-of-core'
-      endif      
+      endif
 
 !-----------------------------------------------------------------------
 ! If we are to calculate the Lanczos vectors in-core, then read the
@@ -261,9 +283,41 @@
          write(ilog,'(2x,a,1x,i4)') 'Iteration number',j
 
 !-----------------------------------------------------------------------
-! Write the latest block of Lanczos vectors to disk
+! Writing of the Lanczos vectors to disk
 !-----------------------------------------------------------------------
-         write(lanunit) qmat2(:,:)
+
+         nprev=nv
+         nv=nv+lmain
+
+         if (nv.eq.buffsize) then
+            ! Write all vectors to disk
+            nwr=nwr+1
+            buffer(:,nprev+1:buffsize)=qmat2(:,:)
+            write(lanunit,rec=nwr) buffer
+            buffer=0.0d0
+            nv=0
+         else if (nv.gt.buffsize) then
+            ! Write some of the vectors to disk and
+            ! save the rest to the buffer
+            nwr=nwr+1
+            nsurplus=nv-buffsize
+            k=buffsize-nprev
+            buffer(:,nprev+1:buffsize)=qmat2(:,1:k)
+            write(lanunit,rec=nwr) buffer
+            buffer=0.0d0
+            buffer(:,1:nsurplus)=qmat2(:,k+1:lmain)
+            nv=nsurplus
+         else
+            ! Save the vectors to the buffer
+            buffer(:,nprev+1:nv)=qmat2(:,:)
+         endif
+
+! If we are on the last iteration, make sure that the buffer has been
+! written to disk
+         if (j.eq.ncycles.and.nv.lt.buffsize.and.nv.gt.0) then
+            nwr=nwr+1
+            write(lanunit,rec=nwr) buffer
+         endif
 
 !-----------------------------------------------------------------------
 ! Calculate the current block of on-diagonal elements of the T-matrix
@@ -274,23 +328,17 @@
             call hxq_ext(matdim)
          endif
 
-!         umat=umat-matmul(qmat1,transpose(bmat))
-
          call dgemm('N','T',matdim,lmain,lmain,1.0d0,qmat1,matdim,bmat,&
               lmain,0.0d0,tmpmat,matdim)
 
          umat=umat-tmpmat
          
-!         amat=matmul(transpose(qmat2),umat)
-
          call dgemm('T','N',lmain,lmain,matdim,1.0d0,qmat2,matdim,umat,&
               matdim,0.0d0,amat,lmain)
          
 !-----------------------------------------------------------------------
 ! Calculate the next block of Krylov vectors
 !-----------------------------------------------------------------------
-!         rmat=umat-matmul(qmat2,amat)
-
          call dgemm('N','N',matdim,lmain,lmain,1.0d0,qmat2,matdim,amat,&
               lmain,0.0d0,tmpmat,matdim)
 
@@ -329,19 +377,19 @@
 !-----------------------------------------------------------------------
 ! Fill in the next block of the T-matrix array
 !-----------------------------------------------------------------------
-         i1=0 ! Initialise the column counter
-         do m=(j-1)*lmain+1,j*lmain ! Loop over columns of T_j
-            i1=i1+1 ! Increment the column counter
+         i1=0                        ! Initialise the column counter
+         do m=(j-1)*lmain+1,j*lmain  ! Loop over columns of T_j
+            i1=i1+1                  ! Increment the column counter
             if (j.lt.ncycles) then
                upper=(j+1)*lmain
             else
                upper=j*lmain
             endif
-            j1=0 ! Initialise the row counters
+            j1=0                     ! Initialise the row counters
             k1=0
             k2=0
             do n=(j-1)*lmain+1,upper ! Loop over rows of T_j
-               j1=j1+1 ! Increment the main row counter
+               j1=j1+1               ! Increment the main row counter
                if (j1.le.lmain) then ! Contribution from A_j
                   k1=k1+1
                   tmat(n,m)=amat(k1,i1)
@@ -355,14 +403,28 @@
 
       enddo
 
-      lancstates=ncycles*lmain
-      
       close(lanunit)
 
       call cpu_time(t2)
 
       write(ilog,'(70a)') ('*',k=1,70)
       write(ilog,'(/,2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
+
+!-----------------------------------------------------------------------
+! Set the number of Lanczos states
+!-----------------------------------------------------------------------
+      lancstates=ncycles*lmain
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(buffer)
+      deallocate(qmat1)
+      deallocate(qmat2)
+      deallocate(rmat)
+      deallocate(amat)
+      deallocate(bmat)
+      deallocate(tmpmat)
 
 !-----------------------------------------------------------------------
 ! Calculate the Lanczos pseudospectrum
@@ -461,20 +523,37 @@
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-      umat=0.0d0
-      do m=1,matdim
-         do n=1,lmain
+!      umat=0.0d0
+!      do m=1,matdim
+!         do n=1,lmain
+!            umat(m,n)=hii(m)*qmat2(m,n)
+!         enddo
+!      enddo
+
+      !$omp parallel do private(m,n) shared(umat,hii,qmat2)
+      do n=1,lmain
+         do m=1,matdim
             umat(m,n)=hii(m)*qmat2(m,n)
          enddo
       enddo
+      !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Contribution from the off-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-      do k=1,noff
-         umat(indxi(k),:)=umat(indxi(k),:)+hij(k)*qmat2(indxj(k),:)
-         umat(indxj(k),:)=umat(indxj(k),:)+hij(k)*qmat2(indxi(k),:)
+!      do k=1,noff
+!         umat(indxi(k),:)=umat(indxi(k),:)+hij(k)*qmat2(indxj(k),:)
+!         umat(indxj(k),:)=umat(indxj(k),:)+hij(k)*qmat2(indxi(k),:)
+!      enddo
+
+      !$omp parallel do private(k,n) shared(umat,hij,qmat2,indxi,indxj)
+      do n=1,lmain
+         do k=1,noff
+            umat(indxi(k),n)=umat(indxi(k),n)+hij(k)*qmat2(indxj(k),n)
+            umat(indxj(k),n)=umat(indxj(k),n)+hij(k)*qmat2(indxi(k),n)
+         enddo
       enddo
+      !$omp end parallel do
 
       return
 
@@ -490,12 +569,13 @@
       integer                            :: unit
       integer                            :: maxbl,nrec,nlim,i,j,k,l,m,n
       integer, dimension(:), allocatable :: indxi,indxj
-      real(d), dimension(matdim)         :: hii
-      real(d), dimension(:), allocatable :: hij
+      real(d), dimension(:), allocatable :: hii,hij
 
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
+      allocate(hii(matdim))
+
       unit=77
       open(unit,file='SCRATCH/hmlt.diac',status='old',access='sequential',&
            form='unformatted')
@@ -506,11 +586,21 @@
       close(unit)
 
       umat=0.0d0
-      do m=1,matdim
-         do n=1,lmain
+!      do n=1,matdim
+!         do m=1,lmain
+!            umat(m,n)=hii(m)*qmat2(m,n)
+!         enddo
+!      enddo
+
+      !$omp parallel do private(m,n) shared(umat,hii,qmat2)
+      do n=1,lmain
+         do m=1,matdim
             umat(m,n)=hii(m)*qmat2(m,n)
          enddo
       enddo
+      !$omp end parallel do
+
+      deallocate(hii)
 
 !-----------------------------------------------------------------------
 ! Contribution from the off-diagonal elements of the Hamiltonian matrix
@@ -520,14 +610,26 @@
       open(unit,file='SCRATCH/hmlt.offc',status='old',access='sequential',&
            form='unformatted')
 
+!      do k=1,nrec
+!         read(unit) hij(:),indxi(:),indxj(:),nlim
+!         do l=1,nlim
+!            i=indxi(l)
+!            j=indxj(l)
+!            umat(i,n)=umat(i,n)+hij(l)*qmat2(j,n)
+!            umat(j,n)=umat(j,n)+hij(l)*qmat2(i,n)
+!         enddo
+!      enddo
+
       do k=1,nrec
          read(unit) hij(:),indxi(:),indxj(:),nlim
-         do l=1,nlim
-            i=indxi(l)
-            j=indxj(l)
-            umat(i,:)=umat(i,:)+hij(l)*qmat2(j,:)
-            umat(j,:)=umat(j,:)+hij(l)*qmat2(i,:)
+         !$omp parallel do private(l,n) shared(umat,hij,qmat2,indxi,indxj)
+         do n=1,lmain
+            do l=1,nlim               
+               umat(indxi(l),n)=umat(indxi(l),n)+hij(l)*qmat2(indxj(l),n)
+               umat(indxj(l),n)=umat(indxj(l),n)+hij(l)*qmat2(indxi(l),n)
+            enddo
          enddo
+         !$omp end parallel do
       enddo
 
       close(unit)
@@ -545,7 +647,7 @@
       implicit none
 
       integer                       :: lanunit,matdim,i
-      real(d), dimension(nvec,nvec) :: umat
+      real(d), dimension(nvec,nvec) :: eigvec
       real(d), dimension(nvec)      :: eigval
       real(d)                       :: t1,t2,mem
 
@@ -557,7 +659,7 @@
 
       call cpu_time(t1)
 
-      call diagmat_banded(lmain,tmat,nvec,umat,eigval)
+      call diagmat_banded(lmain,tmat,nvec,eigvec,eigval)
 
       call cpu_time(t2)
 
@@ -570,14 +672,15 @@
 
       call cpu_time(t1)
 
-      mem=16.0d0*matdim*nvec/1024.0d0**2
+      mem=2*8.0d0*matdim*nvec/1024.0d0**2
 
       if (mem.le.lancmem) then
          write(ilog,'(2x,a,/)') 'Calculation will proceed in-core'
-         call ritzvecs_incore(lanunit,umat,eigval,nvec,matdim)
+         call ritzvecs_incore(lanunit,eigvec,eigval,matdim)
       else
-         write(ilog,'(2x,a,/)') 'Calculation will proceed out-of-core'
-         call ritzvecs_ext(lanunit,umat,nvec,matdim,eigval,lmain)
+         write(ilog,'(2x,a,/)') 'Calculation will proceed &
+              out-of-core'
+         call ritzvecs_ext2(lanunit,eigvec,nvec,matdim,eigval)
       endif
 
       call cpu_time(t2)
@@ -641,133 +744,181 @@
 
 !#######################################################################
 
-    subroutine ritzvecs_ext(lanunit,umat,dim,matdim,eigval,iblckdim)
+    subroutine ritzvecs_ext2(lanunit,eigvec,nvec,matdim,eigval)
+      
+      use iomod, only: freeunit
 
       implicit none
 
-      integer                              :: v
-      integer                              :: i,j,k,m,n,count1,lanunit,&
-                                              dim,matdim,ritzunit,&
-                                              iblckdim,nblcks,last,count2
-      integer                              :: blcksize
-      real(d), dimension(dim,dim)          :: umat
-      real(d), dimension(dim)              :: eigval
-      real(d), dimension(matdim,lmain)     :: lvec
-      real(d), dimension(:,:), allocatable :: ritzvec
+      integer                              :: lanunit,nvec,matdim,&
+                                              ritzunit,blocksize,i,j,&
+                                              nblocks,reclength,k,&
+                                              tmpunit,k1,k2,l1,l2,nk,nl
+      real(d), dimension(nvec,nvec)        :: eigvec
+      real(d), dimension(nvec)             :: eigval
+      real(d), dimension(:,:), allocatable :: rvec,lvec,tmpmat
 
 !-----------------------------------------------------------------------
-! Determine the maximum number of Ritz vectors that we can compute
-! per sweep
+! Open files
 !-----------------------------------------------------------------------
-      blcksize=int(floor((lancmem*1024.0d0**2)/(8.0d0*matdim)))
+      reclength=8*matdim*buffsize
 
-      if (blcksize.gt.dim) blcksize=dim
+      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
+              status='unknown',access='direct',recl=reclength)
 
-      allocate(ritzvec(matdim,blcksize))
+      call freeunit(tmpunit)
+      open(tmpunit,file='SCRATCH/tmpvecs',form='unformatted',&
+           status='unknown',access='direct',recl=reclength)
 
-!-----------------------------------------------------------------------
-! Open the Lanzcos and Ritz vector files
-!-----------------------------------------------------------------------
-      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',status='old')
-
-      ritzunit=lanunit+1
+      call freeunit(ritzunit)
       open(ritzunit,file=lancname,access='sequential',&
            form='unformatted',status='unknown')
 
 !-----------------------------------------------------------------------
-! Calculate the Ritz vectors
+! Allocate arrays
 !-----------------------------------------------------------------------
-      ! Loop over blocks of Ritz vectors
-      nblcks=ceiling(real(dim)/real(blcksize))
+      allocate(lvec(matdim,buffsize))
+      allocate(rvec(matdim,buffsize))
+      allocate(tmpmat(matdim,buffsize))
 
-      do i=1,nblcks-1
+      lvec=0.0d0
+      rvec=0.0d0
+      tmpmat=0.0d0
+
+!-----------------------------------------------------------------------
+! Complete blocks of Lanczos vectors
+!-----------------------------------------------------------------------
+      do i=1,nwr-1
+
+         read(lanunit,rec=i) lvec
+
+         k1=(i-1)*buffsize+1 ! First Lanczos vector in the current block         
+         k2=i*buffsize ! Last Lanczos vector in the current block
          
-         ritzvec=0.0d0
-
-         ! Calculate the curent block of blcksize Ritz vectors
-         rewind(lanunit)
-         count2=0
-         do k=1,ncycles ! Loop over blocks of Lanczos vectors
-            read(lanunit) lvec
-            ! Loop over each Lanczos vector in the current block
-            ! Each Lanczos vector contributes to all components
-            ! of the current block of Ritz vectors
-            do n=1,lmain
-               count1=0
-               count2=count2+1
-               do v=blcksize*i-blcksize+1,blcksize*i
-                  count1=count1+1
-                  do m=1,matdim
-                     ritzvec(m,count1)=ritzvec(m,count1)+lvec(m,n)*umat(count2,v)
-                  enddo
-               enddo
-            enddo
+         ! Complete blocks of Ritz vectors
+         do j=1,nwr-1
+            if (i.gt.1) read(tmpunit,rec=j) rvec
+            l1=(j-1)*buffsize+1 ! First Ritz vector in the current block            
+            l2=j*buffsize ! Last Ritz vector in the current block
+            call dgemm('N','N',matdim,buffsize,buffsize,1.0d0,&
+                 lvec,matdim,eigvec(k1:k2,l1:l2),buffsize,0.0d0,&
+                 tmpmat,matdim)
+            rvec=rvec+tmpmat
+            write(tmpunit,rec=j) rvec
          enddo
 
-         ! Write the current block of Ritz vectors to file along with
-         ! the corresponding Ritz values
-         count1=0
-         do v=blcksize*i-blcksize+1,blcksize*i
-            count1=count1+1
-            write(ritzunit) v,eigval(v),ritzvec(:,count1)
-         enddo
-         
-      enddo
+         ! Potentially incomplete block of Ritz vectors
+         if (i.gt.1) read(tmpunit,rec=nwr) rvec
+         l1=(nwr-1)*buffsize+1
+         l2=nvec
+         nl=l2-l1+1
+         call dgemm('N','N',matdim,nl,buffsize,1.0d0,&
+                 lvec,matdim,eigvec(k1:k2,l1:l2),buffsize,0.0d0,&
+                 tmpmat(:,1:nl),matdim)
+         rvec(:,1:nl)=rvec(:,1:nl)+tmpmat(:,1:nl)
+         write(tmpunit,rec=nwr) rvec
 
-      ! Remaining n Ritz vectors from the (potentially) incomplete 
-      ! block
-      n=dim-blcksize*(nblcks-1)
-      ritzvec=0.0d0
-      rewind(lanunit)
-      count2=0
-      do k=1,ncycles
-         read(lanunit) lvec
-         do i=1,lmain
-            count1=0
-            count2=count2+1
-            do v=dim-n+1,dim
-               count1=count1+1
-               do m=1,matdim
-                  ritzvec(m,count1)=ritzvec(m,count1)+lvec(m,i)*umat(count2,v)
-               enddo
-            enddo
-         enddo
-      enddo
-         
-      count1=0
-      do v=dim-n+1,dim
-         count1=count1+1
-         write(ritzunit) v,eigval(v),ritzvec(:,count1)
       enddo
 
 !-----------------------------------------------------------------------
-! Close the Lanczos and Ritz vector files
+! Potentially incomplete block of Lanczos vectors
 !-----------------------------------------------------------------------
+      read(lanunit,rec=nwr) lvec
+      k1=(nwr-1)*buffsize+1
+      k2=nvec
+      nk=k2-k1+1
+
+      ! Complete blocks of Ritz vectors
+      do j=1,nwr-1
+         read(tmpunit,rec=j) rvec
+         l1=(j-1)*buffsize+1 ! First Ritz vector in the current block            
+         l2=j*buffsize ! Last Ritz vector in the current block         
+         call dgemm('N','N',matdim,buffsize,nk,1.0d0,&
+                 lvec(:,1:nk),matdim,eigvec(k1:k2,l1:l2),nk,0.0d0,&
+                 tmpmat,matdim)
+         rvec=rvec+tmpmat
+         write(tmpunit,rec=j) rvec
+      enddo
+      
+      ! Potentially incomplete block of Ritz vectors
+      if (nwr.gt.1) read(tmpunit,rec=nwr) rvec
+      l1=(nwr-1)*buffsize+1
+      l2=nvec
+      nl=l2-l1+1
+      call dgemm('N','N',matdim,nl,nk,1.0d0,&
+           lvec(:,1:nk),matdim,eigvec(k1:k2,l1:l2),nk,0.0d0,&
+           tmpmat(:,1:nl),matdim)
+      rvec(:,1:nl)=rvec(:,1:nl)+tmpmat(:,1:nl)
+      write(tmpunit,rec=nwr) rvec
+
+!-----------------------------------------------------------------------
+! Write the Ritz vectors to file using the format required for future
+! use
+!-----------------------------------------------------------------------
+      ! Complete blocks of Ritz vectors
+      k=0
+      do i=1,nwr-1
+         read(tmpunit,rec=i) rvec
+         do j=1,buffsize
+            k=k+1
+            write(ritzunit) k,eigval(k),rvec(:,j)
+         enddo
+      enddo
+
+      ! Potentially incomplete block of Ritz vectors
+      read(tmpunit,rec=nwr) rvec
+      l1=(nwr-1)*buffsize+1
+      l2=nvec
+      nl=l2-l1+1
+      do i=1,nl
+         k=k+1
+         write(ritzunit) k,eigval(k),rvec(:,i)
+      enddo
+
+!-----------------------------------------------------------------------
+! Close files
+!-----------------------------------------------------------------------      
       close(lanunit)
+      close(tmpunit)
       close(ritzunit)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(lvec)
+      deallocate(rvec)
+      deallocate(tmpmat)
 
       return
 
-    end subroutine ritzvecs_ext
+    end subroutine ritzvecs_ext2
 
 !#######################################################################
 
-    subroutine ritzvecs_incore(lanunit,umat,eigval,dim,matdim)
+    subroutine ritzvecs_incore(lanunit,eigvec,eigval,matdim)
 
       implicit none
 
-      integer                          :: lanunit,ritzunit,dim,matdim,&
-                                          i,j,k
-      integer                          :: v
-      real(d), dimension(matdim,dim)   :: lvec,rvec
-      real(d), dimension(matdim,lmain) :: tmpvec
-      real(d), dimension(dim,dim)      :: umat
-      real(d), dimension(dim)          :: eigval
+      integer                              :: lanunit,ritzunit,i,k1,&
+                                              k2,nk,matdim,reclength
+      real(d), dimension(nvec,nvec)        :: eigvec
+      real(d), dimension(nvec)             :: eigval
+      real(d), dimension(:,:), allocatable :: lvec,rvec,buffer
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(lvec(matdim,nvec))
+      allocate(rvec(matdim,nvec))
+      allocate(buffer(matdim,buffsize))
 
 !-----------------------------------------------------------------------
 ! Open the Lanzcos and Ritz vector files
 !-----------------------------------------------------------------------
-      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',status='old')
+      reclength=8*matdim*buffsize
+
+      open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
+              status='unknown',access='direct',recl=reclength)
 
       ritzunit=lanunit+1
       open(ritzunit,file=lancname,access='sequential',&
@@ -776,30 +927,43 @@
 !-----------------------------------------------------------------------
 ! Read the Lanczos vectors from file
 !-----------------------------------------------------------------------
-      k=0
-      do i=1,ncycles
-         read(lanunit) tmpvec
-         do j=1,lmain
-            k=k+1
-            lvec(:,k)=tmpvec(:,j)
-         enddo
+      ! Full buffers
+      do i=1,nwr-1
+         read(lanunit,rec=i) buffer
+         k1=(i-1)*buffsize+1
+         k2=i*buffsize
+         lvec(:,k1:k2)=buffer
       enddo
+      
+      ! Potentially incomplete buffers
+      read(lanunit,rec=nwr) buffer
+      k1=(nwr-1)*buffsize+1
+      k2=nvec
+      nk=k2-k1+1
+      lvec(:,k1:k2)=buffer(:,1:nk)
 
 !-----------------------------------------------------------------------
 ! Calculate and output the Ritz vectors
 !-----------------------------------------------------------------------
-      call dgemm('N','N',matdim,dim,dim,1.0d0,lvec,matdim,umat,dim,&
-           0.0d0,rvec,matdim)
+      call dgemm('N','N',matdim,nvec,nvec,1.0d0,lvec,matdim,eigvec,&
+           nvec,0.0d0,rvec,matdim)
 
-      do v=1,dim
-         write(ritzunit) v,eigval(v),rvec(:,v)
+      do i=1,nvec
+         write(ritzunit) i,eigval(i),rvec(:,i)
       enddo
-      
+
 !-----------------------------------------------------------------------
 ! Close the Lanczos and Ritz vector files
 !-----------------------------------------------------------------------
       close(lanunit)
       close(ritzunit)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(rvec)
+      deallocate(lvec)
+      deallocate(buffer)
 
       return
 
@@ -836,7 +1000,6 @@
       enddo
 
       close(unit)
-
 
       print*,"Lanczos vectors"
       open(unit,file='SCRATCH/lanvecs',form='unformatted',status='old')
