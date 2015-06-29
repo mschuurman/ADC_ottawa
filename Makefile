@@ -31,7 +31,7 @@ CCOPTS  = -g -O0
 #F90	 = ifort
 #F77	 = ifort
 #CC	 = icc
-#F90OPTS = -cpp -g -free -fopenmp -traceback -O1 -unroll0
+#F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O1 -unroll0
 #CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------

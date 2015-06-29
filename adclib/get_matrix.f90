@@ -9,7 +9,14 @@ module get_matrix
 
   implicit none
 
-  integer, parameter :: buf_size=8192
+  ! 125 Kb per record
+!  integer, parameter :: buf_size=8192
+
+  ! 100 Mb per record
+  integer, parameter :: buf_size=6553600
+
+  ! 250 Mb per record
+!  integer, parameter :: buf_size=16384000
 
 contains
   
@@ -73,7 +80,7 @@ contains
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
 
-!!$ Full diagonalization. The program performs a symmetry check. For better efficiency 
+!!$ Full diagonalization. The program performs a symmetry check. For better efficiency
 !!$ it should be removed if no problems have showed up.
  
     do i=1,ndim
@@ -178,10 +185,13 @@ contains
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
     real(d) :: ar_offdiag_ij, ar_offdiag_ji
 
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
     
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
+
     name="tda.off"//chr
     unt=12
 
@@ -218,6 +228,10 @@ contains
        call register2()
        CLOSE(unt)
        
+       deallocate(oi)
+       deallocate(oj)
+       deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -476,13 +490,17 @@ contains
     character(30)                :: name
     integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
     real(d)                      :: ar_offdiag_ij
-    
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-    
+
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
+   
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: t1,t2
+
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
@@ -622,6 +640,10 @@ contains
     write(ilog,'(/,2x,a,F8.2,1x,a1)') &
          'Time taken to save off-diagonal elements:',t2-t1,'s'
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
     
     subroutine register1()
@@ -669,9 +691,13 @@ contains
     integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
     real(d) :: ar_offdiag_ij
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-    
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
+
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
+
     name="SCRATCH/hmlt.off"//chr
     unt=12
 
@@ -746,6 +772,10 @@ contains
     call register2()
     CLOSE(unt)
     write(ilog,*) count,' off-diagonal elements saved'
+
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
     
   contains
 
@@ -1501,14 +1531,17 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
   integer :: lim1i, lim2i, lim1j, lim2j
   real(d) :: arr_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiag
+  integer, dimension(:), allocatable :: oi,oj
+  real(d), dimension(:), allocatable :: file_offdiag
 
   integer                              :: nvirt,a,b,nzero
   real(d), dimension(:,:), allocatable :: ca,cb
   real(d)                              :: t1,t2
 
 
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
 
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
@@ -1900,6 +1933,10 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -1953,12 +1990,16 @@ subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
   integer :: lim1i, lim2i, lim1j, lim2j
   real(d) :: arr_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiag
+  integer, dimension(:), allocatable :: oi,oj
+  real(d), dimension(:), allocatable :: file_offdiag
 
   integer                              :: nvirt,a,b,nzero
   real(d), dimension(:,:), allocatable :: ca,cb
   real(d)                              :: t1,t2
+
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
 
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
@@ -2318,6 +2359,10 @@ subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -2511,9 +2556,13 @@ end subroutine get_offdiag_adc2ext_save_cvs
     integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
     real(d) :: ar_offdiag_ij
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
     
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
+
     name="SCRATCH/hmlt.off"//chr
     unt=12
 
@@ -2616,6 +2665,10 @@ end subroutine get_offdiag_adc2ext_save_cvs
     CLOSE(unt)
     write(ilog,*) count,' off-diagonal elements saved'
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+    
   contains
     
     subroutine register1()
@@ -2756,10 +2809,13 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
     integer :: i,j,dim_count,ndim1
     
-    
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-    
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
+
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
+
     ar_offdiag(:,:)=0._d
     
 !!$ Full diagonalization. 
@@ -2848,6 +2904,10 @@ end subroutine get_offdiag_adc2ext_save_cvs
           ar_offdiag(indx(j),indx(i))=ar_offdiag(indx(i),indx(j))
        end do
     end do
+
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
   
   end subroutine get_offdiag_adc2_direct_MIO
 
@@ -3245,8 +3305,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
   integer :: lim1i, lim2i, lim1j, lim2j
   real(d) :: arr_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiag
+  integer, dimension(:), allocatable :: oi,oj
+  real(d), dimension(:), allocatable :: file_offdiag
+
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
 
   name="SCRATCH/hmlt.off"//chr
   unt=12
@@ -3606,6 +3670,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -3925,10 +3993,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
     real(d) :: ar_offdiag_ij, ar_offdiag_ji
 
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
 
-    
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
     count=0
     rec_count=0
@@ -3960,6 +4030,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
        call register2()
        
+       deallocate(oi)
+       deallocate(oj)
+       deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -4049,10 +4123,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
     real(d) :: ar_offdiag_ij, ar_offdiag_ji
 
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
     
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
     count=0
     rec_count=0
@@ -4094,6 +4170,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 !!$
 
        call register2()
+
+       deallocate(oi)
+       deallocate(oj)
+       deallocate(file_offdiag)
        
   contains
        
@@ -4147,9 +4227,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: i,j,nlim,rec_count,dim_count,ndim1
     real(d) :: ar_offdiag_ij
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
-    
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
+
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
     count=0
     rec_count=0
@@ -4288,6 +4371,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
     write(ilog,*) count,' off-diagonal elements saved in file', UNIT_HAM
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
     
     subroutine register1()
@@ -4339,9 +4426,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: i,j,nlim,rec_count,dim_count,ndim1
     real(d) :: ar_offdiag_ij
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
     
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
     count=0
     rec_count=0
@@ -4489,6 +4579,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     call register2()
 
     write(ilog,*) count,' off-diagonal elements saved in file', UNIT_HAM
+
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
 
   contains
     
@@ -4889,8 +4983,12 @@ subroutine get_offdiag_adc2ext_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
   integer :: lim1i, lim2i, lim1j, lim2j
   real(d) :: arr_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiag
+  integer, dimension(:), allocatable :: oi,oj
+  real(d), dimension(:), allocatable :: file_offdiag
+
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
 
   
   count=0
@@ -5284,6 +5382,10 @@ subroutine get_offdiag_adc2ext_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
     write(ilog,*) 'rec_counts' , nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', UNIT_HAM
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -5338,9 +5440,12 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
   integer :: lim1i, lim2i, lim1j, lim2j
   real(d) :: arr_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiag
+  integer, dimension(:), allocatable :: oi,oj
+  real(d), dimension(:), allocatable :: file_offdiag
 
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
   
   count=0
   rec_count=0
@@ -5750,6 +5855,10 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     write(ilog,*) 'rec_counts' , nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', UNIT_HAM
 
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
   contains
        
     subroutine register1()
@@ -5783,23 +5892,9 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     end subroutine register2
 
   end subroutine get_offdiag_adc2ext_save_GS
-
-
-
-
-
-
-
-
  
 end module get_matrix
-          
-          
-       
-       
-       
-       
-    
+
     
     
        

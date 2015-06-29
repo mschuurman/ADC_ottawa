@@ -90,6 +90,7 @@
             else
                goto 100
             endif
+            erange=erange/27.211d0
 
          else if (keyword(i).eq.'maxpol') then
             if (keyword(i+1).eq.'=') then
