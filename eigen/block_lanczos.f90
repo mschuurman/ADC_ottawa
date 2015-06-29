@@ -7,7 +7,7 @@ module block_lanczos
     implicit none
 
     save
-
+    
     integer*8                            :: nvec,nwr,buffsize,&
                                             matdim,blocksize,&
                                             reclength
@@ -101,7 +101,6 @@ module block_lanczos
       if (lancguess.eq.1) then
 
          ! Copy the 1h1p of interest into the qmat2 array
-         
          do i=1,blocksize
             k=stvc_lbl(i)
             qmat2(k,i)=1.0d0
@@ -312,7 +311,6 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Writing of the Lanczos vectors to disk
 !-----------------------------------------------------------------------
-
          nprev=nv
          nv=nv+blocksize
 
@@ -617,6 +615,16 @@ module block_lanczos
       open(unit,file='SCRATCH/hmlt.offc',status='old',access='sequential',&
            form='unformatted')
 
+!      do k=1,nrec
+!         read(unit) hij(:),indxi(:),indxj(:),nlim
+!         do l=1,nlim
+!            i=indxi(l)
+!            j=indxj(l)
+!            umat(i,n)=umat(i,n)+hij(l)*qmat2(j,n)
+!            umat(j,n)=umat(j,n)+hij(l)*qmat2(i,n)
+!         enddo
+!      enddo
+
       do k=1,nrec
          read(unit) hij(:),indxi(:),indxj(:),nlim
          !$omp parallel do private(l,n) shared(umat,hij,qmat2,indxi,indxj)
@@ -758,8 +766,6 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Open files
 !-----------------------------------------------------------------------
-!      reclength=8*matdim*buffsize
-
       open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
               status='unknown',access='direct',recl=reclength)
 
@@ -898,7 +904,6 @@ module block_lanczos
 
       integer                              :: lanunit,ritzunit,i,k1,&
                                               k2,nk
-!      integer(kind=8)                      :: reclength
       real(d), dimension(nvec,nvec)        :: eigvec
       real(d), dimension(nvec)             :: eigval
       real(d), dimension(:,:), allocatable :: lvec,rvec,buffer
@@ -913,8 +918,6 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Open the Lanzcos and Ritz vector files
 !-----------------------------------------------------------------------
-!      reclength=8*matdim*buffsize
-
       open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
               status='unknown',access='direct',recl=reclength)
 
