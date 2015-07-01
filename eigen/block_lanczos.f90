@@ -238,8 +238,8 @@ module block_lanczos
       ! buffer size does not exceed the maximum value (2**31-1)
       maxrecl=2147483647
       if (reclength.gt.maxrecl) then
-         reclength=maxrecl
-         buffsize=reclength/(8*matdim)
+         buffsize=maxrecl/(8*matdim)
+         reclength=8*matdim*buffsize
       endif
 
       ! Make sure that the buffer size is not greater than the
