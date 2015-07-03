@@ -182,6 +182,7 @@ module parameters
   integer :: ncycles,lmain,maxblock
   integer :: lancguess
   integer :: lanctype
+  integer :: orthotype
   real(d) :: lancmem
   real(d) :: tdtol
   logical :: ldynblock

@@ -17,6 +17,7 @@ davidson_section
 end-davidson_section
 
 lanczos_section
+ ortho=norm
  type=block
  block_size = 11
  iter=18

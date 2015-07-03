@@ -2,7 +2,8 @@
 
     save
 
-    integer                                      :: nfiles,maxdat,maxintvl
+    integer                                      :: nfiles,maxdat,&
+                                                    maxintvl,npoints
     integer, dimension(:), allocatable           :: ndat,nintvl
     real*8, dimension(:,:), allocatable          :: dat,x,deriv,s,dx
     real*8, dimension(:,:,:), allocatable        :: coeff

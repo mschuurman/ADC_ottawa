@@ -78,6 +78,7 @@
       lanctype=1
       ldynblock=.false.
       tdtol=0.0005d0
+      orthotype=0
 
 !-----------------------------------------------------------------------
 ! I/O channels

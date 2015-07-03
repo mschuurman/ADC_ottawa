@@ -694,6 +694,19 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'ortho') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'norm') then
+                  orthotype=1
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

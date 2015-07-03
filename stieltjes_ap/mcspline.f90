@@ -57,6 +57,7 @@
 !-----------------------------------------------------------------------
       nfiles=0
       erange=-999.0d0
+      npoints=0
 
 !-----------------------------------------------------------------------
 ! Open the input file
@@ -105,13 +106,20 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'points') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) npoints
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
             write(6,'(/,a,/)') trim(errmsg)
             STOP
          endif
-
 
          ! If there are more keywords to be read on the current line,
          ! then read them, else read the next line
@@ -139,6 +147,8 @@
          write(6,'(/,2x,a,/)') 'No data filenames have been given'
          STOP
       endif
+
+      if (npoints.eq.0) npoints=1001
 
 !-----------------------------------------------------------------------
 ! Close the input file
@@ -382,13 +392,15 @@
 
     subroutine calcp
 
+      use mcspmod
+
       implicit none
 
-      integer              :: k,i,iint,unit,npoints
+      integer              :: k,i,iint,unit
       real*8               :: diff,p,xcurr,lower,ftmp
       real*8, dimension(2) :: bound
 
-      npoints=1001
+!      npoints=1001
 
 !-----------------------------------------------------------------------
 ! Determine the bounds of the data sets

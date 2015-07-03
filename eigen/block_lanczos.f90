@@ -8,11 +8,16 @@ module block_lanczos
 
     save
     
-    integer*8                            :: nvec,nwr,buffsize,&
-                                            matdim,blocksize,&
-                                            reclength
-    real(d), dimension(:,:), allocatable :: qmat1,qmat2,umat,rmat,&
-                                            amat,bmat,tmat,tmpmat
+    integer*8                              :: nvec,nwr,buffsize,&
+                                              matdim,blocksize,&
+                                              reclength
+    real(d), dimension(:,:), allocatable   :: qmat1,qmat2,umat,rmat,&
+                                              amat,bmat,tmat,tmpmat,&
+                                              omkj
+    real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
+    real(d), dimension(:), allocatable     :: anorm,bnorm
+    real(d)                                :: eps,orthlim
+
   contains
     
 !#######################################################################
@@ -30,21 +35,20 @@ module block_lanczos
 !-----------------------------------------------------------------------
       matdim=dimf
       blocksize=lmain
+      nvec=blocksize*ncycles
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
+      ! Main block Lanczos arays
       allocate(qmat1(matdim,blocksize))
       allocate(qmat2(matdim,blocksize))
       allocate(umat(matdim,blocksize))
       allocate(rmat(matdim,blocksize))
       allocate(tmpmat(matdim,blocksize))
       allocate(amat(blocksize,blocksize))
-      allocate(bmat(blocksize,blocksize))
-
-      nvec=blocksize*ncycles
+      allocate(bmat(blocksize,blocksize))      
       allocate(tmat(nvec,nvec))
-
       qmat1=0.0d0
       qmat2=0.0d0
       umat=0.0d0
@@ -52,6 +56,18 @@ module block_lanczos
       amat=0.0d0
       bmat=0.0d0
       tmat=0.0d0
+
+      ! Partial reorthogonalisation arrays
+      allocate(amat_all(ncycles,blocksize,blocksize))
+      allocate(bmat_all(ncycles,blocksize,blocksize))
+      allocate(omkj(ncycles+1,ncycles+1))
+      allocate(anorm(ncycles))
+      allocate(bnorm(ncycles))
+      amat_all=0.0d0
+      bmat_all=0.0d0
+      omkj=0.0d0
+      anorm=0.0d0
+      bnorm=0.0d0
 
 !-----------------------------------------------------------------------
 ! Set the initial Lanczos vectors
@@ -204,7 +220,7 @@ module block_lanczos
       integer*8                            :: maxrecl
       integer                              :: lanunit,j,i,k,i1,j1,k1,k2,&
                                               m,n,upper,nv,nsurplus,&
-                                              nprev
+                                              nprev,lanunit2,reclength2
       integer                              :: info
       integer, dimension(:), allocatable   :: indxi,indxj
       real(d), dimension(:), allocatable   :: hii,hij
@@ -238,8 +254,8 @@ module block_lanczos
       ! buffer size does not exceed the maximum value (2**31-1)
       maxrecl=2147483647
       if (reclength.gt.maxrecl) then
-         reclength=maxrecl
-         buffsize=reclength/(8*matdim)
+         buffsize=maxrecl/(8*matdim)
+         reclength=8*matdim*buffsize
       endif
 
       ! Make sure that the buffer size is not greater than the
@@ -258,6 +274,11 @@ module block_lanczos
 
       open(lanunit,file='SCRATCH/lanvecs',form='unformatted',&
            status='unknown',access='direct',recl=reclength)
+
+      call freeunit(lanunit2)
+      reclength2=8*matdim*blocksize
+      open(lanunit,file='SCRATCH/lanvecs2',form='unformatted',&
+           status='unknown',access='direct',recl=reclength2)
 
 !-----------------------------------------------------------------------
 ! Determine whether we can run the Lanczos vector generation in-core
@@ -311,6 +332,11 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Writing of the Lanczos vectors to disk
 !-----------------------------------------------------------------------
+         ! (1) File to be used in the PRO routines
+         write(lanunit2,rec=j) qmat2
+
+
+         ! (2) File to be used in the calculation of the Ritz vectors
          nprev=nv
          nv=nv+blocksize
 
@@ -361,6 +387,8 @@ module block_lanczos
          call dgemm('T','N',blocksize,blocksize,matdim,1.0d0,qmat2,matdim,umat,&
               matdim,0.0d0,amat,blocksize)
          
+         amat_all(j,:,:)=amat
+
 !-----------------------------------------------------------------------
 ! Calculate the next block of Krylov vectors
 !-----------------------------------------------------------------------
@@ -388,6 +416,8 @@ module block_lanczos
             enddo
          enddo
 
+         bmat_all(j,:,:)=bmat
+
          ! Extract the next block of Lanczos vectors
          call dorgqr(matdim,blocksize,blocksize,rmat,matdim,tau,work,blocksize,info)
          if (info.ne.0) then
@@ -398,6 +428,11 @@ module block_lanczos
          ! Update the matrices of Lanczos vectors
          qmat1=qmat2
          qmat2=rmat
+
+!-----------------------------------------------------------------------
+! Partial orthogonalisation
+!-----------------------------------------------------------------------
+         if (orthotype.eq.1) call pro_normwise(j,nv,lanunit,lanunit2)
 
 !-----------------------------------------------------------------------
 ! Fill in the next block of the T-matrix array
@@ -429,6 +464,7 @@ module block_lanczos
       enddo
 
       close(lanunit)
+      close(lanunit2)
 
       call cpu_time(t2)
 
@@ -615,16 +651,6 @@ module block_lanczos
       open(unit,file='SCRATCH/hmlt.offc',status='old',access='sequential',&
            form='unformatted')
 
-!      do k=1,nrec
-!         read(unit) hij(:),indxi(:),indxj(:),nlim
-!         do l=1,nlim
-!            i=indxi(l)
-!            j=indxj(l)
-!            umat(i,n)=umat(i,n)+hij(l)*qmat2(j,n)
-!            umat(j,n)=umat(j,n)+hij(l)*qmat2(i,n)
-!         enddo
-!      enddo
-
       do k=1,nrec
          read(unit) hij(:),indxi(:),indxj(:),nlim
          !$omp parallel do private(l,n) shared(umat,hij,qmat2,indxi,indxj)
@@ -644,6 +670,164 @@ module block_lanczos
       return
       
     end subroutine hxq_ext
+
+!#######################################################################
+
+    subroutine pro_normwise(j,nv,lanunit,lanunit2)
+
+      implicit none
+
+      integer                                 :: nv,j,i,k,northo,info,&
+                                                 n,lanunit,lanunit2
+      integer, dimension(ncycles)             :: lk,uk
+      real(d), dimension(blocksize,blocksize) :: u,vt
+      real(d), dimension(blocksize)           :: sigma
+      real(d), dimension(5*blocksize)         :: work
+
+      ! Array holding vectors against which the current block of
+      ! Krylov vectors needs orthogonalising against
+      real(d), dimension(:,:), allocatable    :: novec
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      if (j.eq.1) then
+         orthlim=1d-8
+         eps=blocksize*orthlim**2
+         omkj(1,2)=eps
+         omkj(2,1)=eps
+         omkj(1,1)=eps
+         omkj(2,2)=eps
+      endif
+
+!-----------------------------------------------------------------------
+! Calculate the next set of estimated orthogonality components
+! (between blocks)
+!-----------------------------------------------------------------------
+      ! SVD of B_j
+      call dgesvd('N','N',blocksize,blocksize,bmat_all(j,:,:),&
+           blocksize,sigma,u,blocksize,vt,blocksize,work,&
+           5*blocksize,info)
+      if (info.ne.0) then
+         write(ilog,'(/,2x,a,/)') 'Error in pro_normwise: dgesvd'
+         STOP
+      endif
+
+      ! Eucldean norm of A_j and B_j
+      anorm(j)=enorm(amat_all(j,:,:),blocksize,blocksize)
+      bnorm(j)=enorm(bmat_all(j,:,:),blocksize,blocksize)
+
+      ! omega_j,j+1 and omega_j+1,j+1
+      omkj(j,j+1)=eps
+      omkj(j+1,j+1)=eps
+
+      ! omega_k,j+1, k=1,...,j-1
+      do k=1,j-1         
+         if (k.eq.1) then
+            omkj(k,j+1)=(1.0d0/sigma(blocksize))*(bnorm(k)*omkj(k+1,j)&
+                 + (anorm(k)+anorm(j))*omkj(k,j))
+         else
+            omkj(k,j+1)=(1.0d0/sigma(blocksize))*(bnorm(k)*omkj(k+1,j)&
+                 +bnorm(k-1)*omkj(k-1,j) + (anorm(k)+anorm(j))*omkj(k,j))
+         endif
+         omkj(j+1,k)=omkj(k,j+1)
+!         print*,k,j+1,omkj(k,j+1)
+      enddo
+
+!-----------------------------------------------------------------------
+! If the estimated orthogonality components are above the threshold,
+! then perform a partial reorthogonalisation
+!-----------------------------------------------------------------------
+      ! (1) Determine the orthogonalisations that need to be performed
+      northo=0
+      k=1
+10    continue
+      
+      if (abs(omkj(k,j+1)).gt.orthlim) then
+         northo=northo+1
+         ! Determine the neighborhood [l_k,u_k] of indices containing
+         ! k in which the orthogonalisation will occur
+         lk=k
+         do i=k-1,1
+            if (omkj(i,j+1).gt.eps**0.75d0) then
+               lk(northo)=i
+            else
+               exit
+            endif
+         enddo
+         uk=k
+         do i=k+1,j
+            if (omkj(i,j+1).gt.eps**0.75d0) then
+               uk(northo)=i
+            else
+               exit
+            endif
+         enddo
+         k=uk(northo)+1
+      else
+         k=k+1
+      endif
+      
+      if (k.le.j) goto 10
+
+      ! (2) For each of the northo intervals [lk(i),uk(i)],
+      !     orthogonalise the Krylov vector R_j against
+      !     the Lanczos vectors in the blocks 
+      !     Q_lk(i),...,Q_uk(i)
+      do i=1,northo
+         n=uk(i)-lk(i)+1
+         allocate(novec(matdim,n))
+         call pro_loadvecs(lk(i),uk(i),n,novec,lanunit,&
+              lanunit2)
+
+         deallocate(novec)
+      enddo
+
+      return
+
+    end subroutine pro_normwise
+
+!#######################################################################
+
+    function enorm(mat,dim1,dim2)
+      
+      implicit none
+
+      integer*8                     :: dim1,dim2,m,n
+      real(d), dimension(dim1,dim2) :: mat
+      real(d)                       :: enorm
+
+      enorm=0.0d0
+      do m=1,dim1
+         do n=1,dim2
+            enorm=enorm+mat(m,n)**2
+         enddo
+      enddo
+
+      enorm=dsqrt(enorm)
+      
+      return
+
+    end function enorm
+
+!#######################################################################
+
+    subroutine pro_loadvecs(lk,uk,dim,novec,lanunit,lanunit2)
+
+      implicit none
+
+      integer                        :: m,n,lk,uk,nv,dim,lanunit,&
+                                        lanunit2,count
+      real(d), dimension(matdim,dim) :: novec
+
+!----------------------------------------------------------
+! Load the blocks of Lanczos vectors indexed lk to uk
+! into the novec array
+!----------------------------------------------------------
+
+      return
+
+    end subroutine pro_loadvecs
 
 !#######################################################################
 
