@@ -146,7 +146,7 @@ module parameters
   logical                              :: ladc1guess,ladc1guess_f
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
-  integer, dimension(nhcentre)         :: icore
+  integer, dimension(nhcentre)         :: icore,iexpfrz
   integer                              :: ncore
   logical                              :: lfakeip
   integer                              :: ifakeorb

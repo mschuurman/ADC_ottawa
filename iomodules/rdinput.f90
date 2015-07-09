@@ -13,7 +13,7 @@
       
       implicit none
       
-      integer            :: i
+      integer            :: i,k
       character(len=120) :: ain,atmp1,atmp2
       logical            :: iscvs,energyonly,ldav,llanc
 
@@ -160,6 +160,21 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'freeze') then
+            if (keyword(i+1).eq.'=') then
+               i=i+1
+30             continue
+               i=i+1
+               read(keyword(i),*) k
+               iexpfrz(k)=1
+               if (keyword(i+1).eq.',') then
+                  i=i+1
+                  goto 30
+               endif
+            else
+               goto 100
+            endif
+
            else
               ! Exit if the keyword is not recognised
               errmsg='Unknown keyword: '//trim(keyword(i))
@@ -697,7 +712,7 @@
          else if (keyword(i).eq.'ortho') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               if (keyword(i).eq.'norm') then
+               if (keyword(i).eq.'pro') then
                   orthotype=1
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))

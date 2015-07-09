@@ -1,10 +1,10 @@
-method = adc2-s
+method = adc2-x
 
-istate_symm = 1 
+istate_symm = 1
 
 dipole_symm = 1
 
-initial_state=1
+initial_state=0
 
 dipole_component = x
 
@@ -17,11 +17,11 @@ davidson_section
 end-davidson_section
 
 lanczos_section
- ortho=norm
+ ortho=pro
  type=block
  block_size = 11
  iter=18
- guess=adc1
+# guess=adc1
 end-lanczos_section
 
 end-input

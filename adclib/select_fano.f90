@@ -80,7 +80,7 @@ contains
        do i=1,hcentre(0)
           cah=hcentre(i)
           call iscore(cah,ic)
-          if (ic.eq.1) then
+          if (ic.eq.1.and.iexpfrz(cah).eq.0) then
              isym=MT(orbSym(cah),orbSym(a))
              if(isym .eq. nirrep) then
                 kpq(1,0)=kpq(1,0)+1
@@ -206,7 +206,7 @@ contains
        do i=1,hcentre(0)
           cah=hcentre(i)
           call iscore(cah,ic)
-          if (ic.eq.1) then
+          if (ic.eq.1.and.iexpfrz(cah).eq.0) then
              isym=MT(orbSym(cah),orbSym(a))
              if(nirrep .eq. nirrep2) then
                 if(isym .eq. 1) then
@@ -285,8 +285,10 @@ contains
           call iscore(j,ic2)
           ej=abs(e(j))
 
-          if ((ic1.eq.0.and.ic2.eq.1) &
-               .or.(ic1.eq.1.and.ic2.eq.0)) then
+!          if ((ic1.eq.0.and.ic2.eq.1) &
+!               .or.(ic1.eq.1.and.ic2.eq.0)) then
+
+          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
           
              isym1=MT(orbSym(i),orbSym(j))
           
@@ -331,9 +333,11 @@ contains
           call iscore(j,ic2)
           ej=abs(e(j))
           
-          if ((ic1.eq.0.and.ic2.eq.1) &
-               .or.(ic1.eq.1.and.ic2.eq.0)) then
-             
+!          if ((ic1.eq.0.and.ic2.eq.1) &
+!               .or.(ic1.eq.1.and.ic2.eq.0)) then
+ 
+          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+            
              isym1=MT(orbSym(i),orbSym(j))
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
@@ -680,8 +684,11 @@ contains
           call iscore(j,ic2)
           ej=abs(e(j))
 
-          if ((ic1.eq.0.and.ic2.eq.1) &
-               .or.(ic1.eq.1.and.ic2.eq.0)) then
+!          if ((ic1.eq.0.and.ic2.eq.1) &
+!               .or.(ic1.eq.1.and.ic2.eq.0)) then
+
+          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
              isym1=MT(orbSym(i),orbSym(j))
              if (isym1 .eq. nirrep) then
                 do ap=nOcc+1,nBas
@@ -711,9 +718,11 @@ contains
              ej=abs(e(j))
              isym1=MT(orbSym(i),orbSym(j))
 
-             if ((ic1.eq.0.and.ic2.eq.1) &
-                  .or.(ic1.eq.1.and.ic2.eq.0)) then
+!             if ((ic1.eq.0.and.ic2.eq.1) &
+!                  .or.(ic1.eq.1.and.ic2.eq.0)) then
                 
+             if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
                 do ap=nOcc+1,nBas
                    a=roccnum(ap)
                    do bp=ap+1,nBas

@@ -37,6 +37,7 @@
       lcvs=.false.
       lcvsfinal=.false.
       icore=0
+      iexpfrz=0
 
 !-----------------------------------------------------------------------
 ! Ionisation potential calculation parameters

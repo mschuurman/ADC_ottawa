@@ -7,13 +7,14 @@ module block_lanczos
     implicit none
 
     save
-    
+
     integer*8                              :: nvec,nwr,buffsize,&
                                               matdim,blocksize,&
                                               reclength
-    real(d), dimension(:,:), allocatable   :: qmat1,qmat2,umat,rmat,&
-                                              amat,bmat,tmat,tmpmat,&
-                                              omkj
+    integer, dimension(:), allocatable     :: lk,uk
+    real(d), dimension(:,:), allocatable   :: buffer,qmat1,qmat2,umat,&
+                                              rmat,amat,bmat,tmat,&
+                                              tmpmat,omkj
     real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
     real(d), dimension(:), allocatable     :: anorm,bnorm
     real(d)                                :: eps,orthlim
@@ -57,7 +58,7 @@ module block_lanczos
       bmat=0.0d0
       tmat=0.0d0
 
-      ! Partial reorthogonalisation arrays
+      ! Reorthogonalisation arrays
       allocate(amat_all(ncycles,blocksize,blocksize))
       allocate(bmat_all(ncycles,blocksize,blocksize))
       allocate(omkj(ncycles+1,ncycles+1))
@@ -227,8 +228,8 @@ module block_lanczos
       real(d), dimension(blocksize)        :: tau
       real(d), dimension(blocksize)        :: work
       real(d)                              :: t1,t2,mem
-      real(d), dimension(:,:), allocatable :: buffer
-      logical                              :: lincore
+
+      logical                              :: lincore,lro
 
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
@@ -277,7 +278,7 @@ module block_lanczos
 
       call freeunit(lanunit2)
       reclength2=8*matdim*blocksize
-      open(lanunit,file='SCRATCH/lanvecs2',form='unformatted',&
+      open(lanunit2,file='SCRATCH/lanvecs2',form='unformatted',&
            status='unknown',access='direct',recl=reclength2)
 
 !-----------------------------------------------------------------------
@@ -400,9 +401,13 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Compute the QR factorization of the matrix of Krylov vectors
 !-----------------------------------------------------------------------
+         ! dgeqrf will overwrite rmat, so instead use a copy of this
+         ! matrix
+         tmpmat=rmat
+
          ! Compute the current block of off-diagonal elements of
          ! the T-matrix
-         call dgeqrf(matdim,blocksize,rmat,matdim,tau,work,blocksize,info)
+         call dgeqrf(matdim,blocksize,tmpmat,matdim,tau,work,blocksize,info)
          if (info.ne.0) then
             write(ilog,'(/,2x,a,/)') 'dqerf failed in run_block_lanczos'
             STOP
@@ -412,14 +417,15 @@ module block_lanczos
          bmat=0.0d0
          do k=1,blocksize
             do i=1,k
-               bmat(i,k)=rmat(i,k)
+               bmat(i,k)=tmpmat(i,k)
             enddo
          enddo
 
          bmat_all(j,:,:)=bmat
 
          ! Extract the next block of Lanczos vectors
-         call dorgqr(matdim,blocksize,blocksize,rmat,matdim,tau,work,blocksize,info)
+         call dorgqr(matdim,blocksize,blocksize,tmpmat,matdim,tau,work,&
+              blocksize,info)
          if (info.ne.0) then
             write(ilog,'(/,2x,a,/)') 'dorgqr failed in run_block_lanczos'
             STOP
@@ -427,12 +433,25 @@ module block_lanczos
 
          ! Update the matrices of Lanczos vectors
          qmat1=qmat2
-         qmat2=rmat
+         qmat2=tmpmat
 
 !-----------------------------------------------------------------------
 ! Partial orthogonalisation
 !-----------------------------------------------------------------------
-         if (orthotype.eq.1) call pro_normwise(j,nv,lanunit,lanunit2)
+         lro=.false.
+         if (j.gt.1.and.j.lt.ncycles) then
+            if (orthotype.eq.1) then
+               call pro_normwise(j,nv,lanunit,lanunit2,lro)
+            endif
+         endif
+
+!-----------------------------------------------------------------------
+! Local reorthogonalisation of qmat2 against qmat1
+!
+! Note that this is only necessary a reorthogonalisation has not taken 
+! place in this iteration
+!-----------------------------------------------------------------------
+         if (.not.lro) call localro
 
 !-----------------------------------------------------------------------
 ! Fill in the next block of the T-matrix array
@@ -475,7 +494,7 @@ module block_lanczos
 ! Set the number of Lanczos states
 !-----------------------------------------------------------------------
       lancstates=ncycles*blocksize
-      
+
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -673,115 +692,198 @@ module block_lanczos
 
 !#######################################################################
 
-    subroutine pro_normwise(j,nv,lanunit,lanunit2)
+    subroutine localro
+
+      implicit none
+
+      integer                       :: k,n
+      real(d), dimension(blocksize) :: dpvec
+      real(d)                       :: dp,ddot
+      
+      external ddot
+
+!-----------------------------------------------------------------------
+! Orthogonalise Q_j+1 against Q_j
+!-----------------------------------------------------------------------
+      ! Loop over vectors in Q_j
+      do n=1,blocksize
+
+         ! Calculate the dot products between all
+         ! the vectors in Q_j+1 and the nth vector
+         ! in Q_j
+         call dgemv('T',matdim,blocksize,1.0d0,qmat2,matdim,&
+              qmat1(:,n),1,0.0d0,dpvec,1)
+
+         ! Orthogonalise all the vectors in Q_j+1
+         ! against the nth vector in Q_j
+         do k=1,blocksize
+            qmat2(:,k)=qmat2(:,k)-dpvec(k)*qmat1(:,n)
+         enddo
+
+      enddo
+
+!-----------------------------------------------------------------------
+! Normalise Q_j+1
+!-----------------------------------------------------------------------
+      do k=1,blocksize
+         dp=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1)
+         qmat2(:,k)=qmat2(:,k)/dsqrt(dp)
+      enddo
+
+      return
+      
+    end subroutine localro
+
+!#######################################################################
+
+    subroutine pro_normwise(j,nv,lanunit,lanunit2,lro)
 
       implicit none
 
       integer                                 :: nv,j,i,k,northo,info,&
-                                                 n,lanunit,lanunit2
-      integer, dimension(ncycles)             :: lk,uk
+                                                 lanunit,lanunit2
+      real(d)                                 :: epmach,ftmp,invssvb
       real(d), dimension(blocksize,blocksize) :: u,vt
       real(d), dimension(blocksize)           :: sigma
       real(d), dimension(5*blocksize)         :: work
+      logical                                 :: lro
 
-      ! Array holding vectors against which the current block of
-      ! Krylov vectors needs orthogonalising against
-      real(d), dimension(:,:), allocatable    :: novec
-
+      real(d) :: maxom
+      integer :: maxk
+      
 !-----------------------------------------------------------------------
 ! Initialisation
 !-----------------------------------------------------------------------
-      if (j.eq.1) then
-         orthlim=1d-8
-         eps=blocksize*orthlim**2
-         omkj(1,2)=eps
-         omkj(2,1)=eps
+      if (j.eq.2) then
+         ! Spectral norm of A_1
+         call dgesvd('N','N',blocksize,blocksize,amat_all(1,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_1'
+            STOP
+         endif
+         anorm(1)=sigma(1)
+         ! Spectral norm of B_1
+         call dgesvd('N','N',blocksize,blocksize,bmat_all(1,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_1'
+            STOP
+         endif
+         bnorm(1)=sigma(1)
+         ! Spectral norm of B_2
+         call dgesvd('N','N',blocksize,blocksize,bmat_all(2,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_2'
+            STOP
+         endif
+         bnorm(2)=sigma(1)
+         ! Estimation of the machine epsilon
+         epmach=1.0d0
+5        ftmp=(1.0d0+0.5d0*epmach)
+         if (ftmp.ne.1.0d0) then
+            epmach=0.5d0*epmach
+            goto 5
+         endif
+         ! Set the various values that depend on the machine epsilon
+         eps=epmach!*blocksize*sqrt(dble(matdim))
+         orthlim=dsqrt(epmach)
+         ! Initialisation of the omkj array
          omkj(1,1)=eps
          omkj(2,2)=eps
+         omkj(1,2)=eps/sigma(blocksize)
+         omkj(2,1)=omkj(1,2)
       endif
 
 !-----------------------------------------------------------------------
 ! Calculate the next set of estimated orthogonality components
 ! (between blocks)
 !-----------------------------------------------------------------------
-      ! SVD of B_j
+      ! Spectral norm of A_j
+      call dgesvd('N','N',blocksize,blocksize,amat_all(j,:,:),&
+           blocksize,sigma,u,blocksize,vt,blocksize,work,&
+           5*blocksize,info)
+      if (info.ne.0) then
+         write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_j'
+         STOP
+      endif
+
+      anorm(j)=sigma(1)
+
+      ! Spectral norm of B_j
       call dgesvd('N','N',blocksize,blocksize,bmat_all(j,:,:),&
            blocksize,sigma,u,blocksize,vt,blocksize,work,&
            5*blocksize,info)
       if (info.ne.0) then
-         write(ilog,'(/,2x,a,/)') 'Error in pro_normwise: dgesvd'
+         write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_j'
          STOP
       endif
 
-      ! Eucldean norm of A_j and B_j
-      anorm(j)=enorm(amat_all(j,:,:),blocksize,blocksize)
-      bnorm(j)=enorm(bmat_all(j,:,:),blocksize,blocksize)
+      bnorm(j)=sigma(1)     
+
+      invssvb=1.0d0/sigma(blocksize)
 
       ! omega_j,j+1 and omega_j+1,j+1
       omkj(j,j+1)=eps
+      omkj(j+1,j)=eps
       omkj(j+1,j+1)=eps
 
       ! omega_k,j+1, k=1,...,j-1
-      do k=1,j-1         
+      do k=1,j-1
          if (k.eq.1) then
-            omkj(k,j+1)=(1.0d0/sigma(blocksize))*(bnorm(k)*omkj(k+1,j)&
-                 + (anorm(k)+anorm(j))*omkj(k,j))
+            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(j)*omkj(j-1,k) &
+                        + (anorm(j)+anorm(k))*omkj(j,k)
          else
-            omkj(k,j+1)=(1.0d0/sigma(blocksize))*(bnorm(k)*omkj(k+1,j)&
-                 +bnorm(k-1)*omkj(k-1,j) + (anorm(k)+anorm(j))*omkj(k,j))
+            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(k)*omkj(j,k-1) &
+                        + bnorm(j)*omkj(j-1,k) &
+                        + (anorm(j)+anorm(k))*omkj(j,k)
          endif
-         omkj(j+1,k)=omkj(k,j+1)
-!         print*,k,j+1,omkj(k,j+1)
+         omkj(j+1,k)=invssvb*omkj(j+1,k)
+         omkj(k,j+1)=omkj(j+1,k)
       enddo
+
+!-----------------------------------------------------------------------
+! TEST: calculate the actual orthogonality components
+!-----------------------------------------------------------------------
+!      call true_orthog(j)
+!
+!      maxom=0.0d0
+!      do k=1,j-1
+!         if (omkj(k,j+1).gt.maxom) then
+!            maxom=omkj(k,j+1)
+!            maxk=k
+!         endif
+!      enddo
+!!      print*,"Estimated:",maxom,maxk
+!      print*,j,maxom
 
 !-----------------------------------------------------------------------
 ! If the estimated orthogonality components are above the threshold,
 ! then perform a partial reorthogonalisation
 !-----------------------------------------------------------------------
-      ! (1) Determine the orthogonalisations that need to be performed
-      northo=0
-      k=1
-10    continue
-      
-      if (abs(omkj(k,j+1)).gt.orthlim) then
-         northo=northo+1
-         ! Determine the neighborhood [l_k,u_k] of indices containing
-         ! k in which the orthogonalisation will occur
-         lk=k
-         do i=k-1,1
-            if (omkj(i,j+1).gt.eps**0.75d0) then
-               lk(northo)=i
-            else
-               exit
-            endif
-         enddo
-         uk=k
-         do i=k+1,j
-            if (omkj(i,j+1).gt.eps**0.75d0) then
-               uk(northo)=i
-            else
-               exit
-            endif
-         enddo
-         k=uk(northo)+1
-      else
-         k=k+1
-      endif
-      
-      if (k.le.j) goto 10
-
-      ! (2) For each of the northo intervals [lk(i),uk(i)],
-      !     orthogonalise the Krylov vector R_j against
-      !     the Lanczos vectors in the blocks 
-      !     Q_lk(i),...,Q_uk(i)
-      do i=1,northo
-         n=uk(i)-lk(i)+1
-         allocate(novec(matdim,n))
-         call pro_loadvecs(lk(i),uk(i),n,novec,lanunit,&
-              lanunit2)
-
-         deallocate(novec)
+      do k=1,j-1
+         if (omkj(j+1,k).ge.orthlim) lro=.true.
       enddo
+
+      if (lro) then
+
+         write(ilog,'(/,2x,a,/)') 'Performing partial &
+              reorthogonalisation...'
+
+         ! MGS orthogonalisation
+         call pro_mgs(lanunit2,j)
+
+         ! Update the omega-recurrence
+         do k=1,j
+            omkj(j+1,k)=eps
+            omkj(j,k)=eps
+         enddo
+
+      endif
 
       return
 
@@ -789,48 +891,118 @@ module block_lanczos
 
 !#######################################################################
 
-    function enorm(mat,dim1,dim2)
-      
+    subroutine pro_mgs(lanunit2,j)
+
       implicit none
 
-      integer*8                     :: dim1,dim2,m,n
-      real(d), dimension(dim1,dim2) :: mat
-      real(d)                       :: enorm
+      integer                              :: lanunit2,j,k,m,n
+      real(d), dimension(matdim,blocksize) :: lmat
+      real(d), dimension(blocksize)        :: dpvec1,dpvec2
+      real(d)                              :: dp,ddot
 
-      enorm=0.0d0
-      do m=1,dim1
-         do n=1,dim2
-            enorm=enorm+mat(m,n)**2
+      external ddot
+
+!-----------------------------------------------------------------------
+! Orthogonalise Q_j+1 and Q_j against Q_k, k=1,j-1
+!-----------------------------------------------------------------------
+      ! Loop over blocks of vectors Q_k
+      do k=1,j-1
+
+         ! Read the current block of vectors
+         read(lanunit2,rec=k) lmat
+
+         ! Loop over the vectors in the current block
+         do m=1,blocksize
+
+            ! Calculate the dot products between all
+            ! the vectors in Q_j and the mth vector
+            ! in Q_k
+            call dgemv('T',matdim,blocksize,1.0d0,qmat1,matdim,&
+                 lmat(:,m),1,0.0d0,dpvec1,1)
+
+            ! Calculate the dot products between all
+            ! the vectors in Q_j+1 and the mth vector
+            ! in Q_k
+            call dgemv('T',matdim,blocksize,1.0d0,qmat2,matdim,&
+                 lmat(:,m),1,0.0d0,dpvec2,1)
+
+            ! Orthogonalise all the vectors in Q_j Q_j+1
+            ! against the mth vector in Q_k
+            do n=1,blocksize
+               qmat1(:,n)=qmat1(:,n)-dpvec1(n)*lmat(:,m)
+               qmat2(:,n)=qmat2(:,n)-dpvec2(n)*lmat(:,m)
+            enddo
+
          enddo
+
       enddo
 
-      enorm=dsqrt(enorm)
-      
+!-----------------------------------------------------------------------
+! Normalise Q_j
+!-----------------------------------------------------------------------      
+      do k=1,blocksize
+         dp=ddot(matdim,qmat1(:,k),1,qmat1(:,k),1) 
+         qmat1(:,k)=qmat1(:,k)/dsqrt(dp)
+      enddo
+
+!-----------------------------------------------------------------------
+! Orthogonalise Q_j+1 against Q_j
+!
+! Note that Q_j+1 is also normalised in localro
+!-----------------------------------------------------------------------
+      call localro
+
       return
 
-    end function enorm
+    end subroutine pro_mgs
 
 !#######################################################################
 
-    subroutine pro_loadvecs(lk,uk,dim,novec,lanunit,lanunit2)
+    subroutine true_orthog(j)
 
       implicit none
 
-      integer                        :: m,n,lk,uk,nv,dim,lanunit,&
-                                        lanunit2,count
-      real(d), dimension(matdim,dim) :: novec
+      integer                                 :: j,m,n,i1,i2
+      real(d)                                 :: maxnorm
+      real(d), dimension(blocksize,blocksize) :: overlap
+      
+      real(d), dimension(blocksize,blocksize) :: u,vt
+      real(d), dimension(blocksize)           :: sigma
+      real(d), dimension(5*blocksize)         :: work
 
-!----------------------------------------------------------
-! Load the blocks of Lanczos vectors indexed lk to uk
-! into the novec array
-!----------------------------------------------------------
+      ! For the CS2 STO-3G test case, we never fill the buffer, so
+      ! all Lanczos vectors from blocks 1,...,j will be in the buffer 
+      ! array, whilst the vectors in block j+1 are currently in the
+      ! qmat2 array
+
+!      print*,
+!      print*,"_________________________"
+!      print*,"Iteration:",j
+!      print*,"_________________________"
+      maxnorm=0.0d0
+      do m=1,j-1
+         i1=(m-1)*blocksize+1
+         i2=m*blocksize
+         overlap=matmul(transpose(buffer(:,i1:i2)),qmat2(:,:))
+         call dgesvd('N','N',blocksize,blocksize,overlap,&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of Qk^TQ_j+1'
+            STOP
+         endif
+         if (sigma(1).gt.maxnorm) maxnorm=sigma(1)
+      enddo
+
+!      print*,"True:     ",maxnorm
+      print*,j,maxnorm
 
       return
 
-    end subroutine pro_loadvecs
+    end subroutine true_orthog
 
 !#######################################################################
-
+    
     subroutine calc_pseudospec(lanunit)
 
       implicit none
@@ -1090,7 +1262,7 @@ module block_lanczos
                                               k2,nk
       real(d), dimension(nvec,nvec)        :: eigvec
       real(d), dimension(nvec)             :: eigval
-      real(d), dimension(:,:), allocatable :: lvec,rvec,buffer
+      real(d), dimension(:,:), allocatable :: lvec,rvec
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1160,44 +1332,29 @@ module block_lanczos
 
       implicit none
 
-      integer                          :: unit,dim,i,j,k
-      real(d), dimension(matdim,dim)   :: lvec
+      integer*8                            :: unit,dim,i,j,k,count,&
+                                              reclength2
+      real(d), dimension(matdim,dim)       :: lvec
       real(d), dimension(matdim,blocksize) :: tmpvec
-      real(d)                          :: dp,tmp
-      real(d), parameter               :: tol=1d-4
+      real(d)                              :: dp,tmp
+      real(d), parameter                   :: tol=1d-8
 
       lvec=0.0d0
 
-      print*,"Ritz vectors"
-
       unit=28
-      open(unit,file=lancname,form='unformatted',status='old')
+      reclength2=8*matdim*blocksize
+      open(unit,file='SCRATCH/lanvecs2',form='unformatted',&
+           status='unknown',access='direct',recl=reclength2)
 
-      do i=1,nvec
-         read(unit) k,tmp,lvec(:,i)
-      enddo
-
-      do i=1,dim-1
-         do j=i+1,dim
-            dp=dot_product(lvec(:,i),lvec(:,j))
-            if (abs(dp).gt.tol) print*,i,j,dp
-         enddo
-      enddo
-
-      close(unit)
-
-      print*,"Lanczos vectors"
-      open(unit,file='SCRATCH/lanvecs',form='unformatted',status='old')
-      
-      k=0
+      count=0
       do i=1,ncycles
-         read(unit) tmpvec(:,:)
+         read(unit,rec=i) tmpvec
          do j=1,blocksize
-            k=k+1
-            lvec(:,k)=tmpvec(:,j)
+            count=count+1
+            lvec(:,count)=tmpvec(:,j)
          enddo
       enddo
-
+         
       do i=1,dim-1
          do j=i+1,dim
             dp=dot_product(lvec(:,i),lvec(:,j))
