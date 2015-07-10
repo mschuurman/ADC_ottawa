@@ -1296,7 +1296,7 @@ module block_lanczos
       call cpu_time(t2)
       write(ilog,'(2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
-      call chkortho(nvec)
+!      call chkortho(nvec)
 
       return
 
