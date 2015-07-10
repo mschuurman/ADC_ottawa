@@ -11,13 +11,14 @@ module block_lanczos
     integer*8                              :: nvec,nwr,buffsize,&
                                               matdim,blocksize,&
                                               reclength
+    integer                                :: nro
     integer, dimension(:), allocatable     :: lk,uk
     real(d), dimension(:,:), allocatable   :: buffer,qmat1,qmat2,umat,&
                                               rmat,amat,bmat,tmat,&
                                               tmpmat,omkj
     real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
     real(d), dimension(:), allocatable     :: anorm,bnorm
-    real(d)                                :: eps,orthlim
+    real(d)                                :: epmach,eps,orthlim
 
   contains
     
@@ -64,16 +65,29 @@ module block_lanczos
       allocate(omkj(ncycles+1,ncycles+1))
       allocate(anorm(ncycles))
       allocate(bnorm(ncycles))
+      allocate(lk(ncycles))
+      allocate(uk(ncycles)) 
       amat_all=0.0d0
       bmat_all=0.0d0
       omkj=0.0d0
       anorm=0.0d0
       bnorm=0.0d0
+      lk=0
+      uk=0
 
 !-----------------------------------------------------------------------
 ! Set the initial Lanczos vectors
 !-----------------------------------------------------------------------
       call init_vec
+
+!-----------------------------------------------------------------------
+! If a partial reorthogonalisation is to be performed, then estimate
+! the machine epsilon and set the limit for reorthogonalisation
+!-----------------------------------------------------------------------
+      if (orthotype.gt.0) then
+         epmach=machine_precision()
+         orthlim=dsqrt(epmach)
+      endif
 
 !-----------------------------------------------------------------------
 ! Perform the block Lanczos calculation
@@ -208,7 +222,27 @@ module block_lanczos
       return
       
     end subroutine init_vec
+
+!#######################################################################
+
+    function machine_precision() result(epsilon)
       
+      implicit none
+
+      real(d) :: epsilon,ftmp
+
+      ! Estimation of the machine epsilon
+      epsilon=1.0d0
+5     ftmp=(1.0d0+0.5d0*epsilon)
+      if (ftmp.ne.1.0d0) then
+         epsilon=0.5d0*epsilon
+         goto 5
+      endif
+
+      return
+
+    end function machine_precision
+
 !#######################################################################
 
     subroutine run_block_lanczos(noff)
@@ -229,7 +263,7 @@ module block_lanczos
       real(d), dimension(blocksize)        :: work
       real(d)                              :: t1,t2,mem
 
-      logical                              :: lincore,lro
+      logical                              :: lincore,lro,l2nd
 
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
@@ -237,6 +271,11 @@ module block_lanczos
       write(ilog,'(70a)') ('*',i=1,70)
 
       call cpu_time(t1)
+
+!-----------------------------------------------------------------------
+! Initialise MPRO variables
+!-----------------------------------------------------------------------
+      l2nd=.false.
 
 !-----------------------------------------------------------------------
 ! Determine the buffer size (in terms of the no. Lanczos vectors that
@@ -441,7 +480,9 @@ module block_lanczos
          lro=.false.
          if (j.gt.1.and.j.lt.ncycles) then
             if (orthotype.eq.1) then
-               call pro_normwise(j,nv,lanunit,lanunit2,lro)
+               call pro(j,lanunit2,lro)
+            else if (orthotype.eq.2) then
+               call mpro(j,lanunit2,lro,l2nd)
             endif
          endif
 
@@ -736,115 +777,18 @@ module block_lanczos
 
 !#######################################################################
 
-    subroutine pro_normwise(j,nv,lanunit,lanunit2,lro)
+    subroutine pro(j,lanunit2,lro)
 
       implicit none
 
-      integer                                 :: nv,j,i,k,northo,info,&
-                                                 lanunit,lanunit2
-      real(d)                                 :: epmach,ftmp,invssvb
-      real(d), dimension(blocksize,blocksize) :: u,vt
-      real(d), dimension(blocksize)           :: sigma
-      real(d), dimension(5*blocksize)         :: work
-      logical                                 :: lro
-
+      integer :: j,i,k,lanunit2
       real(d) :: maxom
-      integer :: maxk
-      
-!-----------------------------------------------------------------------
-! Initialisation
-!-----------------------------------------------------------------------
-      if (j.eq.2) then
-         ! Spectral norm of A_1
-         call dgesvd('N','N',blocksize,blocksize,amat_all(1,:,:),&
-              blocksize,sigma,u,blocksize,vt,blocksize,work,&
-              5*blocksize,info)
-         if (info.ne.0) then
-            write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_1'
-            STOP
-         endif
-         anorm(1)=sigma(1)
-         ! Spectral norm of B_1
-         call dgesvd('N','N',blocksize,blocksize,bmat_all(1,:,:),&
-              blocksize,sigma,u,blocksize,vt,blocksize,work,&
-              5*blocksize,info)
-         if (info.ne.0) then
-            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_1'
-            STOP
-         endif
-         bnorm(1)=sigma(1)
-         ! Spectral norm of B_2
-         call dgesvd('N','N',blocksize,blocksize,bmat_all(2,:,:),&
-              blocksize,sigma,u,blocksize,vt,blocksize,work,&
-              5*blocksize,info)
-         if (info.ne.0) then
-            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_2'
-            STOP
-         endif
-         bnorm(2)=sigma(1)
-         ! Estimation of the machine epsilon
-         epmach=1.0d0
-5        ftmp=(1.0d0+0.5d0*epmach)
-         if (ftmp.ne.1.0d0) then
-            epmach=0.5d0*epmach
-            goto 5
-         endif
-         ! Set the various values that depend on the machine epsilon
-         eps=epmach!*blocksize*sqrt(dble(matdim))
-         orthlim=dsqrt(epmach)
-         ! Initialisation of the omkj array
-         omkj(1,1)=eps
-         omkj(2,2)=eps
-         omkj(1,2)=eps/sigma(blocksize)
-         omkj(2,1)=omkj(1,2)
-      endif
+      logical :: lro
 
 !-----------------------------------------------------------------------
-! Calculate the next set of estimated orthogonality components
-! (between blocks)
+! Update the omega recurrence
 !-----------------------------------------------------------------------
-      ! Spectral norm of A_j
-      call dgesvd('N','N',blocksize,blocksize,amat_all(j,:,:),&
-           blocksize,sigma,u,blocksize,vt,blocksize,work,&
-           5*blocksize,info)
-      if (info.ne.0) then
-         write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_j'
-         STOP
-      endif
-
-      anorm(j)=sigma(1)
-
-      ! Spectral norm of B_j
-      call dgesvd('N','N',blocksize,blocksize,bmat_all(j,:,:),&
-           blocksize,sigma,u,blocksize,vt,blocksize,work,&
-           5*blocksize,info)
-      if (info.ne.0) then
-         write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_j'
-         STOP
-      endif
-
-      bnorm(j)=sigma(1)     
-
-      invssvb=1.0d0/sigma(blocksize)
-
-      ! omega_j,j+1 and omega_j+1,j+1
-      omkj(j,j+1)=eps
-      omkj(j+1,j)=eps
-      omkj(j+1,j+1)=eps
-
-      ! omega_k,j+1, k=1,...,j-1
-      do k=1,j-1
-         if (k.eq.1) then
-            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(j)*omkj(j-1,k) &
-                        + (anorm(j)+anorm(k))*omkj(j,k)
-         else
-            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(k)*omkj(j,k-1) &
-                        + bnorm(j)*omkj(j-1,k) &
-                        + (anorm(j)+anorm(k))*omkj(j,k)
-         endif
-         omkj(j+1,k)=invssvb*omkj(j+1,k)
-         omkj(k,j+1)=omkj(j+1,k)
-      enddo
+      call update_omega(j)
 
 !-----------------------------------------------------------------------
 ! TEST: calculate the actual orthogonality components
@@ -855,10 +799,8 @@ module block_lanczos
 !      do k=1,j-1
 !         if (omkj(k,j+1).gt.maxom) then
 !            maxom=omkj(k,j+1)
-!            maxk=k
 !         endif
 !      enddo
-!!      print*,"Estimated:",maxom,maxk
 !      print*,j,maxom
 
 !-----------------------------------------------------------------------
@@ -887,7 +829,119 @@ module block_lanczos
 
       return
 
-    end subroutine pro_normwise
+    end subroutine pro
+
+!#######################################################################
+
+    subroutine update_omega(j)
+
+      implicit none
+
+      integer                                 :: j,k
+      real(d)                                 :: invssvb
+
+      integer                                 :: info
+      real(d), dimension(blocksize,blocksize) :: u,vt
+      real(d), dimension(blocksize)           :: sigma
+      real(d), dimension(5*blocksize)         :: work
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      if (j.eq.2) then
+         
+         ! Spectral norm of A_1
+         call dgesvd('N','N',blocksize,blocksize,amat_all(1,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_1'
+            STOP
+         endif
+         anorm(1)=sigma(1)
+         
+         ! Spectral norm of B_1
+         call dgesvd('N','N',blocksize,blocksize,bmat_all(1,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_1'
+            STOP
+         endif
+
+         bnorm(1)=sigma(1)
+         
+         ! Spectral norm of B_2
+         call dgesvd('N','N',blocksize,blocksize,bmat_all(2,:,:),&
+              blocksize,sigma,u,blocksize,vt,blocksize,work,&
+              5*blocksize,info)
+         if (info.ne.0) then
+            write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_2'
+            STOP
+         endif
+
+         bnorm(2)=sigma(1)
+         
+         ! Set the various values that depend on the machine epsilon
+         eps=epmach!*blocksize*dsqrt(dble(matdim))
+         
+         ! Initialisation of the omkj array
+         omkj(1,1)=eps
+         omkj(2,2)=eps
+         omkj(1,2)=eps/sigma(blocksize)
+         omkj(2,1)=omkj(1,2)
+
+      endif
+
+!-----------------------------------------------------------------------
+! Calculate the next set of estimated orthogonality components
+!-----------------------------------------------------------------------
+      ! Spectral norm of A_j
+      call dgesvd('N','N',blocksize,blocksize,amat_all(j,:,:),&
+           blocksize,sigma,u,blocksize,vt,blocksize,work,&
+           5*blocksize,info)
+      if (info.ne.0) then
+         write(ilog,'(/,2x,a,/)') 'Error in the SVD of A_j'
+         STOP
+      endif
+
+      anorm(j)=sigma(1)
+
+      ! Spectral norm of B_j
+      call dgesvd('N','N',blocksize,blocksize,bmat_all(j,:,:),&
+           blocksize,sigma,u,blocksize,vt,blocksize,work,&
+           5*blocksize,info)
+      if (info.ne.0) then
+         write(ilog,'(/,2x,a,/)') 'Error in the SVD of B_j'
+         STOP
+      endif
+
+      bnorm(j)=sigma(1)     
+
+      invssvb=1.0d0/sigma(blocksize)
+      
+      ! omega_j,j+1 and omega_j+1,j+1
+      omkj(j,j+1)=eps
+      omkj(j+1,j)=eps
+      omkj(j+1,j+1)=eps
+
+      ! omega_k,j+1, k=1,...,j-1
+      do k=1,j-1
+         if (k.eq.1) then
+            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(j)*omkj(j-1,k) &
+                        + (anorm(j)+anorm(k))*omkj(j,k)
+         else
+            omkj(j+1,k)=bnorm(k+1)*omkj(j,k+1) + bnorm(k)*omkj(j,k-1) &
+                        + bnorm(j)*omkj(j-1,k) &
+                        + (anorm(j)+anorm(k))*omkj(j,k)
+         endif
+         omkj(j+1,k)=invssvb*omkj(j+1,k)
+         omkj(k,j+1)=omkj(j+1,k)
+      enddo
+
+      return
+
+    end subroutine update_omega
 
 !#######################################################################
 
@@ -955,6 +1009,201 @@ module block_lanczos
       return
 
     end subroutine pro_mgs
+
+!#######################################################################
+
+    subroutine mpro(j,lanunit2,lro,l2nd)
+      
+      implicit none
+
+      integer :: j,lanunit2,k,l
+      logical :: lro,l2nd
+
+!-----------------------------------------------------------------------
+! Update the omega recurrence
+!-----------------------------------------------------------------------
+      call update_omega(j)
+
+      if (l2nd) then
+!-----------------------------------------------------------------------
+! Reorthogonalisation was performed during the previous iteration, and 
+! subsequently must also be performed during the current iteration.
+!-----------------------------------------------------------------------
+         lro=.true.
+
+         call mpro_mgs(j,lanunit2)
+
+         ! Update the omega values
+         do k=1,nro
+            do l=lk(k),uk(k)
+               omkj(j+1,l)=eps
+               omkj(l,j+1)=omkj(j+1,l)
+            enddo
+         enddo
+
+         lk=0
+         uk=0
+
+         l2nd=.false.
+
+      else
+!-----------------------------------------------------------------------
+! Reorthogonalisation wasn't performed during the previous iteration. 
+! Check whether we need to perform reorthogonalisation during the 
+! current iteration.
+!-----------------------------------------------------------------------
+         nro=0
+         k=1
+10       continue
+         if (omkj(j+1,k).ge.orthlim) then
+            lro=.true.
+            nro=nro+1
+            lk(nro)=lowerbound(j,k)
+            uk(nro)=upperbound(j,k)
+            k=k+uk(nro)
+         else
+            k=k+1
+         endif
+         if (k.lt.j-1) goto 10
+
+         if (lro) then
+            call mpro_mgs(j,lanunit2)
+            do k=1,nro
+               do l=lk(k),uk(k)
+                  omkj(j+1,l)=eps
+                  omkj(l,j+1)=omkj(j+1,l)
+               enddo
+              if (lk(k).gt.1) lk(k)=lk(k)-1
+              uk(k)=uk(k)+1
+           enddo
+            l2nd=.true.
+         endif
+
+      endif
+
+      ! Make sure that we call localro after returning to 
+      ! run_block_lanczos
+      lro=.false.
+
+      return
+
+    end subroutine mpro
+
+!#######################################################################
+
+    subroutine mpro_mgs(j,lanunit2)
+      
+      implicit none
+
+      integer                              :: j,lanunit2,i,k,m,n,nblock
+      real(d), dimension(matdim,blocksize) :: lmat
+      real(d), dimension(blocksize)        :: dpvec
+      real(d)                              :: dp,ddot
+
+      external ddot
+
+      nblock=0
+      do i=1,nro
+         nblock=nblock+(uk(i)-lk(i)+1)
+      enddo
+
+      write(ilog,'(/,2x,a,x,i3,x,a,/)') 'Performing modified partial &
+           reorthogonalisation against',nblock,'blocks'
+
+      ! Loop over intervals [l,u] of blocks Q_k that we will
+      ! be orthogonalising Q_j+1 against
+      do i=1,nro
+
+         ! For each interval, loop over the corresponding blocks Q_k
+         do k=lk(i),uk(i)
+
+            ! Read the current block of vectors
+            read(lanunit2,rec=k) lmat
+
+            ! Loop over the vectors in the current block
+            do m=1,blocksize
+
+               ! Calculate the dot products between all
+               ! the vectors in Q_j+1 and the mth vector
+               ! in Q_k
+               call dgemv('T',matdim,blocksize,1.0d0,qmat2,matdim,&
+                    lmat(:,m),1,0.0d0,dpvec,1)
+
+               ! Orthogonalise all the vectors in and Q_j+1
+               ! against the mth vector in Q_k
+               do n=1,blocksize
+                  qmat2(:,n)=qmat2(:,n)-dpvec(n)*lmat(:,m)
+               enddo
+
+            enddo
+
+         enddo
+
+      enddo
+
+!-----------------------------------------------------------------------
+! Normalise Q_j+1
+!-----------------------------------------------------------------------      
+      do k=1,blocksize
+         dp=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1) 
+         qmat2(:,k)=qmat2(:,k)/dsqrt(dp)
+      enddo
+
+      return
+
+    end subroutine mpro_mgs
+
+!#######################################################################
+
+    function lowerbound(j,k) result(lb)
+
+      implicit none
+
+      integer :: lb,j,k,i
+      real(d) :: eta
+
+      if (k.eq.1.or.k.eq.2) then
+         lb=1
+      else
+         eta=epmach**0.75d0
+         lb=k-1
+         do i=k-2,1
+            if (abs(omkj(j+1,i)).gt.eta) then
+               lb=i
+            else
+               exit
+            endif
+         enddo
+      endif
+      
+      return
+
+    end function lowerbound
+
+!#######################################################################
+
+    function upperbound(j,k) result(ub)
+
+      implicit none
+      
+      integer :: ub,j,k,i
+      real(d) :: eta
+
+      eta=epmach**0.75d0
+
+      ub=k+1
+
+      do i=k+1,j-1
+         if (abs(omkj(j+1,i)).ge.eta) then
+            ub=i
+         else
+            exit
+         endif
+      enddo
+
+      return
+
+    end function upperbound
 
 !#######################################################################
 
@@ -1047,7 +1296,7 @@ module block_lanczos
       call cpu_time(t2)
       write(ilog,'(2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
-!      call chkortho(nvec)
+      call chkortho(nvec)
 
       return
 

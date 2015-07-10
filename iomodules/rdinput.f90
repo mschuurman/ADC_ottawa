@@ -714,6 +714,8 @@
                i=i+2
                if (keyword(i).eq.'pro') then
                   orthotype=1
+               else if (keyword(i).eq.'mpro') then
+                  orthotype=2
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
