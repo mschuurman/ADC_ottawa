@@ -18,7 +18,7 @@ module block_lanczos
                                               tmpmat,omkj
     real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
     real(d), dimension(:), allocatable     :: anorm,bnorm
-    real(d)                                :: epmach,eps,orthlim
+    real(d)                                :: epmach,eps,orthlim,eta
 
   contains
     
@@ -82,11 +82,13 @@ module block_lanczos
 
 !-----------------------------------------------------------------------
 ! If a partial reorthogonalisation is to be performed, then estimate
-! the machine epsilon and set the limit for reorthogonalisation
+! the machine epsilon, set the limit for reorthogonalisation and set
+! the limit eta that is used in the MPRO algorithm
 !-----------------------------------------------------------------------
       if (orthotype.gt.0) then
          epmach=machine_precision()
          orthlim=dsqrt(epmach)
+         eta=epmach**0.75d0
       endif
 
 !-----------------------------------------------------------------------
@@ -492,7 +494,7 @@ module block_lanczos
 ! Note that this is only necessary a reorthogonalisation has not taken 
 ! place in this iteration
 !-----------------------------------------------------------------------
-         if (.not.lro) call localro
+         if (.not.lro.and.orthotype.eq.1) call localro
 
 !-----------------------------------------------------------------------
 ! Fill in the next block of the T-matrix array
@@ -1081,10 +1083,6 @@ module block_lanczos
 
       endif
 
-      ! Make sure that we call localro after returning to 
-      ! run_block_lanczos
-      lro=.false.
-
       return
 
     end subroutine mpro
@@ -1160,12 +1158,10 @@ module block_lanczos
       implicit none
 
       integer :: lb,j,k,i
-      real(d) :: eta
 
       if (k.eq.1.or.k.eq.2) then
          lb=1
       else
-         eta=epmach**0.75d0
          lb=k-1
          do i=k-2,1
             if (abs(omkj(j+1,i)).gt.eta) then
@@ -1187,9 +1183,6 @@ module block_lanczos
       implicit none
       
       integer :: ub,j,k,i
-      real(d) :: eta
-
-      eta=epmach**0.75d0
 
       ub=k+1
 

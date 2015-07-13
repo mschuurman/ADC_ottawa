@@ -386,6 +386,7 @@
         use parameters
         use get_moment
         use fspace
+        use guessvecs
 
         implicit none
 
@@ -404,6 +405,13 @@
 !-----------------------------------------------------------------------
         allocate(mtmf(ndimf))
         call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+
+!-----------------------------------------------------------------------
+! If requested, determine the block size based on the transition
+! matrix elements between the initial state and the intermediate
+! states
+!-----------------------------------------------------------------------
+        if (ldynblock) call getblocksize(mtmf,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of mtmf, determine which 1h1p
@@ -442,6 +450,7 @@
         use misc
         use get_matrix_dipole
         use fspace
+        use guessvecs
 
         implicit none
 
@@ -461,6 +470,13 @@
 !-----------------------------------------------------------------------
         call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
              travec)
+
+!-----------------------------------------------------------------------
+! If requested, determine the block size based on the transition
+! matrix elements between the initial state and the intermediate
+! states
+!-----------------------------------------------------------------------
+        if (ldynblock) call getblocksize(travec,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
 ! From the values of the elements of travec, determine which 1h1p

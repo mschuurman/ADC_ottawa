@@ -19,7 +19,7 @@ end-davidson_section
 lanczos_section
  ortho=mpro
  type=block
- block_size = 11
+ block_size = 10
  iter=30
 # guess=adc1
 end-lanczos_section

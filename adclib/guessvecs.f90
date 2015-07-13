@@ -272,7 +272,7 @@
          tol=tdtol
       endif
 
-      if (lancguess.eq.1) then         
+      if (lancguess.eq.1) then
          if (method.eq.2) then
             allocate(indx1(ndimsf))
             call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
@@ -311,7 +311,7 @@
          enddo
          deallocate(adc1vec)
          deallocate(tmpvec)
-
+         
       else if (lancguess.eq.3) then
          ndim2=ndimf-ndimsf
          allocate(indx1(ndimsf))
@@ -325,7 +325,7 @@
             if (ftmp.gt.tol.and.lmain.lt.maxblock) lmain=lmain+1
          enddo
          deallocate(indx2)
-
+         
       else if (lancguess.eq.4) then
          ndim2=ndimf-ndimsf
          allocate(indx1(ndimsf))
@@ -350,14 +350,14 @@
          enddo
          deallocate(adc1vec)
          deallocate(tmpvec)
-
+         
       endif
-
+      
       deallocate(indx1)
 
       write(ilog,'(/,2x,a,2x,i4,/)') &
            'Lanczos block size selected:',lmain
-
+      
       ! Reset ncycles
       ncycles=maxblock*ncycles/lmain
 
