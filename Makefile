@@ -78,6 +78,7 @@ IOMODULES=iomodules/iomod.o \
 	iomodules/read_param.o \
 
 QCLIB=	qclib/vpqrsmod.o \
+	qclib/rungamess.o \
 	qclib/load_electronic_structure.o \
 	qclib/scf_electronic_structure.o \
 
@@ -151,6 +152,7 @@ ADC_OBJ=accuracy.o \
 	defaults.o \
 	orbindx.o \
 	vpqrsmod.o \
+	rungamess.o \
 	load_electronic_structure.o \
         scf_electronic_structure.o \
 	eigen/external_diag.o \

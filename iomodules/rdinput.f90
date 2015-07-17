@@ -13,7 +13,7 @@
       
       implicit none
       
-      integer            :: i,k
+      integer            :: i,k,n,l
       character(len=120) :: ain,atmp1,atmp2
       logical            :: iscvs,energyonly,ldav,llanc
 
@@ -175,28 +175,68 @@
                goto 100
             endif
 
-           else
-              ! Exit if the keyword is not recognised
-              errmsg='Unknown keyword: '//trim(keyword(i))
-              call error_control
-              STOP
+         else if (keyword(i).eq.'basis') then             
+            lrungamess=.true.
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) basname
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'diffuse') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2               
+               ! Diffuse function type
+               if (keyword(i).eq.'kbj') then
+                  difftype=1
+               else
+                  goto 100
+               endif
+               ! Numbers of diffuse functions
+35             continue
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  call getdiffinfo(n,l,keyword(i))
+                  ndiff(l)=n
+                  goto 35
+               endif
+            else
+               goto 100
+            endif
+            
+         else if (keyword(i).eq.'geometry') then
+            lrungamess=.true.
+40          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-geometry') then
+               natm=natm+1
+               goto 40
+            endif
+            ncoo=natm*3
+            
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+            STOP
          endif
-
-           ! If there are more keywords to be read on the current line,
-           ! then read them, else read the next line
-           if (i.lt.inkw) then
-              goto 10
-           else
-              goto 5
-           endif
+      
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
            
-           ! Exit if a required argument has not been given with a keyword
-100        continue
-           errmsg='No argument given with the keyword '//trim(keyword(i))
-           call error_control
-           STOP
-
-        endif
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         STOP
+         
+      endif
 
 !-----------------------------------------------------------------------
 ! Set CVS flags
@@ -235,6 +275,11 @@
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
         call checkinp(ldav,llanc,energyonly)
+
+!-----------------------------------------------------------------------
+! Read the geometry section if necessary
+!-----------------------------------------------------------------------
+        if (lrungamess) call rdgeometry
 
       return
 
@@ -365,6 +410,23 @@
 
          if (ncycles.eq.0) then
             msg='The no. Lanczos iterations has not been given'
+         endif
+
+      endif
+
+!-----------------------------------------------------------------------
+! GAMESS
+!-----------------------------------------------------------------------
+      if (lrungamess) then
+
+         if (basname.eq.'') then
+            msg='The basis set has not been given'
+            goto 999
+         endif
+         
+         if (natm.eq.0) then
+            msg='The geometry has not been given'
+            goto 999
          endif
 
       endif
@@ -748,6 +810,70 @@
       return
 
     end subroutine rdlancinp
+
+!#######################################################################
+
+    subroutine getdiffinfo(n,l,string)
+      
+      implicit none
+      
+      integer          :: n,l,i,k
+      character(len=*) :: string
+      character(len=5) :: labels
+      
+      labels='spdfg'
+      
+      do i=1,len_trim(string)
+         k=index(labels,string(i:i))
+         if (k.ne.0) then
+            read(string(1:i-1),*) n
+            l=k
+            exit
+         endif
+      enddo
+
+      return
+
+    end subroutine getdiffinfo 
+
+!#######################################################################
+
+    subroutine rdgeometry
+
+      use parameters
+      use parsemod
+      use channels
+
+      implicit none
+
+      integer :: i,j
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(xcoo(ncoo))
+      allocate(atlbl(natm))
+
+!-----------------------------------------------------------------------
+! Read the Cartesian coordinates from the input file
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+5     continue
+      call rdinp(iin)
+      if (keyword(1).ne.'geometry') goto 5
+
+      do i=1,natm
+         call rdinp(iin)
+         atlbl(i)=keyword(1)
+         do j=1,3
+            read(keyword(j+1),*) xcoo(i*3-3+j)
+         enddo
+      enddo
+
+      return 
+
+    end subroutine rdgeometry
 
 !#######################################################################
 

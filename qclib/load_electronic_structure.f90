@@ -364,7 +364,8 @@
       natm=natm+1
       goto 10
    endif
-   allocate(xcoo(natm*3))
+   
+   if(.not.allocated(xcoo)) allocate(xcoo(natm*3))
    allocate(aatm(natm))
 
    ! Read the Cartesian coordinates and atom labels

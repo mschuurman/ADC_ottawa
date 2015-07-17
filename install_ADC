@@ -108,8 +108,35 @@ fi
 #-----------------------------------------------------------------------
 # Compile the documentation
 #-----------------------------------------------------------------------
+echo
+echo "Compiling the documentation..."
+
 cd doc
 pdflatex input >/dev/null
 rm *.aux *.log
 cd ..
+
+#-----------------------------------------------------------------------
+# Set the ADC_DIR variable
+#-----------------------------------------------------------------------
+star40='****************************************'
+star20='********************'
+
+file=$HOME/.bashrc
+
+sed -e '/^\#\*ADC\*A\*/,/^\#\*ADC\*B\*/d' $file > tmpf$$
+sed -e '/^\#\*ADC\*A\*/,/^\#\*ADC\*B\*/d' tmpf$$ >| $file
+/bin/rm  tmpf$$
+
+echo "#*ADC*A***********$star40$star20" >> $file
+echo '# Following lines written by install_ADC.  '"$(date)" >> $file
+echo 'export ADC_DIR='`pwd` >> $file
+echo "#*ADC*B***********$star40$star20" >> $file
+
+echo
+echo "ADC_DIR written to $file"
+echo ""
+echo
+
+#exec bash
 

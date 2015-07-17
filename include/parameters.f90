@@ -229,6 +229,21 @@ integer                            :: CHECK_dip
 integer :: scfiter
 
 !!$************************************************
+!!$**********GAMESS Parameters*********************
+!!$************************************************
+integer, parameter                          :: maxao=100
+integer, parameter                          :: maxprim=100
+integer                                     :: ncoo,difftype
+integer, dimension(5)                       :: ndiff
+integer, dimension(:), allocatable          :: naogms
+integer, dimension(:,:), allocatable        :: nprim,aotype,ilquant
+real(d), dimension(:,:,:), allocatable      :: aocoeff,aoexp
+real(d), dimension(:,:), allocatable        :: diffexp
+character(len=60)                           :: basname
+character(len=2), dimension(:), allocatable :: atlbl
+logical                                     :: lrungamess,ldiffcom
+
+!!$************************************************
 !!$**********Other Parameters**********************
 !!$************************************************
 integer                                     :: natm

@@ -13,7 +13,8 @@ program main
   use iomod
   use channels
   use vpqrsmod
-  
+  use rungamess
+
   implicit none
   
   integer, dimension(2) :: shp
@@ -57,9 +58,12 @@ program main
 
 !-----------------------------------------------------------------------
 ! GAMESS interface
-!-----------------------------------------------------------------------  
+!-----------------------------------------------------------------------
+  if (lrungamess) call rungamess_main
+   
   gam_chkpt  = 'gamess.dat'
   gam_log = 'gamess.log'
+  
   call rdgeom(gam_log)
   call load_gamess(gam_chkpt,gam_log)
 
