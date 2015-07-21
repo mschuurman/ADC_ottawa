@@ -15,9 +15,8 @@
 
       implicit none
 
-      integer            :: k
-      character(len=120) :: ain,alog
-      logical            :: lexists
+      integer :: k
+      logical :: lexists
 
 !-----------------------------------------------------------------------
 ! Determine the input and log file names

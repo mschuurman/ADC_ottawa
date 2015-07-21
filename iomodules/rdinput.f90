@@ -14,22 +14,16 @@
       implicit none
       
       integer            :: i,k,n,l
-      character(len=120) :: ain,atmp1,atmp2
+      character(len=120) :: atmp1,atmp2
       logical            :: iscvs,energyonly,ldav,llanc
 
 !-----------------------------------------------------------------------
 ! Set 'traps'
 !-----------------------------------------------------------------------
-      ain=''
       energyonly=.false.
       ldav=.false.
       llanc=.false.
       iscvs=.false.
-
-!-----------------------------------------------------------------------
-! Read input file name
-!-----------------------------------------------------------------------
-      call getarg(1,ain)
 
 !-----------------------------------------------------------------------
 ! Read input file
