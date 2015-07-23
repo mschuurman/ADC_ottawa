@@ -1,0 +1,56 @@
+#!/bin/bash
+
+##########################################
+# Set job name and the directory from 
+# which the job is being submitted from
+##########################################
+STEM=$1
+DIR=$2
+NPROC=$3
+
+##########################################
+# Set up the scratch directory
+##########################################
+USER=`whoami`
+
+TMP1=/tmp/$USER
+if [ ! -d $TMP1 ]; then
+    mkdir $TMP1
+fi
+
+# GAMESS scratch directory
+GSCR=$TMP1/$PBS_JOBID
+mkdir $GSCR
+
+SCRATCH=$TMP1/$STEM.$$
+
+echo "Scratch directory: " $SCRATCH
+mkdir $SCRATCH
+
+##########################################
+# Copy files to the scratch directory
+##########################################
+cd $DIR
+
+cp * $SCRATCH
+
+##########################################
+# Run GAMESS
+##########################################
+rm ~/scr/$STEM.*
+
+cd $SCRATCH
+
+/home/sneville/gamess/rungms $STEM.inp $NPROC >$STEM.log
+
+##########################################
+# Copy files back
+##########################################
+cp * $DIR
+mv ~/scr/$STEM.dat $DIR
+
+##########################################
+# Clean up
+##########################################
+rm -r $SCRATCH
+rm -r $GSCR
