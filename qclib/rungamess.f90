@@ -6,12 +6,14 @@
 
     subroutine rungamess_main
       
+      use channels
       use iomod
       use parameters
       
       implicit none
       
-      integer :: igms
+      integer            :: igms,k
+      character(len=120) :: filename
 
 !-----------------------------------------------------------------------
 ! Read the AO basis from file
@@ -30,10 +32,14 @@
 
 !-----------------------------------------------------------------------
 ! Write the gamess input file
-!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------      
+      k=(index(ain,'.inp'))
+      filename=ain(1:k-1)//'_gamess.inp'
       call freeunit(igms)
-      open(igms,file='gamess.inp',form='formatted',status='unknown')
+      open(igms,file=filename,form='formatted',status='unknown')
+
       call wrgamessinp('inp',igms)
+
       close(igms)
 
 !-----------------------------------------------------------------------
@@ -485,14 +491,26 @@
 !-----------------------------------------------------------------------
 ! CONTRL section
 !-----------------------------------------------------------------------
-      if (type.eq.'inp') write(iout,'(a,/)') &
-           ' $CONTRL SCFTYP=RHF RUNTYP=ENERGY COORD=UNIQUE NZVAR=0 $END'
+      if (pntgroup.eq.'c1'.or.pntgroup.eq.'') then
+         if (type.eq.'inp') write(iout,'(a,/)') &
+              ' $CONTRL SCFTYP=RHF RUNTYP=ENERGY COORD=UNIQUE NZVAR=0 $END'
+      else
+         if (type.eq.'inp') write(iout,'(a,/)') &
+              ' $CONTRL SCFTYP=RHF RUNTYP=ENERGY COORD=PRINAXIS NZVAR=0 $END'
+      endif
 
 !-----------------------------------------------------------------------
 ! Start of the DATA section
 !-----------------------------------------------------------------------
       write(iout,'(a,/)') ' $DATA'
-      write(iout,'(a)') 'C1       0'
+      if (pntgroup.eq.'c1'.or.pntgroup.eq.'') then
+         write(iout,'(a)') 'C1       0'
+      else if (pntgroup.eq.'c2v') then
+         write(iout,'(a,/)') 'Cnv       2'
+      else
+         errmsg='The point group '//trim(pntgroup)//' is not supported'
+         call error_control
+      endif
 
 !-----------------------------------------------------------------------      
 ! Centre-of-mass centred basis functions
@@ -712,24 +730,50 @@
       
       implicit none
 
-      integer            :: unit
-      character(len=120) :: command,string,targ
+      integer            :: unit,k,nthreads
+      character(len=120) :: string,targ,stem,filename
+      character(len=350) :: workdir,adcdir,command
       logical            :: found
+
+      integer            :: omp_get_num_threads
 
       write(ilog,'(/,2x,a)') 'Running GAMESS...'
 
 !-----------------------------------------------------------------------
 ! Run GAMESS
 !-----------------------------------------------------------------------
-      command='rungms gamess.inp >gamess.log'
+      ! Determine the no. threads
+      !$omp parallel
+      nthreads=omp_get_num_threads()
+      !$omp end parallel
 
-      call system(command)
+      ! BODGE
+      nthreads=1
 
-!-----------------------------------------------------------------------
-! Retrieve the .dat file
-!-----------------------------------------------------------------------
-      command='mv ~/scr/gamess.dat .'
+      ! Determine the working and ADC directories
+      call getcwd(workdir)
 
+      call get_environment_variable("ADC_DIR",adcdir)
+      if (adcdir.eq.'') then
+         errmsg='ADC_DIR has not been set. Quitting.'
+         call error_control
+      endif
+
+      ! Write the call to the run_gamess script
+      k=(index(ain,'.inp'))
+      stem=ain(1:k-1)
+
+      command=trim(adcdir)//'/run_gamess '//trim(stem)//'_gamess '&
+           //trim(workdir)
+
+      k=len_trim(command)
+      if (nthreads.lt.10) then
+         write(command(k+1:k+2),'(1x,i1)') nthreads
+      else
+         write(command(k+1:k+3),'(1x,i2)') nthreads
+      endif
+
+      ! Execute the run_gamess script
       call system(command)
 
 !-----------------------------------------------------------------------
@@ -737,11 +781,13 @@
 !-----------------------------------------------------------------------
       call freeunit(unit)
 
-      open(unit,file='gamess.log',form='formatted',status='old')
+      filename=trim(stem)//'_gamess.log'
+      open(unit,file=filename,form='formatted',status='old')
 
       targ='EXECUTION OF GAMESS TERMINATED NORMALLY'
-      found=.false.      
+      found=.false.
 10    read(unit,'(a)',end=20) string
+      print*,string
       if (index(string,trim(targ)).ne.0) found=.true.      
       goto 10
       
@@ -754,6 +800,18 @@
       endif
 
       close(unit)
+
+!-----------------------------------------------------------------------
+! Rename the log and dat files to be consitent with the rest of the
+! program
+!-----------------------------------------------------------------------
+      filename=trim(stem)//'_gamess.log'
+      command='mv '//trim(filename)//' gamess.log'
+      call system(command)
+
+      filename=trim(stem)//'_gamess.dat'
+      command='mv '//trim(filename)//' gamess.dat'
+      call system(command)
 
       return
 
@@ -768,7 +826,7 @@
       implicit none
 
       integer            :: itmp,idat
-      character(len=120) :: string
+      character(len=120) :: string,adat
 
 !-----------------------------------------------------------------------
 ! Open files
@@ -777,6 +835,7 @@
       open(itmp,file='tmp.dat',form='formatted',status='unknown')
 
       call freeunit(idat)
+      
       open(idat,file='gamess.dat',form='formatted',status='unknown')
 
 !-----------------------------------------------------------------------

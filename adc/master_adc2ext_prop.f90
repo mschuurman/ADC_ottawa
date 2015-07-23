@@ -106,35 +106,47 @@
 ! and passed back in the travec array
 !-----------------------------------------------------------------------
         
-        ! If requested, determine the initial vectors Lanczos vectors by 
-        ! diagonalising the ADC(1) Hamiltonian matrix
-        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
+!        ! If requested, determine the initial vectors Lanczos vectors by 
+!        ! diagonalising the ADC(1) Hamiltonian matrix
+!        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
+!
+!        allocate(travec(ndimf))
+!
+!        call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
+!             travec,ndimf,kpq,kpqf,mtmf)
 
-        allocate(travec(ndimf))
+        call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+             vec_init,mtmf,noffdf)
 
-        call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
-             travec,ndimf,kpq,kpqf,mtmf)
-
-!-----------------------------------------------------------------------
-! Write the final space ADC(2)-x Hamiltonian matrix to file
-!-----------------------------------------------------------------------
-        write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-        if (lcvsfinal) then
-           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
-        else
-           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
-        endif
-
-!-----------------------------------------------------------------------
-! Perform the band-Lanczos calculation
-!-----------------------------------------------------------------------
-        call master_lancdiag(ndimf,noffdf,'c')
+!!-----------------------------------------------------------------------
+!! Write the final space ADC(2)-x Hamiltonian matrix to file
+!!-----------------------------------------------------------------------
+!        write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
+!        if (lcvsfinal) then
+!           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
+!        else
+!           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+!        endif
+!
+!!-----------------------------------------------------------------------
+!! Perform the band-Lanczos calculation
+!!-----------------------------------------------------------------------
+!        call master_lancdiag(ndimf,noffdf,'c')
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments and oscillator strengths between 
 ! the initial state and the Lanczos pseudo-states
 !-----------------------------------------------------------------------
-        call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
+!        call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
+
+!-----------------------------------------------------------------------
+! Calculate the transition moments and oscillator strengths between 
+! the initial state and the final states
+!
+! Note that if we are NOT considering ionization, then we will also
+! output the final Davidson state energies and configurations here
+!-----------------------------------------------------------------------
+        call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -348,6 +360,159 @@
 
 !#######################################################################
 
+      subroutine final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+           vec_init,mtmf,noffdf)
+        
+        use constants
+        use parameters
+        use fspace
+        use lancmod
+        
+        implicit none
+        
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,ndimsf
+        integer*8                                 :: noffdf
+        real(d), dimension(:), allocatable        :: travec,mtmf
+        real(d), dimension(ndim)                  :: vec_init
+
+        if (ldavfinal) then
+           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+                vec_init,mtmf,noffdf)
+        else
+           call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+                vec_init,mtmf,noffdf)
+        endif
+
+        return
+
+      end subroutine final_space_diag
+
+!#######################################################################
+
+      subroutine davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
+           travec,vec_init,mtmf,noffdf)
+        
+        use constants
+        use parameters
+        use fspace
+        use get_matrix_dipole
+        use davmod
+        use guessvecs
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,ndimsf
+        integer*8                                 :: noffdf
+        real(d), dimension(:), allocatable        :: travec,mtmf
+        real(d), dimension(ndim)                  :: vec_init
+
+        
+!-----------------------------------------------------------------------
+! Allocate the travec array that will hold the contraction of the IS
+! representation of the dipole operator with the initial state vector
+!-----------------------------------------------------------------------
+        allocate(travec(ndimf))
+
+!-----------------------------------------------------------------------
+! Calculate travec: the product of the IS representation of the dipole
+! operator and the initial state vector
+!
+! This will be used later in the calculation of transition dipole
+! matrix elements between the initial and final states.
+!-----------------------------------------------------------------------        
+        call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
+             travec)
+
+!-----------------------------------------------------------------------        
+! If requested, determine the Davidson guess vectors by diagonalising 
+! the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------        
+        if (ladc1guess_f) call adc1_guessvecs_final
+
+!-----------------------------------------------------------------------
+! Write the final space ADC(2)-s Hamiltonian to disk
+!-----------------------------------------------------------------------
+        write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
+        if (lcvsfinal) then
+           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+        else
+           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+        endif
+
+!-----------------------------------------------------------------------
+! Block-Davidson diagonalisation in the final space
+!-----------------------------------------------------------------------
+        call master_dav(ndimf,noffdf,'f')
+
+        return
+
+      end subroutine davidson_final_space_diag
+
+!#######################################################################
+
+      subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+           vec_init,mtmf,noffdf)
+        
+        use constants
+        use parameters
+        use guessvecs
+        use fspace
+        use lancmod
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,ndimsf,&
+                                                     n
+        integer*8                                 :: noffdf
+        real(d), dimension(:), allocatable        :: travec,mtmf
+        real(d), dimension(ndim)                  :: vec_init
+
+!-----------------------------------------------------------------------        
+! If requested, determine the initial vectors Lanczos vectors by 
+! diagonalising the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------        
+        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
+
+!-----------------------------------------------------------------------
+! Allocate the travec array that will hold the contraction of the IS
+! representation of the dipole operator with the initial state vector
+!-----------------------------------------------------------------------
+        allocate(travec(ndimf))
+
+!-----------------------------------------------------------------------
+! Determine the guess vectors for the band-Lanczos calculation
+!
+! Note that as part of this process, the transition moments between
+! the ISs and the initial state are calculated in lanczos_guess_vecs
+! and passed back in the travec array
+!-----------------------------------------------------------------------
+        call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
+             travec,ndimf,kpq,kpqf,mtmf)
+
+!-----------------------------------------------------------------------
+! Write the final space ADC(2)-s Hamiltonian matrix to file
+!-----------------------------------------------------------------------
+        write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
+        if (lcvsfinal) then
+           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+        else
+           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+        endif
+
+!-----------------------------------------------------------------------
+! Perform the band-Lanczos calculation
+!-----------------------------------------------------------------------
+        call master_lancdiag(ndimf,noffdf,'c')
+
+        return
+
+      end subroutine lanczos_final_space_diag
+
+!#######################################################################
+
       subroutine lanczos_guess_vecs(vec_init,ndim,ndimsf,travec,ndimf,&
            kpq,kpqf,mtmf)
 
@@ -430,9 +595,14 @@
            close(iadc1)
            ! Contract the ADC(1) eigenvectors with the 1h1p part of
            ! mtmf
+           open(iadc1,file='adc1_f.dat',form='formatted',&
+                status='unknown')
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
+              write(iadc1,'(F8.3,3x,F14.7)') adc1en_f(i)*27.211396d0,&
+                   tmpvec(i)
            enddo
+           close(iadc1)
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
         endif
 
@@ -507,6 +677,31 @@
 
 !#######################################################################
 
+      subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
+
+        use constants
+        use parameters
+
+        implicit none
+ 
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+        integer                                   :: ndimf,ndimsf
+        real(d), dimension(ndimf)                 :: travec,mtmf
+        real(d)                                   :: e_init
+
+        if (ldavfinal) then
+           call tdm_davstates_final(ndimf,ndimsf,travec,e_init,&
+                mtmf,kpqf)
+        else
+           call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
+        endif
+
+        return
+
+      end subroutine final_space_tdm
+
+!#######################################################################
+
       subroutine tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
         
         use constants
@@ -532,6 +727,117 @@
         return
 
       end subroutine tdm_lancstates
+
+!#######################################################################
+
+      subroutine tdm_davstates_final(ndimf,ndimsf,travec,e_init,mtmf,&
+           kpqf)
+        
+        use constants
+        use parameters
+        use iomod, only: freeunit
+        use misc, only: dsortindxa1
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+        integer                                   :: ndimf,ndimsf,idavf,&
+                                                     i,k,ilbl,itmp,iout
+        integer, dimension(ndimf)                 :: indx
+        real(d)                                   :: e_init,ftmp
+        real(d), dimension(ndimf)                 :: travec,mtmf,&
+                                                     fstate,coeffsq
+        real(d), dimension(davstates_f)           :: ener,tdm,osc_str
+        real(d), parameter                        :: tol=0.05d0
+
+!-----------------------------------------------------------------------
+! Open the file containing the final space Davidson states
+!-----------------------------------------------------------------------
+        call freeunit(idavf)
+        
+        open(idavf,file=davname_f,status='unknown',access='sequential',&
+             form='unformatted')
+
+!-----------------------------------------------------------------------
+! Form the scalar product of each final state vector with the vector
+! travec corresponding to the contraction of the IS representation of
+! dipole operator with the initial state vector
+!-----------------------------------------------------------------------
+        do i=1,davstates_f
+           ! Read the ith final state vector
+           fstate=0.0d0
+           read(idavf) k,ener(i),fstate(:)
+           ! Form the scalar product of the ith final state vector
+           ! and travec
+           tdm(i)=dot_product(fstate,travec)
+           osc_str(i)=(2.0d0/3.0d0)*ener(i)*tdm(i)**2
+        enddo
+
+!-----------------------------------------------------------------------
+! Output the final state information
+!-----------------------------------------------------------------------
+        write(ilog,'(/,70a)') ('*',i=1,70)
+        write(ilog,'(2x,a)') &
+             'Final space ADC(2)-x excitation energies'
+        write(ilog,'(70a)') ('*',i=1,70)
+
+        rewind(idavf)
+
+        call freeunit(iout)
+        open(iout,file='osc.dat',form='unformatted',status='unknown')
+
+        do i=1,davstates_f
+
+           read(idavf) itmp,ftmp,fstate(:)
+           coeffsq=fstate**2
+           call dsortindxa1("D",ndimf,coeffsq(:),indx(:))
+
+           write(iout,'(2(F14.8,3x))') (ener(i)-e_init)*27.211d0,osc_str(i)
+
+           write(ilog,'(2/,2x,a,2x,i2)') 'Final Space State Number',i           
+           if (ener(i)*27.211d0.lt.10.0d0) then
+              write(ilog,'(2x,a,2x,F10.5)') &
+                   'Excitation Energy (eV):',ener(i)*27.211d0
+           else
+              write(ilog,'(2x,a,3x,F10.5)') &
+                   'Excitation Energy (eV):',ener(i)*27.211d0
+           endif
+           write(ilog,'(2x,a,F10.5)') 'Transition Dipole Moment:',tdm(i)
+           write(ilog,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str(i)
+           write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
+           write(ilog,'(2x,25a)') ('*',k=1,25)
+           write(ilog,'(3x,a)') 'j   k -> a  b    C_jkab'
+           write(ilog,'(2x,25a)') ('*',k=1,25)
+           do k=1,50
+              ilbl=indx(k)
+              if (abs(coeffsq(ilbl)).ge.tol) then
+                 if (kpqf(4,ilbl).eq.-1) then
+                    ! Single excitations
+                    write(ilog,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+                         kpqf(3,ilbl),'->',kpqf(5,ilbl),coeffsq(ilbl)
+                 else
+                    ! Double excitations
+                    write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
+                         kpqf(3,ilbl),kpqf(4,ilbl),'->',kpqf(5,ilbl),&
+                         kpqf(6,ilbl),coeffsq(ilbl)
+                 endif
+              endif
+           enddo
+
+           write(ilog,'(2x,25a)') ('*',k=1,25)
+
+        enddo
+
+        close(iout)
+        
+!-----------------------------------------------------------------------
+! Close the file containing the final space Davidson states
+!-----------------------------------------------------------------------
+        close(idavf)
+
+        return
+
+      end subroutine tdm_davstates_final
 
 !#######################################################################
 

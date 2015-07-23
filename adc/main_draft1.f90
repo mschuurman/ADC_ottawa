@@ -60,10 +60,10 @@ program main
 ! GAMESS interface
 !-----------------------------------------------------------------------
   if (lrungamess) call rungamess_main
-   
+
   gam_chkpt  = 'gamess.dat'
   gam_log = 'gamess.log'
-  
+
   call rdgeom(gam_log)
   call load_gamess(gam_chkpt,gam_log)
 

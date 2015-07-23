@@ -20,7 +20,7 @@
       integer                              :: ndim,i,iout
       integer, dimension(:,:), allocatable :: kpq
       real(d), dimension(:,:), allocatable :: eigvec
-      real(d), dimension(:), allocatable   :: eigval
+!      real(d), dimension(:), allocatable   :: eigval
 
       if (lcvs) then
          write(ilog,'(/,2x,a,/)') &
@@ -51,15 +51,16 @@
 ! Allocate the arrays that will hold the ADC1 eigenpairs
 !-----------------------------------------------------------------------
       allocate(eigvec(ndim,ndim))
-      allocate(eigval(ndim))
+!      allocate(eigval(ndim))
+      allocate(adc1en(ndim))
 
 !-----------------------------------------------------------------------
 ! Diagonalise the ADC(1) Hamiltonian matrix
 !-----------------------------------------------------------------------
       if (lcvs) then
-         call get_fspace_tda_direct_cvs(ndim,kpq(:,:),eigvec,eigval)
+         call get_fspace_tda_direct_cvs(ndim,kpq(:,:),eigvec,adc1en)
       else
-         call get_fspace_tda_direct(ndim,kpq(:,:),eigvec,eigval)
+         call get_fspace_tda_direct(ndim,kpq(:,:),eigvec,adc1en)
       endif
 
       deallocate(kpq)
@@ -96,7 +97,7 @@
       integer                              :: ndim,i,iout
       integer, dimension(:,:), allocatable :: kpqf
       real(d), dimension(:,:), allocatable :: eigvec
-      real(d), dimension(:), allocatable   :: eigval
+!      real(d), dimension(:), allocatable   :: eigval
 
       if (lcvsfinal) then
          write(ilog,'(/,2x,a,/)') &
@@ -127,15 +128,16 @@
 ! Allocate the arrays that will hold the ADC1 eigenpairs
 !-----------------------------------------------------------------------
       allocate(eigvec(ndim,ndim))
-      allocate(eigval(ndim))
+!      allocate(eigval(ndim))
+      allocate(adc1en_f(ndim))
 
 !-----------------------------------------------------------------------
 ! Diagonalise the ADC(1) Hamiltonian matrix
 !-----------------------------------------------------------------------
       if (lcvsfinal) then
-         call get_fspace_tda_direct_cvs(ndim,kpqf(:,:),eigvec,eigval)
+         call get_fspace_tda_direct_cvs(ndim,kpqf(:,:),eigvec,adc1en_f)
       else
-         call get_fspace_tda_direct(ndim,kpqf(:,:),eigvec,eigval)
+         call get_fspace_tda_direct(ndim,kpqf(:,:),eigvec,adc1en_f)
       endif
 
       deallocate(kpqf)

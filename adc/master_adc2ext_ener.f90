@@ -14,6 +14,7 @@
     use propagate_prepare
     use guessvecs
     use channels
+    use adc_ph, only: mp2
 
     implicit none
 
@@ -24,6 +25,11 @@
                                             osc_str
     real(d), dimension(:,:), allocatable :: rvec
     real(d)                              :: t1,t2
+
+!-----------------------------------------------------------------------  
+! Calculation of the MP2 correlation energy
+!-----------------------------------------------------------------------  
+    call MP2(e_mp2)
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 
@@ -117,8 +123,8 @@
        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
        do i=1,davstates
           tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
-          osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
-       end do
+          osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2
+       enddo
     endif
        
     itmp=1+nBas**2*4*nOcc**2

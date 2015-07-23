@@ -100,6 +100,7 @@
       natm=0
       difftype=0
       ndiff=0
+      pntgroup=''
 
       return
 

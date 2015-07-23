@@ -330,6 +330,7 @@
         use lancmod
 
         implicit none
+
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,ndimsf
         integer*8                                 :: noffdf
@@ -420,6 +421,7 @@
         use lancmod
 
         implicit none
+
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,ndimsf,&
                                                      n
@@ -1007,7 +1009,7 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
         integer                                   :: ndimf,ndimsf,idavf,&
-                                                     i,k,ilbl,itmp
+                                                     i,k,ilbl,itmp,iout
         integer, dimension(ndimf)                 :: indx
         real(d)                                   :: e_init,ftmp
         real(d), dimension(ndimf)                 :: travec,mtmf,&
@@ -1047,11 +1049,16 @@
 
         rewind(idavf)
 
+        call freeunit(iout)
+        open(iout,file='osc.dat',form='unformatted',status='unknown')
+
         do i=1,davstates_f
 
            read(idavf) itmp,ftmp,fstate(:)
            coeffsq=fstate**2
            call dsortindxa1("D",ndimf,coeffsq(:),indx(:))
+
+           write(iout,'(2(F14.8,3x))') (ener(i)-e_init)*27.211d0,osc_str(i)
 
            write(ilog,'(2/,2x,a,2x,i2)') 'Final Space State Number',i           
            if (ener(i)*27.211d0.lt.10.0d0) then
@@ -1084,8 +1091,10 @@
            enddo
 
            write(ilog,'(2x,25a)') ('*',k=1,25)
-
+           
         enddo
+
+        close(iout)
 
 !-----------------------------------------------------------------------
 ! Close the file containing the final space Davidson states

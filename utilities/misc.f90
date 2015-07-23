@@ -346,6 +346,9 @@ contains
     iout=127
     open(iout,file='davstates.dat',form='formatted',status='unknown')
 
+    write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
+    write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
+
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
        call dsortindxa1("D",ndim1,coeff(:),indx(:))
@@ -374,11 +377,16 @@ contains
     real(d)                           :: en,tmvec,osc_str
     real(d), parameter                :: tol=0.05d0
 
-    write(ilog,'(2/,2x,a,2x,i2)') 'Initial Space State Number',i
-    write(iout,'(2/,2x,a,2x,i2)') 'Initial Space State Number',i
+!-----------------------------------------------------------------------
+! State energy in a.u.
+!-----------------------------------------------------------------------
+    write(ilog,'(2/,2x,a,2x,i1,1x,a1,i1,2x,a,8x,F14.8)') &
+         'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
+    write(iout,'(2/,2x,a,2x,i1,1x,a1,i1,2x,a,8x,F14.8)') &
+         'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
 
 !-----------------------------------------------------------------------
-! Excitation energy
+! Excitation energy in eV
 !-----------------------------------------------------------------------
     if (en*27.211d0.lt.10.0d0) then
        write(ilog,'(2x,a,2x,F10.5)') &

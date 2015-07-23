@@ -14,22 +14,16 @@
       implicit none
       
       integer            :: i,k,n,l
-      character(len=120) :: ain,atmp1,atmp2
+      character(len=120) :: atmp1,atmp2
       logical            :: iscvs,energyonly,ldav,llanc
 
 !-----------------------------------------------------------------------
 ! Set 'traps'
 !-----------------------------------------------------------------------
-      ain=''
       energyonly=.false.
       ldav=.false.
       llanc=.false.
       iscvs=.false.
-
-!-----------------------------------------------------------------------
-! Read input file name
-!-----------------------------------------------------------------------
-      call getarg(1,ain)
 
 !-----------------------------------------------------------------------
 ! Read input file
@@ -186,7 +180,7 @@
 
          else if (keyword(i).eq.'diffuse') then
             if (keyword(i+1).eq.'=') then
-               i=i+2               
+               i=i+2
                ! Diffuse function type
                if (keyword(i).eq.'kbj') then
                   difftype=1
@@ -215,6 +209,14 @@
             endif
             ncoo=natm*3
             
+         else if (keyword(i).eq.'point_group') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),'(a)') pntgroup
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

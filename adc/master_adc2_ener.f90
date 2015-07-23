@@ -14,6 +14,7 @@
     use propagate_prepare
     use guessvecs
     use channels
+    use adc_ph, only: mp2
 
     implicit none
 
@@ -24,6 +25,11 @@
                                             osc_str
     real(d), dimension(:,:), allocatable :: rvec
     real(d)                              :: t1,t2
+
+!-----------------------------------------------------------------------  
+! Calculation of the MP2 correlation energy
+!-----------------------------------------------------------------------  
+    call MP2(e_mp2)
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 

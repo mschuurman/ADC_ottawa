@@ -1,15 +1,15 @@
 ################################################
 # GAMESS section
 ################################################
-basis=sto-2g
-
-diffuse=kbj,1s,1p
-
-geometry
-C   0.00000000     0.00000000     0.00000000
-S  -1.58306630     0.00000000     0.00000000
-S   1.58306630     0.00000000     0.00000000
-end-geometry
+#basis=sto-2g
+#
+#diffuse=kbj,1s,1p,1d
+#
+#geometry
+#C   0.00000000     0.00000000     0.00000000
+#S  -1.58306630     0.00000000     0.00000000
+#S   1.58306630     0.00000000     0.00000000
+#end-geometry
 
 ################################################
 # ADC section
@@ -20,9 +20,11 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state=0
+initial_state=1
 
 dipole_component = x
+
+cvs
 
 davidson_section
  nstates = 2
@@ -32,12 +34,19 @@ davidson_section
  guess=adc1
 end-davidson_section
 
-lanczos_section
- ortho=mpro
- type=block
- block_size = 10
- iter=30
+davidson_final_section
+ nstates = 2
+ block_size = 4
+ tol=1d-5
+ maxit=700
+ guess=adc1
+end-davidson_final_section
+
+#lanczos_section
+# type=block
+# block_size = 10
+# iter=30
 # guess=adc1
-end-lanczos_section
+#end-lanczos_section
 
 end-input

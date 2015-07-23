@@ -11,7 +11,7 @@ module parameters
 !!$int*4 nCen - number of atomic centres
 !!$int*4 nOcc - number of occupied orbitals
 !!$int*4 nVirt - number of virtual orbitals
-!!$int*4 Ehf - Hartree-Fock energy of the ground state
+!!$real*8 Ehf - Hartree-Fock energy of the ground state
 !!$orbSym - int*4 array(nBas) containing irrep labels of MO's
 !!$e - real*8 array(nBas) containing MO's energies
 !!$occNum - real*8 array(nBas) containing MO's occupation numbers 
@@ -144,6 +144,7 @@ module parameters
   integer, dimension(:), allocatable   :: stvc_mxc
   integer                              :: ninista
   logical                              :: ladc1guess,ladc1guess_f
+  real(d), dimension(:), allocatable   :: adc1en,adc1en_f
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
   integer, dimension(nhcentre)         :: icore,iexpfrz
