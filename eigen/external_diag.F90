@@ -26,7 +26,7 @@
    double precision                    :: val
    double precision, dimension(matdim) :: vec
    character(36)                       :: vecfile
-   character(70)                       :: aout
+   character(70)                       :: aout,compiler
    character(1)                        :: flag
    logical                             :: ladc1guess
 
@@ -89,9 +89,16 @@
 ! It is crucial that we call mpi_init once before slepcinitialize is
 ! called for the first time, otherwise we cannot make multiple calls
 ! to slepcinitialize/slepcfinalize.
+!
+! Note that this only holds if the code has NOT been compiled using
+! ifort
 !-----------------------------------------------------------------------
+#ifdef __INTEL_COMPILER
+#define compiler "intel"
+#endif
+
       ndavcalls=ndavcalls+1
-!      if (ndavcalls.eq.1) call mpi_init()
+      if (ndavcalls.eq.1.and.compiler.ne.'intel') call mpi_init()
 
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
@@ -828,7 +835,7 @@
 
    if (flag.eq.'i') then
       filename='SCRATCH/hmlt.diai'
-   else if (flag.eq.'c') then
+   else if (flag.eq.'f') then
       filename='SCRATCH/hmlt.diac'
    endif
 

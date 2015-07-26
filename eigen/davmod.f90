@@ -250,18 +250,26 @@
 
 !#######################################################################
 
-    subroutine readdavvc(nvec,evec,rvec)
+    subroutine readdavvc(nvec,evec,rvec,flag,dim)
 ! Reads Davidson vectors from disk
       implicit none
 
-      integer, intent(in)                                :: nvec
-      double precision, dimension(ndm,nvec), intent(out) :: rvec
+      integer, intent(in)                                :: nvec,dim
+      double precision, dimension(dim,nvec), intent(out) :: rvec
       double precision, dimension(nvec), intent(out)     :: evec      
       integer                                            :: i,nr,nfl,count
-
-      nfl=77
+      character(len=1)                                   :: flag
+      character(len=36)                                  :: filename
       
-      open(unit=nfl,file=davname,status='old',&
+      nfl=77
+
+      if (flag.eq.'i') then
+         filename=davname
+      else if (flag.eq.'f') then
+         filename=davname_f
+      endif
+         
+      open(unit=nfl,file=filename,status='old',&
            access='sequential',form='unformatted')
 
       count=0

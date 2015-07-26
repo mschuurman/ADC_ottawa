@@ -109,7 +109,7 @@
 
     call master_dav(ndim,noffd,'i')
     
-    call readdavvc(davstates,ener,rvec)
+    call readdavvc(davstates,ener,rvec,'i',ndim)
 
 !-----------------------------------------------------------------------
 ! Calculate TDMs from the ground state
@@ -129,7 +129,7 @@
        
     itmp=1+nBas**2*4*nOcc**2
     call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),&
-         tmvec(1:davstates),osc_str(1:davstates),kpq,itmp)
+         tmvec(1:davstates),osc_str(1:davstates),kpq,itmp,'i')
     
     return
 

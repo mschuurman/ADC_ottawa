@@ -107,7 +107,7 @@
 
         itmp=1+nBas**2*4*nOcc**2
         call table2(ndim,ndim,ener(:),arr(:,:),tmvec(:),&
-             osc_str(:),kpq,itmp)
+             osc_str(:),kpq,itmp,'i')
 
 !-----------------------------------------------------------------------
 ! Output transition energies and oscillator strentghs to file
