@@ -1036,7 +1036,8 @@
            else
               tdm(i)=dot_product(rvec(:,i),travec)
            endif
-       enddo
+           osc_str(i)=(2.0d0/3.0d0)*ener(i)*tdm(i)**2
+        enddo
 
 !-----------------------------------------------------------------------
 ! Output the final space energies, TDMs and configurations
