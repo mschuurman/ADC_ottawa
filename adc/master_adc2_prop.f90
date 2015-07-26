@@ -1022,8 +1022,8 @@
 !-----------------------------------------------------------------------
 ! Read the final space Davidson states from file
 !-----------------------------------------------------------------------
-        allocate(rvec(ndimf,davstates))
-        call readdavvc(davstates,ener,rvec,'f',ndimf)
+        allocate(rvec(ndimf,davstates_f))
+        call readdavvc(davstates_f,ener,rvec,'f',ndimf)
 
 !-----------------------------------------------------------------------
 ! Calculate the TDMs from the initial state
