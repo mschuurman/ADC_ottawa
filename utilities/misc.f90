@@ -65,7 +65,7 @@ contains
 !!$       call dsortqx("D",ndim,coeff(:),1,indx(:))
        call dsortindxa1("D",ndim,coeff(:),indx(:))
        
-       write(ilog,102) i,w(i),w(i)*27.211396,(coeff(indx(j)),indx(j),j=1,5)
+       write(ilog,102) i,w(i),w(i)*eh2ev,(coeff(indx(j)),indx(j),j=1,5)
     end do
     
     deallocate(work)
@@ -311,7 +311,7 @@ contains
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
        call dsortindxa1("D",ndim1,coeff(:),indx(:))
-       write(ilog,102) i,en(i),en(i)*27.211396,(coeff(indx(j)),indx(j),j=1,5)
+       write(ilog,102) i,en(i),en(i)*eh2ev,(coeff(indx(j)),indx(j),j=1,5)
     end do 
 
     deallocate(coeff,indx)
@@ -321,7 +321,7 @@ contains
 !!$-----------------------------------------------------------
 
   subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str,&
-       kpq,kpqdim2)
+       kpq,kpqdim2,flag)
     
     integer, intent(in) :: ndim1,ndim2
     real(d), dimension(ndim2), intent(in) :: en,tmvec,osc_str
@@ -334,6 +334,9 @@ contains
     integer                           :: kpqdim2,iout
     integer, dimension(7,0:kpqdim2-1) :: kpq
 
+    character(len=1)  :: flag
+    character(len=70) :: filename
+    
 100 FORMAT(60("-"),/)    
 101 FORMAT(4(A10,2x),/)
 102 FORMAT(I10,x,"|",4(F10.5,2x),"|",x,5(F8.6,"(",I7,")",1x)) 
@@ -344,7 +347,14 @@ contains
     if (nlim .gt. ndim1) nlim=ndim1
   
     iout=127
-    open(iout,file='davstates.dat',form='formatted',status='unknown')
+
+    if (flag.eq.'i') then
+       filename='davstates.dat'
+    else if (flag.eq.'f') then
+       filename='davstates_f.dat'
+    endif
+    
+    open(iout,file=filename,form='formatted',status='unknown')
 
     write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
     write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
@@ -388,16 +398,16 @@ contains
 !-----------------------------------------------------------------------
 ! Excitation energy in eV
 !-----------------------------------------------------------------------
-    if (en*27.211d0.lt.10.0d0) then
+    if (en*eh2ev.lt.10.0d0) then
        write(ilog,'(2x,a,2x,F10.5)') &
-            'Excitation Energy (eV):',en*27.211d0
+            'Excitation Energy (eV):',en*eh2ev
        write(iout,'(2x,a,2x,F10.5)') &
-            'Excitation Energy (eV):',en*27.211d0
+            'Excitation Energy (eV):',en*eh2ev
     else
        write(ilog,'(2x,a,3x,F10.5)') &
-            'Excitation Energy (eV):',en*27.211d0
+            'Excitation Energy (eV):',en*eh2ev
        write(iout,'(2x,a,3x,F10.5)') &
-            'Excitation Energy (eV):',en*27.211d0
+            'Excitation Energy (eV):',en*eh2ev
     endif
 
 !-----------------------------------------------------------------------

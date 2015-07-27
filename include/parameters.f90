@@ -171,12 +171,14 @@ module parameters
 !!$ fsconstinv - inverted fine structure constant
 !!$ os2cs - oscillator strength [a.u.] to cross-section [Mb] conversion factor
 !!$ omega - photon energy, required by Stieltjes_phi, photoionisation routine.
+!!$ eh2ev - Hartree to eV conversion factor
 
 !  real(d), parameter :: abohr=5.2918e-9
-  real(d), parameter :: fsconstinv=137._d
-  real(d), parameter :: os2cs=4.0347443
-  real(d), parameter :: omega=3.0_d
-  
+  real(d), parameter :: fsconstinv=137.0d0
+  real(d), parameter :: os2cs=4.0347443d0
+  real(d), parameter :: omega=3.0d0
+  real(d), parameter :: eh2ev=27.2113845d0
+
 !!$************************************************
 !!$**********Lanczos Parameters********************
 !!$************************************************  

@@ -81,7 +81,7 @@
            itmp=1+nBas**2*4*nOcc**2
            call table2(ndim,davstates,ener(1:davstates),&
                 rvec(:,1:davstates),tmvec(1:davstates),&
-                osc_str(1:davstates),kpq,itmp)
+                osc_str(1:davstates),kpq,itmp,'i')
 
            write(ilog,'(/,70a,/)') ('*',i=1,70)
         endif
@@ -105,39 +105,8 @@
 ! the ISs and the initial state are calculated in lanczos_guess_vecs
 ! and passed back in the travec array
 !-----------------------------------------------------------------------
-        
-!        ! If requested, determine the initial vectors Lanczos vectors by 
-!        ! diagonalising the ADC(1) Hamiltonian matrix
-!        if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
-!
-!        allocate(travec(ndimf))
-!
-!        call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
-!             travec,ndimf,kpq,kpqf,mtmf)
-
         call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
              vec_init,mtmf,noffdf)
-
-!!-----------------------------------------------------------------------
-!! Write the final space ADC(2)-x Hamiltonian matrix to file
-!!-----------------------------------------------------------------------
-!        write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-!        if (lcvsfinal) then
-!           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
-!        else
-!           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
-!        endif
-!
-!!-----------------------------------------------------------------------
-!! Perform the band-Lanczos calculation
-!!-----------------------------------------------------------------------
-!        call master_lancdiag(ndimf,noffdf,'c')
-
-!-----------------------------------------------------------------------
-! Calculate the transition moments and oscillator strengths between 
-! the initial state and the Lanczos pseudo-states
-!-----------------------------------------------------------------------
-!        call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments and oscillator strengths between 
@@ -333,7 +302,7 @@
 !-----------------------------------------------------------------------
 ! Read the Davidson state vectors from file
 !-----------------------------------------------------------------------
-        call readdavvc(davstates,ener,rvec)
+        call readdavvc(davstates,ener,rvec,'i',ndim)
 
 !-----------------------------------------------------------------------
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 > (mtm)
@@ -408,13 +377,16 @@
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
 
-        
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
 ! representation of the dipole operator with the initial state vector
 !-----------------------------------------------------------------------
-        allocate(travec(ndimf))
-
+        if (statenumber.eq.0) then
+           allocate(mtmf(ndimf))
+        else
+           allocate(travec(ndimf))
+        endif
+           
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
 ! operator and the initial state vector
@@ -422,8 +394,12 @@
 ! This will be used later in the calculation of transition dipole
 ! matrix elements between the initial and final states.
 !-----------------------------------------------------------------------        
-        call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
-             travec)
+        if (statenumber.eq.0) then
+           call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+        else
+           call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
+                travec)
+        endif
 
 !-----------------------------------------------------------------------        
 ! If requested, determine the Davidson guess vectors by diagonalising 
@@ -599,7 +575,7 @@
                 status='unknown')
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
-              write(iadc1,'(F8.3,3x,F14.7)') adc1en_f(i)*27.211396d0,&
+              write(iadc1,'(F8.3,3x,F14.7)') adc1en_f(i)*eh2ev,&
                    tmpvec(i)
            enddo
            close(iadc1)
@@ -736,108 +712,76 @@
         use constants
         use parameters
         use iomod, only: freeunit
-        use misc, only: dsortindxa1
-
+        use misc, only: dsortindxa1,table2
+        use davmod, only: readdavvc
+        
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf,idavf,&
-                                                     i,k,ilbl,itmp,iout
-        integer, dimension(ndimf)                 :: indx
+        integer                                   :: ndimf,ndimsf,i,&
+                                                     itmp,iout
         real(d)                                   :: e_init,ftmp
-        real(d), dimension(ndimf)                 :: travec,mtmf,&
-                                                     fstate,coeffsq
+        real(d), dimension(ndimf)                 :: travec,mtmf
         real(d), dimension(davstates_f)           :: ener,tdm,osc_str
-        real(d), parameter                        :: tol=0.05d0
+        real(d), dimension(:,:), allocatable      :: rvec
 
 !-----------------------------------------------------------------------
-! Open the file containing the final space Davidson states
+! Read the final space Davidson states from file
 !-----------------------------------------------------------------------
-        call freeunit(idavf)
-        
-        open(idavf,file=davname_f,status='unknown',access='sequential',&
-             form='unformatted')
+        allocate(rvec(ndimf,davstates_f))
+        call readdavvc(davstates_f,ener,rvec,'f',ndimf)
 
 !-----------------------------------------------------------------------
-! Form the scalar product of each final state vector with the vector
-! travec corresponding to the contraction of the IS representation of
-! dipole operator with the initial state vector
+! Calculate the TDMs from the initial state
 !-----------------------------------------------------------------------
         do i=1,davstates_f
-           ! Read the ith final state vector
-           fstate=0.0d0
-           read(idavf) k,ener(i),fstate(:)
-           ! Form the scalar product of the ith final state vector
-           ! and travec
-           tdm(i)=dot_product(fstate,travec)
-           osc_str(i)=(2.0d0/3.0d0)*ener(i)*tdm(i)**2
-        enddo
-
-!-----------------------------------------------------------------------
-! Output the final state information
-!-----------------------------------------------------------------------
-        write(ilog,'(/,70a)') ('*',i=1,70)
-        write(ilog,'(2x,a)') &
-             'Final space ADC(2)-x excitation energies'
-        write(ilog,'(70a)') ('*',i=1,70)
-
-        rewind(idavf)
-
-        call freeunit(iout)
-        open(iout,file='osc.dat',form='unformatted',status='unknown')
-
-        do i=1,davstates_f
-
-           read(idavf) itmp,ftmp,fstate(:)
-           coeffsq=fstate**2
-           call dsortindxa1("D",ndimf,coeffsq(:),indx(:))
-
-           write(iout,'(2(F14.8,3x))') (ener(i)-e_init)*27.211d0,osc_str(i)
-
-           write(ilog,'(2/,2x,a,2x,i2)') 'Final Space State Number',i           
-           if (ener(i)*27.211d0.lt.10.0d0) then
-              write(ilog,'(2x,a,2x,F10.5)') &
-                   'Excitation Energy (eV):',ener(i)*27.211d0
+           !Form the scalar product of the ith final state vector
+           ! and mtmf (if statenumber=0) or travec (if statenumber>0)
+           if (statenumber.eq.0) then
+              tdm(i)=dot_product(rvec(:,i),mtmf)
            else
-              write(ilog,'(2x,a,3x,F10.5)') &
-                   'Excitation Energy (eV):',ener(i)*27.211d0
+              tdm(i)=dot_product(rvec(:,i),travec)
            endif
-           write(ilog,'(2x,a,F10.5)') 'Transition Dipole Moment:',tdm(i)
-           write(ilog,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str(i)
-           write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
-           write(ilog,'(2x,25a)') ('*',k=1,25)
-           write(ilog,'(3x,a)') 'j   k -> a  b    C_jkab'
-           write(ilog,'(2x,25a)') ('*',k=1,25)
-           do k=1,50
-              ilbl=indx(k)
-              if (abs(coeffsq(ilbl)).ge.tol) then
-                 if (kpqf(4,ilbl).eq.-1) then
-                    ! Single excitations
-                    write(ilog,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
-                         kpqf(3,ilbl),'->',kpqf(5,ilbl),coeffsq(ilbl)
-                 else
-                    ! Double excitations
-                    write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
-                         kpqf(3,ilbl),kpqf(4,ilbl),'->',kpqf(5,ilbl),&
-                         kpqf(6,ilbl),coeffsq(ilbl)
-                 endif
-              endif
-           enddo
-
-           write(ilog,'(2x,25a)') ('*',k=1,25)
-
+           osc_str(i)=(2.0d0/3.0d0)*ener(i)*tdm(i)**2 
         enddo
 
-        close(iout)
-        
 !-----------------------------------------------------------------------
-! Close the file containing the final space Davidson states
+! Output the final space energies, TDMs and configurations
 !-----------------------------------------------------------------------
-        close(idavf)
+       write(ilog,'(/,70a)') ('*',i=1,70)
+       if (lcvsfinal) then
+          write(ilog,'(2x,a)') &
+               'Final space CVS-ADC(2)-x excitation energies'
+       else
+          write(ilog,'(2x,a)') &
+               'Final space ADC(2)-x excitation energies'
+       endif
+       write(ilog,'(70a)') ('*',i=1,70)
+       
+       itmp=1+nBas**2*4*nOcc**2
+       call table2(ndimf,davstates_f,ener(1:davstates_f),&
+            rvec(:,1:davstates_f),tdm(1:davstates_f),&
+            osc_str(1:davstates_f),kpqf,itmp,'f')
 
-        return
+       deallocate(rvec)
+       
+!-----------------------------------------------------------------------
+! Output the excitation energies and oscillator strengths for plotting
+! purposes
+!-----------------------------------------------------------------------
+       call freeunit(iout)
+       open(iout,file='osc.dat',form='formatted',status='unknown')
 
-      end subroutine tdm_davstates_final
+       do i=1,davstates_f
+          if (abs(osc_str(i)).lt.0.00001d0) cycle
+          write(iout,'(2(F11.5,2x))') (ener(i)-e_init)*eh2ev,osc_str(i)
+       enddo
+       
+       close(iout)
+
+       return
+
+     end subroutine tdm_davstates_final
 
 !#######################################################################
 

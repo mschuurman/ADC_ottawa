@@ -26,7 +26,7 @@
    double precision                    :: val
    double precision, dimension(matdim) :: vec
    character(36)                       :: vecfile
-   character(70)                       :: aout
+   character(70)                       :: aout,compiler
    character(1)                        :: flag
    logical                             :: ladc1guess
 
@@ -89,9 +89,18 @@
 ! It is crucial that we call mpi_init once before slepcinitialize is
 ! called for the first time, otherwise we cannot make multiple calls
 ! to slepcinitialize/slepcfinalize.
+!
+! Note that this only holds if the code has NOT been compiled using
+! ifort
 !-----------------------------------------------------------------------
+#ifdef __INTEL_COMPILER
+#define compiler "intel"
+#endif
+
       ndavcalls=ndavcalls+1
-!      if (ndavcalls.eq.1) call mpi_init()
+!      if (ndavcalls.eq.1.and.compiler.ne.'intel') call mpi_init()
+
+      if (ndavcalls.eq.1) call mpi_init()
 
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
@@ -205,9 +214,7 @@
 !-----------------------------------------------------------------------
 ! Set the initial vectors
 !-----------------------------------------------------------------------
-      if (lfakeip) then
-         call guess_vecs_fakeip(blckdim,matdim,ivec)
-      else if (ladc1guess) then
+      if (ladc1guess) then
          call load_adc1_vecs(blckdim,matdim,ivec)
       else
          call guess_vecs_ondiag(blckdim,matdim,ivec,flag)
@@ -559,7 +566,7 @@
    endif
 
    do i=1,15
-      print*,i,eigval(i)*27.211
+      print*,i,eigval(i)*eh2ev
    enddo
 
    return
@@ -828,7 +835,7 @@
 
    if (flag.eq.'i') then
       filename='SCRATCH/hmlt.diai'
-   else if (flag.eq.'c') then
+   else if (flag.eq.'f') then
       filename='SCRATCH/hmlt.diac'
    endif
 
@@ -876,57 +883,3 @@
 
 !#######################################################################
 
- subroutine guess_vecs_fakeip(blckdim,matdim,ivec)
-
-   use parameters, only: ifakeorb,ifakeex
-
-   implicit none
-
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscmat.h"
-#include "finclude/slepcsys.h"
-#include "finclude/slepceps.h"
-#include "finclude/petscvec.h90"
-
-   integer :: blckdim,matdim
-
-!-----------------------------------------------------------------------
-! PETSc/SLEPc variables
-!-----------------------------------------------------------------------
-   Vec            ivec(blckdim)
-   PetscInt       i,nvecs,dim
-   PetscInt       indx
-   PetscScalar    ftmp
-   PetscErrorCode ierr
-
-!-----------------------------------------------------------------------
-! Create initial vectors corresponding to 1p1h excitation into the
-! orbital indexed by ifakeorb
-!-----------------------------------------------------------------------
-   nvecs=blckdim
-   dim=matdim
-
-   do i=1,nvecs
-
-      ! Create the ith initial vector
-!      call veccreateseq(PETSC_COMM_SELF,dim,ivec(i),ierr)
-      call veccreateseq(MPI_COMM_SELF,dim,ivec(i),ierr)
-      
-      ! Assign the components of the ith initial vector
-      ftmp=1.0d0
-
-      ! PETSc indices start from zero...
-      indx=ifakeex(i)-1
-
-      call vecsetvalues(ivec(i),1,indx,ftmp,INSERT_VALUES,ierr)
-      call vecassemblybegin(ivec(i),ierr)
-      call vecassemblyend(ivec(i),ierr)
-
-   enddo
-
-   return
-
- end subroutine guess_vecs_fakeip
-
-!#######################################################################

@@ -63,6 +63,54 @@ contains
 
 !#######################################################################
 
+  subroutine select_atom_is_fakeip(kpq)
+  
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer               :: i,ap,n2pne
+    integer               :: isym,a,cah,ic
+    integer, dimension(7) :: col
+    
+    kpq(1,0)=0
+    
+    if (lifrzcore) then
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          if (a.ne.ifakeorb) cycle
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             call iscore(cah,ic)
+             if (ic.eq.0) then
+                isym=MT(orbSym(cah),orbSym(a))
+                if(isym .eq. nirrep) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                end if
+             endif
+          end do
+       end do
+    else
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          if (a.ne.ifakeorb) cycle
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym .eq. nirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             end if
+          end do
+       end do
+    endif
+
+  end subroutine select_atom_is_fakeip
+
+!#######################################################################
+
   subroutine select_atom_is_cvs(kpq)
 
     implicit none
@@ -94,6 +142,41 @@ contains
     return
 
   end subroutine select_atom_is_cvs
+
+!#######################################################################
+
+  subroutine select_atom_is_cvs_fakeip(kpq)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+
+    integer :: i,ap,n2pne,ic
+    integer :: isym,a,cah
+    integer, dimension(7) :: col
+
+    kpq(1,0)=0
+
+    do ap=nOcc+1,nBas
+       a=roccnum(ap)
+       if (a.ne.ifakeorb) cycle
+       do i=1,hcentre(0)
+          cah=hcentre(i)
+          call iscore(cah,ic)
+          if (ic.eq.1.and.iexpfrz(cah).eq.0) then
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym .eq. nirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             end if
+          endif
+       enddo
+    enddo
+
+    return
+
+  end subroutine select_atom_is_cvs_fakeip
 
 !#######################################################################
 
@@ -631,6 +714,187 @@ contains
 
 !#######################################################################
 
+    subroutine select_atom_d_fakeip(kpq,flag)
+
+!!$Includes 2p2pnxnx configurations in the both, initial and final states.
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer, intent(in) :: flag
+
+    integer :: i,j,a,b,k
+    integer :: ih,jh,ap,bp
+    integer :: cnti,cntf
+    integer :: isym1, isym2,ic
+    integer, dimension(7) :: col
+    real(d) :: einit,ei,ej
+
+100 FORMAT(/,3("*"),A50,3x,I4)
+101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
+102 FORMAT(("*"),3x,I5,3x,I3,3x,I3,3x,I3,3x,I3,3x,I3)
+103 FORMAT(/,60("-")) 
+
+    einit=abs(e(hinit))
+
+! Filling the kpq arrays in the order: a=b,i=j;a|=b,i=j;a=b,i|=j;a|=b,i|=j(I,II).
+
+    if (flag .eq. -1) then
+       
+       kpq(2:5,0)=0
+       cnti=kpq(1,0)
+    
+!!$a=b,i=j i=hcentre(ih)
+
+       if(nirrep .eq. 1) then
+          do ih=1,hcentre(0)
+             i=hcentre(ih)
+             ei=abs(e(i))
+
+             call iscore(i,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             do ap=nOcc+1,nBas
+                a=roccnum(ap)
+                if (a.ne.ifakeorb) cycle
+                if(einit .le. 2._d*ei) then
+                   cnti=cnti+1
+                   kpq(2,0)=kpq(2,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,i,1)
+                   kpq(:,cnti)=col(:)
+                else
+                   cnti=cnti+1
+                   kpq(2,0)=kpq(2,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,i,1)
+                   kpq(:,cnti)=col(:)
+                end if
+             end do
+          end do
+       end if
+
+!!$a|=b,i=j
+  
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          do bp=ap+1,nBas
+             b=roccnum(bp)
+             if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+             isym1=MT(orbSym(a),orbSym(b))
+             if(isym1 .eq. nirrep) then
+                do ih=1,hcentre(0)
+                   i=hcentre(ih)
+                   ei=abs(e(i))
+
+                   call iscore(i,ic)
+                   if (lifrzcore.and.ic.eq.1) cycle
+
+                   if(einit .le. 2._d*ei) then
+                      cnti=cnti+1
+                      kpq(3,0)=kpq(3,0)+1
+                      call fill_indices(col(:),2,1,a,b,i,i,2)
+                      kpq(:,cnti)=col(:)
+                   else
+                      cnti=cnti+1
+                      kpq(3,0)=kpq(3,0)+1
+                      call fill_indices(col(:),2,1,a,b,i,i,2)
+                      kpq(:,cnti)=col(:)
+                   end if
+                end do
+             end if
+          end do
+       end do
+
+!a=b,i|=j
+  
+       do ih=1,hcentre(0)
+          i=hcentre(ih)
+          ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             isym1=MT(orbSym(i),orbSym(j))
+             if (isym1 .eq. nirrep) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   if (a.ne.ifakeorb) cycle
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             end if
+          end do
+       end do
+
+!a|=b,i|=j spin I
+
+       do ih=1,hcentre(0)
+          i=hcentre(ih)
+          ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             isym1=MT(orbSym(i),orbSym(j))
+             do ap=nOcc+1,nBas
+                a=roccnum(ap)
+                do bp=ap+1,nBas
+                   b=roccnum(bp)
+                   if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+                   isym2=MT(orbSym(a),orbSym(b))
+                   if(MT(isym1,isym2) .eq. nirrep) then 
+                      if(einit .le. (ei+ej)) then
+                         cnti=cnti+1
+                         kpq(5,0)=kpq(5,0)+1
+                         call fill_indices(col(:),2,11,a,b,i,j,4)
+                         kpq(:,cnti)=col(:)
+                      else
+                         cnti=cnti+1
+                         kpq(5,0)=kpq(5,0)+1
+                         call fill_indices(col(:),2,11,a,b,i,j,4)
+                         kpq(:,cnti)=col(:)
+                      end if
+                   end if
+                end do
+             end do
+          end do
+       end do
+    
+       kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
+       kpq(2,cnti+1:cnti+kpq(5,0))=12
+       kpq(7,cnti+1:cnti+kpq(5,0))=5
+
+!------------------------------------------------------------------------------------
+!------------------------------------------------------------------------------------
+
+    elseif(flag .eq. 1) then
+
+       kpq(2:5,0)=0
+       cntf=kpq(1,0)
+
+       kpq(:,cntf+1:cntf+kpq(5,0))=kpq(:,cntf+1-kpq(5,0):cntf)
+       kpq(2,cntf+1:cntf+kpq(5,0))=12 
+       kpq(7,cntf+1:cntf+kpq(5,0))=5
+
+    end if
+    
+  end subroutine select_atom_d_fakeip
+
+!#######################################################################
+
   subroutine select_atom_d_cvs(kpq,flag)
 
 !!$Includes 2p2pnxnx configurations in the both, initial and final states.
@@ -756,6 +1020,130 @@ contains
     return
 
   end subroutine select_atom_d_cvs
+
+!#######################################################################
+
+  subroutine select_atom_d_cvs_fakeip(kpq,flag)
+
+!!$Includes 2p2pnxnx configurations in the both, initial and final states.
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer, intent(in)                                    :: flag
+
+    integer               :: i,j,a,b,k,ic1,ic2
+    integer               :: ih,jh,ap,bp
+    integer               :: cnti,cntf
+    integer               :: isym1, isym2
+    integer, dimension(7) :: col
+    real(d)               :: einit,ei,ej
+
+!-----------------------------------------------------------------------
+! Filling the kpq arrays in the order:
+!
+! a=b,i=j;
+! a|=b,i=j;
+! a=b,i|=j;
+! a|=b,i|=j(I,II).
+!
+! Note that in the CVS approximation, the following configurations are
+! ignored: a=b,i=j
+!          a|=b,i=j;
+!
+! i.e., we only need to consider a=b,i|=j and a|=b,i|=j(I,II) for which
+!       one, and only one, of i or j corresponds to a core orbital
+!-----------------------------------------------------------------------
+
+100 FORMAT(/,3("*"),A50,3x,I4)
+101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
+102 FORMAT(("*"),3x,I5,3x,I3,3x,I3,3x,I3,3x,I3,3x,I3)
+103 FORMAT(/,60("-")) 
+    
+    einit=abs(e(hinit))
+
+    kpq(2:5,0)=0
+    cnti=kpq(1,0)
+
+!-----------------------------------------------------------------------
+! a=b,i|=j, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+    do ih=1,hcentre(0)
+       i=hcentre(ih)
+       call iscore(i,ic1)
+       ei=abs(e(i))
+
+       do jh=ih+1,hcentre(0)
+          j=hcentre(jh)
+          call iscore(j,ic2)
+          ej=abs(e(j))
+
+          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
+             isym1=MT(orbSym(i),orbSym(j))
+             if (isym1 .eq. nirrep) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   if (a.ne.ifakeorb) cycle
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             end if
+             
+          endif
+
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! a|=b,i|=j spin I, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+       do ih=1,hcentre(0)
+          i=hcentre(ih)          
+          call iscore(i,ic1)
+          ei=abs(e(i))
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             call iscore(j,ic2)
+             ej=abs(e(j))
+             isym1=MT(orbSym(i),orbSym(j))
+
+             if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   do bp=ap+1,nBas
+                      b=roccnum(bp)
+                      if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+                      isym2=MT(orbSym(a),orbSym(b))
+                      if(MT(isym1,isym2) .eq. nirrep) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   end do
+                end do
+                
+             endif
+
+          end do
+       end do
+
+       kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
+       kpq(2,cnti+1:cnti+kpq(5,0))=12
+       kpq(7,cnti+1:cnti+kpq(5,0))=5
+
+    return
+
+  end subroutine select_atom_d_cvs_fakeip
 
 !#######################################################################
 

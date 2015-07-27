@@ -48,9 +48,19 @@
     kpq(:,:)=-1
 
     if (lcvs) then
-       ! CVS-ADC(2)
-       call select_atom_is_cvs(kpq(:,:))
-       call select_atom_d_cvs(kpq(:,:),-1)
+       if (lfakeip) then
+          ! CVS-IP-ADC(2)-s
+          call select_atom_is_cvs_fakeip(kpq(:,:))
+          call select_atom_d_cvs_fakeip(kpq(:,:),-1)
+       else
+          ! CVS-ADC(2)-s
+          call select_atom_is_cvs(kpq(:,:))
+          call select_atom_d_cvs(kpq(:,:),-1)
+       endif
+    else if (lfakeip) then
+       ! IP-ADC(2)-s
+       call select_atom_is_fakeip(kpq(:,:))
+       call select_atom_d_fakeip(kpq(:,:),-1)
     else
        ! ADC(2)-s
        call select_atom_is(kpq(:,:))
@@ -84,14 +94,6 @@
     CHECK_dip=nirrep2
 
 !-----------------------------------------------------------------------
-! If we are performing a fake ip calculation, then determine the
-! indices of the 1h1p configurations corresponding to excitation into
-! the additional diffuse 'fake continuum' orbital
-!-----------------------------------------------------------------------
-    itmp=1+nBas**2*4*nOcc**2
-    if (lfakeip) call get_fakeip_indices(kpq,itmp,ndims,ndim)
-
-!-----------------------------------------------------------------------
 ! Calculate and save the Hamiltonian matrix to file
 !-----------------------------------------------------------------------
     write(ilog,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
@@ -109,7 +111,7 @@
 
     call master_dav(ndim,noffd,'i')
     
-    call readdavvc(davstates,ener,rvec)
+    call readdavvc(davstates,ener,rvec,'i',ndim)
 
 !-----------------------------------------------------------------------
 ! Calculate TDMs from the ground state
@@ -123,13 +125,13 @@
        call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
        do i=1,davstates
           tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
-          osc_str(i)=2._d/3._d*ener(i)*tmvec(i)**2
+          osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2
        end do
     endif
 
     itmp=1+nBas**2*4*nOcc**2
     call table2(ndim,davstates,ener(1:davstates),rvec(:,1:davstates),&
-         tmvec(1:davstates),osc_str(1:davstates),kpq,itmp)
+         tmvec(1:davstates),osc_str(1:davstates),kpq,itmp,'i')
     
     return
 

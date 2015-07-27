@@ -90,7 +90,7 @@
             else
                goto 100
             endif
-            erange=erange/27.211d0
+            erange=erange/27.2113845d0
 
          else if (keyword(i).eq.'maxpol') then
             if (keyword(i+1).eq.'=') then
@@ -590,7 +590,7 @@
           do i=1,iord-1
              ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
              si_osc(i)=(si_f(i+1)+si_f(i))/(2.d0*(si_e(i+1)-si_e(i)))
-             write(iout,*) ecent(i)*27.211d0,si_osc(i)
+             write(iout,*) ecent(i)*27.2113845d0,si_osc(i)
           enddo
 
           ! Calculate the Stieltjes distribution function, i.e., the
@@ -604,7 +604,7 @@
           si_cosc2=0.0d0
           do i=1,iord-1
              si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0d0
-             write(ioutF,*) ecent(i)*27.211d0,si_cosc2(i)
+             write(ioutF,*) ecent(i)*27.2113845d0,si_cosc2(i)
           enddo
 
           ! Close the output files

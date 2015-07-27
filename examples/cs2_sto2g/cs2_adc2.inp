@@ -1,17 +1,4 @@
 ################################################
-# GAMESS section
-################################################
-basis=sto-2g
-
-diffuse=kbj,1s,1p,1d
-
-geometry
-C   0.00000000     0.00000000     0.00000000
-S  -1.58306630     0.00000000     0.00000000
-S   1.58306630     0.00000000     0.00000000
-end-geometry
-
-################################################
 # ADC section
 ################################################
 method = adc2-s
@@ -26,12 +13,14 @@ dipole_component = x
 
 cvs
 
+#energy_only
+
 davidson_section
  nstates = 2
  block_size = 4
  tol=1d-5
  maxit=700
- guess=adc1
+# guess=adc1
 end-davidson_section
 
 davidson_final_section
@@ -39,7 +28,7 @@ davidson_final_section
  block_size = 4
  tol=1d-5
  maxit=700
- guess=adc1
+# guess=adc1
 end-davidson_final_section
 
 #lanczos_section

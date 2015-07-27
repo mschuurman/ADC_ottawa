@@ -91,6 +91,7 @@
 
          else if (keyword(i).eq.'fakeip') then
             lfakeip=.true.
+            energyonly=.true.
 
          else if (keyword(i).eq.'motype') then
             if (keyword(i+1).eq.'=') then
@@ -524,7 +525,7 @@
                i=i+2
                eigentype=2
                read(keyword(i),*) davtarg
-               davtarg=davtarg/27.211396d0
+               davtarg=davtarg/eh2ev
             else
                goto 100
             endif
@@ -637,7 +638,7 @@
                i=i+2
                eigentype=2
                read(keyword(i),*) davtarg
-               davtarg=davtarg/27.211396d0
+               davtarg=davtarg/eh2ev
             else
                goto 100
             endif
