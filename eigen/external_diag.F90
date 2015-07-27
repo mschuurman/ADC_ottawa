@@ -98,9 +98,7 @@
 #endif
 
       ndavcalls=ndavcalls+1
-!      if (ndavcalls.eq.1.and.compiler.ne.'intel') call mpi_init()
-
-      if (ndavcalls.eq.1) call mpi_init()
+      if (ndavcalls.eq.1.and.compiler.ne.'intel') call mpi_init()
 
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
