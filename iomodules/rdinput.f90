@@ -529,7 +529,7 @@
             else
                goto 100
             endif
-
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

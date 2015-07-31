@@ -28,7 +28,9 @@
 !-----------------------------------------------------------------------
 ! Determine where to place the additional diffuse functions
 !-----------------------------------------------------------------------
-      call place_diff
+      ldiffcom=.false.
+      contcent=0
+      if (difftype.gt.0.or.lfakeip) call place_diff
 
 !-----------------------------------------------------------------------
 ! Write the gamess input file
@@ -357,8 +359,10 @@
 !-----------------------------------------------------------------------
       if (.not.ldiffcom) then
 
+         if (lfakeip) contcent=ilbl
+
          count=0
-         currlquant=0
+         currlquant=0         
 
          ! Parent functions and diffuse functions up to 
          ! l=iquant(ilbl,naogms(ilbl))-1
@@ -486,7 +490,7 @@
 ! If diffuse functions are to be placed at the centre of mass, then
 ! determine the centre of mass
 !-----------------------------------------------------------------------
-      if (difftype.gt.0) call getcom(xcom)
+      call getcom(xcom)
 
 !-----------------------------------------------------------------------
 ! CONTRL section
@@ -512,12 +516,18 @@
          call error_control
       endif
 
-!-----------------------------------------------------------------------      
+!-----------------------------------------------------------------------
 ! Centre-of-mass centred basis functions
 !-----------------------------------------------------------------------      
-      if (difftype.gt.0.and.ldiffcom) then
+      if (ldiffcom) then
          write(iout,'(a1,11x,a3,3(6x,F12.10))') 'X','0.0',&
               (xcom(i),i=1,3)
+         ! Fake continuum orbital
+         if (lfakeip) then
+            write(iout,'(a)') '   S       1'
+            write(iout,'(5x,a)') &
+                 '1            1d-30  1.000000'
+         endif
          ! s functions
          if (ndiff(1).gt.0) then
             do i=1,ndiff(1)
@@ -571,6 +581,12 @@
          atnum=atomic_number(atlbl(i))
          write(iout,'(a2,9x,F4.1,3(4x,F14.10))') atupper,atnum,&
               (xcoo(j),j=i*3-2,i*3)
+         ! 'Continuum' orbital for IP-ADC calculations
+         if (lfakeip.and.i.eq.contcent) then
+            write(iout,'(a)') '   S       1'
+            write(iout,'(5x,a)') &
+                 '1            1d-30  1.000000'            
+         endif
          ! AO exponents and contraction coefficients
          do j=1,naogms(i)
             lquantlbl=get_lquantlbl(ilquant(i,j))

@@ -161,7 +161,6 @@ module parameters
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldavfinal
-
   
 !!$************************************************
 !!$**********Physical Constants********************
@@ -236,7 +235,7 @@ integer :: scfiter
 !!$************************************************
 integer, parameter                          :: maxao=100
 integer, parameter                          :: maxprim=100
-integer                                     :: ncoo,difftype
+integer                                     :: ncoo,difftype,contcent
 integer, dimension(5)                       :: ndiff
 integer, dimension(:), allocatable          :: naogms
 integer, dimension(:,:), allocatable        :: nprim,aotype,ilquant

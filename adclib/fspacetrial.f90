@@ -1225,15 +1225,12 @@ contains
     real(d), dimension(ndim), intent(in) :: ener
     real(d), dimension(ndim), intent(in) :: sigmavec
     
-    integer                              :: i,nlimit,ncount
-    real(d)                              :: gamma0,ehole,oslimit
+    integer                              :: i,ncount,iout
+    real(d)                              :: oslimit
     real(d), dimension(:), allocatable   :: sgmvc_short,ener_short
     
-    integer :: iout
-
     allocate(sgmvc_short(ndim),ener_short(ndim))
-    
-    ehole=e(hinit)
+
     oslimit=1.e-8
     ncount=0
 

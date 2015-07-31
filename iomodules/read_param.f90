@@ -103,7 +103,7 @@ subroutine rearrange_occ()
   
 !  call dsortindxa1('A',nBas,e(:),indx(:))
   indx = (/(i, i=1,nBas )/)
-  write(ilog,*)'index=',indx
+!  write(ilog,*)'index=',indx
   roccNum(:)=indx(:)
   
 end subroutine rearrange_occ

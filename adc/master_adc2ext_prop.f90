@@ -149,9 +149,9 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-        allocate(kpq(7,0:nBas**2*4*nOcc**2))
-        allocate(kpqd(7,0:nBas**2*4*nOcc**2))
-        allocate(kpqf(7,0:nBas**2*4*nOcc**2))
+        if (.not.allocated(kpq)) allocate(kpq(7,0:nBas**2*4*nOcc**2))
+        if (.not.allocated(kpqd)) allocate(kpqd(7,0:nBas**2*4*nOcc**2))
+        if (.not.allocated(kpqf)) allocate(kpqf(7,0:nBas**2*4*nOcc**2))
         
 !-----------------------------------------------------------------------
 ! Determine the initial, final and total subspaces
@@ -719,11 +719,14 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
         integer                                   :: ndimf,ndimsf,i,&
-                                                     itmp,iout
-        real(d)                                   :: e_init,ftmp
+                                                     itmp,iout,count,k
+        real(d)                                   :: e_init,ftmp,lb,&
+                                                     ub
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d), dimension(davstates_f)           :: ener,tdm,osc_str
         real(d), dimension(:,:), allocatable      :: rvec
+        real(d), parameter                        :: tol=0.00001d0
+        character(len=400)                        :: atmp
 
 !-----------------------------------------------------------------------
 ! Read the final space Davidson states from file
@@ -735,14 +738,14 @@
 ! Calculate the TDMs from the initial state
 !-----------------------------------------------------------------------
         do i=1,davstates_f
-           !Form the scalar product of the ith final state vector
+           ! Form the scalar product of the ith final state vector
            ! and mtmf (if statenumber=0) or travec (if statenumber>0)
            if (statenumber.eq.0) then
               tdm(i)=dot_product(rvec(:,i),mtmf)
            else
               tdm(i)=dot_product(rvec(:,i),travec)
            endif
-           osc_str(i)=(2.0d0/3.0d0)*ener(i)*tdm(i)**2 
+           osc_str(i)=(2.0d0/3.0d0)*(ener(i)-e_init)*tdm(i)**2
         enddo
 
 !-----------------------------------------------------------------------
@@ -769,6 +772,7 @@
 ! Output the excitation energies and oscillator strengths for plotting
 ! purposes
 !-----------------------------------------------------------------------
+       ! Data file
        call freeunit(iout)
        open(iout,file='osc.dat',form='formatted',status='unknown')
 
@@ -779,6 +783,71 @@
        
        close(iout)
 
+       ! gnuplot file
+       open(iout,file='spec.gnu',form='formatted',status='unknown')
+
+       write(iout,'(a,/)') 'fwhm=1.0'
+       write(iout,'(a,/)') 'sigsq=(fwhm/2.35482)**2'
+       
+       count=0
+       do i=1,davstates_f
+          if (abs(osc_str(i)).lt.tol) cycle
+          count=count+1
+          if (count.lt.10) then
+             write(iout,'(a1,i1,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a1,i1,a1,F11.5)') 'f',count,'=',osc_str(i)
+          else if (count.lt.100) then
+             write(iout,'(a1,i2,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a1,i2,a1,F11.5)') 'f',count,'=',osc_str(i)
+          else
+             write(iout,'(a1,i3,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a1,i3,a1,F11.5)') 'f',count,'=',osc_str(i)
+          endif
+       enddo
+       
+       do i=1,count
+          if (i.lt.10) then             
+             write(iout,'(a1,i1,a5,i1,a10,i1,a15)') &
+                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+          else if (i.lt.100) then
+             write(iout,'(a1,i2,a5,i2,a10,i2,a15)') &
+                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+          else
+             write(iout,'(a1,i3,a5,i3,a10,i3,a15)') &
+                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+          endif
+       enddo
+
+       atmp='f(x)='
+       k=6
+       do i=1,count
+          if (i.lt.10) then
+             write(atmp(k:k+6),'(a2,i1,a3)') '+g',i,'(x)'
+             k=k+7
+          else if (i.lt.100) then
+             write(atmp(k:k+7),'(a2,i2,a3)') '+g',i,'(x)'
+             k=k+8
+          else
+             write(atmp(k:k+8),'(a2,i3,a3)') '+g',i,'(x)'
+             k=k+9
+          endif
+       enddo
+
+       write(iout,'(a)') trim(atmp)
+
+       lb=0.95*((ener(1)-e_init)*eh2ev)
+       ub=1.05*(ener(davstates_f)-e_init)*eh2ev
+
+       write(iout,'(a12,F7.2,a1,F7.2,a1)') 'set xrange [',lb,':',ub,']'
+       
+       write(iout,'(a)') 'set size ratio 0.4'
+       write(iout,'(a)') 'set samples 5000'       
+       write(iout,'(a)') 'plot f(x) lt -1 notitle'
+       write(iout,'(a)') 'replot ''osc.dat'' with impulses lt -1 notitle'
+       write(iout,'(a)') 'pause -1'
+
+       close(iout)
+       
        return
 
      end subroutine tdm_davstates_final

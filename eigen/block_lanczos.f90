@@ -264,7 +264,6 @@ module block_lanczos
       real(d), dimension(blocksize)        :: tau
       real(d), dimension(blocksize)        :: work
       real(d)                              :: t1,t2,mem
-
       logical                              :: lincore,lro,l2nd
 
       write(ilog,'(/,70a)') ('*',i=1,70)
@@ -360,7 +359,7 @@ module block_lanczos
 ! Start the block Lanczos iterations
 !-----------------------------------------------------------------------
       write(ilog,'(/,2x,a,1x,i4)') 'Block size:',blocksize
-      write(ilog,'(/,2x,i4,1x,a,/)') ncycles*blocksize,&
+      write(ilog,'(/,2x,i5,1x,a,/)') ncycles*blocksize,&
            'Lanczos vectors will be generated'
 
       do j=1,ncycles
@@ -548,6 +547,9 @@ module block_lanczos
       deallocate(amat)
       deallocate(bmat)
       deallocate(tmpmat)
+
+      if (allocated(hii)) deallocate(hii)
+      if (allocated(hij)) deallocate(hij)
 
 !-----------------------------------------------------------------------
 ! Calculate the Lanczos pseudospectrum
@@ -1249,10 +1251,16 @@ module block_lanczos
 
       implicit none
 
-      integer                       :: lanunit,i
-      real(d), dimension(nvec,nvec) :: eigvec
-      real(d), dimension(nvec)      :: eigval
-      real(d)                       :: t1,t2,mem
+      integer                              :: lanunit,i
+      real(d), dimension(:,:), allocatable :: eigvec
+      real(d), dimension(:), allocatable   :: eigval
+      real(d)                              :: t1,t2,mem
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(eigvec(nvec,nvec))
+      allocate(eigval(nvec))
 
 !-----------------------------------------------------------------------
 ! (1) Lanczos state energies
@@ -1267,6 +1275,9 @@ module block_lanczos
       call cpu_time(t2)
 
       write(ilog,'(2x,a,1x,F8.2,1x,a1)') 'Time taken:',t2-t1,'s'
+
+      ! Dellocate tmat now that it is no longer needed
+      deallocate(tmat)
 
 !-----------------------------------------------------------------------
 ! (2) Lanczos state vectors
@@ -1289,7 +1300,11 @@ module block_lanczos
       call cpu_time(t2)
       write(ilog,'(2x,a,1x,F8.2,1x,a1,/)') 'Time taken:',t2-t1,'s'
 
-!      call chkortho(nvec)
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(eigvec)
+      deallocate(eigval)
 
       return
 
@@ -1360,6 +1375,7 @@ module block_lanczos
       real(d), dimension(nvec,nvec)        :: eigvec
       real(d), dimension(nvec)             :: eigval
       real(d), dimension(:,:), allocatable :: rvec,lvec,tmpmat
+      real(d), dimension(:,:), allocatable :: dpmat
 
 !-----------------------------------------------------------------------
 ! Open files
@@ -1453,6 +1469,37 @@ module block_lanczos
       write(tmpunit,rec=nwr) rvec
 
 !-----------------------------------------------------------------------
+! Normalise the Ritz vectors (necessary when the Lanczos vectors are
+! not orthogonal)
+!-----------------------------------------------------------------------
+      allocate(dpmat(buffsize,buffsize))
+
+      ! Complete blocks of Ritz vectors
+      do i=1,nwr-1
+         read(tmpunit,rec=i) rvec
+         call dgemm('T','N',buffsize,buffsize,matdim,1.0d0,rvec,&
+              matdim,rvec,matdim,0.0d0,dpmat,buffsize)
+         do j=1,buffsize
+            rvec(:,j)=rvec(:,j)/dsqrt(dpmat(j,j))
+         enddo
+         write(tmpunit,rec=i) rvec
+      enddo
+
+      ! Potentially incomplete block of Ritz vectors
+      read(tmpunit,rec=nwr) rvec
+      l1=(nwr-1)*buffsize+1
+      l2=nvec
+      nl=l2-l1+1
+      call dgemm('T','N',nl,nl,matdim,1.0d0,rvec(:,1:nl),&
+              matdim,rvec(:,1:nl),matdim,0.0d0,dpmat(1:nl,1:nl),nl)
+      do i=1,nl
+         rvec(:,i)=rvec(:,i)/dsqrt(dpmat(i,i))
+      enddo
+      write(tmpunit,rec=nwr) rvec
+
+      deallocate(dpmat)
+
+!-----------------------------------------------------------------------
 ! Write the Ritz vectors to file using the format required for future
 ! use
 !-----------------------------------------------------------------------
@@ -1502,7 +1549,7 @@ module block_lanczos
 
       integer                              :: lanunit,ritzunit,i,k1,&
                                               k2,nk
-      real(d), dimension(nvec,nvec)        :: eigvec
+      real(d), dimension(nvec,nvec)        :: eigvec,dpmat
       real(d), dimension(nvec)             :: eigval
       real(d), dimension(:,:), allocatable :: lvec,rvec
 
@@ -1544,9 +1591,18 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Calculate and output the Ritz vectors
 !-----------------------------------------------------------------------
+      ! Calculate the Ritz vectors
       call dgemm('N','N',matdim,nvec,nvec,1.0d0,lvec,matdim,eigvec,&
            nvec,0.0d0,rvec,matdim)
 
+      ! Normalise the Ritz vectors
+      call dgemm('T','N',nvec,nvec,matdim,1.0d0,rvec,matdim,rvec,&
+           matdim,0.0d0,dpmat,nvec)
+      do i=1,nvec
+         rvec(:,i)=rvec(:,i)/dsqrt(dpmat(i,i))
+      enddo
+
+      ! Write the Ritz vectors to file
       do i=1,nvec
          write(ritzunit) i,eigval(i),rvec(:,i)
       enddo

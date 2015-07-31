@@ -475,6 +475,7 @@
 ! Note that in this subroutine the a and b coefficients are in double
 ! precision
 !#######################################################################
+
     subroutine image_osc(a,b)
 
       use simod
@@ -559,7 +560,7 @@
            enddo
            ! (2) Off-diagonal elements
            do i=2,iord
-              offdiag(i)=-sqrt(b(i-1))
+              offdiag(i)=-dsqrt(b(i-1))
            enddo
 
            ! Diagonalise the tridiagonal recursion coefficient matrix
@@ -590,7 +591,7 @@
           do i=1,iord-1
              ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
              si_osc(i)=(si_f(i+1)+si_f(i))/(2.d0*(si_e(i+1)-si_e(i)))
-             write(iout,*) ecent(i)*27.2113845d0,si_osc(i)
+             write(iout,'(2(2x,F14.7))') ecent(i)*27.2113845d0,si_osc(i)
           enddo
 
           ! Calculate the Stieltjes distribution function, i.e., the
@@ -604,7 +605,7 @@
           si_cosc2=0.0d0
           do i=1,iord-1
              si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0d0
-             write(ioutF,*) ecent(i)*27.2113845d0,si_cosc2(i)
+             write(ioutF,'(2(2x,F14.7))') ecent(i)*27.2113845d0,si_cosc2(i)
           enddo
 
           ! Close the output files
