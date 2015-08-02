@@ -15,13 +15,13 @@
       
       integer            :: i,k,n,l
       character(len=120) :: atmp1,atmp2
-      logical            :: iscvs,energyonly,ldav,llanc
+      logical            :: iscvs,energyonly,ldiag,llanc
 
 !-----------------------------------------------------------------------
 ! Set 'traps'
 !-----------------------------------------------------------------------
       energyonly=.false.
-      ldav=.false.
+      ldiag=.false.
       llanc=.false.
       iscvs=.false.
 
@@ -101,11 +101,11 @@
                goto 100
             endif
             
-         else if (keyword(i).eq.'davidson_section') then
-            ldav=.true.
+         else if (keyword(i).eq.'diag_section') then
+            ldiag=.true.
 15          continue
             call rdinp(iin)
-            if (keyword(1).ne.'end-davidson_section') goto 15
+            if (keyword(1).ne.'end-diag_section') goto 15
             i=inkw
 
          else if (keyword(i).eq.'lanczos_section') then
@@ -115,11 +115,11 @@
             if (keyword(1).ne.'end-lanczos_section') goto 20
             i=inkw
 
-         else if (keyword(i).eq.'davidson_final_section') then
-            ldavfinal=.true.
+         else if (keyword(i).eq.'diag_final_section') then
+            ldiagfinal=.true.
 25          continue
             call rdinp(iin)
-            if (keyword(1).ne.'end-davidson_final_section') goto 25
+            if (keyword(1).ne.'end-diag_final_section') goto 25
             i=inkw
 
          else if (keyword(i).eq.'no_tdm') then
@@ -261,13 +261,13 @@
 !-----------------------------------------------------------------------
 ! Read the Davidson section(s)
 !-----------------------------------------------------------------------
-        if (ldav) then
+        if (ldiag) then
            if (statenumber.gt.0.or.energyonly) then
-              call rddavinp
+              call rddiaginp
            endif
         endif
 
-        if (ldavfinal)  call rddavfinalinp
+        if (ldiagfinal)  call rddiagfinalinp
 
 !-----------------------------------------------------------------------
 ! Read the Lanczos section
@@ -277,7 +277,7 @@
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
-        call checkinp(ldav,llanc,energyonly)
+        call checkinp(ldiag,llanc,energyonly)
 
 !-----------------------------------------------------------------------
 ! Read the geometry section if necessary
@@ -290,7 +290,7 @@
 
 !#######################################################################
 
-    subroutine checkinp(ldav,llanc,energyonly)
+    subroutine checkinp(ldiag,llanc,energyonly)
 
       use parameters
       use iomod
@@ -298,7 +298,7 @@
       implicit none
 
       character(len=120) :: msg
-      logical            :: ldav,llanc,energyonly
+      logical            :: ldiag,llanc,energyonly
 
 !-----------------------------------------------------------------------
 ! ADC level
@@ -351,47 +351,48 @@
       endif
 
 !-----------------------------------------------------------------------
-! Initial space Davidson section: only required if either:
+! Initial space diagonalisation section: only required if either:
 !
 ! (1) We are ionizing from an excited state, or;
 ! (2) We are performing an energy-only calculation.
 !-----------------------------------------------------------------------
-      if (.not.ldav) then
+      if (.not.ldiag) then
          if (statenumber.gt.0.or.energyonly) then
-            msg='The Davidson section has not been found.'
+            msg='The diagonalisation section has not been found.'
             goto 999
          endif
       endif
 
       if (statenumber.gt.0.or.energyonly) then
          if (davstates.eq.0) then
-            msg='The number of Davidson states has not been given'
+            msg='The number of initial space states has not been given'
             goto 999
          else if (maxiter.eq.0) then
-            msg='The maximum no. Davidson iterations has not been &
+            msg='The maximum no. iterations for the initial space &
+                 diagonalisation has not been &
                  given'
             goto 999
          else if (dmain.eq.0) then
-            msg='The Davidson block size has not been given'
+            msg='The block size for the initial space diagonalisation &
+                 has not been given'
             goto 999
          endif
       endif
 
 !-----------------------------------------------------------------------
-! Final space Davidson section
+! Final space diagonalisation section
 !-----------------------------------------------------------------------
-      if (ldavfinal) then
+      if (ldiagfinal) then
          if (davstates_f.eq.0) then
-            msg='The number of final space Davidson states has not &
-                 been given'
+            msg='The number of final space states has not been given'
             goto 999
          else if (maxiter_f.eq.0) then
-            msg='The maximum no. final space Davidson iterations has &
-                 not been &
-                 given'
+            msg='The maximum no. iterations for the final space &
+                 diagonalisation has not been given'
             goto 999
          else if (dmain_f.eq.0) then
-            msg='The final space Davidson block size has not been given'
+            msg='The block size for the final space diagonalisation &
+                 has not been given'
             goto 999
          endif
       endif
@@ -399,7 +400,7 @@
 !-----------------------------------------------------------------------
 ! Lanczos section: only required if we are considering ionization
 !-----------------------------------------------------------------------
-      if (.not.energyonly.and..not.ldavfinal) then
+      if (.not.energyonly.and..not.ldiagfinal) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -444,7 +445,7 @@
 
 !#######################################################################
 
-    subroutine rddavinp
+    subroutine rddiaginp
 
       use parameters
       use parsemod
@@ -456,21 +457,21 @@
       integer :: i
 
 !-----------------------------------------------------------------------
-! Read to the Davidson section
+! Read to the diagonalisation section
 !-----------------------------------------------------------------------
       rewind(iin)
 
 1     call rdinp(iin)
-      if (keyword(1).ne.'davidson_section') goto 1
+      if (keyword(1).ne.'diag_section') goto 1
 
 !-----------------------------------------------------------------------
-! Read the Davidson parameters
+! Read the diagonalisation parameters
 !-----------------------------------------------------------------------
 5    call rdinp(iin)
       
       i=0
 
-      if (keyword(1).ne.'end-davidson_section') then
+      if (keyword(1).ne.'end-diag_section') then
 
 10       continue
          i=i+1
@@ -530,6 +531,21 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'davidson') then
+                  solver=1
+               else if (keyword(i).eq.'krylov') then
+                  solver=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -553,11 +569,11 @@
 
       return
 
-    end subroutine rddavinp
+    end subroutine rddiaginp
 
 !#######################################################################
 
-    subroutine rddavfinalinp
+    subroutine rddiagfinalinp
 
       use parameters
       use parsemod
@@ -569,21 +585,21 @@
       integer :: i
 
 !-----------------------------------------------------------------------
-! Read to the Davidson section
+! Read to the final space diagonalisation section
 !-----------------------------------------------------------------------
       rewind(iin)
 
 1     call rdinp(iin)
-      if (keyword(1).ne.'davidson_final_section') goto 1
+      if (keyword(1).ne.'diag_final_section') goto 1
 
 !-----------------------------------------------------------------------
-! Read the Davidson parameters
+! Read the final space diagonalisation parameters
 !-----------------------------------------------------------------------
 5    call rdinp(iin)
       
       i=0
 
-      if (keyword(1).ne.'end-davidson_final_section') then
+      if (keyword(1).ne.'end-diag_final_section') then
 
 10       continue
          i=i+1
@@ -643,6 +659,21 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'davidson') then
+                  solver=1
+               else if (keyword(i).eq.'krylov') then
+                  solver=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -666,7 +697,7 @@
 
       return
 
-    end subroutine rddavfinalinp
+    end subroutine rddiagfinalinp
 
 !#######################################################################
 

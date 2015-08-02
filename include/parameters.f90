@@ -101,11 +101,11 @@ module parameters
 !!                     core orbitals in the calculation of the final
 !!                     space states
 !!
-!!$logical ldavfinal - flag used to determine whether to perform
-!!                     Davidson diagonalisation in the final space -
-!!                     used when considering excitation from a
-!!                     valence-excited neutral state to a
-!!                     core-excited neutral state
+!!$logical ldiagfinal - flag used to determine whether to perform
+!!                      diagonalisation in the final space -
+!!                      used when considering excitation from a
+!!                      valence-excited neutral state to a
+!!                      core-excited neutral state
 !!
 !!$integer lancguess - integer value used to determine how the initial
 !!                     Lanczos vectors are set:
@@ -160,7 +160,7 @@ module parameters
   real(d), dimension(:,:), allocatable :: density
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
-  logical                              :: ldavfinal
+  logical                              :: ldiagfinal
   
 !!$************************************************
 !!$**********Physical Constants********************
@@ -193,9 +193,10 @@ module parameters
 !!$**********Davidson Parameters*******************
 !!$************************************************
 
-  integer               :: maxiter,dmain,maxiter_f,&
-                           dmain_f,ndavcalls,eigentype
-  real(d)               :: davtarg
+  integer     :: maxiter,dmain,maxiter_f,dmain_f,&
+                 ndavcalls,eigentype,solver
+  real(d)     :: davtarg
+  character*1 :: kshmflag
 
   character*3 :: POLARIZATION
 

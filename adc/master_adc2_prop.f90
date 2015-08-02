@@ -256,7 +256,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation
 !-----------------------------------------------------------------------
-        call master_dav(ndim,noffd,'i')
+        call master_eig(ndim,noffd,'i')
 
         return
 
@@ -337,7 +337,7 @@
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
 
-        if (ldavfinal) then
+        if (ldiagfinal) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
                 vec_init,mtmf,noffdf)
         else
@@ -411,7 +411,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation in the final space
 !-----------------------------------------------------------------------
-        call master_dav(ndimf,noffdf,'f')
+        call master_eig(ndimf,noffdf,'f')
 
         return
 
@@ -854,7 +854,7 @@
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d)                                   :: e_init
 
-        if (ldavfinal) then
+        if (ldiagfinal) then
            call tdm_davstates_final(ndimf,ndimsf,travec,e_init,&
                 mtmf,kpqf)
         else

@@ -13,15 +13,16 @@ dipole_component = x
 
 cvs
 
-#energy_only
+energy_only
 
-davidson_section
+diag_section
+ method = krylov
  nstates = 2
  block_size = 4
- tol=1d-5
- maxit=700
-# guess=adc1
-end-davidson_section
+ tol = 1d-5
+ maxit = 700
+ guess = adc1
+end-diag_section
 
 #davidson_final_section
 # nstates = 10
@@ -30,13 +31,13 @@ end-davidson_section
 # maxit=700
 ## guess=adc1
 #end-davidson_final_section
-
-lanczos_section
- type=block
- block_size = 100
- iter=50
- guess=adc1
- mem=18000
-end-lanczos_section
+#
+#lanczos_section
+# type=block
+# block_size = 100
+# iter=50
+# guess=adc1
+# mem=18000
+#end-lanczos_section
 
 end-input

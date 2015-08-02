@@ -1,12 +1,12 @@
 !#######################################################################
-! davidson_diag: SLEPc block-Davidson eigensolver
+! eigensolver: SLEPc block-Davidson and Krylov-Schur eigensolvers
 !#######################################################################
 
- subroutine davidson_diag(blckdim,matdim,davstates,vecfile,ladc1guess,&
+ subroutine eigensolver(blckdim,matdim,davstates,vecfile,ladc1guess,&
       flag)
 
    use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
-                         ndavcalls,davtarg,eigentype
+                         ndavcalls,davtarg,eigentype,solver
 
    use constants
    use channels
@@ -26,7 +26,8 @@
    double precision                    :: val
    double precision, dimension(matdim) :: vec
    character(36)                       :: vecfile
-   character(70)                       :: aout,compiler
+   character(70)                       :: compiler
+   character(120)                      :: atmp
    character(1)                        :: flag
    logical                             :: ladc1guess
 
@@ -72,16 +73,27 @@
 
       PetscInt  niter               ! Max. no. iterations
 
+      external hxvec
+
+!-----------------------------------------------------------------------
+! Write to the log file
+!-----------------------------------------------------------------------
       write(ilog,'(/,70a)') ('-',kk=1,70)
 
-      if (flag.eq.'i') then
-         write(ilog,'(2x,a)') &
-              'Block-Davidson diagonalisation in the initial space'
-      else if (flag.eq.'f') then
-         write(ilog,'(2x,a)') &
-              'Block-Davidson diagonalisation in the final space'
+      if (solver.eq.1) then
+         atmp='Block Davidson diagonalisation in the'
+      else if (solver.eq.2) then
+         atmp='Krylov-Schur diagonalisation in the'
       endif
 
+      if (flag.eq.'i') then
+         atmp=trim(atmp)//' initial space'
+       else if (flag.eq.'f') then
+          atmp=trim(atmp)//' final space'
+      endif
+
+      write(ilog,'(2x,a)') trim(atmp)
+      
       write(ilog,'(70a,/)') ('-',kk=1,70)
 
 !-----------------------------------------------------------------------
@@ -111,42 +123,72 @@
 !      call mpi_comm_rank(petsc_comm_world,rank,ierr)
 
 !-----------------------------------------------------------------------
+! Register the matrix-vector subroutine for the operator that defines
+! the eigensystem, Ax=kx
+!
+! Note that this is only applicable for the Krylov-Schur eigensolver
+!-----------------------------------------------------------------------
+      if (solver.eq.2) then
+
+         n=matdim
+
+         call MatCreateShell(MPI_COMM_WORLD,n,n,n,n,PETSC_NULL_OBJECT,&
+              ham,ierr)
+
+         call MatShellSetOperation(ham,MATOP_MULT,hxvec,ierr)
+
+      endif
+
+!-----------------------------------------------------------------------
 ! Determine the no. non-zero elements per row: important in order to 
 ! not have terrible performance from matsetvalues.
 !
 ! We here store the no. non-zero elements per row in the PetscInt
 ! array nnz: nnz(i)=no. non-zero elements in the ith row.
+!
+! Note that this is only applicable for the Davidson eigensolver
 !-----------------------------------------------------------------------
-      call get_nonzeros(nnz,matdim,flag)
+      if (solver.ne.2) call get_nonzeros(nnz,matdim,flag)
       
 !-----------------------------------------------------------------------
 ! Create the matrix ham corresponding to the ADC Hamiltonian matrix
+!
+! Note that this is only applicable for the Davidson eigensolver
 !-----------------------------------------------------------------------
       n=matdim
 
-!      call matcreateseqaij(petsc_comm_world,n,n,nz,nnz,ham,ierr)
-      call matcreateseqaij(MPI_COMM_WORLD,n,n,nz,nnz,ham,ierr)
-
-      call matsetfromoptions(ham,ierr)
-
-      call matsetup(ham,ierr)
+      if (solver.ne.2) then
       
+         call matcreateseqaij(MPI_COMM_WORLD,n,n,nz,nnz,ham,ierr)
+         
+         call matsetfromoptions(ham,ierr)
+         
+         call matsetup(ham,ierr)
+
+      endif
+         
 !-----------------------------------------------------------------------
 ! Set the values of the non-zero elements of the ADC Hamiltonian matrix
 !
-! N.B. here nrec and maxbl are read from fill_ondiag (via rdham_diag)
-!      and subsequently passed to fill_offdiag
+! Here nrec and maxbl are read from fill_ondiag (via rdham_diag) and
+! subsequently passed to fill_offdiag
+!
+! Note that this is only applicable for the Davidson eigensolver
 !-----------------------------------------------------------------------
-      ! (i) Diagonal elements
-      call fill_ondiag(ham,maxbl,nrec,matdim,flag)
+      if (solver.ne.2) then
+         
+         ! (i) Diagonal elements
+         call fill_ondiag(ham,maxbl,nrec,matdim,flag)
+         
+         ! (ii) Off-diagonal elements      
+         call fill_offdiag(maxbl,nrec,ham,flag)
+         
+         ! Assemble the PETSc matrix
+         call matassemblybegin(ham,mat_final_assembly,ierr)
+         call matassemblyend(ham,mat_final_assembly,ierr)
 
-      ! (ii) Off-diagonal elements      
-      call fill_offdiag(maxbl,nrec,ham,flag)
-
-      ! Assemble the PETSc matrix
-      call matassemblybegin(ham,mat_final_assembly,ierr)
-      call matassemblyend(ham,mat_final_assembly,ierr)
-      
+      endif
+         
 !-----------------------------------------------------------------------
 ! Create vectors xr and xi (real and imaginary parts of an eigenvector) 
 ! of dimensions compatible with the matrix ham
@@ -170,9 +212,13 @@
       call epssetproblemtype(eps,eps_hep,ierr)
 
 !-----------------------------------------------------------------------
-! Set the eigensolver to be the Davidson method
+! Set the eigensolver
 !-----------------------------------------------------------------------
-      call epssettype(eps,EPSGD,ierr)
+      if (solver.eq.1) then
+         call epssettype(eps,EPSGD,ierr)
+      else if (solver.eq.2) then
+         call epssettype(eps,EPSKRYLOVSCHUR,ierr)
+      endif
 
 !-----------------------------------------------------------------------
 ! Set the number of eigenvalues to be found (neig), the maximum
@@ -290,7 +336,7 @@
 
    return
 
- end subroutine davidson_diag
+ end subroutine eigensolver
 
 !#######################################################################
 ! fill_ondiag: Assembles the on-diagonal elements of the PETSc version
@@ -879,5 +925,129 @@
 
  end subroutine guess_vecs_ondiag
 
+!#######################################################################
+ 
+ subroutine hxvec(ham,x,y,ierr)
+
+   implicit none
+
+#include <finclude/petscsys.h>
+#include <finclude/petscvec.h>
+#include <finclude/petscvec.h90>
+#include <finclude/petscmat.h>
+
+   Mat                     ham
+   Vec                     x,y
+   PetscInt                n
+   PetscScalar, pointer :: xvec(:),yvec(:)
+   PetscErrorCode          ierr
+
+   external hxvec_ext
+   
+!-----------------------------------------------------------------------
+! Retrieve the vectors:
+!
+! xvec: input vector
+! yvec: output vector
+!-----------------------------------------------------------------------
+   call MatGetSize(ham,n,PETSC_NULL_INTEGER,ierr)
+   call VecGetArrayF90(x,xvec,ierr)
+   call VecGetArrayF90(y,yvec,ierr)
+
+!-----------------------------------------------------------------------
+! Calculate the matrix-vector product y=Hx
+!-----------------------------------------------------------------------
+   call hxvec_ext(n,xvec,yvec)
+
+!-----------------------------------------------------------------------
+! Restore the Petsc vector arrays
+!-----------------------------------------------------------------------
+   call VecRestoreArrayF90(x,xvec,ierr)
+   call VecRestoreArrayF90(y,yvec,ierr)
+   
+   return
+   
+ end subroutine hxvec
+
+!#######################################################################
+
+ subroutine hxvec_ext(dim,xvec,yvec)
+
+   use constants
+   use parameters, only: kshmflag
+   use iomod, only: freeunit
+   
+   implicit none
+
+   PetscInt     dim
+   PetscScalar  xvec(dim), yvec(dim)
+
+   integer                            :: unit
+   integer                            :: maxbl,nrec,nlim,k,l
+   integer, dimension(:), allocatable :: indxi,indxj
+   real(d), dimension(:), allocatable :: hii,hij
+   character(70)                      :: filename
+   
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+   allocate(hii(dim))
+   
+   call freeunit(unit)
+
+   ! Note that the i/f flag that we pass to the main subroutine is
+   ! going to have to be available globally if it is to be used here...
+
+   if (kshmflag.eq.'i') then
+      filename='SCRATCH/hmlt.diai'
+   else if (kshmflag.eq.'f') then
+      filename='SCRATCH/hmlt.diac'
+   endif
+      
+   open(unit,file=filename,status='old',access='sequential',&
+        form='unformatted')
+   
+   read(unit) maxbl,nrec
+   read(unit) hii
+   
+   close(unit)
+
+   yvec=0.0d0
+   do k=1,dim
+      yvec(k)=yvec(k)+hii(k)*xvec(k)
+   enddo
+
+   deallocate(hii)
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+   allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+
+   if (kshmflag.eq.'i') then
+      filename='SCRATCH/hmlt.offi'
+   else if (kshmflag.eq.'f') then
+      filename='SCRATCH/hmlt.offc'
+   endif
+   
+   open(unit,file=filename,status='old',access='sequential',&
+        form='unformatted')
+
+   do k=1,nrec
+      read(unit) hij(:),indxi(:),indxj(:),nlim
+      do l=1,nlim
+         yvec(indxi(l))=yvec(indxi(l))+hij(l)*xvec(indxj(l))
+         yvec(indxj(l))=yvec(indxj(l))+hij(l)*xvec(indxi(l))
+      enddo
+   enddo
+
+   close(unit)
+
+   deallocate(hij,indxi,indxj)
+   
+   return
+   
+ end subroutine hxvec_ext
+   
 !#######################################################################
 

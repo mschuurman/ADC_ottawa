@@ -108,8 +108,8 @@
 !-----------------------------------------------------------------------
     allocate(ener(davstates),rvec(ndim,davstates))
     allocate(vec_init(ndim))
-
-    call master_dav(ndim,noffd,'i')
+    
+    call master_eig(ndim,noffd,'i')
     
     call readdavvc(davstates,ener,rvec,'i',ndim)
 

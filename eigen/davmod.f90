@@ -18,7 +18,7 @@
 
 !#######################################################################
 
-    subroutine master_dav(ndim,noffd,flag)
+    subroutine master_eig(ndim,noffd,flag)
     
       integer, intent(in)      :: ndim
       integer*8, intent(in)    :: noffd
@@ -38,19 +38,20 @@
       ndm=ndim
 
 !-----------------------------------------------------------------------
-! Enter block-Davidson routine
+! Enter main eigensolver routine
 !-----------------------------------------------------------------------
+      kshmflag=flag
       if (flag.eq.'i') then
-         call davidson_diag(dmain,ndm,davstates,davname,ladc1guess,&
+         call eigensolver(dmain,ndm,davstates,davname,ladc1guess,&
               flag)
       else if (flag.eq.'f') then
-         call davidson_diag(dmain_f,ndm,davstates_f,davname_f,&
+         call eigensolver(dmain_f,ndm,davstates_f,davname_f,&
               ladc1guess_f,flag)
       endif
 
       return
 
-    end subroutine master_dav
+    end subroutine master_eig
 
 !#######################################################################
 
