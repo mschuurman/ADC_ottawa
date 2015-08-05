@@ -16,7 +16,7 @@ cvs
 energy_only
 
 diag_section
- method = krylov
+ method = davidson
  nstates = 2
  block_size = 4
  tol = 1d-5

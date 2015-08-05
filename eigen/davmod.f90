@@ -43,10 +43,10 @@
       kshmflag=flag
       if (flag.eq.'i') then
          call eigensolver(dmain,ndm,davstates,davname,ladc1guess,&
-              flag)
+              flag,noffd)
       else if (flag.eq.'f') then
          call eigensolver(dmain_f,ndm,davstates_f,davname_f,&
-              ladc1guess_f,flag)
+              ladc1guess_f,flag,noffd)
       endif
 
       return

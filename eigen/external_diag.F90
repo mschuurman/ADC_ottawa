@@ -3,7 +3,7 @@
 !#######################################################################
 
  subroutine eigensolver(blckdim,matdim,davstates,vecfile,ladc1guess,&
-      flag)
+      flag,noffd)
 
    use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
                          ndavcalls,davtarg,eigentype,solver
@@ -22,6 +22,7 @@
    
    integer                             :: blckdim,matdim,davstates,&
                                           maxbl,nrec,unit,num,kk
+   integer*8                           :: noffd
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
    double precision, dimension(matdim) :: vec
@@ -29,7 +30,8 @@
    character(70)                       :: compiler
    character(120)                      :: atmp
    character(1)                        :: flag
-   logical                             :: ladc1guess
+   logical                             :: ladc1guess,lincore
+   logical, external                   :: isincore
 
 !-----------------------------------------------------------------------
 ! PETSc/SLEPc variables
@@ -123,12 +125,25 @@
 !      call mpi_comm_rank(petsc_comm_world,rank,ierr)
 
 !-----------------------------------------------------------------------
-! Register the matrix-vector subroutine for the operator that defines
-! the eigensystem, Ax=kx
-!
-! Note that this is only applicable for the Krylov-Schur eigensolver
+! Determine whether we have enough memory to store the Hamiltonian
+! matrix in-core
 !-----------------------------------------------------------------------
-      if (solver.eq.2) then
+      lincore=isincore(matdim,noffd)
+
+      if (lincore) then
+         write(ilog,'(2x,a,/)') &
+              'The Hamiltonian matrix will be stored in-core'
+      else
+         write(ilog,'(2x,a,/)') &
+              'The Hamiltonian matrix will be stored externally'
+      endif
+
+!-----------------------------------------------------------------------
+! If the Hamiltonian matrix is being stored in external memory then
+! register the matrix-vector subroutine for the operator that defines
+! the eigensystem, Ax=kx
+!-----------------------------------------------------------------------
+      if (.not.lincore) then
 
          n=matdim
 
@@ -140,25 +155,23 @@
       endif
 
 !-----------------------------------------------------------------------
-! Determine the no. non-zero elements per row: important in order to 
-! not have terrible performance from matsetvalues.
+! If the Hamiltonian matrix is being stored in-core then determine 
+! the no. non-zero elements per row: important in order to not have 
+! terrible performance from matsetvalues.
 !
 ! We here store the no. non-zero elements per row in the PetscInt
 ! array nnz: nnz(i)=no. non-zero elements in the ith row.
-!
-! Note that this is only applicable for the Davidson eigensolver
 !-----------------------------------------------------------------------
-      if (solver.ne.2) call get_nonzeros(nnz,matdim,flag)
-      
+      if (lincore) call get_nonzeros(nnz,matdim,flag)
+
 !-----------------------------------------------------------------------
-! Create the matrix ham corresponding to the ADC Hamiltonian matrix
-!
-! Note that this is only applicable for the Davidson eigensolver
+! If the Hamiltonian matrix is being stored in-core then create the 
+! matrix ham corresponding to the ADC Hamiltonian matrix
 !-----------------------------------------------------------------------
       n=matdim
 
-      if (solver.ne.2) then
-      
+      if (lincore) then
+         
          call matcreateseqaij(MPI_COMM_WORLD,n,n,nz,nnz,ham,ierr)
          
          call matsetfromoptions(ham,ierr)
@@ -168,14 +181,13 @@
       endif
          
 !-----------------------------------------------------------------------
-! Set the values of the non-zero elements of the ADC Hamiltonian matrix
+! If the Hamiltonian matrix is being stored in-core then set the
+! values of the non-zero elements of the ADC Hamiltonian matrix
 !
 ! Here nrec and maxbl are read from fill_ondiag (via rdham_diag) and
 ! subsequently passed to fill_offdiag
-!
-! Note that this is only applicable for the Davidson eigensolver
 !-----------------------------------------------------------------------
-      if (solver.ne.2) then
+      if (lincore) then
          
          ! (i) Diagonal elements
          call fill_ondiag(ham,maxbl,nrec,matdim,flag)
@@ -1048,6 +1060,44 @@
    return
    
  end subroutine hxvec_ext
+
+!#######################################################################
    
+ function isincore(matdim,noffd)
+
+   use constants
+   use parameters, only: davmem
+
+   implicit none
+
+   integer   :: matdim
+   integer*8 :: noffd
+   real(d)   :: hammem
+   logical   :: isincore
+   
+   ! Non-zero matrix elements
+   hammem=8.0d0*(matdim+noffd)
+   
+   ! Indices (2x 32 bit per off-diagonal element)
+   hammem=hammem+8.0d0*noffd
+   
+   ! Convert to mb
+   hammem=hammem/1024.0d0
+
+   ! Temporary fix: if the Hamiltonian will occupy more than 10 gb of
+   ! memory, then do not store it in-core
+   ! To do: make this decision based on how much memory is actually
+   ! available (which is tricky as we do not know how many vectors
+   ! are being stored by PETSc/SLEPc...)
+   if (hammem.lt.10000.0d0) then
+      isincore=.true.
+   else
+      isincore=.false.
+   endif
+
+   return
+
+ end function isincore
+
 !#######################################################################
 

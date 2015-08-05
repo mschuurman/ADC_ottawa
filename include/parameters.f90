@@ -195,7 +195,7 @@ module parameters
 
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
                  ndavcalls,eigentype,solver
-  real(d)     :: davtarg
+  real(d)     :: davtarg,davmem
   character*1 :: kshmflag
 
   character*3 :: POLARIZATION

@@ -546,6 +546,14 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'mem') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) davmem
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -674,6 +682,14 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'mem') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) davmem
+            else
+               goto 100
+            endif 
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
