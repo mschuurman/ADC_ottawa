@@ -231,6 +231,20 @@ MCSPLINE_OBJ = constants.o \
 	mcspmod.o \
 	mcspline.o
 
+KNIT = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	stieltjes_ap/knitmod.o \
+	stieltjes_ap/knit.o
+
+KNIT_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	knitmod.o \
+	knit.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -244,6 +258,10 @@ stieltjes_ap: $(STIELTJES_AP)
 
 mcspline: $(MCSPLINE)
 	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
+	rm -f *.o *~ *.mod
+
+knit: $(KNIT)
+	$(F90) $(F90OPTS) $(KNIT_OBJ) -o knit.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

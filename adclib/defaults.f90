@@ -16,6 +16,7 @@
 ! General ADC parameters
 !-----------------------------------------------------------------------
       method=0
+      denord=2
       nirrep=0
       nirrep2=0
       statenumber=-1

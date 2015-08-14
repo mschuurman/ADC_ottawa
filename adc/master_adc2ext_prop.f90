@@ -43,8 +43,8 @@
 ! configurations, otherwise the kpq array will be overwritten with the 
 ! ADC1 configurations.
 !-----------------------------------------------------------------------  
-  if (ladc1guess) call adc1_guessvecs
-
+        if (ladc1guess) call adc1_guessvecs
+  
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces
 !-----------------------------------------------------------------------

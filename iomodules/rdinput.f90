@@ -218,6 +218,14 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'denord') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) denord
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -305,6 +313,14 @@
 !-----------------------------------------------------------------------
       if (method.eq.0) then
          msg='The method has not been been given'
+         goto 999
+      endif
+
+!-----------------------------------------------------------------------
+! Density order
+!-----------------------------------------------------------------------
+      if (denord.lt.2.or.denord.gt.3) then
+         msg='Only values of 2 or 3 are allowed for denord'
          goto 999
       endif
 
