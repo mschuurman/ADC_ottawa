@@ -41,7 +41,10 @@ rm ~/scr/$STEM.*
 
 cd $SCRATCH
 
-/home/sneville/gamess/rungms $STEM.inp $NPROC >$STEM.log
+# Replace this with the correct path to rungms
+GAMESSEXE=/home/sneville/gamess/rungms
+
+$GAMESSEXE $STEM.inp $NPROC >$STEM.log
 
 ##########################################
 # Copy files back

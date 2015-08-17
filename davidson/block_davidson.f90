@@ -352,6 +352,15 @@
       ! Residual vectors
       mem=mem+8.0d0*matdim*blocksize/1024.0d0**2
 
+      ! Work arrays used in the subspace expansion routines
+      if (ipre.eq.1) then
+         ! DPR
+         mem=mem+8.0d0*matdim*blocksize/1024.0d0**2
+      else if (ipre.eq.2) then
+         ! Olsen
+         mem=mem+2.0d0*8.0d0*matdim*blocksize/1024.0d0**2
+      endif
+
       if (mem.lt.maxmem) then
          lincore=.true.
       else
@@ -836,30 +845,32 @@
       implicit none
 
       integer, intent(in) :: matdim
-      logical             :: ldfl  
+      logical             :: lcollapse
 
 !-----------------------------------------------------------------------
 ! ipre = 1 <-> diagonal preconditioned residue
 ! ipre = 2 <-> Olsen's preconditioner
 !-----------------------------------------------------------------------
-      ! Determine whether or not we need to deflate the subspace
+      ! Determine whether or not we need to collapse the subspace
       if (currdim.le.maxvec-blocksize) then
-         ldfl=.false.
+         lcollapse=.false.
       else
-         ldfl=.true.
-         write(ilog,'(2x,a)') 'Deflating the subspace'
+         lcollapse=.true.
+         write(ilog,'(/,2x,a)') 'Collapsing the subspace'
       endif
 
-      ! Calculate the new vectors
+      ! Calculate the new subspace vectors
       if (ipre.eq.1) then
-         call dpr(matdim,ldfl)
+         call dpr(matdim,lcollapse)
       else if (ipre.eq.2) then
-         errmsg='You haven''t written the Olsen code yet...'
-         call error_control
+         call olsen(matdim,lcollapse)
       endif
       
+      ! Orthogonalise the subspace vectors
+      call qrortho(matdim,lcollapse)
+
       ! Update the dimension of the subspace
-      if (ldfl) then
+      if (lcollapse) then
          currdim=2*blocksize
       else
          currdim=currdim+blocksize
@@ -871,7 +882,7 @@
 
 !#######################################################################
 
-    subroutine dpr(matdim,ldfl)
+    subroutine dpr(matdim,lcollapse)
 
       use iomod
       use constants
@@ -879,64 +890,151 @@
       implicit none
 
       integer, intent(in)                :: matdim
-      integer                            :: i,j,ilbl,n,info
-      real(d), dimension(matdim)         :: tmpvec
-      real(d), dimension(:), allocatable :: tau
-      real(d), dimension(:), allocatable :: work
-      logical                            :: ldfl
+      integer                            :: i,j,ilbl,ilast
+      real(d), dimension(:), allocatable :: tmpvec
+      logical                            :: lcollapse
 
 !-----------------------------------------------------------------------
-! Expansion of the subspace
+! Allocate arrays
 !-----------------------------------------------------------------------
-      if (.not.ldfl) then
+      allocate(tmpvec(matdim))
 
-         ! Loop over new subspace vectors
-         do i=1,blocksize
-            ! Index of the next vector
-            ilbl=currdim+i
-            ! Calculate the next vector
-            tmpvec=0.0d0
-            do j=1,matdim
-               tmpvec(j)=1.0d0/(reigval(i)-hii(j))
-            enddo
-            do j=1,matdim
-               vmat(j,ilbl)=res(j,i)*tmpvec(j)
-            enddo
-         enddo
-         
 !-----------------------------------------------------------------------
-! Deflation of the subspace
+! Calculate the new subspace vectors
 !-----------------------------------------------------------------------
-      else
-
-         ! (1) Vectors 1,...,blocksize: current block of Ritz vectors
+      if (lcollapse) then
+         ! Collapse of the subspace
          vmat=0.0d0
          vmat(:,1:blocksize)=ritzvec(:,1:blocksize)
+         ilast=blocksize
+      else
+         ! Expansion of the subspace
+         ilast=currdim
+      endif
 
-         ! (2) Vectors blocksize+1,...,2*blocksize: expansion vectors
-         !     derived from the current block of residue vectors
-         !
-         ! Loop over new subspace vectors
-         do i=1,blocksize
-            ! Index of the next vector
-            ilbl=blocksize+i
-            ! Calculate the next vector
-            tmpvec=0.0d0
-            do j=1,matdim
-               tmpvec(j)=1.0d0/(reigval(i)-hii(j))
-            enddo
-            do j=1,matdim
-               vmat(j,ilbl)=res(j,i)*tmpvec(j)
-            enddo
+      ! Loop over new subspace vectors
+      do i=1,blocksize
+
+         ! Index of the next vector
+         ilbl=ilast+i
+         
+         ! Calculate the next vector
+         tmpvec=0.0d0
+         do j=1,matdim
+            tmpvec(j)=1.0d0/(reigval(i)-hii(j))
+         enddo
+         do j=1,matdim
+            vmat(j,ilbl)=res(j,i)*tmpvec(j)
          enddo
 
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(tmpvec)
+
+      return
+
+    end subroutine dpr
+
+!#######################################################################
+
+    subroutine olsen(matdim,lcollapse)
+
+      use iomod
+      use constants
+
+      implicit none
+
+      integer, intent(in)                :: matdim
+      integer                            :: i,j,ilbl,ilast,info
+      real(d), dimension(:), allocatable :: tmpvec,cdiag
+      real(d)                            :: alpha,xz,xy,ddot
+      logical                            :: lcollapse
+
+      external ddot
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(tmpvec(matdim))
+      allocate(cdiag(matdim))
+
+!-----------------------------------------------------------------------
+! Calculate the new subspace vectors
+!-----------------------------------------------------------------------
+      if (lcollapse) then
+         ! Collapse of the subspace
+         vmat=0.0d0
+         vmat(:,1:blocksize)=ritzvec(:,1:blocksize)
+         ilast=blocksize
+      else
+         ! Expansion of the subspace
+         ilast=currdim
       endif
+
+      ! Loop over new subspace vectors
+      do i=1,blocksize
+         
+         ! Diagonal of the C-matrix
+         do j=1,matdim
+            cdiag(j)=1.0d0/(hii(j)-reigval(i))
+         enddo
+         
+         ! x_i * z_i
+         do j=1,matdim
+            tmpvec(j)=res(j,i)*cdiag(j)
+         enddo
+         xz=ddot(matdim,ritzvec(:,i),1,tmpvec(:),1)
+         
+         ! x_i * y_i
+         do j=1,matdim
+            tmpvec(j)=ritzvec(j,i)*cdiag(j)
+         enddo
+         xy=ddot(matdim,ritzvec(:,i),1,tmpvec(:),1)
+         
+         ! alpha
+         alpha=xz/xy
+         
+         ! New subspace vector
+         ilbl=ilast+i
+         do j=1,matdim
+            vmat(j,ilbl)=alpha*cdiag(j)*ritzvec(j,i)-cdiag(j)*res(j,i)
+         enddo
+         
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(tmpvec)
+      deallocate(cdiag)
+
+
+      return
+
+    end subroutine olsen
+
+!#######################################################################
+
+    subroutine qrortho(matdim,lcollapse)
+
+      use iomod
+      use constants
+
+      implicit none
+
+      integer, intent(in)                :: matdim
+      integer                            :: n,info
+      real(d), dimension(:), allocatable :: tau,work
+      logical                            :: lcollapse
 
 !-----------------------------------------------------------------------
 ! Orthogonalisation of the subspace vectors via the QR factorization
 ! of the matrix of subspace vectors
 !-----------------------------------------------------------------------
-      if (ldfl) then
+      if (lcollapse) then
          n=2*blocksize
       else
          n=currdim+blocksize
@@ -947,13 +1045,13 @@
 
       call dgeqrf(matdim,n,vmat(:,1:n),matdim,tau,work,n,info)
       if (info.ne.0) then
-         errmsg='dqerf failed in subroutine dpr'
+         errmsg='dqerf failed in subroutine qrortho'
          call error_control
       endif
       
       call dorgqr(matdim,n,n,vmat(:,1:n),matdim,tau,work,n,info)
       if (info.ne.0) then
-         errmsg='dorgqr failed in subroutine dpr'
+         errmsg='dorgqr failed in subroutine qrortho'
          call error_control
       endif
       
@@ -962,7 +1060,7 @@
 
       return
 
-    end subroutine dpr
+    end subroutine qrortho
 
 !#######################################################################
 

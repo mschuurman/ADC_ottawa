@@ -13,7 +13,10 @@ dipole_component = x
 
 cvs
 
+#energy_only
+
 diag_section
+ preconditioner = olsen
  maxvec = 30
  nstates = 2
  block_size = 5
@@ -23,6 +26,7 @@ diag_section
 end-diag_section
 
 diag_final_section
+ preconditioner = olsen
  nstates = 10
  block_size = 20
  tol=1d-5
