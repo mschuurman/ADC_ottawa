@@ -268,7 +268,7 @@ module block_lanczos
 
       write(ilog,'(/,70a)') ('*',i=1,70)
       write(ilog,'(12x,a)') &
-           'Block-Lanczos Diagonalisation in the Final Space'
+           'Generation of the block Lanczos pseudospectrum'
       write(ilog,'(70a)') ('*',i=1,70)
 
       call cpu_time(t1)

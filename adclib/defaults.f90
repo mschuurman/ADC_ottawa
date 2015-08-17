@@ -56,7 +56,10 @@
       davtol=1d-7
       ladc1guess=.false.
       davname='SCRATCH/davstates'
-
+      davmem=250.0d0
+      precon=1
+      maxsubdim=-1
+      
       ! Final space
       davstates_f=0
       maxiter_f=0
@@ -64,12 +67,14 @@
       davtol_f=1d-7
       ladc1guess_f=.false.
       davname_f='SCRATCH/davstates_final'
+      davmem_f=250.0d0
+      precon_f=1
+      maxsubdim_f=-1
       
       ! Common
       ndavcalls=0
       eigentype=1
       solver=1
-      davmem=250.0d0
 
 !-----------------------------------------------------------------------
 ! Lanczos parameters

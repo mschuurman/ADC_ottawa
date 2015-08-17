@@ -21,21 +21,45 @@ args=""
 #-----------------------------------------------------------------------
 if [ -f "ADC.CONFIG" ]; then
     blasflag=`cat ADC.CONFIG | grep LIB_BLAS | sed 's/.*=//g'`
-    lapackflag=`cat ADC.CONFIG | grep LIB_BLAS | sed 's/.*=//g'`
+    lapackflag=`cat ADC.CONFIG | grep LIB_LAPACK | sed 's/.*=//g'`
     slepcpath=`cat ADC.CONFIG | grep SLEPC_DIR | sed 's/.*=//g'`
 fi
 
+#
+# MKL, sequential
+#
 #blasflag='-mkl=sequential'
 #lapackflag='-mkl=sequential'
 
-#blasflag='-mkl=parallel'  
-#lapackflag='-mkl=parallel'
-
+#
+# MKL, parallel
+#
 #blasflag='-mkl'
 #lapackflag='-mkl'
 
+#
+# BLAS/LAPACK
+#
 #blasflag='-lblas'
 #lapackflag='-llapack'
+
+#-----------------------------------------------------------------------
+# Determine whether to install using the PETSc/SLEPc libraries
+#-----------------------------------------------------------------------
+read -p "Do you wish to install using the PETSc/SLEPc libraries (y/n) " ext
+
+valid=0
+while [ "$valid" == '0' ]; do
+    if [ "$ext" == 'y' ]; then
+	valid=1
+	args+=" "EXTDIAG=true
+    elif [ "$ext" == 'n' ]; then
+	valid=1
+	args+=" "EXTDIAG=false
+    else
+	read -p "Invalid answer: y or n only: " ext
+    fi
+done
 
 #-----------------------------------------------------------------------
 # Determine the path to the SLEPc install directory

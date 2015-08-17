@@ -570,6 +570,29 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'preconditioner') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'dpr') then
+                  precon=1
+               else if (keyword(i).eq.'olsen') then
+                  precon=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'maxvec') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) maxsubdim
+            else
+               goto 100
+            endif
+               
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -701,11 +724,34 @@
          else if (keyword(i).eq.'mem') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) davmem
+               read(keyword(i),*) davmem_f
             else
                goto 100
             endif 
 
+         else if (keyword(i).eq.'preconditioner') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'dpr') then
+                  precon_f=1
+               else if (keyword(i).eq.'olsen') then
+                  precon_f=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'maxvec') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) maxsubdim_f
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

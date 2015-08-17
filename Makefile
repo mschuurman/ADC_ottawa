@@ -7,13 +7,12 @@
 #-----------------------------------------------------------------------
 # Inclusion of other makefiles
 #-----------------------------------------------------------------------
-include ${SLEPC_DIR}/conf/slepc_common
+ifeq ($(EXTDIAG),true)
+	include ${SLEPC_DIR}/conf/slepc_common
+endif
 
 #-----------------------------------------------------------------------
 # Compiler flags
-#
-# N.B. we now have to use the C preprocessor due to interfacing with
-# PETSc/SLEPc
 #-----------------------------------------------------------------------
 
 #
@@ -39,7 +38,11 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
-SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
+#SLEPC_LIBS=${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
+
+ifeq ($(EXTDIAG),true)
+	LIBS+=""${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
+endif
 
 #-----------------------------------------------------------------------
 # Define object files
@@ -80,13 +83,18 @@ IOMODULES=iomodules/iomod.o \
 QCLIB=	qclib/vpqrsmod.o \
 	qclib/rungamess.o \
 	qclib/load_electronic_structure.o \
-	qclib/scf_electronic_structure.o \
+	qclib/scf_electronic_structure.o 
 
-EIGEN=  eigen/external_diag.o \
-	eigen/davmod.o \
-	eigen/band_lanczos.o \
-	eigen/block_lanczos.o \
-	eigen/lancmod.o
+ifeq ($(EXTDIAG),true)
+	EIGEN=extdiag/external_diag.o \
+	extdiag/davmod.o
+else
+	EIGEN=davidson/block_davidson.o \
+	davidson/davmod.o
+endif
+EIGEN+=lanczos/band_lanczos.o \
+	lanczos/block_lanczos.o \
+	lanczos/lancmod.o
 
 ADCLIB= adclib/defaults.o \
 	adclib/orbindx.o \
@@ -122,7 +130,13 @@ ADC =   $(INCLUDE) \
 
 OBJECTS = $(MULTI) $(ADC)
 
-ADC_OBJ=accuracy.o \
+
+ifeq ($(EXTDIAG),true)
+	ADC_OBJ=extdiag/external_diag.o
+else
+	ADC_OBJ=block_davidson.o
+endif
+ADC_OBJ+=accuracy.o \
 	printing.o \
 	timer.o \
 	lapack.o \
@@ -155,7 +169,6 @@ ADC_OBJ=accuracy.o \
 	rungamess.o \
 	load_electronic_structure.o \
         scf_electronic_structure.o \
-	eigen/external_diag.o \
 	filetools.o \
 	adc_ph.o \
 	dipole_ph.o \
@@ -248,9 +261,13 @@ KNIT_OBJ = constants.o \
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
+#adc: $(OBJECTS)
+#	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) $(SLEPC_LIBS) -o adc.x 
+#	rm -f *.o *~ *.mod
+
 adc: $(OBJECTS)
-	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) $(SLEPC_LIBS) -o adc.x 
-	rm -f *.o *~ *.mod
+	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) -o adc.x 
+	rm -f *.o *~ *.mod extdiag/external_diag.o 2>/dev/null
 
 stieltjes_ap: $(STIELTJES_AP)
 	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
@@ -274,4 +291,4 @@ knit: $(KNIT)
 	$(CC) $(CCOPTS)  -c $<
 
 clean_all:
-	rm -f *.o *~ *.mod eigen/external_diag.o
+	rm -f *.o *~ *.mod extdiag/external_diag.o

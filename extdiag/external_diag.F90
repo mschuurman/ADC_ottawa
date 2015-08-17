@@ -2,15 +2,12 @@
 ! eigensolver: SLEPc block-Davidson and Krylov-Schur eigensolvers
 !#######################################################################
 
- subroutine eigensolver(blckdim,matdim,davstates,vecfile,ladc1guess,&
-      flag,noffd)
-
-   use parameters, only: davtol,davtol_f,maxiter,maxiter_f,lfakeip,&
-                         ndavcalls,davtarg,eigentype,solver
+ subroutine eigensolver(blckdim,matdim,noffd)
 
    use constants
    use channels
-
+   use parameters   
+   
    implicit none
 
 #include "finclude/petscsys.h"
@@ -20,8 +17,8 @@
 #include "finclude/slepceps.h"
 #include "finclude/petscvec.h90"
    
-   integer                             :: blckdim,matdim,davstates,&
-                                          maxbl,nrec,unit,num,kk
+   integer                             :: blckdim,matdim,nstates,&
+                                          maxbl,nrec,iout,count,kk
    integer*8                           :: noffd
    real(d), dimension(matdim)          :: hii
    double precision                    :: val
@@ -29,8 +26,7 @@
    character(36)                       :: vecfile
    character(70)                       :: compiler
    character(120)                      :: atmp
-   character(1)                        :: flag
-   logical                             :: ladc1guess,lincore
+   logical                             :: lrdadc1,lincore
    logical, external                   :: isincore
 
 !-----------------------------------------------------------------------
@@ -38,7 +34,6 @@
 !-----------------------------------------------------------------------
       Mat         ham           ! Matrix whose eigenpairs are sought
       EPS         eps           ! Eigenproblem solver context 
-      EPSType     tname,method  ! Eigenproblem type and method name
       PetscReal   tol,error     ! Error tolerance and calculated error value
       PetscScalar kr,ki         ! Real and imaginary parts of an eigenvalue
       Vec         xr,xi         ! Real and imaginary parts of an eigenvector
@@ -88,9 +83,9 @@
          atmp='Krylov-Schur diagonalisation in the'
       endif
 
-      if (flag.eq.'i') then
+      if (hamflag.eq.'i') then
          atmp=trim(atmp)//' initial space'
-       else if (flag.eq.'f') then
+       else if (hamflag.eq.'f') then
           atmp=trim(atmp)//' final space'
       endif
 
@@ -114,6 +109,19 @@
       ndavcalls=ndavcalls+1
       if (ndavcalls.eq.1.and.compiler.ne.'intel') call mpi_init()
 
+!-----------------------------------------------------------------------
+! Set the no. sates sought, the block size, etc
+!-----------------------------------------------------------------------
+      if (hamflag.eq.'i') then
+         nstates=davstates
+         lrdadc1=ladc1guess
+         vecfile=davname
+      else if (hamflag.eq.'f') then
+         nstates=davstates_f
+         lrdadc1=ladc1guess_f
+         vecfile=davname_f
+      endif
+      
 !-----------------------------------------------------------------------
 ! Initialise SLEPc
 !-----------------------------------------------------------------------
@@ -162,7 +170,7 @@
 ! We here store the no. non-zero elements per row in the PetscInt
 ! array nnz: nnz(i)=no. non-zero elements in the ith row.
 !-----------------------------------------------------------------------
-      if (lincore) call get_nonzeros(nnz,matdim,flag)
+      if (lincore) call get_nonzeros(nnz,matdim,hamflag)
 
 !-----------------------------------------------------------------------
 ! If the Hamiltonian matrix is being stored in-core then create the 
@@ -190,10 +198,10 @@
       if (lincore) then
          
          ! (i) Diagonal elements
-         call fill_ondiag(ham,maxbl,nrec,matdim,flag)
+         call fill_ondiag(ham,maxbl,nrec,matdim,hamflag)
          
          ! (ii) Off-diagonal elements      
-         call fill_offdiag(maxbl,nrec,ham,flag)
+         call fill_offdiag(maxbl,nrec,ham,hamflag)
          
          ! Assemble the PETSc matrix
          call matassemblybegin(ham,mat_final_assembly,ierr)
@@ -237,8 +245,8 @@
 ! dimension of the working subspace (ncv), and the maximum projected
 ! dimenson (mpd, which for serial execution we take to be equal to ncv)
 !-----------------------------------------------------------------------
-      neig=davstates
-      ncv=min(davstates+blckdim+10,(davstates+blckdim)*2)
+      neig=nstates
+      ncv=min(nstates+blckdim+10,(nstates+blckdim)*2)
      
       call epssetdimensions(eps,neig,ncv,ncv,ierr)
 
@@ -257,10 +265,10 @@
 !-----------------------------------------------------------------------
 ! Set the error tolerance and max. no. iterations
 !-----------------------------------------------------------------------
-      if (flag.eq.'i') then
+      if (hamflag.eq.'i') then
          tol=davtol
          niter=maxiter
-      else if (flag.eq.'f') then
+      else if (hamflag.eq.'f') then
          tol=davtol_f
          niter=maxiter_f
       endif
@@ -270,10 +278,10 @@
 !-----------------------------------------------------------------------
 ! Set the initial vectors
 !-----------------------------------------------------------------------
-      if (ladc1guess) then
+      if (lrdadc1) then
          call load_adc1_vecs(blckdim,matdim,ivec)
       else
-         call guess_vecs_ondiag(blckdim,matdim,ivec,flag)
+         call guess_vecs_ondiag(blckdim,matdim,ivec,hamflag)
       endif
 
       ! Set the initial vector space
@@ -297,8 +305,8 @@
       write(ilog,'(/,x,a,x,i4,/)') 'Number of iterations:',its
 
       ! If not all states have been converged, then exit
-      if (nconv.lt.davstates) then
-         write(ilog,'(/,2x,i3,1x,a,/)') davstates,'Davidson states requested'
+      if (nconv.lt.nstates) then
+         write(ilog,'(/,2x,i3,1x,a,/)') nstates,'Davidson states requested'
          write(ilog,'(/,2x,i3,1x,a,/)') nconv,'Davidson states converged'
          STOP
       endif
@@ -307,26 +315,26 @@
 ! Output the converged eigenpairs
 !-----------------------------------------------------------------------
       ! Open file
-      unit=77
+      iout=77
 
-      open(unit=unit,file=vecfile,status='unknown',&
+      open(unit=iout,file=vecfile,status='unknown',&
            access='sequential',form='unformatted')
       
       do i=0,nconv-1
-         num=i+1
+         count=i+1
          ! Get the ith converged eigenpair
          call epsgeteigenpair(eps,i,kr,ki,xr,xi,ierr) 
          ! Write the ith converged eigenpair to file
          val=PetscRealPart(kr)
          call VecGetArrayF90(xr,xx,ierr) 
-         vec=xx         
-         write(unit) num,val,vec(:)
+         vec=xx
+         write(iout) count,val,vec(:)
          ! Calculate the relative error for the ith eigenpair
          call epscomputerelativeerror(eps,i,error,ierr)
       enddo
 
       ! Close file
-      close(unit)
+      close(iout)
 
 !-----------------------------------------------------------------------
 ! Free the workspace
@@ -344,7 +352,7 @@
       call slepcfinalize(ierr)
 
 ! Full diagonalisation for debugging purposes
-!      call full_diag(matdim,flag)
+!      call full_diag(matdim)
 
    return
 
@@ -528,7 +536,7 @@
 !            the LAPACK routine dsyev
 !#######################################################################
 
- subroutine full_diag(matdim,flag)
+ subroutine full_diag(matdim)
 
    use constants
    use parameters
@@ -542,7 +550,6 @@
    real(d), dimension(matdim,matdim)  :: hmat,umat
    real(d), dimension(:), allocatable :: hij
    integer, dimension(:), allocatable :: indxi,indxj
-   character(1)                       :: flag
    character(70)                      :: filename
 
    integer*4                   :: e2
@@ -557,9 +564,9 @@
 !-----------------------------------------------------------------------
    iham=77
 
-   if (flag.eq.'i') then
+   if (hamflag.eq.'i') then
       filename='SCRATCH/hmlt.diai'
-   else if (flag.eq.'f') then
+   else if (hamflag.eq.'f') then
       filename='SCRATCH/hmlt.diac'
    endif
 
@@ -579,9 +586,9 @@
 !-----------------------------------------------------------------------
 ! Read the off-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-   if (flag.eq.'i') then
+   if (hamflag.eq.'i') then
       filename='SCRATCH/hmlt.offi'
-   else if (flag.eq.'f') then
+   else if (hamflag.eq.'f') then
       filename='SCRATCH/hmlt.offc'
    endif
 
@@ -986,7 +993,7 @@
  subroutine hxvec_ext(dim,xvec,yvec)
 
    use constants
-   use parameters, only: kshmflag
+   use parameters, only: hamflag
    use iomod, only: freeunit
    
    implicit none
@@ -1010,9 +1017,9 @@
    ! Note that the i/f flag that we pass to the main subroutine is
    ! going to have to be available globally if it is to be used here...
 
-   if (kshmflag.eq.'i') then
+   if (hamflag.eq.'i') then
       filename='SCRATCH/hmlt.diai'
-   else if (kshmflag.eq.'f') then
+   else if (hamflag.eq.'f') then
       filename='SCRATCH/hmlt.diac'
    endif
       
@@ -1036,9 +1043,9 @@
 !-----------------------------------------------------------------------
    allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
 
-   if (kshmflag.eq.'i') then
+   if (hamflag.eq.'i') then
       filename='SCRATCH/hmlt.offi'
-   else if (kshmflag.eq.'f') then
+   else if (hamflag.eq.'f') then
       filename='SCRATCH/hmlt.offc'
    endif
    
@@ -1100,4 +1107,5 @@
  end function isincore
 
 !#######################################################################
+
 

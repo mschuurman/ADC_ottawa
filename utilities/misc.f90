@@ -386,15 +386,20 @@ contains
     real(d), dimension(ndim1)         :: coeff
     real(d)                           :: en,tmvec,osc_str
     real(d), parameter                :: tol=0.05d0
-
+    character(len=120)                :: fmat
+    
 !-----------------------------------------------------------------------
 ! State energy in a.u.
 !-----------------------------------------------------------------------
-    write(ilog,'(2/,2x,a,2x,i1,1x,a1,i1,2x,a,8x,F14.8)') &
-         'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
-    write(iout,'(2/,2x,a,2x,i1,1x,a1,i1,2x,a,8x,F14.8)') &
-         'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
-
+    if (i.lt.10) then
+       fmat='(2/,2x,a,3x,i1,a1,i1,2x,a,5x,F14.8)'
+    else
+       fmat='(2/,2x,a,2x,i2,a1,i1,2x,a,5x,F14.8)'
+    endif
+    
+    write(ilog,fmat) 'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
+    write(iout,fmat) 'State',i,'.',nirrep,'Energy:',en+ehf+e_mp2
+    
 !-----------------------------------------------------------------------
 ! Excitation energy in eV
 !-----------------------------------------------------------------------

@@ -7,31 +7,29 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state=0
+initial_state = 1
 
 dipole_component = x
 
 cvs
 
-energy_only
-
 diag_section
- method = davidson
+ maxvec = 30
  nstates = 2
- block_size = 4
+ block_size = 5
  tol = 1d-5
- maxit = 700
+ maxit = 500
  guess = adc1
 end-diag_section
 
-#davidson_final_section
-# nstates = 10
-# block_size = 20
-# tol=1d-5
-# maxit=700
-## guess=adc1
-#end-davidson_final_section
-#
+diag_final_section
+ nstates = 10
+ block_size = 20
+ tol=1d-5
+ maxit=700
+ guess=adc1
+end-diag_final_section
+
 #lanczos_section
 # type=block
 # block_size = 100

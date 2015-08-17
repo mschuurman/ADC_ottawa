@@ -194,10 +194,12 @@ module parameters
 !!$************************************************
 
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
-                 ndavcalls,eigentype,solver
-  real(d)     :: davtarg,davmem
-  character*1 :: kshmflag
-
+                 ndavcalls,eigentype,solver,precon,&
+                 precon_f,maxsubdim,maxsubdim_f
+  real(d)     :: davtarg,davmem,davmem_f
+  character*1 :: hamflag
+  logical     :: lextdiag
+  
   character*3 :: POLARIZATION
 
 INTEGER                            :: NSYMA
