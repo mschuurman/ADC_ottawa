@@ -7,7 +7,8 @@
 ########################################################################
 
 #-----------------------------------------------------------------------
-# Read target name. If target is not given, then perform a clean install
+# Read the target name. If the target is not given, then perform a
+# clean install of all programs
 #-----------------------------------------------------------------------
 target=$1
 
@@ -25,41 +26,43 @@ if [ -f "ADC.CONFIG" ]; then
     slepcpath=`cat ADC.CONFIG | grep SLEPC_DIR | sed 's/.*=//g'`
 fi
 
-#
+#-----------------------------------------------------------------------
+# Hard-wiring of blas/lapack libraries for testing purposes
+#-----------------------------------------------------------------------
 # MKL, sequential
-#
 #blasflag='-mkl=sequential'
 #lapackflag='-mkl=sequential'
 
-#
 # MKL, parallel
-#
 #blasflag='-mkl'
 #lapackflag='-mkl'
 
-#
 # BLAS/LAPACK
-#
 #blasflag='-lblas'
 #lapackflag='-llapack'
 
 #-----------------------------------------------------------------------
-# Determine whether to install using the PETSc/SLEPc libraries
+# If the adc program is to be installed, determine whether to install
+# using the PETSc/SLEPc libraries
 #-----------------------------------------------------------------------
-read -p "Do you wish to install using the PETSc/SLEPc libraries (y/n) " ext
+if [ "$target" == 'adc' ] || [ -z $target ];then
 
-valid=0
-while [ "$valid" == '0' ]; do
-    if [ "$ext" == 'y' ]; then
-	valid=1
-	args+=" "EXTDIAG=true
-    elif [ "$ext" == 'n' ]; then
-	valid=1
-	args+=" "EXTDIAG=false
-    else
-	read -p "Invalid answer: y or n only: " ext
-    fi
-done
+    read -p "Do you wish to install using the PETSc/SLEPc libraries (y/n) " ext
+
+    valid=0
+    while [ "$valid" == '0' ]; do
+	if [ "$ext" == 'y' ]; then
+	    valid=1
+	    args+=" "EXTDIAG=true
+	elif [ "$ext" == 'n' ]; then
+	    valid=1
+	    args+=" "EXTDIAG=false
+	else
+	    read -p "Invalid answer: y or n only: " ext
+	fi
+    done
+
+fi
 
 #-----------------------------------------------------------------------
 # Determine the path to the SLEPc install directory

@@ -789,7 +789,10 @@
 
       integer, intent(in) :: matdim
       integer             :: i
-      
+      real(d)             :: ddot
+
+      external ddot
+
 !-----------------------------------------------------------------------
 ! Residual vectors: r_i = lambda_i * x_i - W * y_i
 !-----------------------------------------------------------------------
@@ -819,7 +822,7 @@
 ! Norms of the residual vectors
 !-----------------------------------------------------------------------
       do i=1,blocksize
-         norm(i)=dot_product(res(:,i),res(:,i))
+         norm(i)=ddot(matdim,res(:,i),1,res(:,i),1)
          norm(i)=dsqrt(norm(i))
       enddo
 

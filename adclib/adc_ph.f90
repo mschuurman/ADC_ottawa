@@ -21,27 +21,23 @@ contains
 !!$*******************************************************************************
 !!$*******************************************************************************
 
+!#######################################################################
 
   subroutine MP2(E_MP2)
 
+    integer              :: r,s,u,v,nsym1,nsym2,i,j,a,b,cnt
     real(d), intent(out) :: E_MP2
-
-    integer :: r,s,u,v,nsym1,nsym2,i,j,a,b,cnt
-    real(d) :: DA,eijc,term,etotal
-!    real(d) :: vpqrs
-
-!    external vpqrs
-
+    real(d)              :: DA,eijc,term,etotal
 
     E_MP2 = 0._d
     etotal = 0._d
     cnt=0
     do r=nOcc+1,nBas
        a=roccnum(r)  !r
-
+       
        do s=nOcc+1,nBas
           b=roccnum(s) !s
-
+          
           do u=1,nOcc
              i=roccnum(u) !u
 
@@ -78,10 +74,14 @@ contains
        end do
     end do 
   end do
+
   if(Etotal.gt.1e-5)write(ilog,*)'E[sym residual]=',Etotal
+
 100 format(a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') sym=',i3,'term=',f15.8)
+  
   end subroutine MP2
 
+!#######################################################################
 
 !!$Indices are supplied in the order: PH,PH
 
@@ -96,19 +96,20 @@ contains
     
   end function K_ph_ph
 
+!#######################################################################
+
 !!$First order contribution C_ak,a'k'
   
   real(d) function C1_ph_ph(a,k,a1,k1)
     
     integer, intent(in) :: a,k,a1,k1
-!    real(d) :: vpqrs
-      
-!    external vpqrs
 
     C1_ph_ph=2._d*vpqrs(a,k,a1,k1)-vpqrs(a,a1,k,k1)
 
   end function C1_ph_ph
-    
+
+!#######################################################################
+
 !!$Second order contribution CA_ak,a'k'. The condition that k=k' is
 !!$checked in the calling procedure.
 
@@ -118,10 +119,6 @@ contains
     
     integer :: c,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
     real(d) :: DA,eijc,term
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-
 
 !!$ Faster version (taking symmetries into account)
 
@@ -215,7 +212,8 @@ contains
     CA_ph_ph=-0.5_d*CA_ph_ph            
     
   end function CA_ph_ph
-    
+
+!#######################################################################
              
 !!$Second order contribution CB_ak,a'k'. The condition that a=a' is
 !!$checked in the calling procedure.
@@ -226,9 +224,6 @@ contains
     
     integer :: c,dd,i, nsym1, nsym2, nsym3,u,r,s
     real(d) :: DB,eicd,term
-!    real(d) :: vpqrs
-    
-!    external vpqrs
 
 !!$    CB_ph_ph=0._d             
   
@@ -317,7 +312,9 @@ contains
     CB_ph_ph=-0.5_d*CB_ph_ph   
    
   end function CB_ph_ph
-  
+
+!#######################################################################
+
 !!$Second order contribution CC_ak,a'k'.
 
   real(d) function CC_ph_ph(a,k,a1,k1)
@@ -326,12 +323,9 @@ contains
     
     integer :: c,i, nsym1, nsym2, nsym3,r,s
     real(d) :: DC,eic,term
-!    real(d) :: vpqrs
     
     real(d), dimension(nocc) :: tau
 
-!    external vpqrs
-    
     CC_ph_ph=0._d
 
     do c=nOcc+1,nBas
@@ -364,6 +358,7 @@ contains
 
   end function CC_ph_ph
 
+!#######################################################################
 
 !!$*******************************************************************************
 !!$*******************************************************************************
@@ -373,124 +368,166 @@ contains
 
 !!$  We distinguish here between five different types of coupling. 
 !!$ Calculating Cak,a'b'k'l'
+
+!#######################################################################
   
 !!$ a'|=b' and k'|=l'; spin case 1
   
-  real(d) function C1_ph_2p2h(a,k,apr,bpr,kpr,lpr)
+  function C1_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
     
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
+    real(d)             :: func
 
-    C1_ph_2p2h=0._d
+!    C1_ph_2p2h=0._d
+!    
+!    if(kdelta(a,apr) .eq. 1)& 
+!         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+!    if(kdelta(a,bpr) .eq. 1)&
+!         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+!    if(kdelta(k,lpr) .eq. 1)&
+!         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+!     
+!    C1_ph_2p2h=C1_ph_2p2h/sqrt(2._d)
+ 
+    func=0.0d0
+
+    if (a.eq.apr) func=func-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
     
-    if(kdelta(a,apr) .eq. 1)& 
-         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
-    if(kdelta(a,bpr) .eq. 1)&
-         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
-    if(kdelta(k,kpr) .eq. 1)&
-         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
-    if(kdelta(k,lpr) .eq. 1)&
-         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+    if (a.eq.bpr) func=func-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+
+    if (k.eq.kpr) func=func+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+    
+    if (k.eq.lpr) func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
      
-    C1_ph_2p2h=C1_ph_2p2h/sqrt(2._d)
+    func=func/sqrt(2.0d0)
     
-    
+    return
+
   end function C1_ph_2p2h
+
+!#######################################################################
 
 !!$ a'|=b' and k'|=l'; spin case 2
   
-  real(d) function C2_ph_2p2h(a,k,apr,bpr,kpr,lpr)
+  function C2_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
     
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
+    real(d)             :: func
 
-    C2_ph_2p2h=0._d 
-    
-    if(kdelta(a,apr) .eq. 1)&
-         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)-vpqrs(kpr,bpr,lpr,k))
-    if(kdelta(a,bpr) .eq. 1)&
-         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(kpr,k,lpr,apr)-vpqrs(kpr,apr,lpr,k))
-    if(kdelta(k,kpr) .eq. 1)&
-         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(a,apr,lpr,bpr)-vpqrs(a,bpr,lpr,apr))
-    if(kdelta(k,lpr) .eq. 1)&
-         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(a,apr,kpr,bpr)-vpqrs(a,bpr,kpr,apr))
+!    C2_ph_2p2h=0._d 
+!    
+!    if(kdelta(a,apr) .eq. 1)&
+!         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)-vpqrs(kpr,bpr,lpr,k))
+!    if(kdelta(a,bpr) .eq. 1)&
+!         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(kpr,k,lpr,apr)-vpqrs(kpr,apr,lpr,k))
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(a,apr,lpr,bpr)-vpqrs(a,bpr,lpr,apr))
+!    if(kdelta(k,lpr) .eq. 1)&
+!         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(a,apr,kpr,bpr)-vpqrs(a,bpr,kpr,apr))
+!
+!    C2_ph_2p2h=sqrt(3._d)*C2_ph_2p2h/sqrt(2._d)
+ 
+    func=0.0d0
 
-    C2_ph_2p2h=sqrt(3._d)*C2_ph_2p2h/sqrt(2._d)
+    if (a.eq.apr) func=func-(vpqrs(kpr,k,lpr,bpr)-vpqrs(kpr,bpr,lpr,k))
     
+    if (a.eq.bpr) func=func+(vpqrs(kpr,k,lpr,apr)-vpqrs(kpr,apr,lpr,k))
+    
+    if (k.eq.kpr) func=func+(vpqrs(a,apr,lpr,bpr)-vpqrs(a,bpr,lpr,apr))
+    
+    if (k.eq.lpr) func=func-(vpqrs(a,apr,kpr,bpr)-vpqrs(a,bpr,kpr,apr))
+    
+    func=sqrt(3.0d0)*func/sqrt(2.0d0)
+   
   end function C2_ph_2p2h
   
+!#######################################################################
+
 !!$ a'=b' and k'|=l' 
   
-  real(d) function C3_ph_2p2h(j,k,ipr,kpr,lpr)
+  function C3_ph_2p2h(j,k,ipr,kpr,lpr) result(func)
     
     integer, intent(in) :: j,k,ipr,kpr,lpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
+    real(d)             :: func
 
-    C3_ph_2p2h=0._d
-    
-    if(kdelta(j,ipr) .eq. 1)&
-         C3_ph_2p2h=C3_ph_2p2h-(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
-    if(kdelta(k,kpr) .eq. 1)&
-         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,lpr,ipr)
-    if(kdelta(k,lpr) .eq. 1)&
-         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,kpr,ipr)
+!    C3_ph_2p2h=0._d
+!    
+!    if(kdelta(j,ipr) .eq. 1)&
+!         C3_ph_2p2h=C3_ph_2p2h-(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,lpr,ipr)
+!    if(kdelta(k,lpr) .eq. 1)&
+!         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,kpr,ipr)
 
- !   C3_ph_2p2h=-C3_ph_2p2h
+    func=0.0d0
     
+    if (j.eq.ipr) func=func-(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
+    
+    if (k.eq.kpr) func=func+vpqrs(j,ipr,lpr,ipr)
+    
+    if (k.eq.lpr) func=func+vpqrs(j,ipr,kpr,ipr)
+
   end function C3_ph_2p2h
+
+!#######################################################################
 
 !!$ a'|=b' and k'=l'
 
-  real(d) function C4_ph_2p2h(a,k,apr,bpr,kpr)
+  function C4_ph_2p2h(a,k,apr,bpr,kpr) result(func)
     
     integer, intent(in) :: a,k,apr,bpr,kpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
+    real(d)             :: func
+  
+!    C4_ph_2p2h=0._d
+!
+!    if(kdelta(a,apr) .eq. 1)&
+!         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,bpr)
+!    if(kdelta(a,bpr) .eq. 1)&
+!         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,apr)
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C4_ph_2p2h=C4_ph_2p2h-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
 
-    C4_ph_2p2h=0._d
+    func=0.0d0
 
-    if(kdelta(a,apr) .eq. 1)&
-         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,bpr)
-    if(kdelta(a,bpr) .eq. 1)&
-         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,apr)
-    if(kdelta(k,kpr) .eq. 1)&
-         C4_ph_2p2h=C4_ph_2p2h-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
-    
- !   C4_ph_2p2h=-C4_ph_2p2h
+    if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,bpr)
+
+    if (a.eq.bpr) func=func+vpqrs(kpr,k,kpr,apr)
+
+    if (k.eq.kpr) func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
 
   end function C4_ph_2p2h
 
+!#######################################################################
+
 !!$ a'=b' and k'=l'
   
-  real(d) function C5_ph_2p2h(a,k,apr,kpr)
+  function C5_ph_2p2h(a,k,apr,kpr) result(func)
     
     integer, intent(in) :: a,k,apr,kpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
+    real(d)             :: func
 
-    C5_ph_2p2h=0._d
+!    C5_ph_2p2h=0._d
+!     
+!    if(kdelta(a,apr) .eq. 1)&
+!         C5_ph_2p2h=C5_ph_2p2h+vpqrs(kpr,apr,kpr,k)
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C5_ph_2p2h=C5_ph_2p2h-vpqrs(a,apr,kpr,apr)
+!    
+!    C5_ph_2p2h=sqrt(2._d)*C5_ph_2p2h
+ 
+    func=0.0d0
      
-    if(kdelta(a,apr) .eq. 1)&
-         C5_ph_2p2h=C5_ph_2p2h+vpqrs(kpr,apr,kpr,k)
-    if(kdelta(k,kpr) .eq. 1)&
-         C5_ph_2p2h=C5_ph_2p2h-vpqrs(a,apr,kpr,apr)
+    if (a.eq.apr) func=func+vpqrs(kpr,apr,kpr,k)
+
+    if (k.eq.kpr) func=func-vpqrs(a,apr,kpr,apr)
     
-    C5_ph_2p2h=sqrt(2._d)*C5_ph_2p2h
-    
+    func=sqrt(2.0d0)*func
+   
   end function C5_ph_2p2h
+
+!#######################################################################
   
 !!$*******************************************************************************
 !!$*******************************************************************************
@@ -503,7 +540,7 @@ contains
 !!$  k=l,a|=b; 3-doubles k|=l,a=b; 4I-doubles k|=l,a|=b (spin case 1);
 !!$ 4II-doubles i|=j,a|=b (spin case 2).
 
-
+!#######################################################################
 
   real(d) function K_2p2h_2p2h(e_a,e_b,e_k,e_l)
     
@@ -512,91 +549,115 @@ contains
     K_2p2h_2p2h=e_a+e_b-e_k-e_l
   
   end function K_2p2h_2p2h
-    
+
+!#######################################################################
+
 !!$ (1,1)-Caakk,a'a'k'k' (case 25 in Trofimov's Ph.D)
   
-  real(d) function C_1_1(a,k,apr,kpr)
+  function C_1_1(a,k,apr,kpr) result(func)
     
     integer, intent(in) :: a,k,apr,kpr
+    real(d)             :: func
     
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-    
-    C_1_1=0._d
-    
-    if(kdelta(k,kpr) .eq. 1)&
-         C_1_1=C_1_1+vpqrs(a,apr,a,apr)
-    if(kdelta(a,apr) .eq. 1)&
-         C_1_1=C_1_1+vpqrs(kpr,k,kpr,k)
-    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
-         C_1_1=C_1_1-2._d*(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
+!    C_1_1=0._d
+!    
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C_1_1=C_1_1+vpqrs(a,apr,a,apr)
+!    if(kdelta(a,apr) .eq. 1)&
+!         C_1_1=C_1_1+vpqrs(kpr,k,kpr,k)
+!    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
+!         C_1_1=C_1_1-2._d*(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
 
+    func=0.0d0
+    
+    if (k.eq.kpr) func=func+vpqrs(a,apr,a,apr)
+
+    if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,k)
+
+    if (a.eq.apr.and.k.eq.kpr) func=func-2.0d0*(2.0d0*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
   
   end function C_1_1
   
+!#######################################################################
+
 !!$ (2,1)-Cabkk,a'a'k'k' (case 20 in Trofimov's Ph.D)
   
-  real(d) function C_2_1(a,b,k,apr,kpr)
+  function C_2_1(a,b,k,apr,kpr) result(func)
     
     integer, intent(in) :: a,b,k,apr,kpr
+    real(d)             :: func
+
+!    C_2_1=0._d
+!    
+!    if(kdelta(k,kpr) .eq. 1)&
+!         C_2_1=C_2_1+vpqrs(a,apr,b,apr)
+!    if(kdelta(a,apr)*kdelta(b,apr) .eq. 1)&
+!         C_2_1=C_2_1+0.5_d*vpqrs(kpr,k,kpr,k)
+!    if(kdelta(b,apr)*kdelta(k,kpr) .eq. 1)&
+!         C_2_1=C_2_1-(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
+!    if(kdelta(a,apr)*kdelta(k,kpr) .eq.1)&
+!         C_2_1=C_2_1-(2._d*vpqrs(b,apr,kpr,k)-vpqrs(b,k,kpr,apr))
+!    
+!    C_2_1=C_2_1*sqrt(2._d)
+
+    func=0.0d0
     
-!    real(d) :: vpqrs
+    if (k.eq.kpr) func=func+vpqrs(a,apr,b,apr)
+
+    if (a.eq.apr.and.b.eq.apr) func=func+0.5_d*vpqrs(kpr,k,kpr,k)
+
+    if (b.eq.apr.and.k.eq.kpr) func=func-(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
+
+    if (a.eq.apr.and.k.eq.kpr) func=func-(2._d*vpqrs(b,apr,kpr,k)-vpqrs(b,k,kpr,apr))
     
-!    external vpqrs
-    
-    C_2_1=0._d
-    
-    if(kdelta(k,kpr) .eq. 1)&
-         C_2_1=C_2_1+vpqrs(a,apr,b,apr)
-    if(kdelta(a,apr)*kdelta(b,apr) .eq. 1)&
-         C_2_1=C_2_1+0.5_d*vpqrs(kpr,k,kpr,k)
-    if(kdelta(b,apr)*kdelta(k,kpr) .eq. 1)&
-         C_2_1=C_2_1-(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
-    if(kdelta(a,apr)*kdelta(k,kpr) .eq.1)&
-         C_2_1=C_2_1-(2._d*vpqrs(b,apr,kpr,k)-vpqrs(b,k,kpr,apr))
-    
-    C_2_1=C_2_1*sqrt(2._d)
+    func=func*sqrt(2._d)
 
   end function C_2_1
-    
+
+!#######################################################################
+
 !!$ (3,1)-Caakl,a'a'k'k' (case 15 in Trofimov's Ph.D)
   
-  real(d) function C_3_1(a,k,l,apr,kpr)
+  function C_3_1(a,k,l,apr,kpr) result(func)
     
     integer, intent(in) :: a,k,l,apr,kpr
+    real(d)             :: func
     
-!    real(d) :: vpqrs
+!    C_3_1=0._d
+!    
+!    if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
+!         C_3_1=C_3_1-0.5_d*vpqrs(a,apr,a,apr)
+!    if(kdelta(a,apr) .eq. 1)&
+!         C_3_1=C_3_1-vpqrs(kpr,k,kpr,l)
+!    if(kdelta(a,apr)*kdelta(l,kpr) .eq. 1)&
+!         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
+!    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
+!         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,l)-vpqrs(a,l,kpr,apr))
+!    
+!    C_3_1=C_3_1*sqrt(2._d)
+ 
+    func=0.0d0
     
-!    external vpqrs
+    if (k.eq.kpr.and.l.eq.kpr) func=func-0.5_d*vpqrs(a,apr,a,apr)
+ 
+    if (a.eq.apr) func=func-vpqrs(kpr,k,kpr,l)
     
-    C_3_1=0._d
+    if (a.eq.apr.and.l.eq.kpr) func=func+(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
+
+    if (a.eq.apr.and.k.eq.kpr) func=func+(2._d*vpqrs(a,apr,kpr,l)-vpqrs(a,l,kpr,apr))
     
-    if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
-         C_3_1=C_3_1-0.5_d*vpqrs(a,apr,a,apr)
-    if(kdelta(a,apr) .eq. 1)&
-         C_3_1=C_3_1-vpqrs(kpr,k,kpr,l)
-    if(kdelta(a,apr)*kdelta(l,kpr) .eq. 1)&
-         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
-    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
-         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,l)-vpqrs(a,l,kpr,apr))
-    
-    C_3_1=C_3_1*sqrt(2._d)
-    
+    func=func*sqrt(2._d)
+   
   end function C_3_1
   
-
+!#######################################################################
 
 !!$ (4i,1)-Cabkl,a'a'k'k' (spin case I) (case 5 in Trofimov's Ph.D)
 
   real(d) function C_4i_1(a,b,k,l,apr,kpr)
     
     integer, intent(in) :: a,b,k,l,apr,kpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-    
+        
     C_4i_1=0._d
     
     if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
@@ -613,16 +674,14 @@ contains
          C_4i_1=C_4i_1+(2._d*vpqrs(b,apr,kpr,l)-vpqrs(b,l,kpr,apr))
     
   end function C_4i_1
-  
+
+!#######################################################################
+
 !!$ (4ii,1)-Cabkl,a'a'k'k' (spin case II) (case 10 in Trofimov's Ph.D) 
   
   real(d) function C_4ii_1(a,b,k,l,apr,kpr)
     
     integer, intent(in) :: a,b,k,l,apr,kpr
-    
-!    real(d) :: vpqrs
-    
-!    external vpqrs
     
     C_4ii_1=0._d
     
@@ -639,16 +698,14 @@ contains
 
   end function C_4ii_1
 
+!#######################################################################
+
 !!$ (2,2)-Cabkk,a'b'k'k' (case 19 in Trofimov's Ph.D)
 
   real(d) function C_2_2(a,b,k,apr,bpr,kpr)
     
     integer, intent(in) :: a,b,k,apr,bpr,kpr
     
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-
     C_2_2=0._d
     
     if(kdelta(k,kpr) .eq. 1)&
@@ -668,16 +725,14 @@ contains
     
   end function C_2_2
   
+!#######################################################################
+
 !!$ (3,2)-Caakl,a'b'k'k' (case 14 in Trofimov's Ph.D)  
   
   real(d) function C_3_2(a,k,l,apr,bpr,kpr)
     
     integer, intent(in) ::a,k,l,apr,bpr,kpr 
     
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-
     C_3_2=0._d
     
     if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
@@ -696,6 +751,7 @@ contains
     
   end function C_3_2
 
+!#######################################################################
 
 !!$ (4i,2)-Cabkl,a'b'k'k' (spin case I) (case 4 in Trofimov's Ph.D)
 
@@ -703,10 +759,6 @@ contains
     
     integer, intent(in) ::a,b,k,l,apr,bpr,kpr 
     
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-
     C_4i_2=0._d  
   
     if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
@@ -737,16 +789,14 @@ contains
     
   end function C_4i_2
 
+!#######################################################################
+
 !!$ (4ii,2)-Cabkl,a'b'k'k' (spin case II) (case 9 in Trofimov's Ph.D)
 
   real(d) function C_4ii_2(a,b,k,l,apr,bpr,kpr)
     
     integer, intent(in) ::a,b,k,l,apr,bpr,kpr 
     
-!    real(d) :: vpqrs
-    
-!    external vpqrs
-
     C_4ii_2=0._d  
     
     if(kdelta(b,bpr)*kdelta(l,kpr) .eq. 1)&
@@ -772,16 +822,14 @@ contains
     
   end function C_4ii_2
     
+!#######################################################################
+
 !!$ (3,3)-Caakl,a'a'k'l' (case 13  in Trofimov's Ph.D)  
     
     real(d) function C_3_3(a,k,l,apr,kpr,lpr)
     
       integer, intent(in) ::a,k,l,apr,kpr,lpr 
     
-!      real(d) :: vpqrs
-    
-!      external vpqrs
-
       C_3_3=0._d
       
       if(kdelta(k,kpr)*kdelta(l,lpr) .eq. 1)&
@@ -801,16 +849,14 @@ contains
       
     end function C_3_3
 
+!#######################################################################
+
 !!$ (4i,3)-Cabkl,a'a'k'l' (spin case I) (case 3 in Trofimov's Ph.D)
 
     real(d) function C_4i_3(a,b,k,l,apr,kpr,lpr)
     
       integer, intent(in) ::a,b,k,l,apr,kpr,lpr 
       
-!      real(d) :: vpqrs
-    
-!      external vpqrs
-
       C_4i_3=0._d 
     
       if(kdelta(k,kpr)*kdelta(l,lpr) .eq. 1)&
@@ -840,16 +886,14 @@ contains
       
     end function C_4i_3
 
+!#######################################################################
+
 !!$ (4ii,3)-Cabkl,a'a'k'l' (spin case II) (case 8 in Trofimov's Ph.D)    
 
     real(d) function C_4ii_3(a,b,k,l,apr,kpr,lpr)
     
       integer, intent(in) ::a,b,k,l,apr,kpr,lpr 
     
-!      real(d) :: vpqrs
-    
-!      external vpqrs
-
       C_4ii_3=0._d
       
       if(kdelta(b,apr)*kdelta(l,lpr) .eq. 1)&
@@ -875,16 +919,14 @@ contains
       
     end function C_4ii_3
 
+!#######################################################################
+
 !!$ (4ii,4ii)-Cabkl,a'b'k'l' (case 7 in Trofimov's Ph.D)
 
     real(d) function C_4ii_4ii(a,b,k,l,apr,bpr,kpr,lpr)
     
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
     
-!      real(d) :: vpqrs
-    
-!      external vpqrs
-
       C_4ii_4ii=0._d    
 
       if(kdelta(k,kpr)*kdelta(l,lpr) .eq. 1)&
@@ -931,16 +973,13 @@ contains
 
     end function C_4ii_4ii
 
+!#######################################################################
 
 !!$ (4i,4ii)-Cabkl,a'b'k'l' (case 2 in Trofimov's Ph.D)
     
     real(d) function C_4i_4ii(a,b,k,l,apr,bpr,kpr,lpr)
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
-      
-!      real(d) :: vpqrs
-      
-!      external vpqrs
       
       C_4i_4ii=0._d
 
@@ -987,15 +1026,13 @@ contains
       
     end function C_4i_4ii
 
+!#######################################################################
+
 !!$ (4ii,4i)-Cabkl,a'b'k'l' (case 6 in Trofimov's Ph.D)
     
     real(d) function C_4ii_4i(a,b,k,l,apr,bpr,kpr,lpr)
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
-      
-!      real(d) :: vpqrs
-      
-!      external vpqrs
       
       C_4ii_4i=0._d
 
@@ -1042,16 +1079,13 @@ contains
       
     end function C_4ii_4i
 
+!#######################################################################
 
 !!$ (4i,4i)-Cabkl,a'b'k'l' (case 1 in Trofimov's Ph.D)
 
     real(d) function C_4i_4i(a,b,k,l,apr,bpr,kpr,lpr)
       
       integer, intent(in) ::a,b,k,l,apr,bpr,kpr,lpr 
-      
-!      real(d) :: vpqrs
-      
-!      external vpqrs
       
       C_4i_4i=0._d    
 
@@ -1099,6 +1133,7 @@ contains
       C_4i_4i=0.5_d*C_4i_4i
 
     end function C_4i_4i
-    
+
+!#######################################################################
 
   end module adc_ph

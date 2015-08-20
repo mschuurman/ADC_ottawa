@@ -1244,13 +1244,13 @@ contains
        end if
     end do
 
-    call get_sums(ncount,ener_short(1:ncount),sgmvc_short(1:ncount)/os2cs)
+    call get_sums(ncount,ener_short(1:ncount),sgmvc_short(1:ncount))
   
     iout=112
     open(iout,file='osc.dat',form='formatted',status='unknown')
     do i=1,ncount
        write(iout,'(2x,F20.15,2x,E21.15)') ener_short(i),sgmvc_short(i)
-    end do
+    enddo
     close(iout)
 
     deallocate(sgmvc_short,ener_short)

@@ -936,7 +936,7 @@
            osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
         enddo
 
-        call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
+        call get_sigma(nstates,excit(1:nstates),osc_strf(:))
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays

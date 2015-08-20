@@ -551,11 +551,9 @@ contains
           ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
 
           if(indj .eq. indjpr)&
-!               ar_offdiag_ij= ar_offdiag_ij+CA_ph_ph(inda,indapr)
                ar_offdiag_ij= ar_offdiag_ij+ca(inda-nocc,indapr-nocc)
 
           if(inda .eq. indapr)&
-!               ar_offdiag_ij= ar_offdiag_ij+CB_ph_ph(indj,indjpr)
                ar_offdiag_ij= ar_offdiag_ij+cb(indj,indjpr)
 
           ar_offdiag_ij= ar_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
@@ -1568,20 +1566,24 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
   enddo
 
 !-----------------------------------------------------------------------
-! Calculate the off-diagonal Hamiltonian matrix elements
+! Open the Hamiltonian file
 !-----------------------------------------------------------------------
   name="SCRATCH/hmlt.off"//chr
   unt=12
-  
-  count=0
-  rec_count=0
   
   write(ilog,*) "Writing the off-diagonal part of ADC matrix in file ", name
   OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
        FORM='UNFORMATTED')
 
-!!$ Filling the off-diagonal part of the ph-ph block
+!-----------------------------------------------------------------------
+! Initialise counters
+!-----------------------------------------------------------------------
+  count=0
+  rec_count=0
 
+!-----------------------------------------------------------------------
+! ph-ph block
+!-----------------------------------------------------------------------
      ndim1=kpq(1,0)
        
      do i=1,ndim1
@@ -1591,19 +1593,19 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
            arr_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
 
            if(indj .eq. indjpr)&
-!                arr_offdiag_ij=arr_offdiag_ij+CA_ph_ph(inda,indapr)
                 arr_offdiag_ij= arr_offdiag_ij+ca(inda-nocc,indapr-nocc)
 
            if(inda .eq. indapr)&
-!                arr_offdiag_ij=arr_offdiag_ij+CB_ph_ph(indj,indjpr)
                 arr_offdiag_ij= arr_offdiag_ij+cb(indj,indjpr)
 
            arr_offdiag_ij=arr_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
            call register1()
         end do
      end do
-   
-!!$ Filling the off-diagonal part of the ph-2p2h block 
+
+!-----------------------------------------------------------------------
+! ph-2p2h block 
+!-----------------------------------------------------------------------
 !!$ Coupling to the i=j,a=b configs
 
        dim_count=kpq(1,0)
@@ -1669,15 +1671,16 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
        do i=1,ndim1
           call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
           do j=dim_count+1,dim_count+kpq(5,0)
-             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
              arr_offdiag_ij=C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
              !Culling  small matrix elements
              call register1()
           end do
        end do
-    
-!!$ Filling the 2p2h-2p2h block
-    
+
+!-----------------------------------------------------------------------
+! 2p2h-2p2h block
+!-----------------------------------------------------------------------
 !!$ (1,1) block
     
     lim1i=kpq(1,0)+1

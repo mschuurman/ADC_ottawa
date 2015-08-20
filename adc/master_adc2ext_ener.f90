@@ -97,7 +97,7 @@
 ! Calculate and save the Hamiltonian matrix to file
 !-----------------------------------------------------------------------
     write(ilog,*) 'Saving complete INITIAL SPACE ADC2 matrix in file'
-    if (lcvs) then       
+    if (lcvs) then
        call write_fspace_adc2e_1_cvs(ndim,kpq(:,:),noffd,'i')
     else
        call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')

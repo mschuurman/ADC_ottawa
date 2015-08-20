@@ -90,7 +90,6 @@
             else
                goto 100
             endif
-            erange=erange/27.2113845d0
 
          else if (keyword(i).eq.'maxpol') then
             if (keyword(i+1).eq.'=') then
@@ -176,7 +175,7 @@
 !-----------------------------------------------------------------------
       npoints=0
 5     call rdinp(iosc)      
-      if (keyword(1).ne.'end-file') then
+      if (keyword(1).ne.'end-file'.and..not.lend) then
          read(keyword(1),*) ftmp
          if (ftmp.ge.erange(1).and.ftmp.le.erange(2)) npoints=npoints+1
          goto 5
@@ -191,7 +190,7 @@
 
       n=0
 10    call rdinp(iosc)      
-      if (keyword(1).ne.'end-file') then
+      if (keyword(1).ne.'end-file'.and..not.lend) then
          read(keyword(1),*) ftmp
          if (ftmp.ge.erange(1).and.ftmp.le.erange(2)) then
             n=n+1
@@ -482,11 +481,13 @@
 
       implicit none
 
-      integer                      :: min,max,iord,i,j,iout,ierr,ioutF
+      integer                      :: min,max,iord,i,j,iout,ierr
       real*8, dimension(0:ntrial)  :: a,b
       real*8, dimension(nord,nord) :: abvec
       real*8, dimension(nord)      :: diag,offdiag
       real*8, dimension(nord)      :: ecent
+      real*8, parameter            :: c_au=137.03599628d0
+      real*8, parameter            :: pi=3.14159265359d0
       character(len=120)           :: outfile
 
       write(6,'(/,2x,a)') 'Calculating the cross-sections...'
@@ -530,28 +531,13 @@
 ! approximation orders from min to max
 !-----------------------------------------------------------------------
         iout=20
-        ioutF=30
 
         do iord=min,max
 
            ! Open the output files
-           if (iord.lt.10) then
-              write(outfile,'(a12,i1)') 'xsec_order00',iord
-           else if (iord.lt.100) then
-              write(outfile,'(a11,i2)') 'xsec_order0',iord
-           else
-              write(outfile,'(a10,i3)') 'xsec_order',iord
-           endif
+           call wrfilename(outfile,iord)
            open(iout,file=outfile,form='formatted',status='unknown')
-           if (iord.lt.10) then
-              write(outfile,'(a9,i1)') 'F_order00',iord
-           else if (iord.lt.100) then
-              write(outfile,'(a8,i2)') 'F_order0',iord
-           else
-              write(outfile,'(a7,i3)') 'F_order',iord
-           endif
-           open(ioutF,file=outfile,form='formatted',status='unknown')
-
+           
            ! Construct the tridiagonal recursion coefficient matrix
            !
            ! (1) On-diagonal elements
@@ -590,33 +576,40 @@
           ! function F
           do i=1,iord-1
              ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
-             si_osc(i)=(si_f(i+1)+si_f(i))/(2.d0*(si_e(i+1)-si_e(i)))
-             write(iout,'(2(2x,F14.7))') ecent(i)*27.2113845d0,si_osc(i)
+             si_osc(i)=0.5d0*(si_f(i+1)+si_f(i))/(si_e(i+1)-si_e(i))
+             si_osc(i)=si_osc(i)*2*pi**2/c_au
+             write(iout,'(2(2x,F14.7))') ecent(i),si_osc(i)
           enddo
 
-          ! Calculate the Stieltjes distribution function, i.e., the
-          ! cumulative oscillator strength distribution
-          si_cosc1=0.0d0
-          do i=1,iord
-             do j=1,i
-                si_cosc1(i)=si_cosc1(i)+si_f(j)
-             enddo
-          enddo          
-          si_cosc2=0.0d0
-          do i=1,iord-1
-             si_cosc2(i)=(si_cosc1(i)+si_cosc1(i+1))/2.0d0
-             write(ioutF,'(2(2x,F14.7))') ecent(i)*27.2113845d0,si_cosc2(i)
-          enddo
-
-          ! Close the output files
+          ! Close the output file
           close(iout)
-          close (ioutF)
 
        enddo
 
       return
 
     end subroutine image_osc
+
+!#######################################################################
+
+    subroutine wrfilename(filename,n)
+
+      implicit none
+
+      integer            :: n
+      character(len=120) :: filename
+
+      if (n.lt.10) then
+         write(filename,'(a12,i1)') 'xsec_order00',n
+      else if (n.lt.100) then
+         write(filename,'(a11,i2)') 'xsec_order0',n
+      else
+         write(filename,'(a10,i3)') 'xsec_order',n
+      endif
+
+      return
+
+    end subroutine wrfilename
 
 !#######################################################################
 

@@ -112,7 +112,7 @@
 !-----------------------------------------------------------------------
 ! Output transition energies and oscillator strentghs to file
 !-----------------------------------------------------------------------
-        call get_sigma(ndim,ener(:),os2cs*osc_str(:))
+        call get_sigma(ndim,ener(:),osc_str(:))
 
 !-----------------------------------------------------------------------
 ! For checking purposes, calculate S(0)
