@@ -33,11 +33,6 @@ CCOPTS  = -g -O0
 #F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O1 -unroll0
 #CCOPTS  = -g -O0
 
-# The stieltjes imaging program cannot be compiled using ifort due
-# to incompatibilities with the mpfun libraries
-F90_SI	= gfortran
-F90OPTS_SI = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O2
-
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
@@ -273,7 +268,7 @@ adc: $(OBJECTS)
 	rm -f *.o *~ *.mod extdiag/external_diag.o 2>/dev/null
 
 stieltjes_ap: $(STIELTJES_AP)
-	$(F90_SI) $(F90OPTS_SI) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
+	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
 	rm -f *.o *~ *.mod
 
 mcspline: $(MCSPLINE)
