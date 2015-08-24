@@ -888,7 +888,7 @@
 
         do i=1,nstates
            excit(i)=enerf(i)-e_init
-        end do
+        enddo
 
         osc_strf=0.0d0
         do i=1,nstates
