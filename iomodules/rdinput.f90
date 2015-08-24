@@ -48,8 +48,19 @@
                endif
             else
                goto 100
+            endif            
+            ! Final space method, if present
+            if (keyword(i+1).eq.',') then
+               i=i+2
+               if (keyword(i).eq.'adc2'.or.keyword(i).eq.'adc2-s') then
+                  method_f=2
+               else if (keyword(i).eq.'adc2-x') then
+                  method_f=3
+               else
+                  goto 100
+               endif
             endif
-            
+
          else if (keyword(i).eq.'istate_symm') then
             if (keyword(i+1).eq.'=') then
                i=i+2
@@ -265,6 +276,12 @@
 ! accordingly
 !-----------------------------------------------------------------------
         if (energyonly) method=-method
+
+!-----------------------------------------------------------------------
+! Final space method.
+! Default: same as the initial space method.
+!-----------------------------------------------------------------------
+        if (method_f.eq.0) method_f=method
 
 !-----------------------------------------------------------------------
 ! Read the Davidson section(s)

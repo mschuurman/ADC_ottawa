@@ -111,12 +111,10 @@ ADCLIB= adclib/defaults.o \
 	adclib/photoionisation.o \
 	adclib/Propagate.o \
 
-ADC_MAIN=adc/master_adc1_prop.o \
-	adc/master_adc2_prop.o \
-	adc/master_adc2ext_prop.o \
-	adc/master_adc2_ener.o \
-	adc/master_adc2ext_ener.o \
-	adc/main_draft1.o
+ADC_MAIN=adc/adc1_spec.o \
+	adc/adc2_spec.o \
+	adc/adc2_ener.o \
+	adc/adc.o
 
 ADC =   $(INCLUDE) \
 	$(UTILITIES) \
@@ -186,12 +184,10 @@ ADC_OBJ+=accuracy.o \
 	photoionisation.o \
 	Propagate.o \
         guessvecs.o \
-	master_adc1_prop.o \
-	master_adc2_prop.o \
-	master_adc2ext_prop.o \
-	master_adc2_ener.o \
-	master_adc2ext_ener.o \
-	main_draft1.o
+	adc1_spec.o \
+	adc2_spec.o \
+	adc2_ener.o \
+	adc.o
 
 # Arbitrary precision Stieltjes imaging code
 STIELTJES_AP = mpfun/second.o \

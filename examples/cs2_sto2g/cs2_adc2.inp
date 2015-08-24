@@ -1,7 +1,7 @@
 ################################################
 # ADC section
 ################################################
-method = adc2-x
+method = adc2-s, adc2-s
 
 istate_symm = 1
 
@@ -35,9 +35,9 @@ end-diag_section
 lanczos_section
  type=block
  block_size = 10
- iter=50
+ iter=10
  guess=adc1
- mem=18000
+ mem=500
 end-lanczos_section
 
 end-input

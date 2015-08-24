@@ -576,8 +576,7 @@
           do i=1,iord-1
              ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
              si_osc(i)=0.5d0*(si_f(i+1)+si_f(i))/(si_e(i+1)-si_e(i))
-!             si_osc(i)=si_osc(i)*2*pi**2/c_au
-            write(iout,'(2(2x,F14.7))') ecent(i),si_osc(i)
+             write(iout,'(2(2x,F14.7))') ecent(i),si_osc(i)
           enddo
 
           ! Close the output file

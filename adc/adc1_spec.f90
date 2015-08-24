@@ -1,4 +1,4 @@
-  module adc1mod
+  module adc1specmod
 
     use channels
     
@@ -6,7 +6,7 @@
 
 !#######################################################################
 
-      subroutine master_adc1_prop()
+      subroutine adc1_spec()
 
         use constants
         use parameters
@@ -76,7 +76,7 @@
            dpl(:,:)=y_dipole(:,:)
         elseif (tranmom2 .eq. 'z') then
            dpl(:,:)=z_dipole(:,:)
-        end if
+        endif
 
 !-----------------------------------------------------------------------
 ! Set the irrep of the dipole operator
@@ -126,7 +126,7 @@
 
         return
 
-      end subroutine master_adc1_prop
+      end subroutine adc1_spec
 
 !#######################################################################
 
@@ -187,4 +187,4 @@
 
 !#######################################################################
       
-    end module adc1mod
+    end module adc1specmod

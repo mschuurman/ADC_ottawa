@@ -131,9 +131,9 @@ module parameters
   character(1)                         :: tranmom,tranmom2
   character(36)                        :: lancname,davname,davname_f
   integer                              :: hinit,nirrep,nirrep2,method,&
-                                          davstates,lancstates,numinista,&
-                                          norder,info,statenumber,denord,&
-                                          davstates_f
+                                          method_f,davstates,lancstates,&
+                                          numinista,norder,info,&
+                                          statenumber,denord,davstates_f
   integer, parameter                   :: nhcentre=40
   integer, dimension(0:nhcentre)       :: hcentre
   real(d)                              :: minc,mspacewi,mspacewf

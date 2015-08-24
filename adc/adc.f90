@@ -1,12 +1,12 @@
-program main
-  
+program adc
+
   use constants
   use parameters
   use read_param
   use guessvecs
-  use adc1mod
-  use adc2mod
-  use adc2extmod
+  use adc1specmod
+  use adc2specmod
+  use adc2enermod
   use rdinput
   use orbindx
   use defaults
@@ -103,19 +103,13 @@ program main
   select case(method)
 
   case(1) ! ADC(1), full diagonalisation
-     call master_adc1_prop()
+     call adc1_spec()
 
-  case(2) ! ADC(2)-s, Lanczos pseudo spectrum
-     call master_adc2_prop()
+  case(2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
+     call adc2_spec()
 
-  case(3) ! ADC(2)-x, Lanczos pseudo spectrum
-     call master_adc2ext_prop()
-
-  case(-2) ! ADC(2)-s, standard calculation
-     call master_adc2_ener()
-
-  case(-3) ! ADC(2)-x, standard calculation
-     call master_adc2ext_ener()
+  case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
+     call adc2_ener()
 
   end select
 
@@ -130,6 +124,5 @@ program main
 
   STOP
   
-end program main
-  
-  
+end program adc
+

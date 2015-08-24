@@ -1,4 +1,4 @@
-  module adc2extmod
+  module adc2specmod
 
     use channels
 
@@ -6,8 +6,8 @@
 
 !#######################################################################
 
-      subroutine master_adc2ext_prop()
-
+      subroutine adc2_spec()
+        
         use constants
         use parameters
         use lancmod
@@ -43,8 +43,8 @@
 ! configurations, otherwise the kpq array will be overwritten with the 
 ! ADC1 configurations.
 !-----------------------------------------------------------------------  
-        if (ladc1guess) call adc1_guessvecs
-  
+  if (ladc1guess) call adc1_guessvecs
+
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces
 !-----------------------------------------------------------------------
@@ -75,7 +75,7 @@
         if (statenumber.gt.0) then
            write(ilog,'(/,70a)') ('*',i=1,70)
            write(ilog,'(2x,a)') &
-                'Initial space ADC(2)-x excitation energies'
+                'Initial space ADC(2)-s excitation energies'
            write(ilog,'(70a)') ('*',i=1,70)
            
            itmp=1+nBas**2*4*nOcc**2
@@ -99,14 +99,10 @@
         endif
 
 !-----------------------------------------------------------------------
-! Determine the guess vectors for the band-Lanczos calculation
-!
-! Note that as part of this process, the transition moments between
-! the ISs and the initial state are calculated in lanczos_guess_vecs
-! and passed back in the travec array
+! Calculation of the final space states
 !-----------------------------------------------------------------------
         call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-             vec_init,mtmf,noffdf)
+           vec_init,mtmf,noffdf)
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments and oscillator strengths between 
@@ -128,7 +124,7 @@
 
         return
         
-      end subroutine master_adc2ext_prop
+      end subroutine adc2_spec
 
 !#######################################################################
 
@@ -149,9 +145,9 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-        if (.not.allocated(kpq)) allocate(kpq(7,0:nBas**2*4*nOcc**2))
-        if (.not.allocated(kpqd)) allocate(kpqd(7,0:nBas**2*4*nOcc**2))
-        if (.not.allocated(kpqf)) allocate(kpqf(7,0:nBas**2*4*nOcc**2))
+        allocate(kpq(7,0:nBas**2*4*nOcc**2))
+        allocate(kpqd(7,0:nBas**2*4*nOcc**2))
+        allocate(kpqf(7,0:nBas**2*4*nOcc**2))
         
 !-----------------------------------------------------------------------
 ! Determine the initial, final and total subspaces
@@ -248,14 +244,28 @@
         integer                                   :: ndim,ndims
         integer*8                                 :: noffd
         real(d)                                   :: time
+        character(len=120)                        :: msg
 
 !-----------------------------------------------------------------------
-! Write the initial space ADC(2)-x Hamiltonian to disk
+! Write the initial space ADC(2)-s Hamiltonian to disk
 !-----------------------------------------------------------------------
-        write(ilog,'(/,a)') 'Calculating the initial space ADC(2)-x &
-             Hamiltonian matrix'
+        if (method.eq.2) then
+           msg='Calculating the initial space ADC(2)-s Hamiltonian &
+                matrix'
+        else if (method.eq.3) then
+           msg='Calculating the initial space ADC(2)-x Hamiltonian &
+                matrix'
+        endif
 
-        call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i') 
+        write(ilog,'(/,a)') trim(msg)
+
+        if (method.eq.2) then
+           ! ADC(2)-s
+           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i') 
+        else if (method.eq.3) then
+           ! ADC(2)-x
+           call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
+        endif
 
         call cpu_time(time)
 
@@ -331,14 +341,14 @@
 
       subroutine final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
            vec_init,mtmf,noffdf)
-        
+
         use constants
         use parameters
         use fspace
         use lancmod
-        
+
         implicit none
-        
+
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,ndimsf
         integer*8                                 :: noffdf
@@ -361,7 +371,7 @@
 
       subroutine davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
            travec,vec_init,mtmf,noffdf)
-        
+
         use constants
         use parameters
         use fspace
@@ -386,14 +396,14 @@
         else
            allocate(travec(ndimf))
         endif
-           
+
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
 ! operator and the initial state vector
 !
 ! This will be used later in the calculation of transition dipole
 ! matrix elements between the initial and final states.
-!-----------------------------------------------------------------------        
+!-----------------------------------------------------------------------
         if (statenumber.eq.0) then
            call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
         else
@@ -408,13 +418,24 @@
         if (ladc1guess_f) call adc1_guessvecs_final
 
 !-----------------------------------------------------------------------
-! Write the final space ADC(2)-s Hamiltonian to disk
+! Write the final space ADC(2) Hamiltonian to disk
 !-----------------------------------------------------------------------
         write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-        if (lcvsfinal) then
-           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
-        else
-           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+        
+        if (method_f.eq.2) then
+           ! ADC(2)-s
+           if (lcvsfinal) then
+              call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
+        else if (method_f.eq.3) then
+           ! ADC(2)-x
+           if (lcvsfinal) then
+              call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
         endif
 
 !-----------------------------------------------------------------------
@@ -430,7 +451,7 @@
 
       subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
            vec_init,mtmf,noffdf)
-        
+
         use constants
         use parameters
         use guessvecs
@@ -445,6 +466,24 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+
+!-----------------------------------------------------------------------        
+! Acknowledging that we cannot use 2h2p unit vectors as initial
+! Lanczos vectors for ADC(2)-s, reduce lmain if it is greater than the 
+! number of final space 1h1p configurations
+!-----------------------------------------------------------------------        
+        if (method_f.eq.2.and.lmain.gt.ndimsf) then
+           write(ilog,'(/,2x,a,/)') 'Resetting the Lanczos block size &
+                s.t. it is not greater than the dimension of the 1h1p &
+                subspace'
+           ! Number of Lanczos vectors requested
+           n=lmain*ncycles
+           ! Reset lmain
+           lmain=ndimsf   
+           ! Change ncycles s.t. the number of Lanczos vectors 
+           ! generated does not change
+           ncycles=n/lmain
+        endif
 
 !-----------------------------------------------------------------------        
 ! If requested, determine the initial vectors Lanczos vectors by 
@@ -472,10 +511,21 @@
 ! Write the final space ADC(2)-s Hamiltonian matrix to file
 !-----------------------------------------------------------------------
         write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-        if (lcvsfinal) then
-           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
-        else
-           call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+        
+        if (method_f.eq.2) then
+           ! ADC(2)-s
+           if (lcvsfinal) then
+              call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
+        else if (method_f.eq.3) then
+           ! ADC(2)-x
+           if (lcvsfinal) then
+              call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
         endif
 
 !-----------------------------------------------------------------------
@@ -533,12 +583,14 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
         integer                                   :: ndimf,ndimsf,&
-                                                     i,iadc1,itmp
+                                                     iadc1,itmp,dim2,&
+                                                     i,k1,k2,upper
+        integer, dimension(:), allocatable        :: indx1,indx2
         real(d), dimension(:), allocatable        :: mtmf
-        real(d), dimension(ndimf)                 :: tmpvec
+        real(d), dimension(ndimsf)                :: tmpvec
         real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
-!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------        
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
 ! are the ISs spanning the final space
 !
@@ -550,18 +602,26 @@
 !-----------------------------------------------------------------------
 ! If requested, determine the block size based on the transition
 ! matrix elements between the initial state and the intermediate
-! states
+! states (and possibly the ADC(1) eigenvectors)
 !-----------------------------------------------------------------------
         if (ldynblock) call getblocksize(mtmf,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of mtmf, determine which 1h1p
-! AND 2h2p unit vectors will form the initial Lanczos vectors
+! From the values of the elements of mtmf (and/or the ADC(1)
+! eigenvectors), determine which vectors will form the initial Lanczos
+! vectors
 !
-! N.B. the corresponding indices are written to the stvc_lbl array
+! Note that we can only have lancguess=3 or 4 for ADC(2)-s
 !-----------------------------------------------------------------------
         if (lancguess.eq.1) then
-           call fill_stvc(ndimf,mtmf(1:ndimf))
+           if (method.eq.2) then
+              upper=ndimsf
+           else if (method.eq.3) then
+              upper=ndimf
+           endif
+           tmpvec=mtmf(1:upper)
+           call fill_stvc(upper,tmpvec(1:upper))
+
         else if (lancguess.eq.2) then
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
@@ -570,16 +630,97 @@
            read(iadc1) itmp,adc1vec           
            close(iadc1)
            ! Contract the ADC(1) eigenvectors with the 1h1p part of
-           ! mtmf
-           open(iadc1,file='adc1_f.dat',form='formatted',&
-                status='unknown')
+           ! the F-vector
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
-              write(iadc1,'(F8.3,3x,F14.7)') adc1en_f(i)*eh2ev,&
-                   tmpvec(i)
            enddo
-           close(iadc1)
            call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+
+        else if (lancguess.eq.3) then
+           ! 1h1p ISs
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,mtmf(1:ndimsf)**2,indx1(:))
+
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,mtmf(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
+              ! resulting vector has the greates TDM with the initial
+              ! state)
+              if (mtmf(k1).gt.0.and.mtmf(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        else if (lancguess.eq.4) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),mtmf(1:ndimsf))
+           enddo
+           
+           ! ADC(1) eigenvectors
+           allocate(indx1(ndimsf))
+           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+           
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,mtmf(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
+              ! the resulting vector has the greates TDM with the
+              ! initial state)
+              if (tmpvec(k1).gt.0.and.mtmf(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the ADC(1) eigenvector
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
         endif
 
         return
@@ -603,35 +744,45 @@
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: i,ndim,ndimf,&
                                                      ndimsf,iadc1,&
-                                                     itmp
-        integer, dimension(:), allocatable        :: indx_tra
+                                                     itmp,k1,k2,&
+                                                     dim2,upper
+        integer, dimension(:), allocatable        :: indx_tra,indx1,&
+                                                     indx2
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
-        real(d), dimension(ndimf)                 :: tmpvec
+        real(d), dimension(ndimsf)                :: tmpvec
         real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
 ! operator and the initial state vector
-!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------        
         call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
              travec)
 
 !-----------------------------------------------------------------------
 ! If requested, determine the block size based on the transition
 ! matrix elements between the initial state and the intermediate
-! states
+! states (and possibly the ADC(1) eigenvectors)
 !-----------------------------------------------------------------------
         if (ldynblock) call getblocksize(travec,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
-! From the values of the elements of travec, determine which 1h1p
-! AND 2h2p unit vectors will form the initial Lanczos vectors
+! From the values of the elements of travec (and/or the ADC(1)
+! eigenvectors), determine which vectors will form the initial Lanczos
+! vectors
 !
-! N.B. the corresponding indices are written to the stvc_lbl array
+! Note that we can only have lancguess=3 or 4 for ADC(2)-s
 !-----------------------------------------------------------------------
         if (lancguess.eq.1) then
-           call fill_stvc(ndimf,travec(1:ndimf))
+           if (method_f.eq.2) then
+              upper=ndimsf
+           else if (method_f.eq.3) then
+              upper=ndimf
+           endif
+           tmpvec=travec(1:upper)
+           call fill_stvc(upper,travec(1:upper))
+
         else if (lancguess.eq.2) then
            ! Read the ADC(1) eigenvectors from file
            call freeunit(iadc1)
@@ -639,12 +790,98 @@
                 status='old')
            read(iadc1) itmp,adc1vec           
            close(iadc1)
-           ! Contract the ADC(1) eigenvectors with the 1h1p part of
-           ! travec
+           ! Contract the ADC(1) eigenvectors with the product of the 
+           ! 1h1p part of travec
            do i=1,ndimsf
               tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
            enddo
-           call fill_stvc(ndimsf,tmpvec(1:ndimsf))
+           call fill_stvc(ndimsf,travec(1:ndimsf))
+
+        else if (lancguess.eq.3) then
+           ! 1h1p ISs
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,travec(1:ndimsf)**2,indx1(:))
+
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
+              ! resulting vector has the greates TDM with the initial
+              ! state)
+              if (travec(k1).gt.0.and.travec(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        else if (lancguess.eq.4) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec(1:ndimsf))
+           enddo
+           
+           ! ADC(1) eigenvectors
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+           
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec(ndimsf+1:ndimf)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
+              ! the resulting vector has the greates TDM with the
+              ! initial state)
+              if (tmpvec(k1).gt.0.and.travec(k2).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the ADC(1) eigenvector
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
         endif
 
         return
@@ -706,6 +943,116 @@
 
 !#######################################################################
 
+      subroutine tdm_gs2lanc(ndimf,ndimsf,mtmf,e_init)
+
+        use constants
+        use parameters
+        use fspace
+
+        implicit none
+
+        integer                            :: ndimf,ndimsf,nstates,i
+        real(d)                            :: e_init
+        real(d), dimension(ndimf)          :: mtmf
+        real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
+                                              osc_strf
+
+!-----------------------------------------------------------------------
+! Calculate the transition moments between the ground state and the
+! Lanczos states
+!
+! N.B. nstates is determined in get_tranmom_1
+!-----------------------------------------------------------------------
+        allocate(enerf(lancstates),tmvecf(lancstates))
+        tmvecf=0.0d0
+        enerf=0.0d0
+
+        call get_tranmom_1(ndimf,lancstates,lancname,mtmf(:),nstates,&
+             enerf(:),tmvecf(:),ndimsf)
+
+!-----------------------------------------------------------------------
+! Calculate and output the oscillator strengths
+!-----------------------------------------------------------------------
+        allocate(osc_strf(nstates),excit(nstates))
+
+        do i=1,nstates
+           excit(i)=enerf(i)-e_init
+        end do
+
+        osc_strf=0.0d0
+        do i=1,nstates
+           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
+        enddo
+
+        call get_sigma(nstates,excit(1:nstates),osc_strf(:))
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(enerf,tmvecf,osc_strf,excit)
+        
+        return
+
+      end subroutine tdm_gs2lanc
+
+!#######################################################################
+
+      subroutine tdm_ex2lanc(ndimf,ndimsf,travec,e_init)
+
+        use constants
+        use parameters
+        use fspace
+        use fspace2
+        
+        implicit none
+
+        integer                            :: ndimf,ndimsf,nstates,&
+                                              i
+        real(d), dimension(ndimf)          :: travec
+        real(d)                            :: e_init
+        real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
+                                              osc_strf
+
+!-----------------------------------------------------------------------
+! Calculate the transition moments between the initial state and the
+! Lanczos states
+!
+! N.B. nstates is determined in get_tranmom_3
+!-----------------------------------------------------------------------
+        allocate(enerf(lancstates),tmvecf(lancstates))
+        tmvecf=0.0d0
+        enerf=0.0d0
+
+        call get_tranmom_3(ndimf,lancstates,lancname,travec(:),&
+             nstates,enerf(:),tmvecf(:),ndimsf)
+
+!-----------------------------------------------------------------------
+! Calculate and output the oscillator strengths
+!-----------------------------------------------------------------------
+        allocate(osc_strf(nstates),excit(nstates))
+
+        do i=1,nstates
+           excit(i)=enerf(i)-e_init           
+        enddo
+
+        osc_strf=0.0d0
+        do i=1,nstates
+           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
+        enddo
+
+        call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(enerf,tmvecf,osc_strf,excit)
+
+        return
+
+      end subroutine tdm_ex2lanc
+
+!#######################################################################
+
       subroutine tdm_davstates_final(ndimf,ndimsf,travec,e_init,mtmf,&
            kpqf)
         
@@ -754,10 +1101,10 @@
        write(ilog,'(/,70a)') ('*',i=1,70)
        if (lcvsfinal) then
           write(ilog,'(2x,a)') &
-               'Final space CVS-ADC(2)-x excitation energies'
+               'Final space CVS-ADC(2)-s excitation energies'
        else
           write(ilog,'(2x,a)') &
-               'Final space ADC(2)-x excitation energies'
+               'Final space ADC(2)-s excitation energies'
        endif
        write(ilog,'(70a)') ('*',i=1,70)
        
@@ -767,20 +1114,20 @@
             osc_str(1:davstates_f),kpqf,itmp,'f')
 
        deallocate(rvec)
-       
+
 !-----------------------------------------------------------------------
-! Output the excitation energies and oscillator strengths for plotting
-! purposes
-!-----------------------------------------------------------------------
+! Output the excitation energies (relative to the initial state) and 
+! oscillator strengths for plotting purposes
+!-----------------------------------------------------------------------  
        ! Data file
        call freeunit(iout)
        open(iout,file='osc.dat',form='formatted',status='unknown')
 
        do i=1,davstates_f
-          if (abs(osc_str(i)).lt.0.00001d0) cycle
+          if (abs(osc_str(i)).lt.tol) cycle
           write(iout,'(2(F11.5,2x))') (ener(i)-e_init)*eh2ev,osc_str(i)
        enddo
-       
+
        close(iout)
 
        ! gnuplot file
@@ -847,120 +1194,10 @@
        write(iout,'(a)') 'pause -1'
 
        close(iout)
-       
+
        return
 
      end subroutine tdm_davstates_final
-
-!#######################################################################
-
-      subroutine tdm_gs2lanc(ndimf,ndimsf,mtmf,e_init)
-
-        use constants
-        use parameters
-        use fspace
-
-        implicit none
-
-        integer                            :: ndimf,ndimsf,nstates,i
-        real(d)                            :: e_init
-        real(d), dimension(ndimf)          :: mtmf
-        real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
-                                              osc_strf
-
-!-----------------------------------------------------------------------
-! Calculate the transition moments between the ground state and the
-! Lanczos states
-!
-! N.B. nstates is determined in get_tranmom_1
-!-----------------------------------------------------------------------
-        allocate(enerf(lancstates),tmvecf(lancstates))
-        tmvecf=0.0d0
-        enerf=0.0d0
-
-        call get_tranmom_1(ndimf,lancstates,lancname,mtmf(:),nstates,&
-             enerf(:),tmvecf(:),ndimsf)
-
-!-----------------------------------------------------------------------
-! Calculate and output the oscillator strengths
-!-----------------------------------------------------------------------
-        allocate(osc_strf(nstates),excit(nstates))
-
-        do i=1,nstates
-           excit(i)=enerf(i)-e_init
-        enddo
-
-        osc_strf=0.0d0
-        do i=1,nstates
-           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
-        enddo
-
-        call get_sigma(nstates,excit(1:nstates),osc_strf(:))
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-        deallocate(enerf,tmvecf,osc_strf,excit)
-        
-        return
-
-      end subroutine tdm_gs2lanc
-
-!#######################################################################
-
-      subroutine tdm_ex2lanc(ndimf,ndimsf,travec,e_init)
-
-        use constants
-        use parameters
-        use fspace
-        use fspace2
-        
-        implicit none
-
-        integer                            :: ndimf,ndimsf,nstates,&
-                                              i
-        real(d), dimension(ndimf)          :: travec
-        real(d)                            :: e_init
-        real(d), dimension(:), allocatable :: tmvecf,enerf,excit,&
-                                              osc_strf
-
-!-----------------------------------------------------------------------
-! Calculate the transition moments between the initial state and the
-! Lanczos states
-!
-! N.B. nstates is determined in get_tranmom_3
-!-----------------------------------------------------------------------
-        allocate(enerf(lancstates),tmvecf(lancstates))
-        tmvecf=0.0d0
-        enerf=0.0d0
-
-        call get_tranmom_3(ndimf,lancstates,lancname,travec(:),&
-             nstates,enerf(:),tmvecf(:),ndimsf)
-
-!-----------------------------------------------------------------------
-! Calculate and output the oscillator strengths
-!-----------------------------------------------------------------------
-        allocate(osc_strf(nstates),excit(nstates))
-
-        do i=1,nstates
-           excit(i)=enerf(i)-e_init
-        end do
-
-        osc_strf=0.0d0
-        do i=1,nstates
-           osc_strf(i)=(2.0d0/3.0d0)*excit(i)*tmvecf(i)**2
-        enddo
-
-        call get_sigma(nstates,excit(1:nstates),os2cs*osc_strf(:))
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-        deallocate(enerf,tmvecf,osc_strf,excit)
-
-        return
-
-      end subroutine tdm_ex2lanc
 
 !#######################################################################
 
@@ -1021,4 +1258,4 @@
 
 !#######################################################################
 
-    end module adc2extmod
+    end module adc2specmod

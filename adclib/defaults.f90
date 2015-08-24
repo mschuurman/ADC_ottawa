@@ -16,6 +16,7 @@
 ! General ADC parameters
 !-----------------------------------------------------------------------
       method=0
+      method_f=0
       denord=2
       nirrep=0
       nirrep2=0
