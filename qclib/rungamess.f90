@@ -645,6 +645,8 @@
          num=6.0d0
       else if (lbl.eq.'n') then
          num=7.0d0
+      else if (lbl.eq.'o') then
+         num=8.0d0
       else if (lbl.eq.'s') then
          num=16.0d0
       else
