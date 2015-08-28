@@ -237,6 +237,27 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'mem') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               ! Maximum memory value
+               read(keyword(i),*) maxmem
+               ! Units
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  if (keyword(i).eq.'mb') then
+                     ! Do nothing: this is the default
+                  else if (keyword(i).eq.'gb') then
+                     maxmem=maxmem*1024.0d0
+                  else
+                     errmsg='Unknown unit: '//trim(keyword(i))
+                     call error_control
+                  endif
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -578,11 +599,12 @@
             else
                goto 100
             endif
-            
+         
+         ! Deprecated: included for backwards compatibility
          else if (keyword(i).eq.'mem') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) davmem
+               read(keyword(i),*) maxmem
             else
                goto 100
             endif
@@ -738,10 +760,11 @@
                goto 100
             endif
             
+         ! Deprecated: included for backwards compatibility
          else if (keyword(i).eq.'mem') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) davmem_f
+               read(keyword(i),*) maxmem
             else
                goto 100
             endif 
@@ -877,10 +900,11 @@
             if (method.eq.3.and.lancguess.eq.3) lancguess=1
             if (method.eq.3.and.lancguess.eq.4) lancguess=2
 
+         ! Deprecated: included for backwards compatibility
          else if (keyword(i).eq.'mem') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) lancmem
+               read(keyword(i),*) maxmem
             else
                goto 100
             endif

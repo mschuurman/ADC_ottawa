@@ -14,7 +14,7 @@
     real(d), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
                                             res,reigvec
     real(d), dimension(:), allocatable   :: reigval,norm
-    real(d)                              :: maxmem,tol
+    real(d)                              :: tol
     character(len=36)                    :: vecfile
     logical                              :: lincore,lrdadc1
 
@@ -129,7 +129,6 @@
       if (hamflag.eq.'i') then
          blocksize=dmain
          nstates=davstates
-         maxmem=davmem
          niter=maxiter
          ipre=precon
          tol=davtol
@@ -138,7 +137,6 @@
       else if (hamflag.eq.'f') then
          blocksize=dmain_f
          nstates=davstates_f
-         maxmem=davmem_f
          niter=maxiter_f
          ipre=precon_f
          tol=davtol_f
@@ -322,6 +320,7 @@
     subroutine isincore(matdim,noffd)
 
       use constants
+      use parameters, only: maxmem
 
       implicit none
 

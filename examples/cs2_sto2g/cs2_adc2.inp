@@ -7,11 +7,13 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state = 0
+initial_state = 1
 
 dipole_component = x
 
 cvs
+
+mem=500
 
 diag_section
  preconditioner = olsen
@@ -37,7 +39,7 @@ lanczos_section
  block_size = 10
  iter=10
  guess=adc1
- mem=500
+# mem=500
 end-lanczos_section
 
 end-input

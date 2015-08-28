@@ -1073,7 +1073,6 @@
  function isincore(matdim,noffd)
 
    use constants
-   use parameters, only: davmem
 
    implicit none
 

@@ -27,11 +27,11 @@
       motype='incore'
       dlim=0.0d0
       ltdm_gs2i=.true.
-      dmatmem=250.0d0
       lifrzcore=.false.
       lffrzcore=.false. 
       ldiagfinal=.false.
       hinit=1
+      maxmem=250.0d0
 
 !-----------------------------------------------------------------------
 ! CVS-ADC parameters
@@ -57,7 +57,6 @@
       davtol=1d-7
       ladc1guess=.false.
       davname='SCRATCH/davstates'
-      davmem=250.0d0
       precon=1
       maxsubdim=-1
       
@@ -68,7 +67,6 @@
       davtol_f=1d-7
       ladc1guess_f=.false.
       davname_f='SCRATCH/davstates_final'
-      davmem_f=250.0d0
       precon_f=1
       maxsubdim_f=-1
       
@@ -83,7 +81,6 @@
       lmain=0
       ncycles=0
       lancguess=1
-      lancmem=250.0d0
       lancname='SCRATCH/lancstates'      
       lanctype=1
       ldynblock=.false.

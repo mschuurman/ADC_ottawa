@@ -282,13 +282,13 @@ module block_lanczos
 ! Determine the buffer size (in terms of the no. Lanczos vectors that
 ! we can hold in memory)
 !
-! Note that we only use lancmem/3 here and not lancmem as in the
+! Note that we only use maxmem/3 here and not maxmem because in the
 ! calculation of the Ritz vectors later on we are required to hold
 ! another two sets of vectors in core
 !-----------------------------------------------------------------------
       ! Calculate the buffer size based on the amount of memory
       ! available
-      buffsize=int(floor(((lancmem/3.0d0)*1024.0d0**2)/(8.0d0*matdim)))
+      buffsize=int(floor(((maxmem/3.0d0)*1024.0d0**2)/(8.0d0*matdim)))
       reclength=8*matdim*buffsize
       
       ! Make sure that the record length corresponding to the
@@ -339,7 +339,7 @@ module block_lanczos
 
       ! Set the logical flag lincore to true if we can fit the
       ! Hamiltonian matrix in memory
-      if (mem.le.lancmem) then
+      if (mem.le.maxmem) then
          lincore=.true.
          write(ilog,'(/,2x,a)') 'Matrix-vector multiplication &
               will proceed in-core'
@@ -1288,7 +1288,7 @@ module block_lanczos
 
       mem=2*8.0d0*matdim*nvec/1024.0d0**2
 
-      if (mem.le.lancmem) then
+      if (mem.le.maxmem) then
          write(ilog,'(2x,a,/)') 'Calculation will proceed in-core'
          call ritzvecs_incore(lanunit,eigvec,eigval)
       else

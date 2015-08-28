@@ -86,9 +86,6 @@ module parameters
 !!$logical lscf - flag used to determine whether to perform an SCF calculation
 !!                to ensure that the MOs as read from the GAMESS output are converged
 !!
-!!$real*8 dmatmem - threshold for memory (in MB) to switch to storing on disk the pre-calcalculated
-!!                  4-index terms required to evaluate the D-matrix
-!!
 !!$logical ltdm_gs2i - flag used to determine whether to calculate the
 !!                     TDM between the ground state and the initial
 !!                     space states
@@ -126,6 +123,9 @@ module parameters
 !!
 !!                    lanctype=1 <-> block Lanczos
 !!                             2 <-> band Lanczos
+!!
+!!$real maxmem - memory threshold (in Mb) before disk-based algorithms
+!!               are used
 
   logical                              :: debug
   character(1)                         :: tranmom,tranmom2
@@ -156,11 +156,11 @@ module parameters
   logical                              :: ld2
   logical                              :: lscf
   integer                              :: ivpqrs
-  real(d)                              :: dmatmem
   real(d), dimension(:,:), allocatable :: density
   logical                              :: ltdm_gs2i
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldiagfinal
+  real(d)                              :: maxmem
   
 !!$************************************************
 !!$**********Physical Constants********************
@@ -185,7 +185,6 @@ module parameters
   integer :: lancguess
   integer :: lanctype
   integer :: orthotype
-  real(d) :: lancmem
   real(d) :: tdtol
   logical :: ldynblock
 
@@ -196,7 +195,7 @@ module parameters
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
                  ndavcalls,eigentype,solver,precon,&
                  precon_f,maxsubdim,maxsubdim_f
-  real(d)     :: davtarg,davmem,davmem_f
+  real(d)     :: davtarg
   character*1 :: hamflag
   logical     :: lextdiag
   

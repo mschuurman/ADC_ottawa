@@ -574,7 +574,7 @@
           ! Calculate and output the cross-sections using numerical
           ! differentiation of the Stieltjes distribution function F
           do i=1,iord-1
-             ecent(i)=(si_e(i)+si_e(i+1))/2.0d0
+             ecent(i)=0.5d0*(si_e(i)+si_e(i+1))
              si_osc(i)=0.5d0*(si_f(i+1)+si_f(i))/(si_e(i+1)-si_e(i))
              write(iout,'(2(2x,F14.7))') ecent(i),si_osc(i)
           enddo

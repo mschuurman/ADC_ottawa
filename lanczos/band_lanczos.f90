@@ -288,7 +288,7 @@
 
       ! Set the logical flag lincore to true if we can fit the
       ! Hamiltonian matrix in memory
-      if (mem.le.lancmem) then
+      if (mem.le.maxmem) then
          lincore=.true.
       else
          lincore=.false.
@@ -868,7 +868,7 @@
 
       mem=16.0d0*matdim*dim/1024.0d0**2
 
-      if (mem.le.lancmem) then
+      if (mem.le.maxmem) then
          write(ilog,'(2x,a,/)') 'Calculation will proceed in-core'
          call ritzvecs_incore(lanunit,umat,eigval,dim,matdim)
       else
@@ -981,7 +981,7 @@
       real*8, dimension(dim)               :: eigval
       real*8, dimension(matdim)            :: lvec
       real*8, dimension(:,:), allocatable  :: ritzvec
-      real*8                               :: maxmem
+      real*8                               :: mem
 
       
       integer*8                    :: il,ik
@@ -991,9 +991,9 @@
 ! Determine the maximum number of Ritz vectors that we can compute
 ! per sweep
 !-----------------------------------------------------------------------
-      maxmem=250.0d0
+      mem=250.0d0
 
-      blcksize=int(floor((maxmem*1024.0d0**2)/(8.0d0*matdim)))
+      blcksize=int(floor((mem*1024.0d0**2)/(8.0d0*matdim)))
 
       if (blcksize.gt.dim) blcksize=dim
 

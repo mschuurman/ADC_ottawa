@@ -1158,11 +1158,11 @@ contains
 !-----------------------------------------------------------------------
 ! Determine the ammount (in MB) of memory required to hold the 
 ! intermediate four-index terms.
-! If we are above the threshold dmatmem, then we will write these
+! If we are above the threshold maxmem, then we will write these
 ! terms to disk
 !-----------------------------------------------------------------------
     mem4indx=4.0d0*8.0d0*(nvirt**2)*(nocc**2)/(1024.0d0**2)
-    if (mem4indx.le.dmatmem) then
+    if (mem4indx.le.maxmem) then
        lincore=.true.
        allocate(D261(nvirt,nocc,nocc,nvirt))
        allocate(D262(nvirt,nocc,nocc,nvirt))
