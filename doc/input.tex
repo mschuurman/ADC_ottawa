@@ -172,32 +172,21 @@ Possible keywords are:
 \vspace{0.2cm}
 \code{ iter =} & \code{n} & where \code{n} is number of iterations to be taken \\
 \vspace{0.2cm}
-$^{\dagger}$\code{type =} & \code{block} & requests the use of the block-Lanczos algorithm (default) \\
-              & \code{band} & requests the use of the block-Lanczos algorithm \\
-\vspace{0.2cm}
 \code{ mem =} & \code{M} & where M is the maximum amount of memory (in Mb) to be used (default 250 Mb) \\
 \vspace{0.2cm}
-$^{\ddagger}$\code{guess =} & \code{adc1} & form the initial Lanczos vectors from the most important ADC(1) eigenvectors \\
+$^{\dagger}$\code{guess =} & \code{adc1} & form the initial Lanczos vectors from the most important ADC(1) eigenvectors \\
                & \code{adc1\_mix} & form the initial Lanczos vectors from linear combinations of the most important ADC(1) eigenvectors and 2h2p intermediate states\\
                & \code{is\_mix} & form the initial Lanczos vectors from linear combinations of the most important 1h1p and 2h2p intermediate states \\
 \vspace{0.2cm}
 \code{ ortho =} & \code{pro} & use the partial reorthogonalisation algorithm \\
                 & \code{mpro} & use the modified partial reorthogonalisation algorithm \\
-                & \code{comp} & use the component-wise reorthogonalisation algorithm \\
 \end{tabular}
 \end{center}
 \end{table}
 
 \vspace{0.2cm}
 \noindent
-$^{\dagger}$ Note that the block-Lanczos algorithm may be
-significantly faster than the band-Lanczos algorithm (particularly if
-the code was compiled compiled using the MKL libraries), but requires
-around twice the amount of memory.
-
-\vspace{0.4cm}
-\noindent
-$^{\ddagger}$ This is only relevant for ADC(2)-s calculations, and as
+$^{\dagger}$ This is only relevant for ADC(2)-s calculations, and as
 a default unit vectors corresponding to the most important 1h1p
 intermediate states are taken as the initial vectors. For ADC(2)-x
 calculations, the initial vectors are constrained to correspond to

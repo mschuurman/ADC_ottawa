@@ -87,12 +87,10 @@ ifeq ($(EXTDIAG),true)
 	EIGEN=extdiag/external_diag.o \
 	extdiag/davmod.o
 else
-	EIGEN=davidson/block_davidson.o \
-	davidson/davmod.o
+	EIGEN=eigen/block_davidson.o \
+	eigen/davmod.o
 endif
-EIGEN+=lanczos/band_lanczos.o \
-	lanczos/block_lanczos.o \
-	lanczos/lancmod.o
+EIGEN+=eigen/block_lanczos.o
 
 ADCLIB= adclib/defaults.o \
 	adclib/orbindx.o \
@@ -178,9 +176,7 @@ ADC_OBJ+=accuracy.o \
 	fspacetrial.o \
 	fspace2.o \
 	davmod.o \
-	band_lanczos.o \
 	block_lanczos.o \
-	lancmod.o \
 	photoionisation.o \
 	Propagate.o \
         guessvecs.o \

@@ -35,7 +35,6 @@ end-diag_section
 #end-diag_final_section
 
 lanczos_section
- type=block
  block_size = 10
  iter=10
  guess=adc1

@@ -118,12 +118,6 @@ module parameters
 !!                                     eigenvectors and 2h2p unit
 !!                                     vectors for ADC(2)-s
 !!
-!!$integer lanctype - integer value used to determine the Lanczos algorithm to be
-!!                    used:
-!!
-!!                    lanctype=1 <-> block Lanczos
-!!                             2 <-> band Lanczos
-!!
 !!$real maxmem - memory threshold (in Mb) before disk-based algorithms
 !!               are used
 
@@ -183,7 +177,6 @@ module parameters
 !!$************************************************  
   integer :: ncycles,lmain,maxblock
   integer :: lancguess
-  integer :: lanctype
   integer :: orthotype
   real(d) :: tdtol
   logical :: ldynblock

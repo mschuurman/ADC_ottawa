@@ -10,7 +10,6 @@
       use parameters
       use select_fano
       use davmod
-      use lancmod
       use fspace
       use get_moment
       use misc

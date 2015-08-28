@@ -10,7 +10,6 @@
         
         use constants
         use parameters
-        use lancmod
         use fspace
         use misc
         use guessvecs
@@ -345,7 +344,6 @@
         use constants
         use parameters
         use fspace
-        use lancmod
 
         implicit none
 
@@ -456,8 +454,8 @@
         use parameters
         use guessvecs
         use fspace
-        use lancmod
-
+        use block_lanczos
+        
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
@@ -515,14 +513,14 @@
         if (method_f.eq.2) then
            ! ADC(2)-s
            if (lcvsfinal) then
-              call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+              call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
            else
               call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
            endif
         else if (method_f.eq.3) then
            ! ADC(2)-x
            if (lcvsfinal) then
-              call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+              call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
            else
               call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
            endif
@@ -531,7 +529,7 @@
 !-----------------------------------------------------------------------
 ! Perform the band-Lanczos calculation
 !-----------------------------------------------------------------------
-        call master_lancdiag(ndimf,noffdf,'c')
+        call lancdiag_block(ndimf,noffdf,'c')
 
         return
 

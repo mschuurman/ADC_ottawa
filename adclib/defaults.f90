@@ -82,7 +82,6 @@
       ncycles=0
       lancguess=1
       lancname='SCRATCH/lancstates'      
-      lanctype=1
       ldynblock=.false.
       tdtol=0.0005d0
       orthotype=0
