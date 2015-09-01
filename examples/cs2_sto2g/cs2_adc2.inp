@@ -7,7 +7,7 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state = 1
+initial_state = 0
 
 dipole_component = x
 
@@ -35,8 +35,8 @@ end-diag_section
 #end-diag_final_section
 
 lanczos_section
- block_size = 10
- iter=10
+ block_size = 20
+ iter=50
  guess=adc1
 # mem=500
 end-lanczos_section

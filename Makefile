@@ -260,7 +260,7 @@ adc: $(OBJECTS)
 	rm -f *.o *~ *.mod extdiag/external_diag.o 2>/dev/null
 
 stieltjes_ap: $(STIELTJES_AP)
-	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) -o stieltjes_ap.x
+	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) $(LIBS) -o stieltjes_ap.x
 	rm -f *.o *~ *.mod
 
 mcspline: $(MCSPLINE)

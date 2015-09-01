@@ -1,4 +1,4 @@
-  program stieltjes_ap
+ program stieltjes_ap
 
     use simod
 
@@ -42,7 +42,8 @@
       aosc=''
       erange=-999.9d0
       ntrial=100
-
+      method=1
+      
 !-----------------------------------------------------------------------
 ! Determine the input file name
 !-----------------------------------------------------------------------
@@ -99,10 +100,27 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'stieltjes') then
+                  method=1
+               else if (keyword(i).eq.'derivative') then
+                  method=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  write(6,'(/,a,/)') trim(errmsg)
+                  STOP
+               endif
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
             write(6,'(/,a,/)') trim(errmsg)
+            STOP
          endif
 
          ! If there are more keywords to be read on the current line,
@@ -192,7 +210,7 @@
 10    call rdinp(iosc)      
       if (keyword(1).ne.'end-file'.and..not.lend) then
          read(keyword(1),*) ftmp
-         if (ftmp.ge.erange(1).and.ftmp.le.erange(2)) then
+         if (ftmp.ge.erange(1).and.ftmp.le.erange(2)) then            
             n=n+1
             ener(n)=ftmp
             read(keyword(2),*) osc(n)
@@ -481,44 +499,26 @@
 
       implicit none
 
-      integer                      :: min,max,iord,i,j,iout,ierr
-      real*8, dimension(0:ntrial)  :: a,b
-      real*8, dimension(nord,nord) :: abvec
-      real*8, dimension(nord)      :: diag,offdiag
-      real*8, dimension(nord)      :: ecent
-      real*8, parameter            :: c_au=137.03599628d0
-      real*8, parameter            :: pi=3.14159265359d0
-      character(len=120)           :: outfile
+      integer                     :: min,max,iord,iout,n
+      real*8, dimension(0:ntrial) :: a,b
+      real*8, dimension(ntrial)   :: x,w
+      character(len=120)          :: outfile
 
       write(6,'(/,2x,a)') 'Calculating the cross-sections...'
 
 !-----------------------------------------------------------------------
-! Allocate arrays
+! TESTING: model ionic system
 !-----------------------------------------------------------------------
-      ! Gaussian quadrature points (Stieltjes energies)
-      allocate(si_e(ntrial))
-
-      ! Gaussian quadrature weights
-      allocate(si_f(ntrial))
-
-      ! Stieltjes oscillator strengths
-      allocate(si_osc(ntrial))
-
-      ! Stieltjes cumulative oscillator strengths:
-      !  si_cosc1: histogram (see Eq. 3.5.1 of the Muller-Plathe and
-      !            Diercksen paper)
-      !  si_cosc2: LHS-RHS average at the midpoints (see Eq. 3.5.2 of
-      !            the Muller-Plathe and Diercksen paper)
-      allocate(si_cosc1(ntrial))
-      allocate(si_cosc2(ntrial))
+!      b(0)=1.0d0
+!      do n=1,nord
+!         a(n)=0.5d0*(4.0d0*n**2-3)/(4.0d0*n**2-1)
+!         b(n)=0.25d0*(2.0d0*n+3)*(2.0d0*n-1)/(4.0d0*n+2)**2
+!      enddo
 
 !-----------------------------------------------------------------------
 ! Set the minimum and maximum orders
 !-----------------------------------------------------------------------
       if (nord.lt.5) then
-         write(6,'(/,2x,a)') 'Only a very low-order approximation &
-              is available'
-         write(6,'(2x,a,1x,i2)')'Maximum order = ',nord
          min=nord
          max=nord
       else
@@ -537,47 +537,16 @@
            ! Open the output files
            call wrfilename(outfile,iord)
            open(iout,file=outfile,form='formatted',status='unknown')
+
+           ! Determine the Gaussian quadrature points and weights
+           call gaussquad(iord,a,b,x,w)
            
-           ! Construct the tridiagonal recursion coefficient matrix
-           !
-           ! (1) On-diagonal elements
-           do i=1,iord
-              diag(i)=a(i)
-           enddo
-           ! (2) Off-diagonal elements
-           do i=2,iord
-              offdiag(i)=-dsqrt(b(i-1))
-           enddo
-
-           ! Diagonalise the tridiagonal recursion coefficient matrix
-           abvec=0.0d0
-           do i=1,nord
-              abvec(i,i)=1.0d0
-           enddo
-           call tql2(nord,iord,diag,offdiag,abvec,ierr)
-           if (ierr.ne.0) then              
-              write(6,'(/,2x,a,/)') 'Diagonalisation of the &
-                   recurrence coefficient matrix failed'
-              STOP
+           ! Calculate and output the cross-sections
+           if (method.eq.1) then
+              call xsec_stieltjes(iout,iord,x,w)
+           else if (method.eq.2) then
+              call xsec_derivative(iout,iord,x,w)
            endif
-
-           ! Calculate the Stieltjes energies and cumulative
-           ! oscilator strength values
-           ! 
-           ! Note that the eigenvalues of the recurrence coefficient 
-           ! matrix are the inverse energies in ascending order
-           do i=1,iord
-              si_e(i)=1.0d0/diag(iord+1-i)
-              si_f(i)=b(0)*abvec(1,iord+1-i)**2
-          enddo
-          
-          ! Calculate and output the cross-sections using numerical
-          ! differentiation of the Stieltjes distribution function F
-          do i=1,iord-1
-             ecent(i)=0.5d0*(si_e(i)+si_e(i+1))
-             si_osc(i)=0.5d0*(si_f(i+1)+si_f(i))/(si_e(i+1)-si_e(i))
-             write(iout,'(2(2x,F14.7))') ecent(i),si_osc(i)
-          enddo
 
           ! Close the output file
           close(iout)
@@ -608,6 +577,195 @@
       return
 
     end subroutine wrfilename
+
+!#######################################################################
+
+    subroutine gaussquad(iord,a,b,x,w)
+
+      use simod
+      
+      implicit none
+
+      integer                      :: iord,i,ierr
+      real*8, dimension(0:ntrial)  :: a,b
+      real*8, dimension(nord,nord) :: abvec
+      real*8, dimension(nord)      :: diag,offdiag
+      real*8, dimension(ntrial)    :: x,w
+      
+      integer                      :: info
+      real*8, dimension(iord,iord) :: vec
+      real*8, dimension(2*iord-2)  :: work
+
+!-----------------------------------------------------------------------
+! Diagonalisation of the tridiagonal matrix of recurrence coefficients
+!-----------------------------------------------------------------------
+      ! (1) On-diagonal elements
+      do i=1,iord
+         diag(i)=a(i)
+      enddo
+      ! (2) Off-diagonal elements
+      do i=2,iord
+         offdiag(i)=-dsqrt(b(i-1))
+      enddo
+      
+      ! Diagonalise the tridiagonal recursion coefficient matrix
+      abvec=0.0d0
+      do i=1,nord
+         abvec(i,i)=1.0d0
+      enddo
+      call tql2(nord,iord,diag,offdiag,abvec,ierr)
+      if (ierr.ne.0) then
+         write(6,'(/,2x,a,/)') 'Diagonalisation of the &
+              recurrence coefficient matrix failed'
+         STOP
+      endif
+
+!-----------------------------------------------------------------------
+! Extraction of the quadrature points and weights
+!      
+! Note that the eigenvalues of the recurrence coefficient matrix are
+! the inverse energies in ascending order
+!-----------------------------------------------------------------------
+      do i=1,iord
+         x(i)=1.0d0/diag(iord+1-i)
+         w(i)=b(0)*abvec(1,iord+1-i)**2         
+      enddo
+
+      return
+      
+    end subroutine gaussquad
+    
+!#######################################################################
+
+    subroutine xsec_stieltjes(iout,iord,x,w)
+
+      use simod
+      
+      implicit none
+
+      integer                   :: iout,iord,i
+      real*8, dimension(ntrial) :: x,w
+      real*8, dimension(nord)   :: ecent,xsec
+
+!-----------------------------------------------------------------------
+! Calculate and output the cross-sections using numerical
+! differentiation of the Stieltjes distribution function
+!-----------------------------------------------------------------------
+      do i=1,iord-1
+         ecent(i)=0.5d0*(x(i)+x(i+1))
+         xsec(i)=0.5d0*(w(i+1)+w(i))/(x(i+1)-x(i))         
+         write(iout,'(2(2x,F14.7))') ecent(i),xsec(i)
+      enddo
+      
+      return
+      
+    end subroutine xsec_stieltjes
+    
+!#######################################################################
+
+    subroutine xsec_derivative(iout,iord,x,w)
+
+      use simod
+
+      implicit none
+
+      integer                   :: iout,iord,i
+      real*8, dimension(ntrial) :: x,w
+      real*8, dimension(4,iord) :: coeff
+      real*8, dimension(iord)   :: weq
+      real*8                    :: xsec
+      
+!-----------------------------------------------------------------------
+! Interpolation of the quadrature points
+!-----------------------------------------------------------------------
+      call fhderiv(x,w,weq,iord-1,3)
+
+!-----------------------------------------------------------------------
+! Calculate and output the cross-sections
+!-----------------------------------------------------------------------
+      do i=1,iord-1
+         xsec=w(i)/weq(i)
+         write(iout,'(2(2x,F14.7))') x(i),xsec
+      enddo
+      
+      return
+      
+    end subroutine xsec_derivative
+
+!#######################################################################
+
+    subroutine calc_weq(iord,coeff,weq)
+
+      implicit none
+
+      integer                   :: iord,i
+      real*8, dimension(4,iord) :: coeff
+      real*8, dimension(iord)   :: weq
+      
+      do i=1,iord-1
+         weq(i)=coeff(2,i)
+      enddo
+      
+      return
+      
+    end subroutine calc_weq
+
+!#######################################################################
+
+    subroutine fhderiv(x,y,deriv,n,c)
+
+      use simod
+
+      implicit none
+
+      integer              :: c,ndat,ni,i,j,k,m,n,lower,upper,indx
+      real*8, dimension(n) :: x,y,u,deriv
+      real*8               :: prod,num,den
+      logical              :: leq
+
+!-----------------------------------------------------------------------
+! Calculate the Floater-Hormann coefficients
+!-----------------------------------------------------------------------
+      u=0.0d0
+      ! Loop over coefficients
+      do k=1,n
+         ! Calculate the kth coefficient
+         if (k-c.lt.1) then
+            lower=1
+         else
+            lower=k-c
+         endif
+         if (n-c.gt.k) then
+            upper=k
+         else
+            upper=n-c
+         endif
+         do i=lower,upper
+            prod=1.0d0
+            do j=i,i+c
+               if (j.ne.k) prod=prod/(x(k)-x(j))
+            enddo
+            u(k)=u(k)+prod*(-1)**i
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Calculate the Floater-Horman derivatives at the quadrature points
+!-----------------------------------------------------------------------      
+      do i=1,n
+         k=i
+         num=0.0d0
+         do j=1,n
+            if (j.ne.k) then
+               num=num+u(j)*(y(k)/(x(k)-x(j))+y(j)/(x(j)-x(k)))
+            endif
+         enddo
+         deriv(i)=-num/u(k)
+      enddo
+   
+      return
+    
+    end subroutine fhderiv
 
 !#######################################################################
 

@@ -585,7 +585,7 @@
                                                      i,k1,k2,upper
         integer, dimension(:), allocatable        :: indx1,indx2
         real(d), dimension(:), allocatable        :: mtmf
-        real(d), dimension(ndimsf)                :: tmpvec
+        real(d), dimension(:), allocatable        :: tmpvec
         real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------        
@@ -611,6 +611,8 @@
 !
 ! Note that we can only have lancguess=3 or 4 for ADC(2)-s
 !-----------------------------------------------------------------------
+        allocate(tmpvec(ndimf))
+
         if (lancguess.eq.1) then
            if (method.eq.2) then
               upper=ndimsf
@@ -720,6 +722,8 @@
            deallocate(indx1,indx2)
 
         endif
+        
+        deallocate(tmpvec)
 
         return
 
@@ -748,7 +752,7 @@
                                                      indx2
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
-        real(d), dimension(ndimsf)                :: tmpvec
+        real(d), dimension(:), allocatable        :: tmpvec
         real(d), dimension(ndimsf,ndimsf)         :: adc1vec
 
 !-----------------------------------------------------------------------
@@ -772,6 +776,8 @@
 !
 ! Note that we can only have lancguess=3 or 4 for ADC(2)-s
 !-----------------------------------------------------------------------
+        allocate(tmpvec(ndimf))
+
         if (lancguess.eq.1) then
            if (method_f.eq.2) then
               upper=ndimsf
@@ -881,6 +887,8 @@
            deallocate(indx1,indx2)
 
         endif
+
+        deallocate(tmpvec)
 
         return
 
