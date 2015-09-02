@@ -42,7 +42,6 @@
       aosc=''
       erange=-999.9d0
       ntrial=100
-      method=1
       
 !-----------------------------------------------------------------------
 ! Determine the input file name
@@ -100,22 +99,6 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'method') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               if (keyword(i).eq.'stieltjes') then
-                  method=1
-               else if (keyword(i).eq.'derivative') then
-                  method=2
-               else
-                  errmsg='Unknown keyword: '//trim(keyword(i))
-                  write(6,'(/,a,/)') trim(errmsg)
-                  STOP
-               endif
-            else
-               goto 100
-            endif
-            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -542,16 +525,12 @@
            call gaussquad(iord,a,b,x,w)
            
            ! Calculate and output the cross-sections
-           if (method.eq.1) then
-              call xsec_stieltjes(iout,iord,x,w)
-           else if (method.eq.2) then
-              call xsec_derivative(iout,iord,x,w)
-           endif
+           call xsec_stieltjes(iout,iord,x,w)
+           
+           ! Close the output file
+           close(iout)
 
-          ! Close the output file
-          close(iout)
-
-       enddo
+        enddo
 
       return
 
@@ -661,112 +640,6 @@
       
     end subroutine xsec_stieltjes
     
-!#######################################################################
-
-    subroutine xsec_derivative(iout,iord,x,w)
-
-      use simod
-
-      implicit none
-
-      integer                   :: iout,iord,i
-      real*8, dimension(ntrial) :: x,w
-      real*8, dimension(4,iord) :: coeff
-      real*8, dimension(iord)   :: weq
-      real*8                    :: xsec
-      
-!-----------------------------------------------------------------------
-! Interpolation of the quadrature points
-!-----------------------------------------------------------------------
-      call fhderiv(x,w,weq,iord-1,3)
-
-!-----------------------------------------------------------------------
-! Calculate and output the cross-sections
-!-----------------------------------------------------------------------
-      do i=1,iord-1
-         xsec=w(i)/weq(i)
-         write(iout,'(2(2x,F14.7))') x(i),xsec
-      enddo
-      
-      return
-      
-    end subroutine xsec_derivative
-
-!#######################################################################
-
-    subroutine calc_weq(iord,coeff,weq)
-
-      implicit none
-
-      integer                   :: iord,i
-      real*8, dimension(4,iord) :: coeff
-      real*8, dimension(iord)   :: weq
-      
-      do i=1,iord-1
-         weq(i)=coeff(2,i)
-      enddo
-      
-      return
-      
-    end subroutine calc_weq
-
-!#######################################################################
-
-    subroutine fhderiv(x,y,deriv,n,c)
-
-      use simod
-
-      implicit none
-
-      integer              :: c,ndat,ni,i,j,k,m,n,lower,upper,indx
-      real*8, dimension(n) :: x,y,u,deriv
-      real*8               :: prod,num,den
-      logical              :: leq
-
-!-----------------------------------------------------------------------
-! Calculate the Floater-Hormann coefficients
-!-----------------------------------------------------------------------
-      u=0.0d0
-      ! Loop over coefficients
-      do k=1,n
-         ! Calculate the kth coefficient
-         if (k-c.lt.1) then
-            lower=1
-         else
-            lower=k-c
-         endif
-         if (n-c.gt.k) then
-            upper=k
-         else
-            upper=n-c
-         endif
-         do i=lower,upper
-            prod=1.0d0
-            do j=i,i+c
-               if (j.ne.k) prod=prod/(x(k)-x(j))
-            enddo
-            u(k)=u(k)+prod*(-1)**i
-         enddo
-      enddo
-
-!-----------------------------------------------------------------------
-! Calculate the Floater-Horman derivatives at the quadrature points
-!-----------------------------------------------------------------------      
-      do i=1,n
-         k=i
-         num=0.0d0
-         do j=1,n
-            if (j.ne.k) then
-               num=num+u(j)*(y(k)/(x(k)-x(j))+y(j)/(x(j)-x(k)))
-            endif
-         enddo
-         deriv(i)=-num/u(k)
-      enddo
-   
-      return
-    
-    end subroutine fhderiv
-
 !#######################################################################
 
   end program stieltjes_ap
