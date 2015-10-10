@@ -258,6 +258,16 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'dyson') then
+            ldyson=.true.
+            lfakeip=.true.
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) dysirrep
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -373,7 +383,7 @@
 !-----------------------------------------------------------------------
 ! Dipole operator symmetry
 !-----------------------------------------------------------------------
-      if (nirrep2.eq.0) then
+      if (nirrep2.eq.0.and..not.ldyson) then
          msg='The dipole operator symmetry has not been given'
          goto 999
       endif
@@ -391,7 +401,7 @@
 !-----------------------------------------------------------------------
 ! Dipole operator component
 !-----------------------------------------------------------------------
-      if (tranmom2.eq.'') then
+      if (tranmom2.eq.''.and..not.ldyson) then
          msg='The dipole operator component has not been given'
          goto 999
       endif
@@ -454,7 +464,7 @@
 !-----------------------------------------------------------------------
 ! Lanczos section: only required if we are considering ionization
 !-----------------------------------------------------------------------
-      if (.not.energyonly.and..not.ldiagfinal) then
+      if (.not.energyonly.and..not.ldiagfinal.and..not.ldyson) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'

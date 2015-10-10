@@ -7,6 +7,7 @@ program adc
   use adc1specmod
   use adc2specmod
   use adc2enermod
+  use adc2dysonmod
   use rdinput
   use orbindx
   use defaults
@@ -97,21 +98,23 @@ program adc
      dpl(:,:)=z_dipole(:,:)
   endif
 
-!-----------------------------------------------------------------------  
+!-----------------------------------------------------------------------
 ! Perform the ADC calculation
-!-----------------------------------------------------------------------    
-  select case(method)
-
-  case(1) ! ADC(1), full diagonalisation
-     call adc1_spec()
-
-  case(2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
-     call adc2_spec()
-
-  case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
-     call adc2_ener()
-
-  end select
+!-----------------------------------------------------------------------
+  ! Approximate Dyson orbital calculation
+  if (ldyson) then
+     call adc2_dyson()
+  else
+  ! Spectrum calculation
+     select case(method)
+     case(1) ! ADC(1), full diagonalisation
+        call adc1_spec()
+     case(2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
+        call adc2_spec()
+     case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
+        call adc2_ener()
+     end select
+  endif
 
 !-----------------------------------------------------------------------    
 ! Clean up the scratch files and exit

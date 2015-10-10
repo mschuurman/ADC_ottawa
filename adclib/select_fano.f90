@@ -203,7 +203,7 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
     
     integer               :: i,ap,n2pne
-    integer               :: isym,isym2,a,cah,ic
+    integer               :: isym,isym2,a,cah,ic,targetsym
     integer, dimension(7) :: col
     
     
@@ -216,6 +216,8 @@ contains
     
     kpq(1,0)=0
 
+    targetsym=MT(nirrep,nirrep2)
+
     if (lffrzcore) then
 
        do ap=nOcc+1,nBas
@@ -225,20 +227,27 @@ contains
              call iscore(cah,ic)
              if (ic.eq.0) then
                 isym=MT(orbSym(cah),orbSym(a))
-                if(nirrep .eq. nirrep2) then
-                   if(isym .eq. 1) then
-                      kpq(1,0)=kpq(1,0)+1
-                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                      kpq(:,kpq(1,0))=col(:)
-                   end if
-                else
-                   isym2=MT(nirrep,nirrep2)
-                   if(isym .eq. isym2) then
-                      kpq(1,0)=kpq(1,0)+1
-                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                      kpq(:,kpq(1,0))=col(:)
-                   end if
-                end if
+
+                if (isym.eq.targetsym) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                endif
+
+!                if(nirrep .eq. nirrep2) then
+!                   if(isym .eq. 1) then
+!                      kpq(1,0)=kpq(1,0)+1
+!                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                      kpq(:,kpq(1,0))=col(:)
+!                   end if
+!                else
+!                   isym2=MT(nirrep,nirrep2)
+!                   if(isym .eq. isym2) then
+!                      kpq(1,0)=kpq(1,0)+1
+!                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                      kpq(:,kpq(1,0))=col(:)
+!                   end if
+!                end if
              endif
           end do
        end do
@@ -251,20 +260,28 @@ contains
              cah=hcentre(i)
              
              isym=MT(orbSym(cah),orbSym(a))
-             if(nirrep .eq. nirrep2) then
-                if(isym .eq. 1) then
-                   kpq(1,0)=kpq(1,0)+1
-                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                   kpq(:,kpq(1,0))=col(:)
-                end if
-             else
-                isym2=MT(nirrep,nirrep2)
-                if(isym .eq. isym2) then
-                   kpq(1,0)=kpq(1,0)+1
-                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                   kpq(:,kpq(1,0))=col(:)
-                end if
-             end if
+
+             if (isym.eq.targetsym) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             endif
+
+!             if(nirrep .eq. nirrep2) then
+!                if(isym .eq. 1) then
+!                   kpq(1,0)=kpq(1,0)+1
+!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                   kpq(:,kpq(1,0))=col(:)
+!                end if
+!             else
+!                isym2=MT(nirrep,nirrep2)
+!                if(isym .eq. isym2) then
+!                   kpq(1,0)=kpq(1,0)+1
+!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                   kpq(:,kpq(1,0))=col(:)
+!                end if
+!             end if
+
           end do
        end do
        
@@ -279,10 +296,12 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
     
     integer               :: i,ap,n2pne
-    integer               :: isym,isym2,a,cah,ic
+    integer               :: isym,isym2,a,cah,ic,targetsym
     integer, dimension(7) :: col
 
     kpq(1,0)=0
+
+    targetsym=MT(nirrep,nirrep2)
 
     do ap=nOcc+1,nBas
        a=roccnum(ap)
@@ -290,21 +309,31 @@ contains
           cah=hcentre(i)
           call iscore(cah,ic)
           if (ic.eq.1.and.iexpfrz(cah).eq.0) then
+
              isym=MT(orbSym(cah),orbSym(a))
-             if(nirrep .eq. nirrep2) then
-                if(isym .eq. 1) then
-                   kpq(1,0)=kpq(1,0)+1
-                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                   kpq(:,kpq(1,0))=col(:)
-                endif
-             else
-                isym2=MT(nirrep,nirrep2)
-                if(isym .eq. isym2) then
-                   kpq(1,0)=kpq(1,0)+1
-                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                   kpq(:,kpq(1,0))=col(:)
-                endif
+
+             if (isym.eq.targetsym) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
              endif
+
+
+!             isym=MT(orbSym(cah),orbSym(a))
+!             if(nirrep .eq. nirrep2) then
+!                if(isym .eq. 1) then
+!                   kpq(1,0)=kpq(1,0)+1
+!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                   kpq(:,kpq(1,0))=col(:)
+!                endif
+!             else
+!                isym2=MT(nirrep,nirrep2)
+!                if(isym .eq. isym2) then
+!                   kpq(1,0)=kpq(1,0)+1
+!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+!                   kpq(:,kpq(1,0))=col(:)
+!                endif
+!             endif
           endif
        enddo
     enddo
@@ -325,7 +354,7 @@ contains
     integer :: i,j,a,b,k
     integer :: ih,jh,ap,bp
     integer :: cnti,cntf
-    integer :: isym1,isym2,isym3,ic1,ic2
+    integer :: isym1,isym2,isym3,ic1,ic2,targetsym
     integer, dimension(7) :: col
     real(d) :: einit,ei,ej
 
@@ -335,6 +364,8 @@ contains
 103 FORMAT(/,60("-")) 
 
     einit=abs(e(hinit))
+
+    targetsym=MT(nirrep,nirrep2)
 
 !-----------------------------------------------------------------------
 ! Filling the kpq arrays in the order:
@@ -368,35 +399,42 @@ contains
           call iscore(j,ic2)
           ej=abs(e(j))
 
-!          if ((ic1.eq.0.and.ic2.eq.1) &
-!               .or.(ic1.eq.1.and.ic2.eq.0)) then
-
           if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
           
              isym1=MT(orbSym(i),orbSym(j))
-          
-             if(nirrep .eq. nirrep2) then
-                if (isym1 .eq. 1) then
-                   do ap=nOcc+1,nBas
-                      a=roccnum(ap)
-                      cnti=cnti+1
-                      kpq(4,0)=kpq(4,0)+1
-                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-                      kpq(:,cnti)=col(:)
-                   end do
-                end if
-             else
-                isym2=MT(nirrep,nirrep2)
-                if (isym1 .eq. isym2) then
-                   do ap=nOcc+1,nBas
-                      a=roccnum(ap)
-                      cnti=cnti+1
-                      kpq(4,0)=kpq(4,0)+1
-                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-                      kpq(:,cnti)=col(:)
-                   end do
-                end if
-             end if
+             
+             if (isym1.eq.targetsym) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             endif
+
+!             if(nirrep .eq. nirrep2) then
+!                if (isym1 .eq. 1) then
+!                   do ap=nOcc+1,nBas
+!                      a=roccnum(ap)
+!                      cnti=cnti+1
+!                      kpq(4,0)=kpq(4,0)+1
+!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                      kpq(:,cnti)=col(:)
+!                   end do
+!                end if
+!             else
+!                isym2=MT(nirrep,nirrep2)
+!                if (isym1 .eq. isym2) then
+!                   do ap=nOcc+1,nBas
+!                      a=roccnum(ap)
+!                      cnti=cnti+1
+!                      kpq(4,0)=kpq(4,0)+1
+!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                      kpq(:,cnti)=col(:)
+!                   end do
+!                end if
+!             end if
              
           endif
 
@@ -416,48 +454,54 @@ contains
           call iscore(j,ic2)
           ej=abs(e(j))
           
-!          if ((ic1.eq.0.and.ic2.eq.1) &
-!               .or.(ic1.eq.1.and.ic2.eq.0)) then
- 
           if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
             
              isym1=MT(orbSym(i),orbSym(j))
+
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
                 do bp=ap+1,nBas
                    b=roccnum(bp)
                    isym2=MT(orbSym(a),orbSym(b))
                    
-                   if(nirrep .eq. nirrep2) then
-                      if(MT(isym1,isym2) .eq. 1) then 
-                         if(einit .le. (ei+ej)) then
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         else
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         end if
-                      end if
-                   else
-                      isym3=MT(nirrep,nirrep2)
-                      if(MT(isym1,isym2) .eq. isym3) then 
-                         if(einit .le. (ei+ej)) then
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         else
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         end if
-                      end if
-                   end if
+                   isym3=MT(isym1,isym2)
+                   if (isym3.eq.targetsym) then
+                      cnti=cnti+1
+                      kpq(5,0)=kpq(5,0)+1
+                      call fill_indices(col(:),2,11,a,b,i,j,4)
+                      kpq(:,cnti)=col(:)
+                   endif
+
+!                   if(nirrep .eq. nirrep2) then
+!                      if(MT(isym1,isym2) .eq. 1) then 
+!                         if(einit .le. (ei+ej)) then
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         else
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         end if
+!                      end if
+!                   else
+!                      isym3=MT(nirrep,nirrep2)
+!                      if(MT(isym1,isym2) .eq. isym3) then 
+!                         if(einit .le. (ei+ej)) then
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         else
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         end if
+!                      end if
+!                   end if
                    
                 end do
              end do
@@ -1157,7 +1201,7 @@ contains
     integer :: i,j,a,b,k
     integer :: ih,jh,ap,bp
     integer :: cnti,cntf
-    integer :: isym1,isym2,isym3,ic
+    integer :: isym1,isym2,isym3,ic,targetsym
     integer, dimension(7) :: col
     real(d) :: einit,ei,ej
 
@@ -1168,18 +1212,20 @@ contains
 
     einit=abs(e(hinit))
 
+    targetsym=MT(nirrep,nirrep2)
+
 ! Filling the kpq arrays in the order: a=b,i=j;a|=b,i=j;a=b,i|=j;a|=b,i|=j(I,II).
 
     if (flag .eq. -1) then
-       
-!       write(ilog,'(a)') 'Selecting FINAL  2h2p subspace'
        
        kpq(2:5,0)=0
        cnti=kpq(1,0)
     
 !!$a=b,i=j i=hcentre(ih)
        
-       if(nirrep .eq. nirrep2) then
+!       if(nirrep .eq. nirrep2) then
+       if (targetsym.eq.1) then
+
           do ih=1,hcentre(0)
              i=hcentre(ih)
              ei=abs(e(i))
@@ -1212,52 +1258,61 @@ contains
              b=roccnum(bp)
              isym1=MT(orbSym(a),orbSym(b))
              
-             if(nirrep .eq. nirrep2) then
-                if(isym1 .eq. 1) then
-                   do ih=1,hcentre(0)
-                      i=hcentre(ih)
-                      ei=abs(e(i))
+             if (isym1.eq.targetsym) then
+                call iscore(i,ic)
+                if (lffrzcore.and.ic.eq.1) cycle
+                cnti=cnti+1
+                kpq(3,0)=kpq(3,0)+1
+                call fill_indices(col(:),2,1,a,b,i,i,2)
+                kpq(:,cnti)=col(:)                
+             endif
 
-                      call iscore(i,ic)
-                      if (lffrzcore.and.ic.eq.1) cycle
-                      
-                      if(einit .le. 2._d*ei) then
-                         cnti=cnti+1
-                         kpq(3,0)=kpq(3,0)+1
-                         call fill_indices(col(:),2,1,a,b,i,i,2)
-                         kpq(:,cnti)=col(:)
-                      else
-                         cnti=cnti+1
-                         kpq(3,0)=kpq(3,0)+1
-                         call fill_indices(col(:),2,1,a,b,i,i,2)
-                         kpq(:,cnti)=col(:)
-                      end if
-                   end do
-                end if
-             else
-                isym2=MT(nirrep,nirrep2)
-                if(isym1 .eq. isym2) then
-                   do ih=1,hcentre(0)
-                      i=hcentre(ih)
-                      ei=abs(e(i))
-
-                      call iscore(i,ic)
-                      if (lffrzcore.and.ic.eq.1) cycle
-
-                      if(einit .le. 2._d*ei) then
-                         cnti=cnti+1
-                         kpq(3,0)=kpq(3,0)+1
-                         call fill_indices(col(:),2,1,a,b,i,i,2)
-                         kpq(:,cnti)=col(:)
-                      else
-                         cnti=cnti+1
-                         kpq(3,0)=kpq(3,0)+1
-                         call fill_indices(col(:),2,1,a,b,i,i,2)
-                         kpq(:,cnti)=col(:)
-                      end if
-                   end do
-                end if
-             end if
+!             if(nirrep .eq. nirrep2) then
+!                if(isym1 .eq. 1) then
+!                   do ih=1,hcentre(0)
+!                      i=hcentre(ih)
+!                      ei=abs(e(i))
+!
+!                      call iscore(i,ic)
+!                      if (lffrzcore.and.ic.eq.1) cycle
+!                      
+!                      if(einit .le. 2._d*ei) then
+!                         cnti=cnti+1
+!                         kpq(3,0)=kpq(3,0)+1
+!                         call fill_indices(col(:),2,1,a,b,i,i,2)
+!                         kpq(:,cnti)=col(:)
+!                      else
+!                         cnti=cnti+1
+!                         kpq(3,0)=kpq(3,0)+1
+!                         call fill_indices(col(:),2,1,a,b,i,i,2)
+!                         kpq(:,cnti)=col(:)
+!                      end if
+!                   end do
+!                end if
+!             else
+!                isym2=MT(nirrep,nirrep2)
+!                if(isym1 .eq. isym2) then
+!                   do ih=1,hcentre(0)
+!                      i=hcentre(ih)
+!                      ei=abs(e(i))
+!
+!                      call iscore(i,ic)
+!                      if (lffrzcore.and.ic.eq.1) cycle
+!
+!                      if(einit .le. 2._d*ei) then
+!                         cnti=cnti+1
+!                         kpq(3,0)=kpq(3,0)+1
+!                         call fill_indices(col(:),2,1,a,b,i,i,2)
+!                         kpq(:,cnti)=col(:)
+!                      else
+!                         cnti=cnti+1
+!                         kpq(3,0)=kpq(3,0)+1
+!                         call fill_indices(col(:),2,1,a,b,i,i,2)
+!                         kpq(:,cnti)=col(:)
+!                      end if
+!                   end do
+!                end if
+!             end if
              
           end do
        end do
@@ -1280,28 +1335,38 @@ contains
              
              isym1=MT(orbSym(i),orbSym(j))
 
-             if(nirrep .eq. nirrep2) then
-                if (isym1 .eq. 1) then
-                   do ap=nOcc+1,nBas
-                      a=roccnum(ap)
-                      cnti=cnti+1
-                      kpq(4,0)=kpq(4,0)+1
-                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-                      kpq(:,cnti)=col(:)
-                   end do
-                end if
-             else 
-                isym2=MT(nirrep,nirrep2)
-                if (isym1 .eq. isym2) then
-                   do ap=nOcc+1,nBas
-                      a=roccnum(ap)
-                      cnti=cnti+1
-                      kpq(4,0)=kpq(4,0)+1
-                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-                      kpq(:,cnti)=col(:)
-                   end do
-                end if
-             end if
+             if (isym1.eq.targetsym) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             endif
+
+!             if(nirrep .eq. nirrep2) then
+!                if (isym1 .eq. 1) then
+!                   do ap=nOcc+1,nBas
+!                      a=roccnum(ap)
+!                      cnti=cnti+1
+!                      kpq(4,0)=kpq(4,0)+1
+!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                      kpq(:,cnti)=col(:)
+!                   end do
+!                end if
+!             else 
+!                isym2=MT(nirrep,nirrep2)
+!                if (isym1 .eq. isym2) then
+!                   do ap=nOcc+1,nBas
+!                      a=roccnum(ap)
+!                      cnti=cnti+1
+!                      kpq(4,0)=kpq(4,0)+1
+!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                      kpq(:,cnti)=col(:)
+!                   end do
+!                end if
+!             end if
              
           end do
        end do
@@ -1329,36 +1394,44 @@ contains
                    b=roccnum(bp)
                    isym2=MT(orbSym(a),orbSym(b))
 
-                   if(nirrep .eq. nirrep2) then
-                      if(MT(isym1,isym2) .eq. 1) then 
-                         if(einit .le. (ei+ej)) then
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         else
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         end if
-                      end if
-                   else
-                      isym3=MT(nirrep,nirrep2)
-                      if(MT(isym1,isym2) .eq. isym3) then 
-                         if(einit .le. (ei+ej)) then
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         else
-                            cnti=cnti+1
-                            kpq(5,0)=kpq(5,0)+1
-                            call fill_indices(col(:),2,11,a,b,i,j,4)
-                            kpq(:,cnti)=col(:)
-                         end if
-                      end if
-                   end if
+                   isym3=MT(isym1,isym2)
+                   if (isym3.eq.targetsym) then
+                      cnti=cnti+1
+                      kpq(5,0)=kpq(5,0)+1
+                      call fill_indices(col(:),2,11,a,b,i,j,4)
+                      kpq(:,cnti)=col(:)
+                   endif
+
+!                   if(nirrep .eq. nirrep2) then
+!                      if(MT(isym1,isym2) .eq. 1) then 
+!                         if(einit .le. (ei+ej)) then
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         else
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         end if
+!                      end if
+!                   else
+!                      isym3=MT(nirrep,nirrep2)
+!                      if(MT(isym1,isym2) .eq. isym3) then 
+!                         if(einit .le. (ei+ej)) then
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         else
+!                            cnti=cnti+1
+!                            kpq(5,0)=kpq(5,0)+1
+!                            call fill_indices(col(:),2,11,a,b,i,j,4)
+!                            kpq(:,cnti)=col(:)
+!                         end if
+!                      end if
+!                   end if
                    
                 end do
              end do
@@ -2314,17 +2387,381 @@ contains
 
  end subroutine BUILD_ALL_SYMMETRY_SPACES_ADC1
 
+!#######################################################################
 
+  subroutine select_atom_isf_fakeip_cvs(kpq)
 
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq    
+    integer               :: i,ap,n2pne,ic
+    integer               :: isym,a,cah
+    integer, dimension(7) :: col
 
+    kpq(1,0)=0
 
+    do ap=nOcc+1,nBas
+       a=roccnum(ap)
+       if (a.ne.ifakeorb) cycle
+       do i=1,hcentre(0)
+          cah=hcentre(i)
+          call iscore(cah,ic)
+          if (ic.eq.1.and.iexpfrz(cah).eq.0) then
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym.eq.dysirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             endif
+          endif
+       enddo
+    enddo
 
+    return
 
+  end subroutine select_atom_isf_fakeip_cvs
 
+!#######################################################################
 
+  subroutine select_atom_df_fakeip_cvs(kpq,flag)
 
+    implicit none
 
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer, intent(in)                                    :: flag
 
+    integer               :: i,j,a,b,k,ic1,ic2
+    integer               :: ih,jh,ap,bp
+    integer               :: cnti,cntf
+    integer               :: isym1, isym2
+    integer, dimension(7) :: col
+    real(d)               :: einit,ei,ej
+
+!-----------------------------------------------------------------------
+! Filling the kpq arrays in the order:
+!
+! a=b,i=j;
+! a|=b,i=j;
+! a=b,i|=j;
+! a|=b,i|=j(I,II).
+!
+! Note that in the CVS approximation, the following configurations are
+! ignored: a=b,i=j
+!          a|=b,i=j;
+!
+! i.e., we only need to consider a=b,i|=j and a|=b,i|=j(I,II) for which
+!       one, and only one, of i or j corresponds to a core orbital
+!-----------------------------------------------------------------------
+
+    einit=abs(e(hinit))
+
+    kpq(2:5,0)=0
+    cnti=kpq(1,0)
+
+!-----------------------------------------------------------------------
+! a=b,i|=j, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+    do ih=1,hcentre(0)
+       i=hcentre(ih)
+       call iscore(i,ic1)
+       ei=abs(e(i))
+
+       do jh=ih+1,hcentre(0)
+          j=hcentre(jh)
+          call iscore(j,ic2)
+          ej=abs(e(j))
+
+          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
+             isym1=MT(orbSym(i),orbSym(j))
+             if (isym1 .eq. dysirrep) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   if (a.ne.ifakeorb) cycle
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             end if
+             
+          endif
+
+       end do
+    end do
+
+!-----------------------------------------------------------------------
+! a|=b,i|=j spin I, i or j a core orbital, but not both
+!-----------------------------------------------------------------------
+       do ih=1,hcentre(0)
+          i=hcentre(ih)          
+          call iscore(i,ic1)
+          ei=abs(e(i))
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             call iscore(j,ic2)
+             ej=abs(e(j))
+             isym1=MT(orbSym(i),orbSym(j))
+
+             if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   do bp=ap+1,nBas
+                      b=roccnum(bp)
+                      if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+                      isym2=MT(orbSym(a),orbSym(b))
+                      if(MT(isym1,isym2).eq.dysirrep) then 
+                         cnti=cnti+1
+                         kpq(5,0)=kpq(5,0)+1
+                         call fill_indices(col(:),2,11,a,b,i,j,4)
+                         kpq(:,cnti)=col(:)
+                      end if
+                   end do
+                end do
+                
+             endif
+
+          end do
+       end do
+
+       kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
+       kpq(2,cnti+1:cnti+kpq(5,0))=12
+       kpq(7,cnti+1:cnti+kpq(5,0))=5
+
+    return
+
+  end subroutine select_atom_df_fakeip_cvs
+
+!#######################################################################
+
+  subroutine select_atom_isf_fakeip(kpq)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer               :: i,ap,n2pne
+    integer               :: isym,a,cah,ic
+    integer, dimension(7) :: col
+    
+    kpq(1,0)=0
+    
+    if (lifrzcore) then
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          if (a.ne.ifakeorb) cycle
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             call iscore(cah,ic)
+             if (ic.eq.0) then
+                isym=MT(orbSym(cah),orbSym(a))
+                if(isym .eq. dysirrep) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                end if
+             endif
+          end do
+       end do
+    else
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          if (a.ne.ifakeorb) cycle
+          do i=1,hcentre(0)
+             cah=hcentre(i)
+             isym=MT(orbSym(cah),orbSym(a))
+             if(isym .eq. dysirrep) then
+                kpq(1,0)=kpq(1,0)+1
+                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                kpq(:,kpq(1,0))=col(:)
+             end if
+          end do
+       end do
+    endif
+
+    return
+
+  end subroutine select_atom_isf_fakeip
+
+!#######################################################################
+
+  subroutine select_atom_df_fakeip(kpq,flag)
+
+    implicit none
+
+        integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
+    integer, intent(in) :: flag
+
+    integer               :: i,j,a,b,k
+    integer               :: ih,jh,ap,bp
+    integer               :: cnti,cntf
+    integer               :: isym1, isym2,ic
+    integer, dimension(7) :: col
+    real(d)               :: einit,ei,ej
+
+        einit=abs(e(hinit))
+
+! Filling the kpq arrays in the order: a=b,i=j;a|=b,i=j;a=b,i|=j;a|=b,i|=j(I,II).
+
+    if (flag .eq. -1) then
+       
+       kpq(2:5,0)=0
+       cnti=kpq(1,0)
+    
+!!$a=b,i=j i=hcentre(ih)
+
+       if(dysirrep .eq. 1) then
+          do ih=1,hcentre(0)
+             i=hcentre(ih)
+             ei=abs(e(i))
+
+             call iscore(i,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             do ap=nOcc+1,nBas
+                a=roccnum(ap)
+                if (a.ne.ifakeorb) cycle
+                if(einit .le. 2._d*ei) then
+                   cnti=cnti+1
+                   kpq(2,0)=kpq(2,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,i,1)
+                   kpq(:,cnti)=col(:)
+                else
+                   cnti=cnti+1
+                   kpq(2,0)=kpq(2,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,i,1)
+                   kpq(:,cnti)=col(:)
+                end if
+             end do
+          end do
+       end if
+
+!!$a|=b,i=j
+  
+       do ap=nOcc+1,nBas
+          a=roccnum(ap)
+          do bp=ap+1,nBas
+             b=roccnum(bp)
+             if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+             isym1=MT(orbSym(a),orbSym(b))
+             if(isym1 .eq. dysirrep) then
+                do ih=1,hcentre(0)
+                   i=hcentre(ih)
+                   ei=abs(e(i))
+
+                   call iscore(i,ic)
+                   if (lifrzcore.and.ic.eq.1) cycle
+
+                   if(einit .le. 2._d*ei) then
+                      cnti=cnti+1
+                      kpq(3,0)=kpq(3,0)+1
+                      call fill_indices(col(:),2,1,a,b,i,i,2)
+                      kpq(:,cnti)=col(:)
+                   else
+                      cnti=cnti+1
+                      kpq(3,0)=kpq(3,0)+1
+                      call fill_indices(col(:),2,1,a,b,i,i,2)
+                      kpq(:,cnti)=col(:)
+                   end if
+                end do
+             end if
+          end do
+       end do
+
+!a=b,i|=j
+  
+       do ih=1,hcentre(0)
+          i=hcentre(ih)
+          ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             isym1=MT(orbSym(i),orbSym(j))
+             if (isym1 .eq. dysirrep) then
+                do ap=nOcc+1,nBas
+                   a=roccnum(ap)
+                   if (a.ne.ifakeorb) cycle
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
+                end do
+             end if
+          end do
+       end do
+
+!a|=b,i|=j spin I
+
+       do ih=1,hcentre(0)
+          i=hcentre(ih)
+          ei=abs(e(i))
+
+          call iscore(i,ic)
+          if (lifrzcore.and.ic.eq.1) cycle
+
+          do jh=ih+1,hcentre(0)
+             j=hcentre(jh)
+             ej=abs(e(j))
+
+             call iscore(j,ic)
+             if (lifrzcore.and.ic.eq.1) cycle
+
+             isym1=MT(orbSym(i),orbSym(j))
+             do ap=nOcc+1,nBas
+                a=roccnum(ap)
+                do bp=ap+1,nBas
+                   b=roccnum(bp)
+                   if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
+                   isym2=MT(orbSym(a),orbSym(b))
+                   if(MT(isym1,isym2) .eq. dysirrep) then 
+                      if(einit .le. (ei+ej)) then
+                         cnti=cnti+1
+                         kpq(5,0)=kpq(5,0)+1
+                         call fill_indices(col(:),2,11,a,b,i,j,4)
+                         kpq(:,cnti)=col(:)
+                      else
+                         cnti=cnti+1
+                         kpq(5,0)=kpq(5,0)+1
+                         call fill_indices(col(:),2,11,a,b,i,j,4)
+                         kpq(:,cnti)=col(:)
+                      end if
+                   end if
+                end do
+             end do
+          end do
+       end do
+    
+       kpq(:,cnti+1:cnti+kpq(5,0))=kpq(:,cnti+1-kpq(5,0):cnti)
+       kpq(2,cnti+1:cnti+kpq(5,0))=12
+       kpq(7,cnti+1:cnti+kpq(5,0))=5
+
+!------------------------------------------------------------------------------------
+!------------------------------------------------------------------------------------
+
+    elseif(flag .eq. 1) then
+
+       kpq(2:5,0)=0
+       cntf=kpq(1,0)
+
+       kpq(:,cntf+1:cntf+kpq(5,0))=kpq(:,cntf+1-kpq(5,0):cntf)
+       kpq(2,cntf+1:cntf+kpq(5,0))=12 
+       kpq(7,cntf+1:cntf+kpq(5,0))=5
+
+    end if
+
+    return
+
+  end subroutine select_atom_df_fakeip
+
+!#######################################################################
 
 end module select_fano
 

@@ -404,17 +404,19 @@ contains
        
 !!$ Filling the off-diagonal part of the ph-2p2h block 
 !!$ Coupling to the i=j,a=b configs
-
-    dim_count=kpq(1,0)
     
-    do i=1,ndim1
-       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
-       do j=dim_count+1,dim_count+kpq(2,0)
-          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)    
-          ar_offdiag(i,j)=C5_ph_2p2h(inda,indj,indapr,indjpr)
-          ar_offdiag(j,i)=ar_offdiag(i,j)
+    dim_count=kpq(1,0)
+
+    if (.not.lcvsfinal) then
+    
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(2,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)    
+             ar_offdiag(i,j)=C5_ph_2p2h(inda,indj,indapr,indjpr)
+             ar_offdiag(j,i)=ar_offdiag(i,j)
+          end do
        end do
-    end do
     
 !!$ Coupling to the i=j,a|=b configs   
     
@@ -429,6 +431,8 @@ contains
        end do
     end do
     
+ endif
+
 !!$ Coupling to the i|=j,a=b configs
     
     dim_count=dim_count+kpq(3,0)
@@ -1201,27 +1205,31 @@ contains
 
        dim_count=kpq(1,0)
        
-       do i= 1,ndim1
-          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
-          do j= dim_count+1,dim_count+kpq(2,0)
-             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)    
-             ar_offdiag(j,i)=C5_ph_2p2h(inda,indj,indapr,indjpr)
+       if (.not.lcvsfinal) then
+
+          do i= 1,ndim1
+             call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+             do j= dim_count+1,dim_count+kpq(2,0)
+                call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)    
+                ar_offdiag(j,i)=C5_ph_2p2h(inda,indj,indapr,indjpr)
 !!$             ar_offdiag(i,j)=ar_offdiag(j,i)
+             end do
           end do
-       end do
           
 !!$ Coupling to the i=j,a|=b configs   
        
-       dim_count=dim_count+kpq(2,0)
+          dim_count=dim_count+kpq(2,0)
        
-       do i= 1,ndim1
-          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
-          do j= dim_count+1,dim_count+kpq(3,0)
-             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
-             ar_offdiag(j,i)=C4_ph_2p2h(inda,indj,indapr,indbpr,indjpr)
+          do i= 1,ndim1
+             call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+             do j= dim_count+1,dim_count+kpq(3,0)
+                call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+                ar_offdiag(j,i)=C4_ph_2p2h(inda,indj,indapr,indbpr,indjpr)
 !!$             ar_offdiag(i,j)=ar_offdiag(j,i)
-          end do
+             end do
        end do
+       
+    endif
 
 !!$ Coupling to the i|=j,a=b configs
        

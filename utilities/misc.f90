@@ -72,20 +72,20 @@ contains
     
   end subroutine diagonalise
 !!$---------------------------------------------------
+
   subroutine vdiagonalise(ndim,arr,evector)
 
-    integer, intent(in) :: ndim
-    real(d), dimension(ndim), intent(inout) :: evector
+    implicit none
+
+    integer, intent(in)                          :: ndim
+    integer                                      :: info,lwork,i,j
+    integer, dimension(ndim)                     :: indx
+    integer*8                                    :: lworkl,ndiml
+    real(d), dimension(ndim), intent(inout)      :: evector
     real(d), dimension(ndim,ndim), intent(inout) :: arr
-
-    integer :: info,lwork, i,j
-    integer*8 :: lworkl,ndiml
-    
-    real(d), dimension(ndim) :: w
-    real(d), dimension(:), allocatable :: work
-
-    integer, dimension(ndim) :: indx
-    real(d), dimension(ndim) :: coeff
+    real(d), dimension(ndim)                     :: w
+    real(d), dimension(:), allocatable           :: work
+    real(d), dimension(ndim)                     :: coeff
 
     external dsyev
 
@@ -93,7 +93,15 @@ contains
     allocate(work(lwork))
     lworkl=int(lwork,lng)
     ndiml=int(ndim,lng)
+
     call dsyev("V","L",ndiml,arr(:,:),ndiml,w,work(:),lworkl,info)
+
+    if (info.ne.0) then
+       write(ilog,'(/,2x,a,/)') 'In subroutine vdiagonalise: &
+            diagonalisation of the Hamiltonian matrix failed'
+       STOP
+    endif
+
     evector(:)=w(:)
 
     deallocate(work)

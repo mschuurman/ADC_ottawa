@@ -155,7 +155,7 @@ module parameters
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldiagfinal
   real(d)                              :: maxmem
-  
+
 !!$************************************************
 !!$**********Physical Constants********************
 !!$************************************************
@@ -239,6 +239,12 @@ real(d), dimension(:,:), allocatable        :: diffexp
 character(len=60)                           :: basname
 character(len=2), dimension(:), allocatable :: atlbl
 logical                                     :: lrungamess,ldiffcom
+
+!!$************************************************
+!!$**********Dyson orbital parameters**************
+!!$************************************************
+logical :: ldyson
+integer :: dysirrep
 
 !!$************************************************
 !!$**********Other Parameters**********************

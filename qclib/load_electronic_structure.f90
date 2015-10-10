@@ -339,9 +339,10 @@
 
    implicit none
    
-   integer           :: igms,i,j
-   character(len=72) :: filename
-   character(len=80) :: string
+   integer                           :: igms,i,j
+   real*8, dimension(:), allocatable :: x
+   character(len=72)                 :: filename
+   character(len=80)                 :: string
 
 !-----------------------------------------------------------------------
 ! Open GAMESS output file
@@ -365,7 +366,7 @@
       goto 10
    endif
    
-   if(.not.allocated(xcoo)) allocate(xcoo(natm*3))
+   allocate(x(natm*3))
    allocate(aatm(natm))
 
    ! Read the Cartesian coordinates and atom labels
@@ -374,7 +375,7 @@
    enddo
    do i=1,natm
       read(igms,'(1x,a2,10x,3(6x,F14.10))') aatm(i),&
-           (xcoo(j),j=i*3-2,i*3)
+           (x(j),j=i*3-2,i*3)
    enddo
 
 !-----------------------------------------------------------------------
@@ -392,7 +393,7 @@
    write(ilog,'(82a)') ('-',i=1,82)
    do i=1,natm
       write(ilog,'(1x,a2,10x,3(6x,F14.10))') aatm(i),&
-           (xcoo(j)*0.529177249d0,j=i*3-2,i*3)
+           (x(j)*0.529177249d0,j=i*3-2,i*3)
    enddo
    write(ilog,'(82a,/)') ('-',i=1,82)
 

@@ -485,8 +485,7 @@ contains
 
 !!!!!!!!!!!!!!!! ADC2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-  subroutine get_fspace_adc2_direct(ndim,kpq,arr,evector) 
+  subroutine get_fspace_adc2_direct(ndim,kpq,arr,evector)
     
     integer :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
@@ -579,10 +578,7 @@ contains
     
   end subroutine write_fspace_adc2_1_cvs
 
-
 !#######################################################################
-
-
 
   subroutine write_fspace_adc2_1_MIO(ndim,kpq,noffdel,indx,chr) 
 

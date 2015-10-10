@@ -108,10 +108,12 @@ ADCLIB= adclib/defaults.o \
         adclib/guessvecs.o \
 	adclib/photoionisation.o \
 	adclib/Propagate.o \
+	adclib/dysonmod.o \
 
 ADC_MAIN=adc/adc1_spec.o \
 	adc/adc2_spec.o \
 	adc/adc2_ener.o \
+	adc/adc2_dyson.o \
 	adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -179,10 +181,12 @@ ADC_OBJ+=accuracy.o \
 	block_lanczos.o \
 	photoionisation.o \
 	Propagate.o \
-        guessvecs.o \
+        dysonmod.o \
+	guessvecs.o \
 	adc1_spec.o \
 	adc2_spec.o \
 	adc2_ener.o \
+	adc2_dyson.o \
 	adc.o
 
 # Arbitrary precision Stieltjes imaging code

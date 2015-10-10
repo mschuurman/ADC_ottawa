@@ -107,6 +107,12 @@
       ndiff=0
       pntgroup=''
 
+!-----------------------------------------------------------------------
+! Dyson orbital calculation parameters
+!-----------------------------------------------------------------------
+      ldyson=.false.
+      dysirrep=0
+
       return
 
     end subroutine set_defaults
