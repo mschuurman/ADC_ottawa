@@ -20,7 +20,6 @@
       integer                              :: ndim,i,iout
       integer, dimension(:,:), allocatable :: kpq
       real(d), dimension(:,:), allocatable :: eigvec
-!      real(d), dimension(:), allocatable   :: eigval
 
       if (lcvs) then
          write(ilog,'(/,2x,a,/)') &
@@ -51,7 +50,6 @@
 ! Allocate the arrays that will hold the ADC1 eigenpairs
 !-----------------------------------------------------------------------
       allocate(eigvec(ndim,ndim))
-!      allocate(eigval(ndim))
       allocate(adc1en(ndim))
 
 !-----------------------------------------------------------------------
@@ -97,7 +95,6 @@
       integer                              :: ndim,i,iout
       integer, dimension(:,:), allocatable :: kpqf
       real(d), dimension(:,:), allocatable :: eigvec
-!      real(d), dimension(:), allocatable   :: eigval
 
       if (lcvsfinal) then
          write(ilog,'(/,2x,a,/)') &
@@ -117,9 +114,17 @@
       kpqf(:,:)=-1
 
       if (lcvsfinal) then
-         call select_atom_is_cvs(kpqf(:,:))
+         if (ldyson) then
+            call select_atom_isf_fakeip_cvs(kpqf(:,:))
+         else
+            call select_atom_isf_cvs(kpqf(:,:))
+         endif
       else
-         call select_atom_isf(kpqf(:,:))
+         if (ldyson) then
+            call select_atom_isf_fakeip(kpqf(:,:))
+         else
+            call select_atom_isf(kpqf(:,:))
+         endif
       endif
 
       ndim=kpqf(1,0)
@@ -128,7 +133,6 @@
 ! Allocate the arrays that will hold the ADC1 eigenpairs
 !-----------------------------------------------------------------------
       allocate(eigvec(ndim,ndim))
-!      allocate(eigval(ndim))
       allocate(adc1en_f(ndim))
 
 !-----------------------------------------------------------------------

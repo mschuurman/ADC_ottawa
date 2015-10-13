@@ -20,8 +20,6 @@
         integer                              :: ndim,ndims,ndimsf,&
                                                 ndimf,ndimd
         real(d)                              :: e0
-        real(d), dimension(:,:), allocatable :: eigvecf
-        real(d), dimension(:), allocatable   :: eigvalf
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
@@ -41,13 +39,13 @@
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
 !-----------------------------------------------------------------------
-        call calc_final_states(kpqf,ndimf,ndimsf,eigvecf,eigvalf)
+        call calc_final_states(kpqf,ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
 ! Calculation of the expansion coefficients for the Dyson orbitals
 ! in the MO basis
 !-----------------------------------------------------------------------
-        call dysorb(kpqf,eigvecf,eigvalf,ndimf,ndimsf)
+        call dysorb(kpqf,ndimf,ndimsf)
 
         return
 
@@ -112,7 +110,7 @@
 
 !#######################################################################
 
-      subroutine calc_final_states(kpqf,ndimf,ndimsf,eigvecf,eigvalf)
+      subroutine calc_final_states(kpqf,ndimf,ndimsf)
 
         use constants
         use parameters
@@ -121,8 +119,6 @@
         
         integer, dimension(:,:), allocatable :: kpqf
         integer                              :: ndimf,ndimsf
-        real(d), dimension(:,:), allocatable :: eigvecf
-        real(d), dimension(:), allocatable   :: eigvalf
 
 !-----------------------------------------------------------------------
 ! Determine the final subspace
@@ -133,7 +129,11 @@
 ! Construct and diagonalise the IP-ADC(2)-s or IP-ADC(2)-x Hamiltonian 
 ! matrix
 !-----------------------------------------------------------------------
-        call diag_ipadc_mat(kpqf,ndimf,ndimsf,eigvecf,eigvalf)
+        if (dysdiag.eq.1) then
+           call diag_ipadc_full(kpqf,ndimf,ndimsf)
+        else if (dysdiag.eq.2) then
+           call diag_ipadc_dav(kpqf,ndimf,ndimsf)
+        endif
 
         return
 
@@ -186,7 +186,7 @@
 
 !#######################################################################
 
-      subroutine diag_ipadc_mat(kpqf,ndimf,ndimsf,eigvecf,eigvalf)
+      subroutine diag_ipadc_full(kpqf,ndimf,ndimsf)
 
         use parameters
         use fspace
@@ -195,7 +195,7 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf
+        integer                                   :: ndimf,ndimsf,i,iout
         real(d), dimension(:,:), allocatable      :: eigvecf
         real(d), dimension(:), allocatable        :: eigvalf
         character(len=120)                        :: msg
@@ -210,9 +210,11 @@
 ! Calculate and diagonalise the IP-ADC(2) Hamiltonian matrix
 !-----------------------------------------------------------------------
         if (method.eq.2) then
-           msg='Diagonalising the IP-ADC(2)-s Hamiltonian matrix'
+           msg='Full diagonalisation of the IP-ADC(2)-s Hamiltonian &
+                matrix'
         else if (method.eq.3) then
-           msg='Diagonalising the IP-ADC(2)-x Hamiltonian matrix'
+           msg='Full diagonalisation of the IP-ADC(2)-x Hamiltonian &
+                matrix'
         endif
         write(ilog,'(/,2x,a)') trim(msg)
 
@@ -224,13 +226,89 @@
            call get_fspace_adc2e_direct(ndimf,kpqf,eigvecf,eigvalf)
         endif
 
+!-----------------------------------------------------------------------
+! Write the eigenpairs to file
+!-----------------------------------------------------------------------
+        call freeunit(iout)
+
+        open(unit=iout,file='ipadc_vecs',status='unknown',&
+             access='sequential',form='unformatted')
+
+        do i=1,ndimf
+           write(iout) i,eigvalf(i),eigvecf(:,i)
+        enddo
+
+        close(iout)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(eigvecf)
+        deallocate(eigvalf)
+
         return
 
-      end subroutine diag_ipadc_mat
+      end subroutine diag_ipadc_full
 
 !#######################################################################
 
-      subroutine dysorb(kpqf,eigvecf,eigvalf,ndimf,ndimsf)
+      subroutine diag_ipadc_dav(kpqf,ndimf,ndimsf)
+
+        use constants        
+        use parameters
+        use fspace
+        use iomod, only: freeunit
+        use fspace
+        use davmod
+        use guessvecs
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+        integer                                   :: ndimf,ndimsf
+        character(len=120)                        :: msg
+        integer*8                                 :: noffdf
+
+!-----------------------------------------------------------------------        
+! If requested, determine the Davidson guess vectors by diagonalising 
+! the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------        
+        if (ladc1guess_f) call adc1_guessvecs_final
+
+!-----------------------------------------------------------------------
+! Write the final space ADC(2) Hamiltonian to disk
+!-----------------------------------------------------------------------
+        write(ilog,*) 'Saving complete FINAL SPACE IP-ADC2 matrix in &
+             file'
+
+        if (method_f.eq.2) then
+           ! ADC(2)-s
+           if (lcvsfinal) then
+              call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
+        else if (method_f.eq.3) then
+           ! ADC(2)-x
+           if (lcvsfinal) then
+              call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+           else
+              call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+           endif
+        endif
+
+!-----------------------------------------------------------------------
+! Block-Davidson diagonalisation in the final space
+!-----------------------------------------------------------------------
+        call master_eig(ndimf,noffdf,'f')
+
+        return
+
+      end subroutine diag_ipadc_dav
+
+!#######################################################################
+
+      subroutine dysorb(kpqf,ndimf,ndimsf)
 
         use constants
         use parameters
@@ -241,12 +319,14 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
         integer                                   :: ndimf,ndimsf,i,j,&
-                                                     a,b,n,inorm,icoeff
-        real(d), dimension(ndimf,ndimf)           :: eigvecf
-        real(d), dimension(ndimf)                 :: eigvalf
+                                                     a,b,n,inorm,&
+                                                     icoeff,ivec,itmp,&
+                                                     upper
+        real(d), dimension(ndimf)                 :: eigvec
         real(d), dimension(:,:), allocatable      :: rhogs2
         real(d), dimension(:), allocatable        :: dyscoeff
-        real(d)                                   :: norm
+        real(d)                                   :: eigval,norm
+        character(len=36)                         :: vecfile
         
         write(ilog,'(/,2x,a,/)') 'Calculating the Dyson orbital &
              expansion coefficients'
@@ -303,8 +383,18 @@
         enddo
 
 !-----------------------------------------------------------------------
-! Open output files
+! Open files
 !-----------------------------------------------------------------------
+        ! IP-ADC eigenpairs
+        if (dysdiag.eq.1) then
+           vecfile='ipadc_vecs'
+        else
+           vecfile=davname_f
+        endif
+        call freeunit(ivec)
+        open(unit=ivec,file=vecfile,status='unknown',&
+             access='sequential',form='unformatted')
+
         ! Dyson orbital norms
         call freeunit(inorm)
         open(inorm,file='dyson_norms',form='formatted',&
@@ -319,24 +409,40 @@
 ! Calculation of the Dyson orbital expansion coefficients for all
 ! IP-ADC(2) states
 !-----------------------------------------------------------------------
-        do n=1,ndimf
+        if (dysdiag.eq.1) then
+           upper=ndimf
+        else if (dysdiag.eq.2) then
+           upper=davstates_f
+        endif
+
+        do n=1,upper
+
            dyscoeff=0.0d0
+
+           ! Read the next eigenpair from file
+           read(ivec) itmp,eigval,eigvec
+
            ! Exit if the next state lies above the upper limit
-           if (eigvalf(n).gt.dyslim) exit
+           if (eigval.gt.dyslim) exit
+
            ! Coefficients for the occupied orbitals
-           call dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,eigvecf(:,n),&
+           call dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,eigvec,&
                 ndimf,ndimsf)
+
            ! Coefficients for the unoccupied orbitals
-           call dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,eigvecf(:,n),&
+           call dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,eigvec,&
                 ndimf,ndimsf)           
+
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
-           write(inorm,'(2(2x,F13.7))') eigvalf(n)*eh2ev,norm
+           write(inorm,'(2(2x,F13.7))') eigval*eh2ev,norm
+
         enddo
 
 !-----------------------------------------------------------------------
-! Close output files
+! Close files
 !-----------------------------------------------------------------------
+        close(ivec)
         close(inorm)
         close(icoeff)
         

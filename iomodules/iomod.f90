@@ -2,7 +2,7 @@
 
     save
 
-    character(len=120) :: errmsg
+    character(len=200) :: errmsg
 
   contains
 

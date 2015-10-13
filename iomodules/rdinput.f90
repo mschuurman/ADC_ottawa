@@ -509,6 +509,13 @@
          if (dysirrep.eq.0) then
             msg='The symmetry of the final states in the Dyson &
                  orbital calculation has not been given'
+            goto 999
+         endif
+         if (dysdiag.eq.2.and..not.ldiagfinal) then
+            msg='Iterative diagonalisation of the IP-ADC(2) &
+                 Hamiltonian has been requested, but the diag_final &
+                 section is missing...'
+            goto 999
          endif
       endif
 
@@ -1023,15 +1030,28 @@
                      dyslim=dyslim/eh2ev
                   else
                     errmsg='Unknown unit'//trim(keyword(i))
+                    call error_control
                   endif
                endif
             else
                goto 100
             endif
 
-         else if (keyword(i).eq.'fulldiag') then
-            ldysfulldiag=.true.
-            
+         else if (keyword(i).eq.'diag') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'full') then
+                  dysdiag=1
+               else if (keyword(i).eq.'iter') then
+                  dysdiag=2
+               else
+                  errmsg='Unknown diagonalisation type:'//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+               
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

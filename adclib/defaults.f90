@@ -113,7 +113,7 @@
       ldyson=.false.
       dysirrep=0
       dyslim=9999d0
-      ldysfulldiag=.false.
+      dysdiag=0
       
       return
 

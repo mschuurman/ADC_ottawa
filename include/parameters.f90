@@ -242,8 +242,8 @@ logical                                     :: lrungamess,ldiffcom
 !!$************************************************
 !!$**********Dyson orbital parameters**************
 !!$************************************************
-logical :: ldyson,ldysfulldiag
-integer :: dysirrep
+logical :: ldyson
+integer :: dysirrep,dysdiag
 real(d) :: dyslim
 
 !!$************************************************
