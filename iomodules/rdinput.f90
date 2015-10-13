@@ -258,16 +258,14 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'dyson') then
+         else if (keyword(i).eq.'dyson_section') then
             ldyson=.true.
             lfakeip=.true.
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) dysirrep
-            else
-               goto 100
-            endif
-
+45          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-dyson_section') goto 45
+            i=inkw
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -330,6 +328,11 @@
 !-----------------------------------------------------------------------
         if (llanc) call rdlancinp
 
+!-----------------------------------------------------------------------
+! Read the Dyson section
+!-----------------------------------------------------------------------
+        if (ldyson) call rddysoninp
+        
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
@@ -497,6 +500,16 @@
             goto 999
          endif
 
+      endif
+
+!-----------------------------------------------------------------------
+! Dyson section
+!-----------------------------------------------------------------------
+      if (ldyson) then
+         if (dysirrep.eq.0) then
+            msg='The symmetry of the final states in the Dyson &
+                 orbital calculation has not been given'
+         endif
       endif
 
       return
@@ -961,6 +974,91 @@
 
 !#######################################################################
 
+    subroutine rddysoninp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Read to the Dyson section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'dyson_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the Lanczos parameters
+!-----------------------------------------------------------------------
+5    call rdinp(iin)
+      
+      i=0
+
+      if (keyword(1).ne.'end-dyson_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'symm') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) dysirrep
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'elim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) dyslim
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  if (keyword(i).eq.'ev') then
+                     dyslim=dyslim/eh2ev
+                  else
+                    errmsg='Unknown unit'//trim(keyword(i))
+                  endif
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'fulldiag') then
+            ldysfulldiag=.true.
+            
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+
+      endif
+            
+      return
+      
+    end subroutine rddysoninp
+      
+!#######################################################################
+
     subroutine getdiffinfo(n,l,string)
       
       implicit none
@@ -1022,7 +1120,7 @@
       return 
 
     end subroutine rdgeometry
-
+    
 !#######################################################################
 
   end module rdinput

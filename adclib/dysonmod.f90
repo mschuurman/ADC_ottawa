@@ -141,7 +141,181 @@
       fret=-0.5d0*(term1+term2)/(e(a)-e(i))
 
     end function rhogs2_ou
+    
+!#######################################################################
+! dyscoeff_gs_occ: calculates the coefficients for the occupied MOs in
+!                  the expansion of the Dyson orbital corresponding to
+!                  ionisation from the ground state to a single
+!                  IP-ADC state
+!
+! rhogs2   - 2nd-order correction to the ground state density matrix
+! dyscoeff - Dyson orbital coefficients in the MO basis
+! vec      - IP-ADC state vector of interest
+!
+!#######################################################################
+    
+    subroutine dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
+        
+      use constants        
+      use parameters
+      use vpqrsmod
 
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+      integer                                   :: ndimf,ndimsf,&
+                                                   alpha,i,j,ilbl,&
+                                                   jlbl,b,n,k,c
+      real(d), dimension(nbas,nbas)             :: rhogs2
+      real(d), dimension(nbas)                  :: dyscoeff
+      real(d), dimension(ndimf)                 :: vec
+      real(d), dimension(:,:), allocatable      :: chi,zeta
+      real(d)                                   :: delta_ijab,ftmp
+        
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      ! Note that these arrays only need to be of
+      ! dimension (nocc,nvirt), but for simplicity they are of
+      ! dimension (nbas,nbas), as this requires only a negligible
+      ! extra amount of memory 
+      allocate(chi(nbas,nbas))
+      allocate(zeta(nbas,nbas))
+        
+!-----------------------------------------------------------------------
+! Index of the 'continuum' orbital
+!-----------------------------------------------------------------------
+      alpha=ifakeorb
+
+!-----------------------------------------------------------------------
+! Zeroth-order contribution
+!-----------------------------------------------------------------------
+      do i=1,ndimsf
+         ilbl=kpqf(3,i)
+         dyscoeff(ilbl)=vec(i)
+      enddo
+
+!-----------------------------------------------------------------------
+! Second-oder contribution
+! Note that the first-order contribution vanishes
+!-----------------------------------------------------------------------
+      ! Term C
+      ! (i) Pre-calculate the chi and zeta terms
+      chi=0.0d0
+      zeta=0.0d0
+      do j=1,nocc
+         do b=nocc+1,nbas
+            do n=1,ndimsf
+               k=kpqf(3,n)
+               c=kpqf(5,n)
+               chi(j,b)=chi(j,b)+vec(n)*(vpqrs(b,j,c,k)-vpqrs(c,j,b,k))
+               zeta(j,b)=zeta(j,b)+vec(n)*(vpqrs(c,j,b,k)-vpqrs(b,j,c,k))
+            enddo
+         enddo
+      enddo
+      ! (ii) Contribution of the C terms
+      do i=1,nocc
+         do j=1,nocc
+            do b=nocc+1,nbas
+               delta_ijab=1.0d0/(e(alpha)+e(b)-e(j)-e(j))
+               ftmp=vpqrs(i,alpha,j,b)*chi(j,b)+vpqrs(i,b,j,alpha)*zeta(j,b)
+               ftmp=delta_ijab*ftmp
+               dyscoeff(i)=dyscoeff(i)+ftmp
+            enddo
+         enddo
+      enddo
+
+      ! Term D
+      do i=1,ndimsf
+         ilbl=kpqf(3,i)
+         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*vec(i)
+      enddo
+
+      ! Term E
+      do i=1,nocc
+         do j=1,ndimsf
+            jlbl=kpqf(3,j)
+            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*vec(j)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(chi)
+      deallocate(zeta)
+      
+      return
+
+    end subroutine dyscoeff_gs_occ
+
+!#######################################################################
+! dyscoeff_gs_unocc: calculates the coefficients for the unoccupied MOs
+!                    in the expansion of the Dyson orbital corresponding
+!                    to ionisation from the ground state to a single
+!                    IP-ADC state
+!
+! rhogs2   - 2nd-order correction to the ground state density matrix
+! dyscoeff - Dyson orbital coefficients in the MO basis
+! vec      - IP-ADC state vector of interest
+!
+!#######################################################################
+
+    subroutine dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
+
+      use constants
+      use parameters
+      use vpqrsmod
+      
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+      integer                                   :: ndimf,ndimsf,&
+                                                   alpha,b,i,ilbl,&
+                                                   j,c,n
+      real(d), dimension(nbas,nbas)             :: rhogs2
+      real(d), dimension(nbas)                  :: dyscoeff
+      real(d), dimension(ndimf)                 :: vec
+      real(d)                                   :: delta_ijbc,ftmp
+      
+!-----------------------------------------------------------------------
+! Index of the 'continuum' orbital
+!-----------------------------------------------------------------------
+      alpha=ifakeorb
+        
+!-----------------------------------------------------------------------
+! Second-order contributions
+! Note that the zeroth and first-order contributions vanish
+!-----------------------------------------------------------------------
+      ! Term F
+      do b=nocc+1,nbas
+         do i=1,nocc
+            ilbl=kpqf(3,i)
+            dyscoeff(b)=dyscoeff(b)+vec(i)*rhogs2(ilbl,b)
+         enddo
+      enddo
+
+      ! Term G
+      do b=nocc+1,nbas
+         do n=ndimsf+1,ndimf
+            i=kpqf(3,n)
+            j=kpqf(4,n)
+            if (kpqf(5,n).eq.alpha) then
+               c=kpqf(6,n)
+            else
+               c=kpqf(5,n)
+            endif
+            delta_ijbc=1.0d0/(e(b)+e(c)-e(i)-e(j))
+            ftmp=vec(n)*(2.0d0*vpqrs(b,i,c,j)-vpqrs(c,i,b,j))
+            ftmp=delta_ijbc*ftmp
+            dyscoeff(b)=dyscoeff(b)+ftmp
+         enddo
+      enddo
+        
+      return
+        
+    end subroutine dyscoeff_gs_unocc
+      
 !#######################################################################
 
   end module dysonmod

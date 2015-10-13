@@ -184,7 +184,6 @@ module parameters
 !!$************************************************
 !!$**********Davidson Parameters*******************
 !!$************************************************
-
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
                  ndavcalls,eigentype,solver,precon,&
                  precon_f,maxsubdim,maxsubdim_f
@@ -243,8 +242,9 @@ logical                                     :: lrungamess,ldiffcom
 !!$************************************************
 !!$**********Dyson orbital parameters**************
 !!$************************************************
-logical :: ldyson
+logical :: ldyson,ldysfulldiag
 integer :: dysirrep
+real(d) :: dyslim
 
 !!$************************************************
 !!$**********Other Parameters**********************
