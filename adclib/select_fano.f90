@@ -30,7 +30,8 @@ contains
 
     if (lifrzcore) then
        do ap=nOcc+1,nBas
-          a=roccnum(ap)
+          a=roccnum(ap)          
+          if (ldyson.and.a.eq.ifakeorb) cycle
           do i=1,hcentre(0)
              cah=hcentre(i)
              call iscore(cah,ic)
@@ -47,6 +48,7 @@ contains
     else
        do ap=nOcc+1,nBas
           a=roccnum(ap)
+          if (ldyson.and.a.eq.ifakeorb) cycle
           do i=1,hcentre(0)
              cah=hcentre(i)
              isym=MT(orbSym(cah),orbSym(a))
@@ -621,6 +623,7 @@ contains
 
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
+                if (ldyson.and.a.eq.ifakeorb) cycle
                 if(einit .le. 2._d*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
@@ -640,8 +643,10 @@ contains
   
        do ap=nOcc+1,nBas
           a=roccnum(ap)
+          if (ldyson.and.a.eq.ifakeorb) cycle
           do bp=ap+1,nBas
              b=roccnum(bp)
+             if (ldyson.and.b.eq.ifakeorb) cycle
              isym1=MT(orbSym(a),orbSym(b))
              if(isym1 .eq. nirrep) then
                 do ih=1,hcentre(0)
@@ -672,14 +677,14 @@ contains
        do ih=1,hcentre(0)
           i=hcentre(ih)
           ei=abs(e(i))
-
+          
           call iscore(i,ic)
           if (lifrzcore.and.ic.eq.1) cycle
-
+          
           do jh=ih+1,hcentre(0)
              j=hcentre(jh)
              ej=abs(e(j))
-
+             
              call iscore(j,ic)
              if (lifrzcore.and.ic.eq.1) cycle
 
@@ -687,15 +692,16 @@ contains
              if (isym1 .eq. nirrep) then
                 do ap=nOcc+1,nBas
                    a=roccnum(ap)
-                      cnti=cnti+1
-                      kpq(4,0)=kpq(4,0)+1
-                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-                      kpq(:,cnti)=col(:)
+                   if (ldyson.and.a.eq.ifakeorb) cycle
+                   cnti=cnti+1
+                   kpq(4,0)=kpq(4,0)+1
+                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+                   kpq(:,cnti)=col(:)
                 end do
              end if
           end do
        end do
-
+       
 !a|=b,i|=j spin I
 
        do ih=1,hcentre(0)
@@ -715,8 +721,10 @@ contains
              isym1=MT(orbSym(i),orbSym(j))
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
+                if (ldyson.and.a.eq.ifakeorb) cycle
                 do bp=ap+1,nBas
                    b=roccnum(bp)
+                   if (ldyson.and.b.eq.ifakeorb) cycle
                    isym2=MT(orbSym(a),orbSym(b))
                    if(MT(isym1,isym2) .eq. nirrep) then 
                       if(einit .le. (ei+ej)) then
@@ -2483,8 +2491,8 @@ contains
                    call fill_indices(col(:),2,1,a,a,i,j,3) 
                    kpq(:,cnti)=col(:)
                 end do
-             end if
-             
+             end if     
+
           endif
 
        end do

@@ -48,7 +48,7 @@
                endif
             else
                goto 100
-            endif            
+            endif
             ! Final space method, if present
             if (keyword(i+1).eq.',') then
                i=i+2
@@ -59,6 +59,8 @@
                else
                   goto 100
                endif
+            else
+               method_f=method
             endif
 
          else if (keyword(i).eq.'istate_symm') then

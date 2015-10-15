@@ -30,7 +30,8 @@
 !-----------------------------------------------------------------------  
 ! Initial space diagonalisation
 !-----------------------------------------------------------------------  
-        call calc_initial_state(kpq,ndim,ndims,vec_init,time)
+        if (statenumber.gt.0) call calc_initial_state(kpq,ndim,ndims,&
+             vec_init,time)
 
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
@@ -301,19 +302,19 @@
 !-----------------------------------------------------------------------
 ! Calculate and diagonalise the IP-ADC(2) Hamiltonian matrix
 !-----------------------------------------------------------------------
-        if (method.eq.2) then
+        if (method_f.eq.2) then
            msg='Full diagonalisation of the IP-ADC(2)-s Hamiltonian &
                 matrix'
-        else if (method.eq.3) then
+        else if (method_f.eq.3) then
            msg='Full diagonalisation of the IP-ADC(2)-x Hamiltonian &
                 matrix'
         endif
         write(ilog,'(/,2x,a)') trim(msg)
 
-        if (method.eq.2) then
+        if (method_f.eq.2) then
            ! IP-ADC(2)-s
            call get_fspace_adc2_direct(ndimf,kpqf,eigvecf,eigvalf)
-        else if (method.eq.3) then
+        else if (method_f.eq.3) then
            ! IP-ADC(2)-x
            call get_fspace_adc2e_direct(ndimf,kpqf,eigvecf,eigvalf)
         endif
@@ -464,7 +465,7 @@
 
         ! Dyson orbital expansion coefficients
         call freeunit(icoeff)
-        open(icoeff,file='dyson_coeffs',form='unformatted',&
+        open(icoeff,file='dyson_coeffs',form='formatted',&
              status='unknown')
 
 !-----------------------------------------------------------------------        
@@ -498,6 +499,10 @@
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
            write(inorm,'(2(2x,F13.7))') eigval*eh2ev,norm
+           write(icoeff,'(/,a,x,i4)') 'Cation state',n
+           do i=1,nbas
+              write(icoeff,'(i4,F13.7)') i,dyscoeff(i)
+           enddo
 
         enddo
 

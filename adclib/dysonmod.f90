@@ -303,7 +303,7 @@
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
       integer                                   :: ndim,ndims,ndimf,&
                                                    ndimsf,m,n,a,b,&
-                                                   alpha
+                                                   alpha,i,j
       real(d), dimension(nbas,nbas)             :: rhogs2,rmat,smat,&
                                                    pmat,qmat
       real(d), dimension(nbas)                  :: dyscoeff
@@ -311,12 +311,20 @@
       real(d), dimension(ndimf)                 :: vec_final
 
 !-----------------------------------------------------------------------
+! Index of the continuum orbital
+!-----------------------------------------------------------------------
+      alpha=ifakeorb
+
+!-----------------------------------------------------------------------
 ! Pre-calculation of the P-matrix
-! Not that only the unoccupied-unoccupied block does not vanish
+! Not that only the occupied-occupied and occupied-unoccupied blocks
+! vanish
 !
 ! Note that the current implementation is very, very stupid
 !-----------------------------------------------------------------------
       pmat=0.0d0
+
+      ! Unoccupied-unoccupied block
       do m=1,ndimsf
          do n=1,ndims
             if (kpqf(3,m).eq.kpq(3,n)) then
@@ -327,13 +335,35 @@
          enddo
       enddo
 
+      ! Unoccupied-occupied block
+      do n=1,ndims
+         j=kpq(3,n)
+         b=kpq(5,n)
+         do m=1,ndimf
+            if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
+               i=kpqf(3,m)
+               a=kpqf(5,m)
+
+               ! This assumes that the prefactor in the paper is 
+               ! correct
+!               pmat(a,i)=pmat(a,i)-4.0d0*vec_final(m)*vec_init(n)
+
+               ! This assumes that the pre-factor should be -0.5
+!               pmat(a,i)=pmat(a,i)-vec_final(m)*vec_init(n)
+
+               ! This assumes that the pre-factor should be -0.5,
+               ! and that we were double-counting the coefficients
+               pmat(a,i)=pmat(a,i)-0.5d0*vec_final(m)*vec_init(n)
+            endif
+         enddo
+      enddo
+
 !-----------------------------------------------------------------------
 ! Pre-calculation of the Q-matrix
 ! Not that only the unoccupied-unoccupied block does not vanish
 !
 ! Note that, again, the current implementation is very, very stupid
 !-----------------------------------------------------------------------
-      alpha=ifakeorb
       qmat=0.0d0
       do m=ndimsf+1,ndimf
          do n=ndims+1,ndim
@@ -383,7 +413,7 @@
     
     subroutine dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
         
-      use constants        
+      use constants
       use parameters
       use vpqrsmod
 
@@ -579,9 +609,16 @@
       alpha=ifakeorb
 
 !-----------------------------------------------------------------------
+! Zeroth-order term
+!-----------------------------------------------------------------------
+      do i=1,nocc
+         dyscoeff(i)=pmat(alpha,i)
+      enddo
+
+!-----------------------------------------------------------------------
 ! Second-order contributions
 !
-! Note that all zeroth and first-order constributions vanish
+! Note that all first-order constributions vanish
 !-----------------------------------------------------------------------
       ! Term H
       do i=1,nocc
@@ -642,7 +679,8 @@
       real(d), dimension(nbas)                  :: dyscoeff
       real(d), dimension(ndimf)                 :: vec_init
       real(d), dimension(ndimf)                 :: vec_final
-      real(d)                                   :: ftmp,delta_ijab,&
+      real(d)                                   :: ftmp,ftmp2,&
+                                                   delta_ijab,&
                                                    delta_klad,&
                                                    delta_klbc,&
                                                    delta_ikac,&
@@ -656,7 +694,7 @@
       rmatf=0.0d0
       do i=1,nocc
          do a=nocc+1,nbas
-            do n=1,ndims
+            do n=1,ndimsf
                j=kpqf(3,n)
                b=kpqf(5,n)
                delta_ijab=1.0d0/(e(a)+e(b)-e(i)-e(j))
@@ -720,15 +758,15 @@
 
                   ftmp=2.0d0*vpqrs(a,k,alpha,l)-vpqrs(alpha,k,a,l)
                   ftmp=delta_klad*pmat(c,a)*ftmp
-                  tau2(clbl,k,l)=tau1(clbl,k,l)+ftmp
+                  tau2(clbl,k,l)=tau2(clbl,k,l)+ftmp
 
                enddo
             enddo
          enddo
       enddo
       ! (ii) Calculation of term 3
-      clbl=0
-      do b=1,nocc
+      do b=nocc+1,nbas
+         clbl=0
          do c=nocc+1,nbas
             clbl=clbl+1
             do k=1,nocc
@@ -754,7 +792,7 @@
             do k=1,nocc
                delta_ikac=1.0d0/(e(alpha)+e(c)-e(i)-e(k))
                ftmp=2.0d0*vpqrs(alpha,i,c,k)-vpqrs(c,i,alpha,k)
-               zeta(i)=delta_ikac*rmatf(k,c)*ftmp
+               zeta(i)=zeta(i)+delta_ikac*rmatf(k,c)*ftmp
             enddo
          enddo
       enddo
@@ -768,16 +806,17 @@
 
       ! Term 6
       do b=nocc+1,nbas
-         do n=1,ndimsf
-            i=kpqf(3,n)
+         do m=1,ndimsf
+            i=kpqf(3,m)
+            ftmp=0.0d0
             do c=nocc+1,nbas
                do k=1,nocc
                   delta_ikbc=1.0d0/(e(b)+e(c)-e(i)-e(k))
-                  ftmp=2.0d0*vpqrs(i,b,k,c)-vpqrs(i,c,k,b)
-                  ftmp=delta_ikbc*rmat(k,c)*ftmp
+                  ftmp2=2.0d0*vpqrs(i,b,k,c)-vpqrs(i,c,k,b)
+                  ftmp=ftmp+delta_ikbc*rmat(k,c)*ftmp2
                enddo
             enddo
-            dyscoeff(b)=dyscoeff(b)+0.5d0*vec_final(n)*ftmp
+            dyscoeff(b)=dyscoeff(b)+0.5d0*vec_final(m)*ftmp
          enddo
       enddo
 
