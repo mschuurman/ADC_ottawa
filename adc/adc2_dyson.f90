@@ -19,7 +19,8 @@
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
         integer                              :: ndim,ndims,ndimsf,&
                                                 ndimf,ndimd
-        real(d)                              :: e0
+        real(d)                              :: e0,time
+        real(d), dimension(:), allocatable   :: vec_init
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
@@ -29,12 +30,7 @@
 !-----------------------------------------------------------------------  
 ! Initial space diagonalisation
 !-----------------------------------------------------------------------  
-        if (statenumber.gt.0) then
-           write(ilog,'(/,2x,a,/)') 'The calculation of Dyson orbitals &
-                for ionization from an excited state is not yet &
-                supported'
-           STOP
-        endif
+        call calc_initial_state(kpq,ndim,ndims,vec_init,time)
 
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
@@ -45,7 +41,7 @@
 ! Calculation of the expansion coefficients for the Dyson orbitals
 ! in the MO basis
 !-----------------------------------------------------------------------
-        call dysorb(kpqf,ndimf,ndimsf)
+        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
 
         return
 
@@ -107,6 +103,102 @@
         return
 
       end subroutine run_mp2
+
+!#######################################################################
+
+      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,time)
+
+        use constants
+        use parameters
+        use guessvecs
+        use fspace
+        use davmod
+        use iomod, only: freeunit
+
+        implicit none
+
+        integer, dimension(:,:), allocatable :: kpq
+        integer                              :: ndim,ndims,ivec,i
+        integer*8                            :: noffd
+        real(d)                              :: time,ftmp
+        real(d), dimension(:), allocatable   :: vec_init
+        character(len=120)                   :: msg
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+        allocate(kpq(7,0:nBas**2*4*nOcc**2))
+
+!-----------------------------------------------------------------------
+! Determine the initial subspace
+!-----------------------------------------------------------------------
+        kpq(:,:)=-1
+        call select_atom_is(kpq(:,:))
+        call select_atom_d(kpq(:,:),-1)
+
+        ndim=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+2*kpq(5,0)
+        ndims=kpq(1,0)
+        
+        write(ilog,*) 'ADC(2) INITIAL Space dim',ndim
+        write(ilog,*) 'dimension of various INITIAL configuration spaces'
+        write(ilog,*) kpq(1,0),kpq(2,0),kpq(3,0),kpq(4,0),kpq(5,0)
+
+!-----------------------------------------------------------------------  
+! Calculate guess initial space vectors from an ADC(1) calculation if 
+! requested.
+!-----------------------------------------------------------------------  
+        if (ladc1guess) call adc1_guessvecs
+
+!-----------------------------------------------------------------------
+! Write the initial space ADC(2)-s Hamiltonian to disk
+!-----------------------------------------------------------------------
+        if (method.eq.2) then
+           msg='Calculating the initial space ADC(2)-s Hamiltonian &
+                matrix'
+        else if (method.eq.3) then
+           msg='Calculating the initial space ADC(2)-x Hamiltonian &
+                matrix'
+        endif
+
+        write(ilog,'(/,a)') trim(msg)
+
+        if (method.eq.2) then
+           ! ADC(2)-s
+           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i') 
+        else if (method.eq.3) then
+           ! ADC(2)-x
+           call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
+        endif
+        
+        call cpu_time(time)
+
+        write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time=',time," s"
+
+!-----------------------------------------------------------------------
+! Block-Davidson diagonalisation
+!-----------------------------------------------------------------------
+        call master_eig(ndim,noffd,'i')
+
+!-----------------------------------------------------------------------
+! Load the initial state vector into memory
+!-----------------------------------------------------------------------
+        call freeunit(ivec)
+        open(unit=ivec,file=davname,status='unknown',&
+             access='sequential',form='unformatted')
+        
+        allocate(vec_init(ndim))
+
+        do i=1,statenumber-1
+           read(ivec)
+        enddo
+
+        read(ivec) i,ftmp,vec_init
+
+        close(ivec)
+
+        return
+
+      end subroutine calc_initial_state
 
 !#######################################################################
 
@@ -308,7 +400,7 @@
 
 !#######################################################################
 
-      subroutine dysorb(kpqf,ndimf,ndimsf)
+      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
 
         use constants
         use parameters
@@ -317,30 +409,20 @@
         
         implicit none
 
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf,i,j,&
-                                                     a,b,n,inorm,&
-                                                     icoeff,ivec,itmp,&
-                                                     upper
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf,kpq
+        integer                                   :: ndimf,ndimsf,ndim,&
+                                                     ndims,i,j,a,b,n,&
+                                                     inorm,icoeff,ivec,&
+                                                     itmp,nsta
+        real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: eigvec
-        real(d), dimension(:,:), allocatable      :: rhogs2
+        real(d), dimension(:,:), allocatable      :: rhogs2,rmat,smat
         real(d), dimension(:), allocatable        :: dyscoeff
         real(d)                                   :: eigval,norm
         character(len=36)                         :: vecfile
         
         write(ilog,'(/,2x,a,/)') 'Calculating the Dyson orbital &
              expansion coefficients'
-        
-!-----------------------------------------------------------------------
-! Dyson orbitals for ionization from an excited state are not yet
-! supported, so die here if this has been requested
-!-----------------------------------------------------------------------
-        if (statenumber.gt.0) then
-           write(ilog,'(/,2x,a,/)') 'The calculation of Dyson orbitals &
-                for ionization from an excited state is not yet &
-                supported'
-           STOP
-        endif
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -351,36 +433,16 @@
         ! 2nd-order correction to the ground state density matrix
         allocate(rhogs2(nbas,nbas))
 
-!-----------------------------------------------------------------------
-! Pre-calculation of the 2nd-order correction to the ground state
-! density matrix
-!
-! Note that this matrix is Hermitian, and so we only need to calculate
-! the lower triangle
-!-----------------------------------------------------------------------
-        ! Occupied-occupied block
-        do i=1,nocc
-           do j=i,nocc
-              rhogs2(i,j)=rhogs2_oo(i,j)
-              rhogs2(j,i)=rhogs2(i,j)
-           enddo
-        enddo
+        ! R-matrix
+        allocate(rmat(nbas,nbas))
 
-        ! Unoccupied-unoccupied block
-        do a=nocc+1,nbas
-           do b=a,nbas
-              rhogs2(a,b)=rhogs2_uu(a,b)
-              rhogs2(b,a)=rhogs2(a,b)
-           enddo
-        enddo
+        ! S-matrix
+        allocate(smat(nbas,nbas))
 
-        ! Occupied-unoccupied block
-        do i=1,nocc
-           do a=nocc+1,nbas
-              rhogs2(i,a)=rhogs2_ou(i,a)
-              rhogs2(a,i)=rhogs2(i,a)
-           enddo
-        enddo
+!-----------------------------------------------------------------------
+! Pre-calculate intermediate terms
+!-----------------------------------------------------------------------
+        call dyson_precalc(rhogs2,rmat,smat,vec_init,ndim,ndims,kpq)
 
 !-----------------------------------------------------------------------
 ! Open files
@@ -410,28 +472,28 @@
 ! IP-ADC(2) states
 !-----------------------------------------------------------------------
         if (dysdiag.eq.1) then
-           upper=ndimf
+           nsta=ndimf
         else if (dysdiag.eq.2) then
-           upper=davstates_f
+           nsta=davstates_f
         endif
 
-        do n=1,upper
+        do n=1,nsta
 
            dyscoeff=0.0d0
 
            ! Read the next eigenpair from file
            read(ivec) itmp,eigval,eigvec
 
-           ! Exit if the next state lies above the upper limit
+           ! Exit if the next state lies above the energetic limit
            if (eigval.gt.dyslim) exit
 
-           ! Coefficients for the occupied orbitals
-           call dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,eigvec,&
-                ndimf,ndimsf)
-
-           ! Coefficients for the unoccupied orbitals
-           call dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,eigvec,&
-                ndimf,ndimsf)           
+           ! Calculate the current set of coefficients
+           if (statenumber.eq.0) then
+              call dyscoeff_gs(rhogs2,dyscoeff,kpqf,eigvec,ndimf,ndimsf)
+           else
+              call dyscoeff_exci(rhogs2,dyscoeff,kpq,kpqf,vec_init,&
+                   eigvec,ndim,ndims,ndimf,ndimsf,rmat,smat)
+           endif
 
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
