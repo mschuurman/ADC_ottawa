@@ -31,7 +31,8 @@
       real(d), dimension(ndim)                  :: vec_init
       real(d)                                   :: delta_ijab,ftmp,&
                                                    delta_ikab,&
-                                                   delta_ijac
+                                                   delta_ijac,prei,&
+                                                   pref
 
 !-----------------------------------------------------------------------
 ! Pre-calculation of the 2nd-order correction to the ground state
@@ -81,7 +82,7 @@
                     b=kpq(5,n)
                     delta_ijab=1.0d0/(e(a)+e(b)-e(i)-e(j))
                     ftmp=2.0d0*vpqrs(a,i,b,j)-vpqrs(b,i,a,j)
-                    ftmp=delta_ijab*vec_init(n)*ftmp
+                    ftmp=delta_ijab*0.5d0*vec_init(n)*ftmp
                     rmat(i,a)=rmat(i,a)+ftmp
                  enddo
               enddo
@@ -96,7 +97,7 @@
               do i=1,nocc
                  delta_ikab=1.0d0/(e(a)+e(b)-e(i)-e(k))
                  ftmp=2.0d0*vpqrs(a,i,b,k)-vpqrs(b,i,a,k)
-                 ftmp=delta_ikab*vec_init(n)*ftmp
+                 ftmp=delta_ikab*0.25d0*vec_init(n)*ftmp
                  smat(i,j)=smat(i,j)+ftmp
               enddo
            enddo
@@ -110,7 +111,7 @@
               do a=nocc+1,nbas
                  delta_ijac=1.0d0/(e(a)+e(c)-e(i)-e(j))
                  ftmp=2.0d0*vpqrs(a,i,c,j)-vpqrs(c,i,a,j)
-                 ftmp=delta_ijac*vec_init(n)*ftmp
+                 ftmp=delta_ijac*0.25d0*vec_init(n)*ftmp
                  smat(a,b)=smat(a,b)+ftmp
               enddo
            enddo
@@ -330,7 +331,7 @@
             if (kpqf(3,m).eq.kpq(3,n)) then
                a=kpqf(5,m)
                b=kpq(5,n)
-               pmat(a,b)=pmat(a,b)+vec_final(m)*vec_init(n)
+               pmat(a,b)=pmat(a,b)+0.5d0*vec_final(m)*0.5d0*vec_init(n)
             endif
          enddo
       enddo
@@ -343,16 +344,11 @@
             if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
                i=kpqf(3,m)
                a=kpqf(5,m)
-
-               ! This assumes that the prefactor in the paper is 
-               ! correct
-!               pmat(a,i)=pmat(a,i)-4.0d0*vec_final(m)*vec_init(n)
-
-               ! This assumes that the pre-factor should be -0.5
-!               pmat(a,i)=pmat(a,i)-vec_final(m)*vec_init(n)
-
-               ! This assumes that the pre-factor should be -0.5,
-               ! and that we were double-counting the coefficients
+               ! This assumes that we were over-counting the 
+               ! coefficients
+               ! N.B., the 0.5 prefactor comes from scaling the
+               !       1h1p vec_final element by 0.5 and the
+               !       2h2p vec_init element by 0.25
                pmat(a,i)=pmat(a,i)-0.5d0*vec_final(m)*vec_init(n)
             endif
          enddo
@@ -371,13 +367,13 @@
                if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n).and.kpqf(6,m).eq.kpq(6,n)) then
                   a=kpqf(5,m)
                   b=kpq(5,n)
-                  qmat(a,b)=qmat(a,b)+2.0d0*vec_final(m)*vec_init(n)
+                  qmat(a,b)=qmat(a,b)+2.0d0*0.25d0*vec_final(m)*0.25d0*vec_init(n)
                endif
             else if (kpqf(6,m).eq.alpha) then
                if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n).and.kpqf(5,m).eq.kpq(5,n)) then
                   a=kpqf(6,m)
                   b=kpq(6,n)
-                  qmat(a,b)=qmat(a,b)+2.0d0*vec_final(m)*vec_init(n)
+                  qmat(a,b)=qmat(a,b)+2.0d0*0.25d0*vec_final(m)*0.25d0*vec_init(n)
                endif
             endif
          enddo
@@ -449,7 +445,7 @@
 !-----------------------------------------------------------------------
       do i=1,ndimsf
          ilbl=kpqf(3,i)
-         dyscoeff(ilbl)=vec(i)
+         dyscoeff(ilbl)=0.5d0*vec(i)
       enddo
 
 !-----------------------------------------------------------------------
@@ -465,8 +461,8 @@
             do n=1,ndimsf
                k=kpqf(3,n)
                c=kpqf(5,n)
-               chi(j,b)=chi(j,b)+vec(n)*(vpqrs(b,j,c,k)-vpqrs(c,j,b,k))
-               zeta(j,b)=zeta(j,b)+vec(n)*(vpqrs(c,j,b,k)-vpqrs(b,j,c,k))
+               chi(j,b)=chi(j,b)+0.5d0*vec(n)*(vpqrs(b,j,c,k)-vpqrs(c,j,b,k))
+               zeta(j,b)=zeta(j,b)+0.5d0*vec(n)*(vpqrs(c,j,b,k)-vpqrs(b,j,c,k))
             enddo
          enddo
       enddo
@@ -485,14 +481,14 @@
       ! Term D
       do i=1,ndimsf
          ilbl=kpqf(3,i)
-         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*vec(i)
+         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*0.5d0*vec(i)
       enddo
 
       ! Term E
       do i=1,nocc
          do j=1,ndimsf
             jlbl=kpqf(3,j)
-            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*vec(j)
+            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*0.5d0*vec(j)
          enddo
       enddo
 
@@ -546,9 +542,10 @@
 !-----------------------------------------------------------------------
       ! Term F
       do b=nocc+1,nbas
-         do i=1,nocc
-            ilbl=kpqf(3,i)
-            dyscoeff(b)=dyscoeff(b)+vec(i)*rhogs2(ilbl,b)
+!         do i=1,nocc
+         do n=1,ndimsf 
+            i=kpqf(3,i)
+            dyscoeff(b)=dyscoeff(b)+0.5d0*vec(n)*rhogs2(i,b)
          enddo
       enddo
 
@@ -563,7 +560,7 @@
                c=kpqf(5,n)
             endif
             delta_ijbc=1.0d0/(e(b)+e(c)-e(i)-e(j))
-            ftmp=vec(n)*(2.0d0*vpqrs(b,i,c,j)-vpqrs(c,i,b,j))
+            ftmp=0.25d0*vec(n)*(2.0d0*vpqrs(b,i,c,j)-vpqrs(c,i,b,j))
             ftmp=delta_ijbc*ftmp
             dyscoeff(b)=dyscoeff(b)+ftmp
          enddo
@@ -631,14 +628,14 @@
       ! Won't S_alpha,alpha always be zero?
       do n=1,ndimsf
          i=kpqf(3,n)
-         dyscoeff(i)=dyscoeff(i)-vec_final(n)*smat(alpha,alpha)
+         dyscoeff(i)=dyscoeff(i)-0.5d0*vec_final(n)*smat(alpha,alpha)
       enddo
 
       ! Term L
       do i=1,nocc
          do n=1,ndimsf
             j=kpqf(3,n)
-            dyscoeff(i)=dyscoeff(i)-vec_final(n)*smat(i,j)
+            dyscoeff(i)=dyscoeff(i)-0.5d0*vec_final(n)*smat(i,j)
          enddo
       enddo      
 
@@ -699,7 +696,7 @@
                b=kpqf(5,n)
                delta_ijab=1.0d0/(e(a)+e(b)-e(i)-e(j))
                ftmp=2.0d0*vpqrs(a,i,b,j)-vpqrs(b,i,a,j)
-               ftmp=delta_ijab*vec_final(n)*ftmp
+               ftmp=delta_ijab*0.5d0*vec_final(n)*ftmp
                rmatf(i,a)=rmatf(i,a)+ftmp
             enddo
          enddo
@@ -800,7 +797,7 @@
       do n=1,ndim
          i=kpq(3,n)
          b=kpq(5,n)
-         dyscoeff(b)=dyscoeff(b)+0.5d0*vec_init(n)*zeta(i)
+         dyscoeff(b)=dyscoeff(b)+0.5d0*0.5d0*vec_init(n)*zeta(i)
       enddo
       deallocate(zeta)
 
@@ -816,13 +813,47 @@
                   ftmp=ftmp+delta_ikbc*rmat(k,c)*ftmp2
                enddo
             enddo
-            dyscoeff(b)=dyscoeff(b)+0.5d0*vec_final(m)*ftmp
+            dyscoeff(b)=dyscoeff(b)+0.5d0*0.5d0*vec_final(m)*ftmp
          enddo
       enddo
 
       return
 
     end subroutine dyscoeff_exci_unocc
+
+!#######################################################################
+
+    function prefactor(i,j,a,b)
+
+      implicit none
+
+      integer :: i,j,a,b
+      real(d) :: prefactor
+
+!-----------------------------------------------------------------------
+! 1h1p excitations
+!-----------------------------------------------------------------------
+      if (j.lt.1) then
+         prefactor=0.5d0
+         return
+      endif
+
+!-----------------------------------------------------------------------
+! 2h2p excitations
+!-----------------------------------------------------------------------
+      if (i.eq.j.and.a.eq.b) then
+         prefactor=1.0d0
+      else if (i.ne.j.and.a.eq.b) then
+         prefactor=0.5d0
+      else if (i.eq.j.and.a.ne.b) then
+         prefactor=0.5d0
+      else if (i.ne.j.and.a.ne.b) then
+         prefactor=0.25d0
+      endif
+
+      return
+
+    end function prefactor
 
 !#######################################################################
 

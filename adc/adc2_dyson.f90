@@ -19,7 +19,7 @@
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
         integer                              :: ndim,ndims,ndimsf,&
                                                 ndimf,ndimd
-        real(d)                              :: e0,time
+        real(d)                              :: e0,einit,time
         real(d), dimension(:), allocatable   :: vec_init
 
 !-----------------------------------------------------------------------
@@ -31,7 +31,7 @@
 ! Initial space diagonalisation
 !-----------------------------------------------------------------------  
         if (statenumber.gt.0) call calc_initial_state(kpq,ndim,ndims,&
-             vec_init,time)
+             vec_init,einit,time)
 
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
@@ -42,7 +42,7 @@
 ! Calculation of the expansion coefficients for the Dyson orbitals
 ! in the MO basis
 !-----------------------------------------------------------------------
-        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
+        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
 
         return
 
@@ -107,7 +107,7 @@
 
 !#######################################################################
 
-      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,time)
+      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,einit,time)
 
         use constants
         use parameters
@@ -121,7 +121,7 @@
         integer, dimension(:,:), allocatable :: kpq
         integer                              :: ndim,ndims,ivec,i
         integer*8                            :: noffd
-        real(d)                              :: time,ftmp
+        real(d)                              :: einit,time,ftmp
         real(d), dimension(:), allocatable   :: vec_init
         character(len=120)                   :: msg
 
@@ -193,7 +193,7 @@
            read(ivec)
         enddo
 
-        read(ivec) i,ftmp,vec_init
+        read(ivec) i,einit,vec_init
 
         close(ivec)
 
@@ -401,7 +401,7 @@
 
 !#######################################################################
 
-      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
+      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
 
         use constants
         use parameters
@@ -419,7 +419,8 @@
         real(d), dimension(ndimf)                 :: eigvec
         real(d), dimension(:,:), allocatable      :: rhogs2,rmat,smat
         real(d), dimension(:), allocatable        :: dyscoeff
-        real(d)                                   :: eigval,norm
+        real(d)                                   :: einit,ei,eigval,&
+                                                     norm
         character(len=36)                         :: vecfile
         
         write(ilog,'(/,2x,a,/)') 'Calculating the Dyson orbital &
@@ -478,6 +479,12 @@
            nsta=davstates_f
         endif
 
+        if (statenumber.eq.0) then
+           ei=0.0d0
+        else
+           ei=einit
+        endif
+
         do n=1,nsta
 
            dyscoeff=0.0d0
@@ -498,7 +505,7 @@
 
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
-           write(inorm,'(2(2x,F13.7))') eigval*eh2ev,norm
+           write(inorm,'(2(2x,F13.7))') (eigval-ei)*eh2ev,norm
            write(icoeff,'(/,a,x,i4)') 'Cation state',n
            do i=1,nbas
               write(icoeff,'(i4,F13.7)') i,dyscoeff(i)
