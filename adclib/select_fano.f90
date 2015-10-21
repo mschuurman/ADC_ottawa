@@ -2622,24 +2622,15 @@ contains
           do ih=1,hcentre(0)
              i=hcentre(ih)
              ei=abs(e(i))
-
              call iscore(i,ic)
              if (lifrzcore.and.ic.eq.1) cycle
-
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
                 if (a.ne.ifakeorb) cycle
-                if(einit .le. 2._d*ei) then
-                   cnti=cnti+1
-                   kpq(2,0)=kpq(2,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,i,1)
-                   kpq(:,cnti)=col(:)
-                else
-                   cnti=cnti+1
-                   kpq(2,0)=kpq(2,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,i,1)
-                   kpq(:,cnti)=col(:)
-                end if
+                cnti=cnti+1
+                kpq(2,0)=kpq(2,0)+1
+                call fill_indices(col(:),2,1,a,a,i,i,1)
+                kpq(:,cnti)=col(:)
              end do
           end do
        end if
@@ -2656,21 +2647,12 @@ contains
                 do ih=1,hcentre(0)
                    i=hcentre(ih)
                    ei=abs(e(i))
-
                    call iscore(i,ic)
                    if (lifrzcore.and.ic.eq.1) cycle
-
-                   if(einit .le. 2._d*ei) then
-                      cnti=cnti+1
-                      kpq(3,0)=kpq(3,0)+1
-                      call fill_indices(col(:),2,1,a,b,i,i,2)
-                      kpq(:,cnti)=col(:)
-                   else
-                      cnti=cnti+1
-                      kpq(3,0)=kpq(3,0)+1
-                      call fill_indices(col(:),2,1,a,b,i,i,2)
-                      kpq(:,cnti)=col(:)
-                   end if
+                   cnti=cnti+1
+                   kpq(3,0)=kpq(3,0)+1
+                   call fill_indices(col(:),2,1,a,b,i,i,2)
+                   kpq(:,cnti)=col(:)
                 end do
              end if
           end do
@@ -2730,17 +2712,10 @@ contains
                    if (a.ne.ifakeorb.and.b.ne.ifakeorb) cycle
                    isym2=MT(orbSym(a),orbSym(b))
                    if(MT(isym1,isym2) .eq. dysirrep) then 
-                      if(einit .le. (ei+ej)) then
-                         cnti=cnti+1
-                         kpq(5,0)=kpq(5,0)+1
-                         call fill_indices(col(:),2,11,a,b,i,j,4)
-                         kpq(:,cnti)=col(:)
-                      else
-                         cnti=cnti+1
-                         kpq(5,0)=kpq(5,0)+1
-                         call fill_indices(col(:),2,11,a,b,i,j,4)
-                         kpq(:,cnti)=col(:)
-                      end if
+                      cnti=cnti+1
+                      kpq(5,0)=kpq(5,0)+1
+                      call fill_indices(col(:),2,11,a,b,i,j,4)
+                      kpq(:,cnti)=col(:)                      
                    end if
                 end do
              end do

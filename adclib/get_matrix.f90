@@ -1185,7 +1185,7 @@ contains
 !!$ Filling the off-diagonal part of the ph-ph block
 
      ndim1=kpq(1,0)
-       
+
      do i= 1,ndim1
         call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
         do j= 1,i-1

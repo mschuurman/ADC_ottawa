@@ -2,7 +2,7 @@ module read_param
 
   use constants
   use parameters
-  use misc
+!  use misc
   use channels
 
   implicit none

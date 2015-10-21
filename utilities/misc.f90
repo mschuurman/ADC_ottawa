@@ -481,6 +481,211 @@ contains
 
 !#######################################################################
 
+  subroutine wrstateinfo_neutral(ndim,kpq,kpqdim2,filename,nstates)
+
+    use iomod, only: freeunit
+
+    implicit none
+
+    integer                              :: ndim,kpqdim2,ieig,nstates,&
+                                            i,k,itmp,ilbl
+    integer, dimension(7,0:kpqdim2-1)    :: kpq
+    integer, dimension(:), allocatable   :: indx
+    real(d)                              :: ener
+    real(d), dimension(:), allocatable   :: coeff,coeffsq
+    real(d), parameter                   :: tol=0.05d0
+    character(len=36)                    :: filename
+    character(len=120)                   :: fmat
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(coeff(ndim))
+    allocate(coeffsq(ndim))
+    allocate(indx(ndim))
+
+!-----------------------------------------------------------------------
+! Open the eigenpair file
+!-----------------------------------------------------------------------
+    call freeunit(ieig)
+    open(unit=ieig,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Read the eigenpairs and output the state energies and dominant
+! configurations
+!-----------------------------------------------------------------------
+    do i=1,nstates
+
+       ! Read the next eigenpair from file
+       read(ieig) itmp,ener,coeff
+       coeffsq=coeff**2
+       call dsortindxa1("D",ndim,coeffsq,indx)
+
+       ! State energy in a.u.
+       if (i.lt.10) then
+          fmat='(2/,2x,a,3x,i1,a1,i1,2x,a,5x,F14.8)'
+       else
+          fmat='(2/,2x,a,2x,i2,a1,i1,2x,a,5x,F14.8)'
+       endif
+       write(ilog,fmat) 'State',i,'.',nirrep,'Energy:',ener+ehf+e_mp2
+
+       ! Excitation energy in eV
+       if (ener*eh2ev.lt.10.0d0) then
+          write(ilog,'(2x,a,2x,F10.5)') &
+               'Excitation Energy (eV):',ener*eh2ev
+       else
+          write(ilog,'(2x,a,3x,F10.5)') &
+               'Excitation Energy (eV):',ener*eh2ev
+       endif
+       
+       ! Dominant configurations
+       write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
+       write(ilog,'(2x,25a)') ('*',k=1,25)
+       write(ilog,'(3x,a)') 'j   k -> a  b    C_jkab'
+       write(ilog,'(2x,25a)') ('*',k=1,25)
+       do k=1,50
+          ilbl=indx(k)
+          if (abs(coeff(ilbl)).lt.tol) cycle
+          if (kpq(4,ilbl).eq.-1) then
+             ! Single excitations
+             write(ilog,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+                  kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
+          else
+             ! Double excitations
+             write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
+                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                  kpq(6,ilbl),coeff(ilbl)
+          endif
+       enddo
+       write(ilog,'(2x,25a)') ('*',k=1,25)
+
+    enddo
+
+!-----------------------------------------------------------------------
+! Close the eigenpair file
+!-----------------------------------------------------------------------
+    close(ieig)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(coeff)
+    deallocate(coeffsq)
+    deallocate(indx)
+
+    return
+
+  end subroutine wrstateinfo_neutral
+
+!#######################################################################
+
+  subroutine wrstateinfo_cation(ndim,kpq,kpqdim2,filename,nstates)
+
+    use iomod, only: freeunit
+
+    implicit none
+
+    integer                              :: ndim,kpqdim2,ieig,nstates,&
+                                            i,k,itmp,ilbl,iout
+    integer, dimension(7,0:kpqdim2-1)    :: kpq
+    integer, dimension(:), allocatable   :: indx
+    real(d)                              :: ener
+    real(d), dimension(:), allocatable   :: coeff,coeffsq
+    real(d), parameter                   :: tol=0.05d0
+    character(len=36)                    :: filename
+    character(len=120)                   :: fmat
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(coeff(ndim))
+    allocate(coeffsq(ndim))
+    allocate(indx(ndim))
+
+!-----------------------------------------------------------------------
+! Open files
+!-----------------------------------------------------------------------
+    call freeunit(ieig)
+    open(unit=ieig,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+    call freeunit(iout)
+    open(unit=iout,file='ipadcstates.dat',form='formatted',&
+         status='unknown')
+
+!-----------------------------------------------------------------------
+! Read the eigenpairs and output the state energies and dominant
+! configurations
+!-----------------------------------------------------------------------
+    do i=1,nstates
+
+       ! Read the next eigenpair from file
+       read(ieig) itmp,ener,coeff
+       coeffsq=coeff**2
+       call dsortindxa1("D",ndim,coeffsq,indx)
+
+       ! State energy in a.u.
+       if (i.lt.10) then
+          fmat='(2/,2x,a,3x,i1,a1,i1,2x,a,5x,F14.8)'
+       else if (i.lt.100) then
+          fmat='(2/,2x,a,2x,i2,a1,i1,2x,a,5x,F14.8)'
+       else 
+          fmat='(2/,2x,a,1x,i3,a1,i1,2x,a,5x,F14.8)'
+       endif
+       write(iout,fmat) 'State',i,'.',nirrep,'Energy:',ener+ehf+e_mp2
+
+       ! Excitation energy in eV
+       if (ener*eh2ev.lt.10.0d0) then
+          write(iout,'(2x,a,2x,F10.5)') &
+               'Excitation Energy (eV):',ener*eh2ev
+       else
+          write(iout,'(2x,a,3x,F10.5)') &
+               'Excitation Energy (eV):',ener*eh2ev
+       endif
+       
+       ! Dominant configurations
+       write(iout,'(/,2x,a,/)') 'Dominant Configurations:'
+       write(iout,'(2x,25a)') ('*',k=1,25)
+       write(iout,'(3x,a)') 'j   k -> a  b    C_jkab'
+       write(iout,'(2x,25a)') ('*',k=1,25)
+       do k=1,50          
+          ilbl=indx(k)
+          if (abs(coeff(ilbl)).lt.tol) cycle
+          if (kpq(4,ilbl).eq.-1) then
+             ! Single excitations
+             write(iout,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+                  kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
+          else
+             ! Double excitations
+             write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
+                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                  kpq(6,ilbl),coeff(ilbl)
+          endif
+       enddo
+       write(iout,'(2x,25a)') ('*',k=1,25)
+
+    enddo
+
+!-----------------------------------------------------------------------
+! Close files
+!-----------------------------------------------------------------------
+    close(ieig)
+    close(iout)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(coeff)
+    deallocate(coeffsq)
+    deallocate(indx)
+
+    return
+
+  end subroutine wrstateinfo_cation
+
+!#######################################################################
+
  subroutine mat_vec_multiply_SYM(ndim,A,vec,fin)
 
     integer, intent(in) :: ndim

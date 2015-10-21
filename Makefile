@@ -117,8 +117,8 @@ ADC_MAIN=adc/adc1_spec.o \
 	adc/adc.o
 
 ADC =   $(INCLUDE) \
-	$(UTILITIES) \
 	$(IOMODULES) \
+	$(UTILITIES) \
 	$(QCLIB) \
 	$(EIGEN) \
 	$(ADCLIB) \

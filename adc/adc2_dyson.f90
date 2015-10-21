@@ -19,7 +19,7 @@
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
         integer                              :: ndim,ndims,ndimsf,&
                                                 ndimf,ndimd
-        real(d)                              :: e0,time
+        real(d)                              :: e0,einit,time
         real(d), dimension(:), allocatable   :: vec_init
 
 !-----------------------------------------------------------------------
@@ -31,7 +31,7 @@
 ! Initial space diagonalisation
 !-----------------------------------------------------------------------  
         if (statenumber.gt.0) call calc_initial_state(kpq,ndim,ndims,&
-             vec_init,time)
+             vec_init,einit,time)
 
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
@@ -42,7 +42,7 @@
 ! Calculation of the expansion coefficients for the Dyson orbitals
 ! in the MO basis
 !-----------------------------------------------------------------------
-        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
+        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
 
         return
 
@@ -107,7 +107,7 @@
 
 !#######################################################################
 
-      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,time)
+      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,einit,time)
 
         use constants
         use parameters
@@ -115,13 +115,15 @@
         use fspace
         use davmod
         use iomod, only: freeunit
+        use misc
+        use davmod, only: readdavvc
 
         implicit none
 
         integer, dimension(:,:), allocatable :: kpq
-        integer                              :: ndim,ndims,ivec,i
+        integer                              :: ndim,ndims,ivec,i,itmp
         integer*8                            :: noffd
-        real(d)                              :: time,ftmp
+        real(d)                              :: einit,time
         real(d), dimension(:), allocatable   :: vec_init
         character(len=120)                   :: msg
 
@@ -181,6 +183,24 @@
         call master_eig(ndim,noffd,'i')
 
 !-----------------------------------------------------------------------
+! Output the results of initial space calculation
+!-----------------------------------------------------------------------
+        if (method.eq.2) then
+           msg='Initial space ADC(2)-s excitation energies'
+        else if (method.eq.3) then
+           msg='Initial space ADC(2)-x excitation energies'
+        endif
+
+        write(ilog,'(/,70a)') ('*',i=1,70)
+        write(ilog,'(2x,a)') trim(msg)
+        write(ilog,'(70a)') ('*',i=1,70)
+
+        itmp=1+nBas**2*4*nOcc**2
+        call wrstateinfo_neutral(ndim,kpq,itmp,davname,davstates)
+
+        write(ilog,'(/,70a,/)') ('*',i=1,70)
+
+!-----------------------------------------------------------------------
 ! Load the initial state vector into memory
 !-----------------------------------------------------------------------
         call freeunit(ivec)
@@ -193,7 +213,7 @@
            read(ivec)
         enddo
 
-        read(ivec) i,ftmp,vec_init
+        read(ivec) i,einit,vec_init
 
         close(ivec)
 
@@ -288,10 +308,12 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf,i,iout
+        integer                                   :: ndimf,ndimsf,i,&
+                                                     iout,itmp
         real(d), dimension(:,:), allocatable      :: eigvecf
         real(d), dimension(:), allocatable        :: eigvalf
         character(len=120)                        :: msg
+        character(len=36)                         :: filename
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -320,7 +342,7 @@
         endif
 
 !-----------------------------------------------------------------------
-! Write the eigenpairs to file
+! Save the eigenpairs to file
 !-----------------------------------------------------------------------
         call freeunit(iout)
 
@@ -332,6 +354,13 @@
         enddo
 
         close(iout)
+
+!-----------------------------------------------------------------------
+! Output the cation state energies and dominant configurations
+!-----------------------------------------------------------------------
+        itmp=1+nBas**2*4*nOcc**2
+        filename='ipadc_vecs'
+        call wrstateinfo_cation(ndimf,kpqf,itmp,filename,ndimf)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -358,7 +387,7 @@
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf
+        integer                                   :: ndimf,ndimsf,itmp
         character(len=120)                        :: msg
         integer*8                                 :: noffdf
 
@@ -395,13 +424,19 @@
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
 
+!-----------------------------------------------------------------------
+! Output the cation state energies and dominant configurations
+!-----------------------------------------------------------------------
+        itmp=1+nBas**2*4*nOcc**2
+        call wrstateinfo_cation(ndimf,kpqf,itmp,davname_f,davstates_f)
+
         return
 
       end subroutine diag_ipadc_dav
 
 !#######################################################################
 
-      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init)
+      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
 
         use constants
         use parameters
@@ -419,7 +454,8 @@
         real(d), dimension(ndimf)                 :: eigvec
         real(d), dimension(:,:), allocatable      :: rhogs2,rmat,smat
         real(d), dimension(:), allocatable        :: dyscoeff
-        real(d)                                   :: eigval,norm
+        real(d)                                   :: einit,ei,eigval,&
+                                                     norm
         character(len=36)                         :: vecfile
         
         write(ilog,'(/,2x,a,/)') 'Calculating the Dyson orbital &
@@ -478,6 +514,12 @@
            nsta=davstates_f
         endif
 
+        if (statenumber.eq.0) then
+           ei=0.0d0
+        else
+           ei=einit
+        endif
+
         do n=1,nsta
 
            dyscoeff=0.0d0
@@ -496,9 +538,12 @@
                    eigvec,ndim,ndims,ndimf,ndimsf,rmat,smat)
            endif
 
+           ! Account for the other component of the Kramers doublet
+           dyscoeff=2.0d0*dyscoeff
+
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
-           write(inorm,'(2(2x,F13.7))') eigval*eh2ev,norm
+           write(inorm,'(2(2x,F13.7))') (eigval-ei)*eh2ev,norm
            write(icoeff,'(/,a,x,i4)') 'Cation state',n
            do i=1,nbas
               write(icoeff,'(i4,F13.7)') i,dyscoeff(i)
