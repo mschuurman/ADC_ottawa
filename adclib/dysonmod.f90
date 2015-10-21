@@ -350,7 +350,7 @@
             if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
                i=kpqf(3,m)
                a=kpqf(5,m)
-               ! This assumes that we had been over-counting the 
+               ! This assumes that we were over-counting the 
                ! coefficients
                ! N.B., the 0.5 prefactor comes from scaling the
                !       1h1p vec_final element by 0.5 and the
@@ -826,6 +826,40 @@
       return
 
     end subroutine dyscoeff_exci_unocc
+
+!#######################################################################
+
+    function prefactor(i,j,a,b)
+
+      implicit none
+
+      integer :: i,j,a,b
+      real(d) :: prefactor
+
+!-----------------------------------------------------------------------
+! 1h1p excitations
+!-----------------------------------------------------------------------
+      if (j.lt.1) then
+         prefactor=0.5d0
+         return
+      endif
+
+!-----------------------------------------------------------------------
+! 2h2p excitations
+!-----------------------------------------------------------------------
+      if (i.eq.j.and.a.eq.b) then
+         prefactor=1.0d0
+      else if (i.ne.j.and.a.eq.b) then
+         prefactor=0.5d0
+      else if (i.eq.j.and.a.ne.b) then
+         prefactor=0.5d0
+      else if (i.ne.j.and.a.ne.b) then
+         prefactor=0.25d0
+      endif
+
+      return
+
+    end function prefactor
 
 !#######################################################################
 
