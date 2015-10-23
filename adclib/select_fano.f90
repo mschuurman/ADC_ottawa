@@ -2459,6 +2459,10 @@ contains
 !
 ! i.e., we only need to consider a=b,i|=j and a|=b,i|=j(I,II) for which
 !       one, and only one, of i or j corresponds to a core orbital
+!
+! Aditionally that we only consider single ionisation, and so only
+! need to admit the a|=b,i|=j(I,II) configurations within the 
+! CVS-IP-ADC(2) scheme
 !-----------------------------------------------------------------------
 
     einit=abs(e(hinit))
@@ -2466,37 +2470,37 @@ contains
     kpq(2:5,0)=0
     cnti=kpq(1,0)
 
-!-----------------------------------------------------------------------
-! a=b,i|=j, i or j a core orbital, but not both
-!-----------------------------------------------------------------------
-    do ih=1,hcentre(0)
-       i=hcentre(ih)
-       call iscore(i,ic1)
-       ei=abs(e(i))
-
-       do jh=ih+1,hcentre(0)
-          j=hcentre(jh)
-          call iscore(j,ic2)
-          ej=abs(e(j))
-
-          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
-
-             isym1=MT(orbSym(i),orbSym(j))
-             if (isym1 .eq. dysirrep) then
-                do ap=nOcc+1,nBas
-                   a=roccnum(ap)
-                   if (a.ne.ifakeorb) cycle
-                   cnti=cnti+1
-                   kpq(4,0)=kpq(4,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,j,3) 
-                   kpq(:,cnti)=col(:)
-                end do
-             end if     
-
-          endif
-
-       end do
-    end do
+!!-----------------------------------------------------------------------
+!! a=b,i|=j, i or j a core orbital, but not both
+!!-----------------------------------------------------------------------
+!    do ih=1,hcentre(0)
+!       i=hcentre(ih)
+!       call iscore(i,ic1)
+!       ei=abs(e(i))
+!
+!       do jh=ih+1,hcentre(0)
+!          j=hcentre(jh)
+!          call iscore(j,ic2)
+!          ej=abs(e(j))
+!
+!          if (ic1+ic2.eq.1.and.iexpfrz(i)+iexpfrz(j).eq.0) then
+!
+!             isym1=MT(orbSym(i),orbSym(j))
+!             if (isym1 .eq. dysirrep) then
+!                do ap=nOcc+1,nBas
+!                   a=roccnum(ap)
+!                   if (a.ne.ifakeorb) cycle
+!                   cnti=cnti+1
+!                   kpq(4,0)=kpq(4,0)+1
+!                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                   kpq(:,cnti)=col(:)
+!                end do
+!             end if     
+!
+!          endif
+!
+!       end do
+!    end do
 
 !-----------------------------------------------------------------------
 ! a|=b,i|=j spin I, i or j a core orbital, but not both
@@ -2611,29 +2615,32 @@ contains
 
 ! Filling the kpq arrays in the order: a=b,i=j;a|=b,i=j;a=b,i|=j;a|=b,i|=j(I,II).
 
+! Note that we only consider single ionisation, and so only need to
+! admit the a|=b,i=j and a|=b,i|=j(I,II) configurations
+
     if (flag .eq. -1) then
        
        kpq(2:5,0)=0
        cnti=kpq(1,0)
     
-!!$a=b,i=j i=hcentre(ih)
-
-       if(dysirrep .eq. 1) then
-          do ih=1,hcentre(0)
-             i=hcentre(ih)
-             ei=abs(e(i))
-             call iscore(i,ic)
-             if (lifrzcore.and.ic.eq.1) cycle
-             do ap=nOcc+1,nBas
-                a=roccnum(ap)
-                if (a.ne.ifakeorb) cycle
-                cnti=cnti+1
-                kpq(2,0)=kpq(2,0)+1
-                call fill_indices(col(:),2,1,a,a,i,i,1)
-                kpq(:,cnti)=col(:)
-             end do
-          end do
-       end if
+!!!$a=b,i=j i=hcentre(ih)
+!
+!       if(dysirrep .eq. 1) then
+!          do ih=1,hcentre(0)
+!             i=hcentre(ih)
+!             ei=abs(e(i))
+!             call iscore(i,ic)
+!             if (lifrzcore.and.ic.eq.1) cycle
+!             do ap=nOcc+1,nBas
+!                a=roccnum(ap)
+!                if (a.ne.ifakeorb) cycle
+!                cnti=cnti+1
+!                kpq(2,0)=kpq(2,0)+1
+!                call fill_indices(col(:),2,1,a,a,i,i,1)
+!                kpq(:,cnti)=col(:)
+!             end do
+!          end do
+!       end if
 
 !!$a|=b,i=j
   
@@ -2658,35 +2665,35 @@ contains
           end do
        end do
 
-!a=b,i|=j
-  
-       do ih=1,hcentre(0)
-          i=hcentre(ih)
-          ei=abs(e(i))
-
-          call iscore(i,ic)
-          if (lifrzcore.and.ic.eq.1) cycle
-
-          do jh=ih+1,hcentre(0)
-             j=hcentre(jh)
-             ej=abs(e(j))
-
-             call iscore(j,ic)
-             if (lifrzcore.and.ic.eq.1) cycle
-
-             isym1=MT(orbSym(i),orbSym(j))
-             if (isym1 .eq. dysirrep) then
-                do ap=nOcc+1,nBas
-                   a=roccnum(ap)
-                   if (a.ne.ifakeorb) cycle
-                   cnti=cnti+1
-                   kpq(4,0)=kpq(4,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,j,3) 
-                   kpq(:,cnti)=col(:)
-                end do
-             end if
-          end do
-       end do
+!!a=b,i|=j
+!  
+!       do ih=1,hcentre(0)
+!          i=hcentre(ih)
+!          ei=abs(e(i))
+!
+!          call iscore(i,ic)
+!          if (lifrzcore.and.ic.eq.1) cycle
+!
+!          do jh=ih+1,hcentre(0)
+!             j=hcentre(jh)
+!             ej=abs(e(j))
+!
+!             call iscore(j,ic)
+!             if (lifrzcore.and.ic.eq.1) cycle
+!
+!             isym1=MT(orbSym(i),orbSym(j))
+!             if (isym1 .eq. dysirrep) then
+!                do ap=nOcc+1,nBas
+!                   a=roccnum(ap)
+!                   if (a.ne.ifakeorb) cycle
+!                   cnti=cnti+1
+!                   kpq(4,0)=kpq(4,0)+1
+!                   call fill_indices(col(:),2,1,a,a,i,j,3) 
+!                   kpq(:,cnti)=col(:)
+!                end do
+!             end if
+!          end do
+!       end do
 
 !a|=b,i|=j spin I
 

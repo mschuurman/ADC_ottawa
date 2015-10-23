@@ -548,9 +548,8 @@
 !-----------------------------------------------------------------------
       ! Term F
       do b=nocc+1,nbas
-!         do i=1,nocc
          do n=1,ndimsf 
-            i=kpqf(3,i)
+            i=kpqf(3,n)
             dyscoeff(b)=dyscoeff(b)+0.5d0*vec(n)*rhogs2(i,b)
          enddo
       enddo
