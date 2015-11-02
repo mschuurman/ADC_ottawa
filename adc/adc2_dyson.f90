@@ -539,7 +539,7 @@
            endif
 
            ! Account for the other component of the Kramers doublet
-           dyscoeff=2.0d0*dyscoeff
+           dyscoeff=dsqrt(2.0d0)*dyscoeff
 
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
