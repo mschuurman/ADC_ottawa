@@ -339,11 +339,20 @@
       real(d), dimension(nbas)                  :: dyscoeff
       real(d), dimension(ndimf)                 :: vec
 
-      ! Coefficients for the occupied MOs
+!-----------------------------------------------------------------------
+! Coefficients for the occupied MOs
+!-----------------------------------------------------------------------
       call dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
 
-      ! Coefficients for the unoccupied MOs
+!-----------------------------------------------------------------------
+! Coefficients for the unoccupied MOs
+!-----------------------------------------------------------------------
       call dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
+
+!-----------------------------------------------------------------------
+! Account for the other spin component
+!-----------------------------------------------------------------------
+      dyscoeff=2.0d0*dyscoeff
 
       return
 
@@ -402,6 +411,11 @@
 !-----------------------------------------------------------------------
       call dyscoeff_exci_unocc(rhogs2,dyscoeff,kpq,kpqf,vec_init,vec_final,&
            ndim,ndims,ndimf,ndimsf,rmat,pmat,qmat)
+
+!-----------------------------------------------------------------------
+! Account for the other spin component
+!-----------------------------------------------------------------------
+      dyscoeff=2.0d0*dyscoeff
 
       return
 

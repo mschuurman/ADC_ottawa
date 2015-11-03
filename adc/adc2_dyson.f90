@@ -538,9 +538,6 @@
                    eigvec,ndim,ndims,ndimf,ndimsf,rmat,smat)
            endif
 
-           ! Account for the other component of the Kramers doublet
-           dyscoeff=dsqrt(2.0d0)*dyscoeff
-
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
            write(inorm,'(2(2x,F13.7))') (eigval-ei)*eh2ev,norm
