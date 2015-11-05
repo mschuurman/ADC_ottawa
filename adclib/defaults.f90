@@ -114,7 +114,8 @@
       dysirrep=0
       dyslim=9999d0
       dysdiag=0
-      
+      dysout=0
+ 
       return
 
     end subroutine set_defaults

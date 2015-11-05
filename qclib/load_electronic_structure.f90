@@ -215,7 +215,7 @@
   endif
 
   ! tighten up orbitals with a couple scf runs, if requested
-  if(.true.)call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
+  if (.true.) call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
 
   ! ensure orbitals have not developed any complex character
   mos_real = real(real(mos_cmplx))
@@ -223,6 +223,11 @@
   if(refval.gt.eps)then
    write(ilog,"(/'******* WARNING: imag part of mos_cmplx .gt. ',f14.10,': ',f14.10,' *********')")eps,refval
   endif
+
+  ! Save the spatial orbitals for use later
+  allocate(ao2mo(nao,nmo))
+  ao2mo(1:nao,1:nmo)=real(mos_cmplx(1:nao,1:nmo))
+  nbas_ao=nao
 
   ! load up variables depending on RHF/UHF case 
   if(nmo <= nao) then         ! RHF case, allowing for dropped orbitals

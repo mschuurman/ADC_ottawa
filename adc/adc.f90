@@ -15,12 +15,14 @@ program adc
   use channels
   use vpqrsmod
   use rungamess
+  use import_gamess
 
   implicit none
   
   integer, dimension(2) :: shp
   real(d)               :: time
   character(len=72)     :: gam_chkpt,gam_log
+  type(gam_structure)   :: gamess_info
 
 !-----------------------------------------------------------------------
 ! Setting up the multiplication table
@@ -66,7 +68,7 @@ program adc
   gam_log = 'gamess.log'
 
   call rdgeom(gam_log)
-  call load_gamess(gam_chkpt,gam_log)
+  call load_gamess(gam_chkpt,gam_log,gamess_info)
 
 !-----------------------------------------------------------------------
 ! Read orbital symmetries
@@ -103,7 +105,7 @@ program adc
 !-----------------------------------------------------------------------
   ! Approximate Dyson orbital calculation
   if (ldyson) then
-     call adc2_dyson()
+     call adc2_dyson(gamess_info)
   else
   ! Spectrum calculation
      select case(method)

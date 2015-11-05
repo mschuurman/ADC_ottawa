@@ -12,7 +12,7 @@ module read_param
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine load_gamess(chkpt_file,log_file)
+subroutine load_gamess(chkpt_file,log_file,gamess_info)
   use accuracy
   use parameters
   use import_gamess

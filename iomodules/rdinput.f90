@@ -1054,6 +1054,20 @@
                goto 100
             endif
                
+         else if (keyword(i).eq.'out') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'molden') then
+                  dysout=1
+               else
+                  errmsg='Unknown Dyson orbital output type:'&
+                       //trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

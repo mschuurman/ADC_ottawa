@@ -6,13 +6,14 @@
 
 !#######################################################################
 
-      subroutine adc2_dyson()
+      subroutine adc2_dyson(gam)
 
         use constants
         use parameters
         use fspace
         use misc
         use guessvecs
+        use import_gamess
 
         implicit none
 
@@ -21,6 +22,7 @@
                                                 ndimf,ndimd
         real(d)                              :: e0,einit,time
         real(d), dimension(:), allocatable   :: vec_init
+        type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
@@ -42,7 +44,7 @@
 ! Calculation of the expansion coefficients for the Dyson orbitals
 ! in the MO basis
 !-----------------------------------------------------------------------
-        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
+        call dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit,gam)
 
         return
 
@@ -436,13 +438,15 @@
 
 !#######################################################################
 
-      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,einit)
+      subroutine dysorb(kpqf,ndimf,ndimsf,kpq,ndim,ndims,vec_init,&
+           einit,gam)
 
         use constants
         use parameters
         use dysonmod
         use iomod, only: freeunit
-        
+        use import_gamess
+
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf,kpq
@@ -457,7 +461,10 @@
         real(d)                                   :: einit,ei,eigval,&
                                                      norm
         character(len=36)                         :: vecfile
+        logical                                   :: ldir
+        type(gam_structure)                       :: gam
         
+
         write(ilog,'(/,2x,a,/)') 'Calculating the Dyson orbital &
              expansion coefficients'
 
@@ -504,6 +511,15 @@
         open(icoeff,file='dyson_coeffs',form='formatted',&
              status='unknown')
 
+!-----------------------------------------------------------------------
+! Create the molden directory if necessary
+!-----------------------------------------------------------------------
+        if (dysout.eq.1) then
+           inquire(file='molden/.',exist=ldir)
+           if (ldir) call system('rm -rf molden')
+           call system('mkdir molden')
+        endif
+
 !-----------------------------------------------------------------------        
 ! Calculation of the Dyson orbital expansion coefficients for all
 ! IP-ADC(2) states
@@ -538,9 +554,6 @@
                    eigvec,ndim,ndims,ndimf,ndimsf,rmat,smat)
            endif
 
-           ! Account for the other component of the Kramers doublet
-           dyscoeff=2.0d0*dyscoeff
-
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
            write(inorm,'(2(2x,F13.7))') (eigval-ei)*eh2ev,norm
@@ -548,6 +561,9 @@
            do i=1,nbas
               write(icoeff,'(i4,F13.7)') i,dyscoeff(i)
            enddo
+
+           ! Output the *normalised* Dyson orbital to the molden file
+           if (dysout.eq.1) call wrmolden(dyscoeff,gam,n)
 
         enddo
 
@@ -557,7 +573,7 @@
         close(ivec)
         close(inorm)
         close(icoeff)
-        
+
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -566,6 +582,148 @@
         return
 
       end subroutine dysorb
+
+!#######################################################################
+
+      subroutine wrmolden(dyscoeff,gam,n)
+
+        use constants
+        use parameters
+        use import_gamess
+        use iomod, only: freeunit
+
+        implicit none
+
+        integer                          :: imolden,i,n,j,k,iang,p1,&
+                                            p2,np,count
+        real(d), dimension(nbas)         :: dyscoeff
+        real(d), dimension(nbas_ao)      :: dyscoeff_ao
+        real(d)                          :: nfac
+        real(d), dimension(10,10)        :: ftransmat
+        character(len=60)                :: filename
+        character(len=1), dimension(0:3) :: shlbl
+        type(gam_structure)              :: gam
+
+!-----------------------------------------------------------------------
+! Set shell labels
+!-----------------------------------------------------------------------
+        shlbl(0:3)=(/ 's','p','d','f' /)
+
+!-----------------------------------------------------------------------
+! Transformation matrix for the reordering of the f-functions to
+! comply with the molden ordering of:
+!  
+!  1    2    3    4    5    6    7    8    9   10
+! xxx, yyy, zzz, xyy, xxy, xxz, xzz, yzz, yyz, xyz
+!-----------------------------------------------------------------------
+        ftransmat=0.0d0
+        ftransmat(1,1)=1.0d0
+        ftransmat(2,2)=1.0d0
+        ftransmat(3,3)=1.0d0
+        ftransmat(6,4)=1.0d0
+        ftransmat(4,5)=1.0d0
+        ftransmat(5,6)=1.0d0
+        ftransmat(8,7)=1.0d0
+        ftransmat(9,8)=1.0d0
+        ftransmat(7,9)=1.0d0
+        ftransmat(10,10)=1.0d0
+
+!-----------------------------------------------------------------------
+! Open the molden file
+!-----------------------------------------------------------------------
+        call freeunit(imolden)
+        
+        filename=''
+        if (n.lt.10) then
+           write(filename,'(a14,i1,a7)') 'molden/dysorb_',n,'.molden'
+        else if (n.lt.100) then
+           write(filename,'(a14,i2,a7)') 'molden/dysorb_',n,'.molden'
+        else if (n.lt.1000) then
+           write(filename,'(a14,i3,a7)') 'molden/dysorb_',n,'.molden'
+        else
+           write(filename,'(a14,i4,a7)') 'molden/dysorb_',n,'.molden'
+        endif
+        
+        call freeunit(imolden)
+
+        open(imolden,file=filename,form='formatted',&
+             status='unknown')
+
+!-----------------------------------------------------------------------
+! Write the Cartesian coordinates and Gaussian basis to the molden file
+!-----------------------------------------------------------------------
+        ! Preamble
+        write(imolden,'(a)') '[Molden Format]'
+        write(imolden,'(a)') '[Title]'
+        
+        ! Cartesian coordinates
+        write(imolden,'(/,a)') '[Atoms] Angs'
+        do i=1,gam%natoms
+           write(imolden,'(1x,a2,2x,i3,2x,i3,3(2x,F10.7))') &
+                gam%atoms(i)%name,i,int(gam%atoms(i)%znuc),&
+                (gam%atoms(i)%xyz(j),j=1,3)
+        enddo
+        
+        ! Gaussian basis set
+        write(imolden,'(/,a)') '[GTO]'
+        do i=1,gam%natoms
+           if (i.gt.1) write(imolden,*)
+           write(imolden,'(2x,i3,2x,a1)') i,'0'
+           do j=1,gam%atoms(i)%nshell
+              iang=gam%atoms(i)%sh_l(j)
+              p1=gam%atoms(i)%sh_p(j)
+              p2=gam%atoms(i)%sh_p(j+1)
+              np=p2-p1
+              write(imolden,'(2x,a1,2x,i3,2x,a4)') shlbl(iang),&
+                   np,'1.00'
+              do k=1,np
+                 write(imolden,*) gam%atoms(i)%p_zet(p1-1+k),&
+                      gam%atoms(i)%p_c(p1-1+k)
+              enddo
+           enddo
+        enddo
+
+!-----------------------------------------------------------------------
+! Write the *normalised* Dyson orbital to the molden file
+!-----------------------------------------------------------------------
+        ! Calculate the *normalised* Dyson orbital expansion 
+        ! coefficients in the AO basis
+        nfac=sqrt(dot_product(dyscoeff,dyscoeff))
+        dyscoeff_ao=matmul(ao2mo(1:nbas_ao,1:nbas),dyscoeff(1:nbas)/nfac)
+        
+        ! Write the *normalised* Dyson orbital to the molden file
+        write(imolden,'(/,a)') '[MO]'
+        write(imolden,'(a)') 'Sym= 1'
+        write(imolden,'(a,x,F6.1)') 'Ene=',real(n)
+        write(imolden,'(a)') 'Spin= Alpha'
+        write(imolden,'(a,E14.4)') 'Occup= ',nfac
+        count=0
+        do i=1,gam%natoms
+           do j=1,gam%atoms(i)%nshell
+              iang=gam%atoms(i)%sh_l(j)
+              p1=gam%atoms(i)%sh_p(j)
+              p2=gam%atoms(i)%sh_p(j+1)
+              np=p2-p1
+              ! If we are at a shell of f-functions, then rearrange
+              ! to correspond to the molden ordering
+              if (iang.eq.3) then
+                 dyscoeff_ao(p1:p2-1)=matmul(ftransmat,dyscoeff_ao(p1:p2-1))
+              endif
+              do k=1,np
+                 count=count+1
+                 write(imolden,*) count,dyscoeff_ao(count)
+              enddo
+           enddo
+        enddo
+
+!-----------------------------------------------------------------------
+! Close the molden file
+!-----------------------------------------------------------------------
+        close(imolden)
+
+        return
+
+      end subroutine wrmolden
 
 !#######################################################################
 

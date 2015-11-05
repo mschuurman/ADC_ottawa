@@ -5,11 +5,6 @@
 !           Equations adapted from spin-orbtal expressions for the 
 !           density and transition density matrices given in 
 !           Dreuw et al., Mol. Phys, 112, 774 (2014).
-!
-!           Note that these routines return the coefficients
-!           corresponding to a single component of the Kramers doublet,
-!           and so must be multiplied bya factor of two if total
-!           ionization intensities are to be extracted. 
 !#######################################################################
 
   module dysonmod
@@ -17,6 +12,10 @@
     use constants
     use parameters
     use vpqrsmod
+
+    save
+
+    real(d), parameter :: invsqrt2=1.0d0/sqrt(2.0d0)
 
   contains
 
@@ -95,38 +94,88 @@
            enddo
 
            ! S-matrix, occupied-occupied block
-           do n=ndims+1,ndim
-              j=kpq(3,n)
-              k=kpq(4,n)
-              a=kpq(5,n)
-              b=kpq(6,n)
-              do i=1,nocc
-                 delta_ikab=1.0d0/(e(a)+e(b)-e(i)-e(k))
-                 ftmp=2.0d0*vpqrs(a,i,b,k)-vpqrs(b,i,a,k)
-                 ftmp=delta_ikab*0.25d0*vec_init(n)*ftmp
-                 smat(i,j)=smat(i,j)+ftmp
-              enddo
-           enddo
-
-           ! S-matrix, unoccupied-unoccupied block
-           do n=ndims+1,ndim
-              i=kpq(3,n)
-              j=kpq(4,n)
-              b=kpq(5,n)
-              c=kpq(6,n)
-              do a=nocc+1,nbas
-                 delta_ijac=1.0d0/(e(a)+e(c)-e(i)-e(j))
-                 ftmp=2.0d0*vpqrs(a,i,c,j)-vpqrs(c,i,a,j)
-                 ftmp=delta_ijac*0.25d0*vec_init(n)*ftmp
-                 smat(a,b)=smat(a,b)+ftmp
-              enddo
-           enddo
+           call precalc_smat(smat,vec_init,kpq,ndim,ndims)
 
         endif
 
       return
 
     end subroutine dyson_precalc
+
+!#######################################################################
+
+    subroutine precalc_smat(smat,vec_init,kpq,ndim,ndims)
+
+      use constants
+      use parameters
+
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
+      integer                                   :: ndim,ndims,count,n,&
+                                                   i,j,k,a,b
+      real(d), dimension(nbas,nbas)             :: smat
+      real(d), dimension(ndim)                  :: vec_init
+      real(d)                                   :: ftmp,delta
+
+!-----------------------------------------------------------------------
+! Initialise arrays
+!-----------------------------------------------------------------------
+      smat=0.0d0
+
+!-----------------------------------------------------------------------
+! j=k, a|=b
+!-----------------------------------------------------------------------
+      count=ndims+kpq(2,0)
+      do n=count+1,count+kpq(3,0)
+         j=kpq(3,n)
+         k=kpq(4,n)
+         a=kpq(5,n)
+         b=kpq(6,n)
+         do i=1,nocc
+            delta=1.0d0/(e(a)+e(b)-e(i)-e(j))
+            ftmp=vpqrs(a,i,b,j)-vpqrs(b,i,a,j)
+            smat(i,j)=smat(i,j)+delta*ftmp*invsqrt2*vec_init(n)
+         enddo
+
+      enddo
+
+!-----------------------------------------------------------------------
+! j|=k, a|=b, spin case I
+!-----------------------------------------------------------------------
+      count=ndims+kpq(2,0)+kpq(3,0)+kpq(4,0)
+      do n=count+1,count+kpq(5,0)
+         j=kpq(3,n)
+         k=kpq(4,n)
+         a=kpq(5,n)
+         b=kpq(6,n)
+         do i=1,nocc
+            delta=1.0d0/(e(a)+e(b)-e(i)-e(k))
+            ftmp=vpqrs(a,i,b,k)-vpqrs(b,i,a,k)
+            smat(i,j)=smat(i,j)+delta*ftmp*0.5d0*vec_init(n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! j|=k, a|=b, spin case II
+!-----------------------------------------------------------------------
+      count=ndims+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+      do n=count+1,count+kpq(5,0)
+         j=kpq(3,n)
+         k=kpq(4,n)
+         a=kpq(5,n)
+         b=kpq(6,n)
+         do i=1,nocc
+            delta=1.0d0/(e(a)+e(b)-e(i)-e(k))
+            ftmp=vpqrs(a,i,b,k)-vpqrs(b,i,a,k)
+            smat(i,j)=smat(i,j)&
+                 +delta*ftmp*(3.0d0/sqrt(12.0d0))*vec_init(n)
+         enddo
+      enddo
+
+      return
+
+    end subroutine precalc_smat
 
 !#######################################################################
 ! rhogs2_uu: returns an element of the unoccupied-unoccupied block of
@@ -262,6 +311,8 @@
 
       fret=-0.5d0*(term1+term2)/(e(a)-e(i))
 
+      return
+
     end function rhogs2_ou
 
 !#######################################################################
@@ -283,11 +334,20 @@
       real(d), dimension(nbas)                  :: dyscoeff
       real(d), dimension(ndimf)                 :: vec
 
-      ! Coefficients for the occupied MOs
+!-----------------------------------------------------------------------
+! Coefficients for the occupied MOs
+!-----------------------------------------------------------------------
       call dyscoeff_gs_occ(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
 
-      ! Coefficients for the unoccupied MOs
+!-----------------------------------------------------------------------
+! Coefficients for the unoccupied MOs
+!-----------------------------------------------------------------------
       call dyscoeff_gs_unocc(rhogs2,dyscoeff,kpqf,vec,ndimf,ndimsf)
+
+!-----------------------------------------------------------------------
+! Account for the other spin component
+!-----------------------------------------------------------------------
+      dyscoeff=sqrt(2.0d0)*dyscoeff
 
       return
 
@@ -309,8 +369,7 @@
 
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
       integer                                   :: ndim,ndims,ndimf,&
-                                                   ndimsf,m,n,a,b,&
-                                                   alpha,i,j
+                                                   ndimsf
       real(d), dimension(nbas,nbas)             :: rhogs2,rmat,smat,&
                                                    pmat,qmat
       real(d), dimension(nbas)                  :: dyscoeff
@@ -318,47 +377,14 @@
       real(d), dimension(ndimf)                 :: vec_final
 
 !-----------------------------------------------------------------------
-! Index of the continuum orbital
-!-----------------------------------------------------------------------
-      alpha=ifakeorb
-
-!-----------------------------------------------------------------------
 ! Pre-calculation of the P-matrix
-! Not that only the occupied-occupied and occupied-unoccupied blocks
+! Note that only the occupied-occupied and occupied-unoccupied blocks
 ! vanish
 !
 ! Note that the current implementation is very, very stupid
 !-----------------------------------------------------------------------
-      pmat=0.0d0
-
-      ! Unoccupied-unoccupied block
-      do m=1,ndimsf
-         do n=1,ndims
-            if (kpqf(3,m).eq.kpq(3,n)) then
-               a=kpqf(5,m)
-               b=kpq(5,n)
-               pmat(a,b)=pmat(a,b)+0.5d0*vec_final(m)*0.5d0*vec_init(n)
-            endif
-         enddo
-      enddo
-
-      ! Unoccupied-occupied block
-      do n=1,ndims
-         j=kpq(3,n)
-         b=kpq(5,n)
-         do m=1,ndimf
-            if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
-               i=kpqf(3,m)
-               a=kpqf(5,m)
-               ! This assumes that we were over-counting the 
-               ! coefficients
-               ! N.B., the 0.5 prefactor comes from scaling the
-               !       1h1p vec_final element by 0.5 and the
-               !       2h2p vec_init element by 0.25
-               pmat(a,i)=pmat(a,i)-0.5d0*vec_final(m)*vec_init(n)
-            endif
-         enddo
-      enddo
+      call precalc_pmat(ndim,ndimf,ndims,ndimsf,pmat,vec_init,&
+           vec_final,kpq,kpqf)
 
 !-----------------------------------------------------------------------
 ! Pre-calculation of the Q-matrix
@@ -366,24 +392,8 @@
 !
 ! Note that, again, the current implementation is very, very stupid
 !-----------------------------------------------------------------------
-      qmat=0.0d0
-      do m=ndimsf+1,ndimf
-         do n=ndims+1,ndim
-            if (kpqf(5,m).eq.alpha) then
-               if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n).and.kpqf(6,m).eq.kpq(6,n)) then
-                  a=kpqf(5,m)
-                  b=kpq(5,n)
-                  qmat(a,b)=qmat(a,b)+2.0d0*0.25d0*vec_final(m)*0.25d0*vec_init(n)
-               endif
-            else if (kpqf(6,m).eq.alpha) then
-               if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n).and.kpqf(5,m).eq.kpq(5,n)) then
-                  a=kpqf(6,m)
-                  b=kpq(6,n)
-                  qmat(a,b)=qmat(a,b)+2.0d0*0.25d0*vec_final(m)*0.25d0*vec_init(n)
-               endif
-            endif
-         enddo
-      enddo
+      call precalc_qmat(ndim,ndimf,ndims,ndimsf,qmat,vec_init,&
+           vec_final,kpq,kpqf)
 
 !-----------------------------------------------------------------------
 ! Coefficients for the occupied MOs
@@ -397,9 +407,240 @@
       call dyscoeff_exci_unocc(rhogs2,dyscoeff,kpq,kpqf,vec_init,vec_final,&
            ndim,ndims,ndimf,ndimsf,rmat,pmat,qmat)
 
+!-----------------------------------------------------------------------
+! Account for the other spin component
+!-----------------------------------------------------------------------
+      dyscoeff=sqrt(2.0d0)*dyscoeff
+
       return
 
     end subroutine dyscoeff_exci
+
+!#######################################################################
+
+    subroutine precalc_pmat(ndim,ndimf,ndims,ndimsf,pmat,vec_init,&
+         vec_final,kpq,kpqf)
+
+      use constants
+      use parameters
+
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+      integer                                   :: ndim,ndimf,ndims,&
+                                                   ndimsf,m,n,a,b,&
+                                                   count,i,j
+      real(d), dimension(nbas,nbas)             :: pmat
+      real(d), dimension(ndim)                  :: vec_init
+      real(d), dimension(ndimf)                 :: vec_final
+
+!-----------------------------------------------------------------------
+! Initialisation of arrays
+!-----------------------------------------------------------------------
+      pmat=0.0d0
+
+!-----------------------------------------------------------------------
+! Unoccupied-unoccupied block
+!-----------------------------------------------------------------------
+      do m=1,ndimsf
+         do n=1,ndims
+            if (kpqf(3,m).eq.kpq(3,n)) then
+               a=kpqf(5,m)
+               b=kpq(5,n)
+               pmat(a,b)=pmat(a,b)+invsqrt2*vec_final(m)*invsqrt2*vec_init(n)
+            endif
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Unoccupied-occupied block
+!-----------------------------------------------------------------------
+      do n=1,ndims
+         j=kpq(3,n)
+         b=kpq(5,n)
+         
+         ! i=j, a|=b
+         count=kpqf(1,0)+kpqf(2,0)
+         do m=count+1,count+kpqf(3,0)
+            if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
+               i=kpqf(3,m)
+               a=kpqf(5,m)
+               pmat(a,i)=pmat(a,i)-vec_final(m)*vec_init(n)
+            endif
+         enddo
+
+         ! i|=j, a|=b, spin case I
+         count=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+         do m=count+1,count+kpqf(5,0)
+            if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
+               i=kpqf(3,m)
+               a=kpqf(5,m)
+               pmat(a,i)=pmat(a,i)-invsqrt2*vec_final(m)*vec_init(n)
+            endif
+         enddo
+
+         ! i|=j, a|=b, spin case II
+         count=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+         do m=count+1,count+kpqf(5,0)
+            if (j.eq.kpqf(4,m).and.b.eq.kpqf(6,m)) then
+               i=kpqf(3,m)
+               a=kpqf(5,m)
+               pmat(a,i)=pmat(a,i)-(6.0d0/sqrt(24.0d0))*vec_final(m)*vec_init(n)
+            endif
+         enddo
+
+      enddo
+
+!-----------------------------------------------------------------------
+! CHECK: should the prefactor be -1/2 or -1 instead of -2?
+!-----------------------------------------------------------------------
+!      pmat=pmat/4.0d0
+      pmat=pmat/2.0d0
+
+      return
+
+    end subroutine precalc_pmat
+
+!#######################################################################
+
+    subroutine precalc_qmat(ndim,ndimf,ndims,ndimsf,qmat,vec_init,&
+         vec_final,kpq,kpqf)
+
+      use constants
+      use parameters
+
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+      integer                                   :: ndim,ndimf,ndims,&
+                                                   ndimsf,m,n,a,b,&
+                                                   count,countf,i,j,&
+                                                   alpha
+      real(d), dimension(nbas,nbas)             :: qmat
+      real(d), dimension(ndim)                  :: vec_init
+      real(d), dimension(ndimf)                 :: vec_final
+      logical                                   :: lcontrib
+
+!-----------------------------------------------------------------------
+! Initialise arrays
+!-----------------------------------------------------------------------
+      qmat=0.0d0
+
+!-----------------------------------------------------------------------
+! Index of the 'continuum' orbital
+!-----------------------------------------------------------------------
+      alpha=ifakeorb
+
+!-----------------------------------------------------------------------
+! Final:   i=j, a|=c
+! Initial: i=j, b=c
+!-----------------------------------------------------------------------
+      count=kpq(1,0)
+      countf=kpqf(1,0)+kpqf(2,0)
+      do m=countf+1,countf+kpqf(3,0)
+         do n=count+1,count+kpq(2,0)
+            call qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+            if (.not.lcontrib) cycle
+            qmat(a,b)=qmat(a,b)+sqrt(2.0d0)*vec_final(m)*vec_init(n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Final:   i=j, a|=c
+! Initial: i=j, b|=c
+!-----------------------------------------------------------------------
+      count=kpq(1,0)+kpq(2,0)
+      countf=kpqf(1,0)+kpqf(2,0)
+      do m=countf+1,countf+kpqf(3,0)
+         do n=count+1,count+kpq(3,0)
+            call qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+            if (.not.lcontrib) cycle
+            qmat(a,b)=qmat(a,b)+vec_final(m)*vec_init(n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Final:   i|=j, a|=c, spin case II
+! Initial: i|=j, b=c
+!-----------------------------------------------------------------------
+      count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+      countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+      do m=countf+1,countf+kpqf(5,0)
+         do n=count+1,count+kpq(4,0)
+            call qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+            if (.not.lcontrib) cycle
+            qmat(a,b)=qmat(a,b)+ &
+                 (1.0d0/sqrt(6.0d0))*vec_final(m)*vec_init(n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Final:   i|=j, a|=c, spin case I
+! Initial: i|=j, b|=c, spin case I
+!-----------------------------------------------------------------------
+      count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+      countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+      do m=countf+1,countf+kpqf(5,0)
+         do n=count+1,count+kpq(5,0)
+            call qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+            if (.not.lcontrib) cycle
+            qmat(a,b)=qmat(a,b)+vec_final(m)*vec_init(n)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Final:   i|=j, a|=c, spin case II
+! Initial: i|=j, b|=c, spin case II
+!-----------------------------------------------------------------------
+      count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+      countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+      do m=countf+1,countf+kpqf(5,0)
+         do n=count+1,count+kpq(5,0)
+            call qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+            if (.not.lcontrib) cycle
+            qmat(a,b)=qmat(a,b)+ &
+                 ((1.0d0/6.0d0)+(4.0d0/sqrt(24.0d0)))*vec_final(m)*vec_init(n)
+         enddo
+      enddo
+
+      return
+      
+    end subroutine precalc_qmat
+
+!#######################################################################
+
+    subroutine qcontrib(lcontrib,alpha,kpq,kpqf,m,n,a,b)
+
+      use constants
+      use parameters
+
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+      integer                                   :: alpha,m,n,a,b
+      logical                                   :: lcontrib
+
+      lcontrib=.false.
+
+      if (kpqf(5,m).eq.alpha) then
+         if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n) &
+              .and.kpqf(6,m).eq.kpq(6,n)) then
+            lcontrib=.true.
+            a=kpqf(5,m)
+            b=kpq(5,n)
+         endif
+      else if (kpqf(6,m).eq.alpha) then
+         if (kpqf(3,m).eq.kpq(3,n).and.kpqf(4,m).eq.kpq(4,n) &
+              .and.kpqf(5,m).eq.kpq(5,n)) then
+            lcontrib=.true.
+            a=kpqf(6,m)
+            b=kpq(6,n)
+         endif
+      endif
+
+      return
+
+    end subroutine qcontrib
 
 !#######################################################################
 ! dyscoeff_gs_occ: calculates the coefficients for the occupied MOs in
@@ -451,7 +692,7 @@
 !-----------------------------------------------------------------------
       do i=1,ndimsf
          ilbl=kpqf(3,i)
-         dyscoeff(ilbl)=0.5d0*vec(i)
+         dyscoeff(ilbl)=invsqrt2*vec(i)
       enddo
 
 !-----------------------------------------------------------------------
@@ -467,8 +708,8 @@
             do n=1,ndimsf
                k=kpqf(3,n)
                c=kpqf(5,n)
-               chi(j,b)=chi(j,b)+0.5d0*vec(n)*(vpqrs(b,j,c,k)-vpqrs(c,j,b,k))
-               zeta(j,b)=zeta(j,b)+0.5d0*vec(n)*(vpqrs(c,j,b,k)-vpqrs(b,j,c,k))
+               chi(j,b)=chi(j,b)+invsqrt2*vec(n)*(vpqrs(b,j,c,k)-vpqrs(c,j,b,k))
+               zeta(j,b)=zeta(j,b)+invsqrt2*vec(n)*(vpqrs(c,j,b,k)-vpqrs(b,j,c,k))
             enddo
          enddo
       enddo
@@ -487,14 +728,14 @@
       ! Term D
       do i=1,ndimsf
          ilbl=kpqf(3,i)
-         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*0.5d0*vec(i)
+         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*invsqrt2*vec(i)
       enddo
 
       ! Term E
       do i=1,nocc
          do j=1,ndimsf
             jlbl=kpqf(3,j)
-            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*0.5d0*vec(j)
+            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*invsqrt2*vec(j)
          enddo
       enddo
 
@@ -550,7 +791,7 @@
       do b=nocc+1,nbas
          do n=1,ndimsf 
             i=kpqf(3,n)
-            dyscoeff(b)=dyscoeff(b)+0.5d0*vec(n)*rhogs2(i,b)
+            dyscoeff(b)=dyscoeff(b)+invsqrt2*vec(n)*rhogs2(i,b)
          enddo
       enddo
 
@@ -629,18 +870,18 @@
          enddo
       enddo
 
-      ! Term K
-      ! Won't S_alpha,alpha always be zero?
-      do n=1,ndimsf
-         i=kpqf(3,n)
-         dyscoeff(i)=dyscoeff(i)-0.5d0*vec_final(n)*smat(alpha,alpha)
-      enddo
+!      ! Term K
+!      ! Won't S_alpha,alpha always be zero?
+!      do n=1,ndimsf
+!         i=kpqf(3,n)
+!         dyscoeff(i)=dyscoeff(i)-invsqrt2*vec_final(n)*smat(alpha,alpha)
+!      enddo
 
       ! Term L
       do i=1,nocc
          do n=1,ndimsf
             j=kpqf(3,n)
-            dyscoeff(i)=dyscoeff(i)-0.5d0*vec_final(n)*smat(i,j)
+            dyscoeff(i)=dyscoeff(i)-invsqrt2*vec_final(n)*smat(i,j)
          enddo
       enddo      
 
@@ -701,7 +942,7 @@
                b=kpqf(5,n)
                delta_ijab=1.0d0/(e(a)+e(b)-e(i)-e(j))
                ftmp=2.0d0*vpqrs(a,i,b,j)-vpqrs(b,i,a,j)
-               ftmp=delta_ijab*0.5d0*vec_final(n)*ftmp
+               ftmp=delta_ijab*invsqrt2*vec_final(n)*ftmp
                rmatf(i,a)=rmatf(i,a)+ftmp
             enddo
          enddo
@@ -802,7 +1043,7 @@
       do n=1,ndim
          i=kpq(3,n)
          b=kpq(5,n)
-         dyscoeff(b)=dyscoeff(b)+0.5d0*0.5d0*vec_init(n)*zeta(i)
+         dyscoeff(b)=dyscoeff(b)+0.5d0*invsqrt2*vec_init(n)*zeta(i)
       enddo
       deallocate(zeta)
 
@@ -818,47 +1059,13 @@
                   ftmp=ftmp+delta_ikbc*rmat(k,c)*ftmp2
                enddo
             enddo
-            dyscoeff(b)=dyscoeff(b)+0.5d0*0.5d0*vec_final(m)*ftmp
+            dyscoeff(b)=dyscoeff(b)+0.5d0*invsqrt2*vec_final(m)*ftmp
          enddo
       enddo
 
       return
 
     end subroutine dyscoeff_exci_unocc
-
-!#######################################################################
-
-    function prefactor(i,j,a,b)
-
-      implicit none
-
-      integer :: i,j,a,b
-      real(d) :: prefactor
-
-!-----------------------------------------------------------------------
-! 1h1p excitations
-!-----------------------------------------------------------------------
-      if (j.lt.1) then
-         prefactor=0.5d0
-         return
-      endif
-
-!-----------------------------------------------------------------------
-! 2h2p excitations
-!-----------------------------------------------------------------------
-      if (i.eq.j.and.a.eq.b) then
-         prefactor=1.0d0
-      else if (i.ne.j.and.a.eq.b) then
-         prefactor=0.5d0
-      else if (i.eq.j.and.a.ne.b) then
-         prefactor=0.5d0
-      else if (i.ne.j.and.a.ne.b) then
-         prefactor=0.25d0
-      endif
-
-      return
-
-    end function prefactor
 
 !#######################################################################
 

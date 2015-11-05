@@ -47,6 +47,7 @@ fi
 #-----------------------------------------------------------------------
 if [ "$target" == 'adc' ] || [ -z $target ];then
 
+    echo
     read -p "Do you wish to install using the PETSc/SLEPc libraries (y/n) " ext
 
     valid=0
@@ -97,13 +98,15 @@ args+=" "SLEPC_DIR=$slepcpath
 # Determine BLAS and LAPACK compiler flags
 #-----------------------------------------------------------------------
 if [ -z $blasflag ]; then
-    echo ""
+    echo 
     read -p "Please enter the BLAS linking flag:  " blasflag
 fi
 
 if [ -z $lapackflag ]; then
+    echo
     read -p "Please enter the LAPACK linking flag:  " lapackflag
 fi
+echo
 
 args+=" "LIB_BLAS=$blasflag
 args+=" "LIB_LAPACK=$lapackflag
