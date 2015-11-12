@@ -1,13 +1,13 @@
 !#######################################################################
-! dysonmod: subroutines and functions required for the calculation of
-!           Dyson orbital expansion coefficients in the MO basis.
+! dyson_calc: subroutines and functions required for the calculation of
+!             Dyson orbital expansion coefficients in the MO basis.
 !
-!           Equations adapted from spin-orbtal expressions for the 
-!           density and transition density matrices given in 
-!           Dreuw et al., Mol. Phys, 112, 774 (2014).
+!             Equations adapted from spin-orbtal expressions for the 
+!             density and transition density matrices given in 
+!             Dreuw et al., Mol. Phys, 112, 774 (2014).
 !#######################################################################
 
-  module dysonmod
+  module dyson_calc
 
     use constants
     use parameters
@@ -1069,4 +1069,4 @@
 
 !#######################################################################
 
-  end module dysonmod
+  end module dyson_calc

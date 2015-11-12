@@ -1057,13 +1057,83 @@
          else if (keyword(i).eq.'out') then
             if (keyword(i+1).eq.'=') then
                i=i+2
+15             continue
                if (keyword(i).eq.'molden') then
-                  dysout=1
+                  dysout(1)=1
                else if (keyword(i).eq.'ezdyson') then
-                  dysout=2
+                  dysout(2)=1
                else
-                  errmsg='Unknown Dyson orbital output type:'&
+                  errmsg='Unknown Dyson orbital output type: '&
                        //trim(keyword(i))
+                  call error_control
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  goto 15
+               endif               
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pe_wf') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2              
+               read(keyword(i),*) lmax
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) zcore
+               else
+                  errmsg='The core charge has not been given with &
+                       the pe_wf keyword'
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pe_en') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2              
+               read(keyword(i),*) nelen
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) eleni
+                  eleni=max(eleni,0.1d0)
+               else
+                  errmsg='The lower photoelectron K.E. has not been &
+                       given with the pe_en keyword'
+                  call error_control
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) elenf
+               else
+                  errmsg='The upper photoelectron K.E. has not been &
+                       given with the pe_en keyword'
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'grid') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2              
+               read(keyword(i),*) ngrdpnts
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) grdi
+               else
+                  errmsg='The lower bound of the grid has not been &
+                       given with the grid keyword'
+                  call error_control
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) grdf
+               else
+                  errmsg='The upper bound of the grid has not been &
+                       given with the grid keyword'
                   call error_control
                endif
             else

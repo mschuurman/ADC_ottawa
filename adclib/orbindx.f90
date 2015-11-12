@@ -66,7 +66,7 @@
       implicit none
 
       integer            :: i,ncont
-      real(d), parameter :: tol=1d-8
+      real(d), parameter :: tol=1d-15
 
 !-----------------------------------------------------------------------
 ! Determine the index of the 'continuum' orbital

@@ -110,12 +110,23 @@
 !-----------------------------------------------------------------------
 ! Dyson orbital calculation parameters
 !-----------------------------------------------------------------------
+      ! Main Dyson orbital calculation parameters
       ldyson=.false.
       dysirrep=0
       dyslim=9999d0
       dysdiag=0
       dysout=0
- 
+
+      ! ezdyson input parameters
+      lmax=4
+      zcore=1.0d0
+      nelen=10
+      eleni=0.1d0
+      elenf=10.0d0
+      ngrdpnts=201
+      grdi=-10.0d0
+      grdf=10.0d0
+
       return
 
     end subroutine set_defaults

@@ -108,7 +108,8 @@ ADCLIB= adclib/defaults.o \
         adclib/guessvecs.o \
 	adclib/photoionisation.o \
 	adclib/Propagate.o \
-	adclib/dysonmod.o \
+	adclib/dyson_calc.o \
+	adclib/dyson_io.o 
 
 ADC_MAIN=adc/adc1_spec.o \
 	adc/adc2_spec.o \
@@ -181,7 +182,8 @@ ADC_OBJ+=accuracy.o \
 	block_lanczos.o \
 	photoionisation.o \
 	Propagate.o \
-        dysonmod.o \
+        dyson_calc.o \
+	dyson_io.o \
 	guessvecs.o \
 	adc1_spec.o \
 	adc2_spec.o \
