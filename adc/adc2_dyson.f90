@@ -512,13 +512,10 @@
              status='unknown')
 
 !-----------------------------------------------------------------------
-! Create the molden directory if necessary
+! If the Dyson orbitals are to be written to external input files, then
+! assemble pre-requesite arrays and create output directories
 !-----------------------------------------------------------------------
-        if (dysout.eq.1) then
-           inquire(file='molden/.',exist=ldir)
-           if (ldir) call system('rm -rf molden')
-           call system('mkdir molden')
-        endif
+        if (dysout.gt.0) call pre_dysout
 
 !-----------------------------------------------------------------------        
 ! Calculation of the Dyson orbital expansion coefficients for all
@@ -564,6 +561,9 @@
 
            ! Output the *normalised* Dyson orbital to the molden file
            if (dysout.eq.1) call wrmolden(dyscoeff,gam,n)
+           
+           ! Output the Dyson orbital to an ezdyson input file
+           if (dysout.eq.2) call wrezdyson(dyscoeff,gam,n)
 
         enddo
 
@@ -584,30 +584,24 @@
       end subroutine dysorb
 
 !#######################################################################
-
-      subroutine wrmolden(dyscoeff,gam,n)
+      
+      subroutine pre_dysout
 
         use constants
         use parameters
-        use import_gamess
-        use iomod, only: freeunit
 
         implicit none
 
-        integer                          :: imolden,i,n,j,k,iang,p1,&
-                                            p2,np,count
-        real(d), dimension(nbas)         :: dyscoeff
-        real(d), dimension(nbas_ao)      :: dyscoeff_ao
-        real(d)                          :: nfac
-        real(d), dimension(10,10)        :: ftransmat
-        character(len=60)                :: filename
-        character(len=1), dimension(0:3) :: shlbl
-        type(gam_structure)              :: gam
+        logical :: ldir
 
 !-----------------------------------------------------------------------
 ! Set shell labels
 !-----------------------------------------------------------------------
-        shlbl(0:3)=(/ 's','p','d','f' /)
+        if (dysout.eq.1) then
+           shlbl(0:3)=(/ 's','p','d','f' /)
+        else
+           shlbl(0:3)=(/ 'S','P','D','F' /)
+        endif
 
 !-----------------------------------------------------------------------
 ! Transformation matrix for the reordering of the f-functions to
@@ -615,6 +609,8 @@
 !  
 !  1    2    3    4    5    6    7    8    9   10
 ! xxx, yyy, zzz, xyy, xxy, xxz, xzz, yzz, yyz, xyz
+!
+! Note that this ordering can also be used for ezdyson input files.
 !-----------------------------------------------------------------------
         ftransmat=0.0d0
         ftransmat(1,1)=1.0d0
@@ -629,56 +625,102 @@
         ftransmat(10,10)=1.0d0
 
 !-----------------------------------------------------------------------
+! Create output directories
+!-----------------------------------------------------------------------
+        if (dysout.eq.1) then
+           inquire(file='molden/.',exist=ldir)
+           if (ldir) call system('rm -rf molden')
+           call system('mkdir molden')
+        endif
+
+        if (dysout.eq.2) then
+           inquire(file='ezdyson/.',exist=ldir)
+           if (ldir) call system('rm -rf ezdyson')
+           call system('mkdir ezdyson')
+        endif
+
+        return
+        
+      end subroutine pre_dysout
+
+!#######################################################################
+
+      subroutine wrmolden(dyscoeff,gam,n)
+
+        use constants
+        use parameters
+        use import_gamess
+        use iomod, only: freeunit
+        use gamess_internal
+
+        implicit none
+
+        integer, intent(in)        :: n
+        integer                    :: imolden,i,j,k,iang,p1,p2,np,&
+                                      count,pk,nx,ny,nz,norb
+        real*8, dimension(nbas)    :: dyscoeff
+        real*8, dimension(nbas_ao) :: dyscoeff_ao
+        real*8                     :: nfac,cint,cext,nint,next,alpha,&
+                                      coeff
+        character(len=60)          :: filename
+        type(gam_structure)        :: gam
+
+!-----------------------------------------------------------------------
 ! Open the molden file
 !-----------------------------------------------------------------------
         call freeunit(imolden)
         
-        filename=''
-        if (n.lt.10) then
-           write(filename,'(a14,i1,a7)') 'molden/dysorb_',n,'.molden'
-        else if (n.lt.100) then
-           write(filename,'(a14,i2,a7)') 'molden/dysorb_',n,'.molden'
-        else if (n.lt.1000) then
-           write(filename,'(a14,i3,a7)') 'molden/dysorb_',n,'.molden'
-        else
-           write(filename,'(a14,i4,a7)') 'molden/dysorb_',n,'.molden'
-        endif
-        
-        call freeunit(imolden)
+        call outfilename(n,filename)
 
-        open(imolden,file=filename,form='formatted',&
-             status='unknown')
+        open(imolden,file=filename,form='formatted',status='unknown')
 
 !-----------------------------------------------------------------------
-! Write the Cartesian coordinates and Gaussian basis to the molden file
+! Preamble
 !-----------------------------------------------------------------------
-        ! Preamble
         write(imolden,'(a)') '[Molden Format]'
         write(imolden,'(a)') '[Title]'
         
-        ! Cartesian coordinates
+!-----------------------------------------------------------------------
+! Cartesian coordinates
+!-----------------------------------------------------------------------
         write(imolden,'(/,a)') '[Atoms] Angs'
         do i=1,gam%natoms
            write(imolden,'(1x,a2,2x,i3,2x,i3,3(2x,F10.7))') &
                 gam%atoms(i)%name,i,int(gam%atoms(i)%znuc),&
                 (gam%atoms(i)%xyz(j),j=1,3)
         enddo
-        
-        ! Gaussian basis set
+
+!-----------------------------------------------------------------------
+! AO basis set section
+!-----------------------------------------------------------------------
         write(imolden,'(/,a)') '[GTO]'
+        ! Loop over atoms
         do i=1,gam%natoms
+           ! Primitive counter for the current atom: pk
+           pk=0
+
+           ! Atom number
            if (i.gt.1) write(imolden,*)
            write(imolden,'(2x,i3,2x,a1)') i,'0'
+
+           ! Loop over shells for the current atom
            do j=1,gam%atoms(i)%nshell
               iang=gam%atoms(i)%sh_l(j)
               p1=gam%atoms(i)%sh_p(j)
               p2=gam%atoms(i)%sh_p(j+1)
               np=p2-p1
+              ! Label and no. primitives for the current shell
               write(imolden,'(2x,a1,2x,i3,2x,a4)') shlbl(iang),&
                    np,'1.00'
+              ! Primitive exponents and coefficients for the current 
+              ! shell.
+              ! Note that we output the original, unscaled,
+              ! non-normalised primitive coefficients
               do k=1,np
-                 write(imolden,*) gam%atoms(i)%p_zet(p1-1+k),&
-                      gam%atoms(i)%p_c(p1-1+k)
+                 pk=pk+1
+                 alpha=gam%atoms(i)%p_zet(p1-1+k)
+                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)                
+                 write(imolden,*) alpha,coeff
               enddo
            enddo
         enddo
@@ -701,17 +743,24 @@
         do i=1,gam%natoms
            do j=1,gam%atoms(i)%nshell
               iang=gam%atoms(i)%sh_l(j)
-              p1=gam%atoms(i)%sh_p(j)
-              p2=gam%atoms(i)%sh_p(j+1)
-              np=p2-p1
+              norb=gam_orbcnt(iang)
+              p1=count+1
+              p2=count+norb
               ! If we are at a shell of f-functions, then rearrange
               ! to correspond to the molden ordering
               if (iang.eq.3) then
-                 dyscoeff_ao(p1:p2-1)=matmul(ftransmat,dyscoeff_ao(p1:p2-1))
-              endif
-              do k=1,np
-                 count=count+1
-                 write(imolden,*) count,dyscoeff_ao(count)
+                  dyscoeff_ao(p1:p2)=matmul(ftransmat,dyscoeff_ao(p1:p2))
+             endif
+             do k=ang_loc(iang),ang_loc(iang)+norb-1                
+                count=count+1
+                ! Note that here k tells us what type of function we
+                ! are at (s, px, py,...) and count indexes the current
+                ! AO basis function
+                !
+                ! Also, the coefficient that we output has to
+                ! correspond to a normalised AO - hence the
+                ! multiplication by ang_c(k)
+                write(imolden,*) count,dyscoeff_ao(count)*ang_c(k)
               enddo
            enddo
         enddo
@@ -724,6 +773,265 @@
         return
 
       end subroutine wrmolden
+
+!#######################################################################
+
+      subroutine wrezdyson(dyscoeff,gam,n)
+
+        use constants
+        use parameters
+        use import_gamess
+        use iomod, only: freeunit
+        use gamess_internal
+
+        implicit none
+
+        integer, intent(in)             :: n
+        integer                         :: iezd,i,j,k,m,lmax,nelen,&
+                                           ngrdpnts,pk,iang,p1,p2,np,&
+                                           count,norb,nx,ny,nz
+        real*8, dimension(nbas)         :: dyscoeff
+        real*8, dimension(nbas_ao)      :: dyscoeff_ao
+        real*8                          :: zcore,eleni,elenf,grdi,grdf,&
+                                           alpha,nint,next,cint,cext,&
+                                           dnorm,si,sf,coeff
+        character(len=60)               :: filename
+        character(len=60), dimension(2) ::comment
+        type(gam_structure)             :: gam
+
+!-----------------------------------------------------------------------
+! Open the ezdyson input file
+!-----------------------------------------------------------------------
+        call freeunit(iezd)
+
+        call outfilename(n,filename)
+        
+        open(iezd,file=filename,form='formatted',status='unknown')
+
+!-----------------------------------------------------------------------
+! Preamble
+!-----------------------------------------------------------------------
+        write(iezd,'(a)') '<?xml version="1.0" encoding="ISO-8859-1"?>'
+        write(iezd,'(/,a,2(/,2x,a))') '<root','job = "dyson"','>'
+
+!-----------------------------------------------------------------------
+! Geometry
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a,/,x,a,i2,a1,/,x,a)') '<geometry','n_of_atoms="',&
+             gam%natoms,'"','text = "'
+        do i=1,gam%natoms
+           write(iezd,'(6x,a2,1x,3(3x,F14.10))') gam%atoms(i)%name,&
+                (gam%atoms(i)%xyz(j),j=1,3)
+        enddo
+        write(iezd,'(/,2x,a,/,a)') '"','/>'
+
+!-----------------------------------------------------------------------
+! Photoelectron wavefunction
+!-----------------------------------------------------------------------
+        ! Temporary hard-wiring of parameters:
+        lmax=4
+        zcore=1.0d0
+        nelen=10
+        eleni=0.1d0
+        elenf=5.0d0
+
+        write(iezd,'(/,a)') '<free_electron'
+        write(iezd,'(3x,a,1x,i2,a1)') 'l_max = "',lmax,'"'
+        write(iezd,'(3x,a,F5.3,a)') 'charge_of_ionized_core = "',&
+             zcore,'">'
+        write(iezd,'(a,i2,a,2(1x,a,F5.3,a),1x,a)') &
+             '<k_grid n_points="',nelen,'"','min="',eleni,'"','max="',&
+             elenf,'"','/>'
+        write(iezd,'(a)') '</free_electron>'
+
+!-----------------------------------------------------------------------
+! Averaging over molecular orientations
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '<averaging'
+        write(iezd,'(3x,a)') 'method = "avg"'
+        write(iezd,'(3x,a)') 'method_possible_values = "noavg, avg">'
+        write(iezd,'(a)') '</averaging>'
+
+!-----------------------------------------------------------------------
+! Ionization energy - we use a value of zero here so that the 
+! calculated cross-sections are given as a function of the 
+! photoelectron kinetic energy
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '<laser'
+        write(iezd,'(3x,a)') 'ionization_energy = "0.00" >'
+        write(iezd,'(3x,a)') &
+             '<laser_polarization x="0.0" y="0.0" z="1.0" />'
+        write(iezd,'(a)') '</laser>'
+
+!-----------------------------------------------------------------------
+! Cartesian grid
+!-----------------------------------------------------------------------
+        ! Temporary hard-wiring of parameters:
+        ngrdpnts=201
+        grdi=-10.0d0
+        grdf=10.0d0
+
+        write(iezd,'(/,a)') '<lab_xyz_grid>'
+        write(iezd,'(3x,a,i4,a,2(1x,a,F6.2,a))') '<axis n_points="',&
+             ngrdpnts,'"','min="',grdi,'"','max="',grdf,'" />'
+        write(iezd,'(a)') '</lab_xyz_grid>'
+
+!-----------------------------------------------------------------------
+! Job parameters
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '<job_parameters'
+        write(iezd,'(3x,a)') 'unrestricted = "false"'
+        write(iezd,'(3x,a)') 'Dyson_MO_transitions = "1"'
+        write(iezd,'(3x,a)') 'spin_degeneracy = "2"'
+        write(iezd,'(3x,a)') 'orbital_degeneracy = "1"'
+        write(iezd,'(3x,a)') 'number_of_MOs_to_plot = "0"'
+        write(iezd,'(3x,a)') 'MOs_to_plot = ""'
+        write(iezd,'(a)') '/>'
+
+!-----------------------------------------------------------------------
+! AO basis
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '<basis'
+        write(iezd,'(3x,a,i3,a)') 'n_of_basis_functions="',gam%nbasis,'"'
+        write(iezd,'(3x,a)') 'AO_ordering = "Molden"'
+        write(iezd,'(3x,a)') 'purecart = "2222">'
+        
+        do i=1,gam%natoms
+           write(iezd,'(3x,a,/,3x,a)') '<atom','text = "'
+           ! Primitive counter for the current atom: pk
+           pk=0
+           ! Atomic symbol
+           write(iezd,'(a2,4x,a)') gam%atoms(i)%name,'0'           
+           ! Loop over shells for the current atom
+           do j=1,gam%atoms(i)%nshell
+              iang=gam%atoms(i)%sh_l(j)
+              p1=gam%atoms(i)%sh_p(j)
+              p2=gam%atoms(i)%sh_p(j+1)
+              np=p2-p1
+              ! Label and no. primitives for the current shell
+              write(iezd,'(a1,4x,i3,4x,a)') shlbl(iang),np,'1.00'
+              ! Primitive exponents and coefficients for the current 
+              ! shell.
+              !  Note that we output the original, unscaled,
+              ! non-normalised primitive coefficients
+              do k=1,np
+                 pk=pk+1
+                 alpha=gam%atoms(i)%p_zet(p1-1+k)
+                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)
+                 write(iezd,'(2(3x,E14.4))') alpha,coeff
+              enddo
+           enddo
+           write(iezd,'(a,/,7x,a,/,a)') '****','"','/>'
+        enddo
+
+        write(iezd,'(a)') '</basis>'
+
+!-----------------------------------------------------------------------
+! Dyson orbital
+!
+! Note that ezdyson appears to assume that the Dyson orbitals are
+! from an EOM-CCSD calculation, and as such requires the input of
+! both left and right Dyson orbitals. As the ADC Hamiltonian is
+! Hermitian, we only have one Dyson orbital for each transition, and
+! this will be entered as both the 'left' and 'right' Dyson orbitals.
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '<dyson_molecular_orbitals>'
+
+        dnorm=sqrt(dot_product(dyscoeff,dyscoeff))
+        si=real(statenumber)+real(nirrep)/10.0d0
+        sf=real(n)+real(dysirrep)/10.0d0
+        comment(1)='comment="dyson right"'
+        comment(2)='comment="dyson left"'
+
+        do m=1,2
+           write(iezd,'(3x,a,F8.6,a,x,2(F6.1,x,a),x,a)') &
+                '<DMO norm="',dnorm,'" transition="',si,'to',sf,'"',&
+                trim(comment(m))           
+           write(iezd,'(3x,a)') 'text="'
+           ! Convert the Dyson orbital to the AO basis and normalise
+           dyscoeff_ao=matmul(ao2mo(1:nbas_ao,1:nbas),dyscoeff(1:nbas)/dnorm)
+           count=0
+           do i=1,gam%natoms
+              do j=1,gam%atoms(i)%nshell
+                 iang=gam%atoms(i)%sh_l(j)
+                 norb=gam_orbcnt(iang)
+                 p1=count+1
+                 p2=count+norb
+                 ! If we are at a shell of f-functions, then rearrange
+                 ! to correspond to the molden ordering
+                 if (iang.eq.3) then
+                    dyscoeff_ao(p1:p2)=matmul(ftransmat,dyscoeff_ao(p1:p2))
+                 endif
+                 do k=ang_loc(iang),ang_loc(iang)+norb-1
+                    count=count+1
+                    ! Note that here k tells us what type of function we
+                    ! are at (s, px, py,...) and count indexes the current
+                    ! AO basis function
+                    !
+                    ! Also, the coefficient that we output has to
+                    ! correspond to a normalised AO - hence the
+                    ! multiplication by ang_c(k)
+                    write(iezd,'(3x,E14.4)') dyscoeff_ao(count)*ang_c(k)
+                 enddo
+              enddo
+           enddo
+           write(iezd,'(3x,a,/)') '"  />'
+        enddo
+
+        write(iezd,'(a)') '</dyson_molecular_orbitals>'
+
+!-----------------------------------------------------------------------
+! End
+!-----------------------------------------------------------------------
+        write(iezd,'(/,a)') '</root>'
+
+!-----------------------------------------------------------------------
+! Close the ezdyson input file
+!-----------------------------------------------------------------------
+        close(iezd)
+
+        return
+
+      end subroutine wrezdyson
+
+!#######################################################################
+
+      subroutine outfilename(n,filename)
+
+        use parameters
+
+        implicit none
+
+        integer           :: n
+        character(len=60) :: filename
+        
+        filename=''
+
+        if (dysout.eq.1) then
+           if (n.lt.10) then
+              write(filename,'(a14,i1,a7)') 'molden/dysorb_',n,'.molden'
+           else if (n.lt.100) then
+              write(filename,'(a14,i2,a7)') 'molden/dysorb_',n,'.molden'
+           else if (n.lt.1000) then
+              write(filename,'(a14,i3,a7)') 'molden/dysorb_',n,'.molden'
+           else
+              write(filename,'(a14,i4,a7)') 'molden/dysorb_',n,'.molden'
+           endif
+        else if (dysout.eq.2) then
+           if (n.lt.10) then
+              write(filename,'(a15,i1,a4)') 'ezdyson/dysorb_',n,'.xml'
+           else if (n.lt.100) then
+              write(filename,'(a15,i2,a4)') 'ezdyson/dysorb_',n,'.xml'
+           else if (n.lt.1000) then
+              write(filename,'(a15,i3,a4)') 'ezdyson/dysorb_',n,'.xml'
+           else
+              write(filename,'(a15,i4,a4)') 'ezdyson/dysorb_',n,'.xml'
+           endif
+        endif
+
+        return
+
+      end subroutine outfilename
 
 !#######################################################################
 

@@ -93,6 +93,7 @@
       real(rk)             :: p_zet_rk(gam_max_primitive)  ! ditto, standard real
       real(xrk)            :: p_c     (gam_max_primitive)  ! Contraction coefficients
       real(rk)             :: p_c_rk  (gam_max_primitive)  ! ditto, standard real
+      real(rk)             :: p_c_orig(gam_max_primitive)  ! Original, unscaled, non-normalised contraction coefficients
       !
       character(len=20)    :: ecp_name                     ! Name of the ECP
       real(xrk)            :: ecp_zcore                    ! Number of electrons in the ECP

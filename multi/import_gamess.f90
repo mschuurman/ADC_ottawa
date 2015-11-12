@@ -1111,6 +1111,10 @@
             stop 'import_gamess%parse_one_atom - primitive read'
           end if
           !
+          !  Save a copy of the original contraction coefficients
+          ! 
+          atom%p_c_orig(pprim)=atom%p_c(pprim)
+          !
           !  Rescale contraction coefficient to include primitive normalization factor
           !
           atom%p_c(pprim) = atom%p_c(pprim) * primitive_norm(atom%sh_l(atom%nshell),atom%p_zet(pprim))

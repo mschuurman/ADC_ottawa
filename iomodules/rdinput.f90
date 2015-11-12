@@ -1059,6 +1059,8 @@
                i=i+2
                if (keyword(i).eq.'molden') then
                   dysout=1
+               else if (keyword(i).eq.'ezdyson') then
+                  dysout=2
                else
                   errmsg='Unknown Dyson orbital output type:'&
                        //trim(keyword(i))

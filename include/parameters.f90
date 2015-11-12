@@ -242,12 +242,13 @@ logical                                     :: lrungamess,ldiffcom
 !!$************************************************
 !!$**********Dyson orbital parameters**************
 !!$************************************************
-logical                              :: ldyson
+integer                              :: nbas_ao,dysout
 integer                              :: dysirrep,dysdiag
 real(d)                              :: dyslim
-
-integer                              :: nbas_ao,dysout
 real(d), dimension(:,:), allocatable :: ao2mo
+real(d), dimension(10,10)            :: ftransmat
+character(len=1), dimension(0:3)     :: shlbl
+logical                              :: ldyson
 
 !!$************************************************
 !!$**********Other Parameters**********************
