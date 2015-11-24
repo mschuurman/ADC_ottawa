@@ -638,15 +638,16 @@ contains
 
     implicit none
 
-    integer                              :: ndim,kpqdim2,ieig,nstates,&
-                                            i,k,itmp,ilbl,iout
-    integer, dimension(7,0:kpqdim2-1)    :: kpq
-    integer, dimension(:), allocatable   :: indx
-    real(d)                              :: ener
-    real(d), dimension(:), allocatable   :: coeff,coeffsq
-    real(d), parameter                   :: tol=0.05d0
-    character(len=36)                    :: filename
-    character(len=120)                   :: fmat
+    integer                            :: ndim,kpqdim2,ieig,nstates,&
+                                          i,k,itmp,ilbl,iout
+    integer, dimension(7,0:kpqdim2-1)  :: kpq
+    integer, dimension(:), allocatable :: indx
+    real(d)                            :: ener
+    real(d), dimension(:), allocatable :: coeff,coeffsq
+    real(d), parameter                 :: tol=0.05d0
+    character(len=36)                  :: filename
+    character(len=120)                 :: fmat
+    character(len=2)                   :: spincase
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
