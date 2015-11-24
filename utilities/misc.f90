@@ -395,6 +395,7 @@ contains
     real(d)                           :: en,tmvec,osc_str
     real(d), parameter                :: tol=0.05d0
     character(len=120)                :: fmat
+    character(len=2)                  :: spincase
     
 !-----------------------------------------------------------------------
 ! State energy in a.u.
@@ -443,41 +444,80 @@ contains
 ! Dominant configurations
 !-----------------------------------------------------------------------
     write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
-    write(ilog,'(2x,25a)') ('*',k=1,25)
-    write(ilog,'(3x,a)') 'j   k -> a  b    C_jkab'
-    write(ilog,'(2x,25a)') ('*',k=1,25)
+    write(ilog,'(2x,29a)') ('*',k=1,29)
+    write(ilog,'(3x,a)') 'j   k -> a  b        C_jkab'
+    write(ilog,'(2x,29a)') ('*',k=1,29)
     write(iout,'(/,2x,a,/)') 'Dominant Configurations:'
-    write(iout,'(2x,25a)') ('*',k=1,25)
-    write(iout,'(3x,a)') 'j   k -> a  b    C_jkab'
-    write(iout,'(2x,25a)') ('*',k=1,25)
+    write(iout,'(2x,29a)') ('*',k=1,29)
+    write(iout,'(3x,a)') 'j   k -> a  b        C_jkab'
+    write(iout,'(2x,29a)') ('*',k=1,29)
 
     do k=1,50
        ilbl=indx(k)
        if (abs(coeff(ilbl)).ge.tol) then
           if (kpq(4,ilbl).eq.-1) then
              ! Single excitations
-             write(ilog,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+             write(ilog,'(3x,i2,4x,a2,1x,i2,9x,F8.5)') &
                   kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
-             write(iout,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+             write(iout,'(3x,i2,4x,a2,1x,i2,9x,F8.5)') &
                   kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
           else
              ! Double excitations
-             write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
-                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
-                  kpq(6,ilbl),coeff(ilbl)
-             write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
-                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
-                  kpq(6,ilbl),coeff(ilbl)
+             if (kpq(3,ilbl).ne.kpq(4,ilbl).and.kpq(5,ilbl).ne.kpq(6,ilbl)) then
+                ! a|=b, i|=j
+                spincase=getspincase(ilbl,kpq,kpqdim2)
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),spincase,coeff(ilbl)
+                write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),spincase,coeff(ilbl)
+             else
+                ! a=b,  i=j
+                ! a|=b, i=j
+                ! a=b,  i=|j
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),coeff(ilbl)
+                write(iout,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),coeff(ilbl)
+             endif
           endif
        endif
     enddo
 
-    write(ilog,'(2x,25a)') ('*',k=1,25)
-    write(iout,'(2x,25a)') ('*',k=1,25)
+    write(ilog,'(2x,29a)') ('*',k=1,29)
+    write(iout,'(2x,29a)') ('*',k=1,29)
 
     return
 
   end subroutine wrstateinfo
+
+!#######################################################################
+
+  function getspincase(ilbl,kpq,kpqdim2) result(spinlbl)
+
+    implicit none
+
+    integer, dimension(7,0:kpqdim2-1) :: kpq
+    integer                           :: ilbl,kpqdim2,lim,i
+    character(len=2)                  :: spinlbl
+
+    lim=0
+    do i=1,5
+       lim=lim+kpq(i,0)
+    enddo
+
+    if (ilbl.le.lim) then
+       spinlbl='I'
+    else
+       spinlbl='II'
+    endif
+
+    return
+
+  end function getspincase
 
 !#######################################################################
 
@@ -487,15 +527,16 @@ contains
 
     implicit none
 
-    integer                              :: ndim,kpqdim2,ieig,nstates,&
-                                            i,k,itmp,ilbl
-    integer, dimension(7,0:kpqdim2-1)    :: kpq
-    integer, dimension(:), allocatable   :: indx
-    real(d)                              :: ener
-    real(d), dimension(:), allocatable   :: coeff,coeffsq
-    real(d), parameter                   :: tol=0.05d0
-    character(len=36)                    :: filename
-    character(len=120)                   :: fmat
+    integer                            :: ndim,kpqdim2,ieig,nstates,&
+                                          i,k,itmp,ilbl
+    integer, dimension(7,0:kpqdim2-1)  :: kpq
+    integer, dimension(:), allocatable :: indx
+    real(d)                            :: ener
+    real(d), dimension(:), allocatable :: coeff,coeffsq
+    real(d), parameter                 :: tol=0.05d0
+    character(len=36)                  :: filename
+    character(len=120)                 :: fmat
+    character(len=2)                   :: spincase
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -541,24 +582,35 @@ contains
        
        ! Dominant configurations
        write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
-       write(ilog,'(2x,25a)') ('*',k=1,25)
-       write(ilog,'(3x,a)') 'j   k -> a  b    C_jkab'
-       write(ilog,'(2x,25a)') ('*',k=1,25)
+       write(ilog,'(2x,29a)') ('*',k=1,29)
+       write(ilog,'(3x,a)') 'j   k -> a  b        C_jkab'
+       write(ilog,'(2x,29a)') ('*',k=1,29)
        do k=1,50
           ilbl=indx(k)
           if (abs(coeff(ilbl)).lt.tol) cycle
           if (kpq(4,ilbl).eq.-1) then
              ! Single excitations
-             write(ilog,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+             write(ilog,'(3x,i2,4x,a2,1x,i2,9x,F8.5)') &
                   kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
           else
              ! Double excitations
-             write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
-                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
-                  kpq(6,ilbl),coeff(ilbl)
+             if (kpq(3,ilbl).ne.kpq(4,ilbl).and.kpq(5,ilbl).ne.kpq(6,ilbl)) then
+                ! a|=b, i|=j
+                spincase=getspincase(ilbl,kpq,kpqdim2)
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),spincase,coeff(ilbl)
+             else
+                ! a=b,  i=j
+                ! a|=b, i=j
+                ! a=b,  i=|j
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),coeff(ilbl)
+             endif
           endif
        enddo
-       write(ilog,'(2x,25a)') ('*',k=1,25)
+       write(ilog,'(2x,29a)') ('*',k=1,29)
 
     enddo
 
