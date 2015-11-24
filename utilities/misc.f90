@@ -698,24 +698,35 @@ contains
        
        ! Dominant configurations
        write(iout,'(/,2x,a,/)') 'Dominant Configurations:'
-       write(iout,'(2x,25a)') ('*',k=1,25)
-       write(iout,'(3x,a)') 'j   k -> a  b    C_jkab'
-       write(iout,'(2x,25a)') ('*',k=1,25)
+       write(iout,'(2x,29a)') ('*',k=1,29)
+       write(iout,'(3x,a)') 'j   k -> a  b        C_jkab'
+       write(iout,'(2x,29a)') ('*',k=1,29)
        do k=1,50          
           ilbl=indx(k)
           if (abs(coeff(ilbl)).lt.tol) cycle
           if (kpq(4,ilbl).eq.-1) then
              ! Single excitations
-             write(iout,'(3x,i2,4x,a2,1x,i2,5x,F8.5)') &
+             write(iout,'(3x,i2,4x,a2,1x,i2,9x,F8.5)') &
                   kpq(3,ilbl),'->',kpq(5,ilbl),coeff(ilbl)
           else
              ! Double excitations
-             write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,F8.5)') &
-                  kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
-                  kpq(6,ilbl),coeff(ilbl)
+             if (kpq(3,ilbl).ne.kpq(4,ilbl).and.kpq(5,ilbl).ne.kpq(6,ilbl)) then
+                ! a|=b, i|=j
+                spincase=getspincase(ilbl,kpq,kpqdim2)
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),spincase,coeff(ilbl)
+             else
+                ! a=b,  i=j
+                ! a|=b, i=j
+                ! a=b,  i=|j
+                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                     kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
+                     kpq(6,ilbl),coeff(ilbl)
+             endif
           endif
        enddo
-       write(iout,'(2x,25a)') ('*',k=1,25)
+       write(iout,'(2x,29a)') ('*',k=1,29)
 
     enddo
 
