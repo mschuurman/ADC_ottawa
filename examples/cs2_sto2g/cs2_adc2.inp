@@ -25,20 +25,20 @@ diag_section
  guess = adc1
 end-diag_section
 
-#diag_final_section
-# preconditioner = olsen
-# nstates = 10
-# block_size = 20
-# tol=1d-5
-# maxit=700
-# guess=adc1
-#end-diag_final_section
-
-lanczos_section
+diag_final_section
+ preconditioner = olsen
+ nstates = 10
  block_size = 20
- iter=50
+ tol=1d-5
+ maxit=700
  guess=adc1
-# mem=500
-end-lanczos_section
+end-diag_final_section
+
+#lanczos_section
+# block_size = 20
+# iter=50
+# guess=adc1
+## mem=500
+#end-lanczos_section
 
 end-input

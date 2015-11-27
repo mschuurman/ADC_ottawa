@@ -714,14 +714,14 @@ contains
              if (kpq(3,ilbl).ne.kpq(4,ilbl).and.kpq(5,ilbl).ne.kpq(6,ilbl)) then
                 ! a|=b, i|=j
                 spincase=getspincase(ilbl,kpq,kpqdim2)
-                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                write(iout,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
                      kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
                      kpq(6,ilbl),spincase,coeff(ilbl)
              else
                 ! a=b,  i=j
                 ! a|=b, i=j
                 ! a=b,  i=|j
-                write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                write(iout,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
                      kpq(3,ilbl),kpq(4,ilbl),'->',kpq(5,ilbl),&
                      kpq(6,ilbl),coeff(ilbl)
              endif
