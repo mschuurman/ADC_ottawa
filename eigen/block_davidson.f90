@@ -8,7 +8,9 @@
 
     integer                              :: blocksize,nstates,maxvec,&
                                             niter,currdim,ipre,nconv,&
-                                            nrec,maxbl
+                                            nconv_prev,nrec,maxbl,&
+                                            blocksize_curr,maxvec_curr,&
+                                            nstates_curr
     integer, dimension(:), allocatable   :: indxi,indxj
     real(d), dimension(:), allocatable   :: hii,hij
     real(d), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
@@ -16,7 +18,7 @@
     real(d), dimension(:), allocatable   :: reigval,norm
     real(d)                              :: tol
     character(len=36)                    :: vecfile
-    logical                              :: lincore,lrdadc1
+    logical                              :: lincore,lrdadc1,ldeflate
 
   contains
 
@@ -134,6 +136,7 @@
          tol=davtol
          vecfile=davname
          maxvec=maxsubdim
+         ldeflate=ldfl
       else if (hamflag.eq.'f') then
          blocksize=dmain_f
          nstates=davstates_f
@@ -142,6 +145,7 @@
          tol=davtol_f
          vecfile=davname_f
          maxvec=maxsubdim_f
+         ldeflate=ldfl_f
       endif
 
 !-----------------------------------------------------------------------
@@ -484,9 +488,28 @@
       integer               :: k
 
 !-----------------------------------------------------------------------
-! Initialise currdim (the current dimension of the subspace)
+! Initialisation
+!-----------------------------------------------------------------------
+! currdim:        the current dimension of the subspace
+!
+! blocksize_curr: the current blocksize
+!
+! maxvec_curr:    the current maximum subspace dimension
+!
+! nstates_curr:   the current no. of states that we are solving for,
+!                 i.e., the current no. of unconverged roots
+!
+! nconv:          the no. of converged roots
+!-----------------------------------------------------------------------
+! Note that the blocksize, maximum subspace dimension and nstates will
+! only change throughout the Davidson iterations if the converged
+! vectors are removed from from the subspace, i.e., if ldeflate=.true.
 !-----------------------------------------------------------------------
       currdim=blocksize
+      blocksize_curr=blocksize
+      maxvec_curr=maxvec
+      nstates_curr=nstates
+      nconv=0
 
 !-----------------------------------------------------------------------
 ! Perform the Davidson iterations
@@ -520,6 +543,9 @@
          ! Expand the subspace
          call subspace_expansion(matdim)
 
+         ! Keep track of the no. of roots converged so far
+         nconv_prev=nconv
+         
       enddo
 
 !-----------------------------------------------------------------------
@@ -561,7 +587,7 @@
 ! Information from the current iteration
 !-----------------------------------------------------------------------
       write(ilog,'(/)')
-      do i=1,nstates
+      do i=1,nstates_curr
          if (norm(i).lt.tol) then
             aconv='y'
          else
@@ -748,14 +774,11 @@
       endif
 
 !-----------------------------------------------------------------------
-! Save the n=blocksize lowest eigenpairs to be used in the calculation
-! of the Ritz vectors and residuals
+! Save the n=blocksize_curr lowest eigenpairs to be used in the
+! calculation of the Ritz vectors and residuals
 !-----------------------------------------------------------------------
-      reigvec=0.0d0
-      reigvec(1:currdim,1:blocksize)=vec(1:currdim,1:blocksize)
-
-      reigval=0.0d0
-      reigval(1:blocksize)=val(1:blocksize)
+      reigvec(1:currdim,1:blocksize_curr)=vec(1:currdim,1:blocksize_curr)
+      reigval(1:blocksize_curr)=val(1:blocksize_curr)
 
       return
 
@@ -769,10 +792,10 @@
 
       integer, intent(in) :: matdim
       
-      call dgemm('N','N',matdim,blocksize,currdim,1.0d0,&
+      call dgemm('N','N',matdim,blocksize_curr,currdim,1.0d0,&
            vmat(1:matdim,1:currdim),matdim,&
-           reigvec(1:currdim,1:blocksize),currdim,0.0d0,&
-           ritzvec(1:matdim,1:blocksize),matdim)
+           reigvec(1:currdim,1:blocksize_curr),currdim,0.0d0,&
+           ritzvec(1:matdim,1:blocksize_curr),matdim)
       
       return
 
@@ -807,20 +830,20 @@
 ! y_i      ith eigenvector of the Rayleigh matrix
 !-----------------------------------------------------------------------
       ! -W * y_i
-      call dgemm('N','N',matdim,blocksize,currdim,-1.0d0,&
+      call dgemm('N','N',matdim,blocksize_curr,currdim,-1.0d0,&
            wmat(1:matdim,1:currdim),matdim,&
-           reigvec(1:currdim,1:blocksize),currdim,0.0d0,&
-           res(1:matdim,1:blocksize),matdim)
+           reigvec(1:currdim,1:blocksize_curr),currdim,0.0d0,&
+           res(1:matdim,1:blocksize_curr),matdim)
       
       ! lambda_i * x_i -W * y_i
-      do i=1,blocksize
+      do i=1,blocksize_curr
          res(:,i)=res(:,i)+reigval(i)*ritzvec(:,i)
       enddo
 
 !-----------------------------------------------------------------------
 ! Norms of the residual vectors
 !-----------------------------------------------------------------------
-      do i=1,blocksize
+      do i=1,blocksize_curr
          norm(i)=ddot(matdim,res(:,i),1,res(:,i),1)
          norm(i)=sqrt(norm(i))
       enddo
@@ -828,8 +851,9 @@
 !-----------------------------------------------------------------------
 ! Keep track of the no. converged roots
 !-----------------------------------------------------------------------
-      nconv=0
-      do i=1,nstates
+      if (.not.ldeflate) nconv=0
+
+      do i=1,nstates_curr
          if (norm(i).lt.tol) nconv=nconv+1
       enddo
 
@@ -850,17 +874,26 @@
       logical             :: lcollapse
 
 !-----------------------------------------------------------------------
+! Removal of converged vectors from the subspace
+!-----------------------------------------------------------------------
+      if (ldeflate.and.nconv.gt.nconv_prev) call deflate(matdim)
+      
+!-----------------------------------------------------------------------
 ! ipre = 1 <-> diagonal preconditioned residue
 ! ipre = 2 <-> Olsen's preconditioner
 !-----------------------------------------------------------------------
       ! Determine whether or not we need to collapse the subspace
-      if (currdim.le.maxvec-blocksize) then
+      if (currdim.le.maxvec_curr-blocksize_curr) then
          lcollapse=.false.
       else
          lcollapse=.true.
-         write(ilog,'(/,2x,a)') 'Collapsing the subspace'
       endif
 
+      ! Force a collapse of the subspace if a deflation has occurred
+      if (ldeflate.and.nconv.gt.nconv_prev) lcollapse=.true.
+
+      if (lcollapse) write(ilog,'(/,2x,a)') 'Collapsing the subspace'
+      
       ! Calculate the new subspace vectors
       if (ipre.eq.1) then
          call dpr(matdim,lcollapse)
@@ -868,20 +901,164 @@
          call olsen(matdim,lcollapse)
       endif
       
+      ! Project the subspace onto the space orthogonal to the
+      ! that spanned by the converged vectors
+      if (ldeflate.and.nconv.gt.0) call subspace_projection(matdim,lcollapse)
+
       ! Orthogonalise the subspace vectors
       call qrortho(matdim,lcollapse)
 
       ! Update the dimension of the subspace
       if (lcollapse) then
-         currdim=2*blocksize
+         currdim=2*blocksize_curr
       else
-         currdim=currdim+blocksize
+         currdim=currdim+blocksize_curr
       endif
 
       return
 
     end subroutine subspace_expansion
 
+!#######################################################################
+
+    subroutine deflate(matdim)
+
+      use channels
+      use iomod
+      
+      implicit none
+
+      integer, intent(in)                :: matdim
+      integer                            :: indx,i,j,count
+      integer, dimension(nstates)        :: convmap
+      real(d), dimension(:), allocatable :: swapvec
+      real(d)                            :: swapval
+      
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(swapvec(matdim))
+      
+!-----------------------------------------------------------------------
+! Rearrange the arrays holding the Ritz vectors, the Ritz values and the
+! residual vectors .s.t. the elements associated with the converged
+! vectors are moved to the ends of the arrays
+!-----------------------------------------------------------------------
+      ! Indices of the converged vectors
+      count=0
+      convmap=0
+      do i=1,blocksize_curr
+         if (norm(i).lt.tol) then
+            count=count+1
+            convmap(count)=i
+         endif
+      enddo
+
+      count=0
+      do i=1,nconv-nconv_prev
+
+         count=count+1
+         
+         ! Index of the next column into which the next converged vector
+         ! is to be moved
+         indx=blocksize+1-nconv_prev-i
+
+         ! Ritz vector
+         swapvec=ritzvec(:,indx)
+         ritzvec(:,indx)=ritzvec(:,convmap(count))
+         ritzvec(:,convmap(count))=swapvec
+
+         ! Ritz value
+         swapval=reigval(indx)
+         reigval(indx)=reigval(convmap(count))
+         reigval(convmap(count))=swapval
+
+         ! Residual vector
+         swapvec=res(:,indx)
+         res(:,indx)=res(:,convmap(count))
+         res(:,convmap(count))=swapvec
+         
+      enddo      
+      
+!-----------------------------------------------------------------------
+! Update dimensions
+!-----------------------------------------------------------------------
+      blocksize_curr=blocksize_curr-(nconv-nconv_prev)
+      maxvec_curr=maxvec_curr-(nconv-nconv_prev)
+      nstates_curr=nstates_curr-(nconv-nconv_prev)
+      currdim=currdim-(nconv-nconv_prev)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(swapvec)
+
+      return
+      
+    end subroutine deflate
+
+!#######################################################################
+
+    subroutine subspace_projection(matdim,lcollapse)
+
+      use iomod
+      use channels
+      
+      implicit none
+
+      integer, intent(in)                  :: matdim
+      integer                              :: i,j,lower,upper,indx,&
+                                              nsubvec
+      real(d), dimension(:,:), allocatable :: overlap
+      logical                              :: lcollapse
+
+!-----------------------------------------------------------------------
+! Set the lower and upper indices on the unconverged subspace vectors
+! that need to be orthogonalised against the converged vectors
+!-----------------------------------------------------------------------      
+      if (lcollapse) then
+         lower=1
+         upper=2*blocksize_curr
+      else
+         lower=1
+         upper=currdim+blocksize_curr
+      endif
+
+      nsubvec=upper-lower+1
+      
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(overlap(nconv,nsubvec))
+      
+!-----------------------------------------------------------------------
+! Calculate the overlap matrix between the converged vectors and the
+! unconverged subspace vectors
+!-----------------------------------------------------------------------
+      call dgemm('T','N',nconv,nsubvec,matdim,1.0d0,&
+           ritzvec(:,blocksize-nconv+1:blocksize),matdim,&
+           vmat(:,lower:upper),matdim,0.0d0,overlap,nconv)
+
+!-----------------------------------------------------------------------
+! Orthogonalise the unconverged subspace vectors againts to the
+! converged vectors
+!-----------------------------------------------------------------------
+      do i=lower,upper
+         do j=1,nconv
+            indx=blocksize-nconv+j
+            vmat(:,i)=vmat(:,i)-ritzvec(:,indx)*overlap(j,i)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(overlap)
+      
+      return
+      
+    end subroutine subspace_projection
+    
 !#######################################################################
 
     subroutine dpr(matdim,lcollapse)
@@ -907,15 +1084,15 @@
       if (lcollapse) then
          ! Collapse of the subspace
          vmat=0.0d0
-         vmat(:,1:blocksize)=ritzvec(:,1:blocksize)
-         ilast=blocksize
+         vmat(:,1:blocksize_curr)=ritzvec(:,1:blocksize_curr)
+         ilast=blocksize_curr
       else
          ! Expansion of the subspace
          ilast=currdim
       endif
 
       ! Loop over new subspace vectors
-      do i=1,blocksize
+      do i=1,blocksize_curr
 
          ! Index of the next vector
          ilbl=ilast+i
@@ -969,15 +1146,15 @@
       if (lcollapse) then
          ! Collapse of the subspace
          vmat=0.0d0
-         vmat(:,1:blocksize)=ritzvec(:,1:blocksize)
-         ilast=blocksize
+         vmat(:,1:blocksize_curr)=ritzvec(:,1:blocksize_curr)
+         ilast=blocksize_curr
       else
          ! Expansion of the subspace
          ilast=currdim
       endif
 
       ! Loop over new subspace vectors
-      do i=1,blocksize
+      do i=1,blocksize_curr
          
          ! Diagonal of the C-matrix
          do j=1,matdim
@@ -1013,7 +1190,6 @@
       deallocate(tmpvec)
       deallocate(cdiag)
 
-
       return
 
     end subroutine olsen
@@ -1037,9 +1213,9 @@
 ! of the matrix of subspace vectors
 !-----------------------------------------------------------------------
       if (lcollapse) then
-         n=2*blocksize
+         n=2*blocksize_curr
       else
-         n=currdim+blocksize
+         n=currdim+blocksize_curr
       endif
 
       allocate(tau(n))
@@ -1068,12 +1244,42 @@
 
     subroutine wreigenpairs
 
+      use constants
       use iomod
+      use misc, only: dsortindxa1
       
       implicit none
 
-      integer :: unit,i
+      integer                     :: unit,i
+      integer, dimension(nstates) :: indx
 
+!-----------------------------------------------------------------------
+! Rearrangement of the ritzvec and reigval array such that the
+! converged eigenpairs come first
+!
+! No. of converged eigenpairs "in storage": nconv_prev
+! No. converged eigenpairs not "in storage": nstates_curr      
+!
+! N.B. This is only relevant if the subspace deflation was used
+!-----------------------------------------------------------------------
+      if (ldeflate) then
+
+         reigval(nstates_curr+1:nstates)=&
+              reigval(blocksize-nconv_prev+1:blocksize)
+
+         ritzvec(:,nstates_curr+1:nstates)=&
+              ritzvec(:,blocksize-nconv_prev+1:blocksize)
+         
+      endif
+         
+!-----------------------------------------------------------------------
+! Indices of the eigenpairs in order of increasing energy
+!
+! Note that this is only relevant if subspace deflation was used, but
+! makes no difference if not
+!-----------------------------------------------------------------------
+      call dsortindxa1('A',nstates,reigval(1:nstates),indx)
+      
 !-----------------------------------------------------------------------
 ! Open the Davidson vector file
 !-----------------------------------------------------------------------
@@ -1085,7 +1291,7 @@
 ! Write the eigenpairs to file
 !-----------------------------------------------------------------------
       do i=1,nstates
-         write(unit) i,reigval(i),ritzvec(:,i)
+         write(unit) i,reigval(indx(i)),ritzvec(:,indx(i))
       enddo
 
 !-----------------------------------------------------------------------
@@ -1119,7 +1325,7 @@
       return
       
     end subroutine davfinalise
-      
+
 !#######################################################################
 
   end module block_davidson

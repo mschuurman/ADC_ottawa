@@ -22,7 +22,7 @@ diag_section
  block_size = 5
  tol = 1d-5
  maxit = 500
- guess = adc1
+# guess = adc1
 end-diag_section
 
 diag_final_section
@@ -31,7 +31,9 @@ diag_final_section
  block_size = 20
  tol=1d-5
  maxit=700
- guess=adc1
+# guess=adc1
+#  maxvec=90
+ deflate
 end-diag_final_section
 
 #lanczos_section

@@ -663,7 +663,10 @@
             else
                goto 100
             endif
-               
+
+         else if (keyword(i).eq.'deflate') then
+            ldfl=.true.
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -823,6 +826,9 @@
             else
                goto 100
             endif
+            
+         else if (keyword(i).eq.'deflate') then
+            ldfl_f=.true.
             
          else
             ! Exit if the keyword is not recognised

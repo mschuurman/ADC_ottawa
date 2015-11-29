@@ -318,7 +318,7 @@ contains
     write(ilog,100)
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
-       call dsortindxa1("D",ndim1,coeff(:),indx(:))
+       call dsortindxa1('D',ndim1,coeff(:),indx(:))
        write(ilog,102) i,en(i),en(i)*eh2ev,(coeff(indx(j)),indx(j),j=1,5)
     end do 
 
@@ -369,7 +369,7 @@ contains
 
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
-       call dsortindxa1("D",ndim1,coeff(:),indx(:))
+       call dsortindxa1('D',ndim1,coeff(:),indx(:))
        coeff(:)=vspace(:,i)
        call wrstateinfo(i,indx,coeff,kpq,kpqdim2,en(i),tmvec(i),&
             osc_str(i),ndim1,iout)
@@ -561,7 +561,7 @@ contains
        ! Read the next eigenpair from file
        read(ieig) itmp,ener,coeff
        coeffsq=coeff**2
-       call dsortindxa1("D",ndim,coeffsq,indx)
+       call dsortindxa1('D',ndim,coeffsq,indx)
 
        ! State energy in a.u.
        if (i.lt.10) then
@@ -676,7 +676,7 @@ contains
        ! Read the next eigenpair from file
        read(ieig) itmp,ener,coeff
        coeffsq=coeff**2
-       call dsortindxa1("D",ndim,coeffsq,indx)
+       call dsortindxa1('D',ndim,coeffsq,indx)
 
        ! State energy in a.u.
        if (i.lt.10) then

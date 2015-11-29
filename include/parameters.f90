@@ -189,7 +189,7 @@ module parameters
                  precon_f,maxsubdim,maxsubdim_f
   real(d)     :: davtarg
   character*1 :: hamflag
-  logical     :: lextdiag
+  logical     :: lextdiag,ldfl,ldfl_f
   
   character*3 :: POLARIZATION
 

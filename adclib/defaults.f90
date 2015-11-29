@@ -59,6 +59,7 @@
       davname='SCRATCH/davstates'
       precon=1
       maxsubdim=-1
+      ldfl=.false.
       
       ! Final space
       davstates_f=0
@@ -69,6 +70,7 @@
       davname_f='SCRATCH/davstates_final'
       precon_f=1
       maxsubdim_f=-1
+      ldfl_f=.false.
       
       ! Common
       ndavcalls=0
