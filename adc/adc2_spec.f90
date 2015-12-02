@@ -1102,11 +1102,21 @@
 !-----------------------------------------------------------------------
        write(ilog,'(/,70a)') ('*',i=1,70)
        if (lcvsfinal) then
-          write(ilog,'(2x,a)') &
-               'Final space CVS-ADC(2)-s excitation energies'
+          if (method_f.eq.2) then
+             write(ilog,'(2x,a)') &
+                  'Final space CVS-ADC(2)-s excitation energies'
+          else if (method_f.eq.3) then
+             write(ilog,'(2x,a)') &
+                  'Final space CVS-ADC(2)-x excitation energies'
+          endif
        else
-          write(ilog,'(2x,a)') &
-               'Final space ADC(2)-s excitation energies'
+          if (method_f.eq.2) then
+             write(ilog,'(2x,a)') &
+                  'Final space ADC(2)-s excitation energies'
+          else if (method_f.eq.3) then
+             write(ilog,'(2x,a)') &
+                  'Final space ADC(2)-x excitation energies'
+          endif               
        endif
        write(ilog,'(70a)') ('*',i=1,70)
        

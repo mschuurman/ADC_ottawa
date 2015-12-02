@@ -83,14 +83,9 @@ QCLIB=	qclib/vpqrsmod.o \
 	qclib/load_electronic_structure.o \
 	qclib/scf_electronic_structure.o 
 
-ifeq ($(EXTDIAG),true)
-	EIGEN=extdiag/external_diag.o \
-	extdiag/davmod.o
-else
-	EIGEN=eigen/block_davidson.o \
-	eigen/davmod.o
-endif
-EIGEN+=eigen/block_lanczos.o
+EIGEN=eigen/block_davidson.o \
+	eigen/davmod.o \
+	eigen/block_lanczos.o
 
 ADCLIB= adclib/defaults.o \
 	adclib/orbindx.o \
@@ -127,13 +122,7 @@ ADC =   $(INCLUDE) \
 
 OBJECTS = $(MULTI) $(ADC)
 
-
-ifeq ($(EXTDIAG),true)
-	ADC_OBJ=extdiag/external_diag.o
-else
-	ADC_OBJ=block_davidson.o
-endif
-ADC_OBJ+=accuracy.o \
+ADC_OBJ=accuracy.o \
 	printing.o \
 	timer.o \
 	lapack.o \
@@ -178,6 +167,7 @@ ADC_OBJ+=accuracy.o \
 	get_moment.o \
 	fspacetrial.o \
 	fspace2.o \
+	block_davidson.o \
 	davmod.o \
 	block_lanczos.o \
 	photoionisation.o \
@@ -263,7 +253,7 @@ KNIT_OBJ = constants.o \
 
 adc: $(OBJECTS)
 	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) -o adc.x 
-	rm -f *.o *~ *.mod extdiag/external_diag.o 2>/dev/null
+	rm -f *.o *~ *.mod 2>/dev/null
 
 stieltjes_ap: $(STIELTJES_AP)
 	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) $(LIBS) -o stieltjes_ap.x
@@ -287,4 +277,4 @@ knit: $(KNIT)
 	$(CC) $(CCOPTS)  -c $<
 
 clean_all:
-	rm -f *.o *~ *.mod extdiag/external_diag.o
+	rm -f *.o *~ *.mod

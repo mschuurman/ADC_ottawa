@@ -941,7 +941,7 @@
       
 !-----------------------------------------------------------------------
 ! Rearrange the arrays holding the Ritz vectors, the Ritz values and the
-! residual vectors .s.t. the elements associated with the converged
+! residual vectors s.t. the elements associated with the converged
 ! vectors are moved to the ends of the arrays
 !-----------------------------------------------------------------------
       ! Indices of the converged vectors
@@ -954,6 +954,7 @@
          endif
       enddo
 
+      ! Rearranegment of the arrays ritzvec, reigval and res
       count=0
       do i=1,nconv-nconv_prev
 
@@ -1032,7 +1033,7 @@
       allocate(overlap(nconv,nsubvec))
       
 !-----------------------------------------------------------------------
-! Calculate the overlap matrix between the converged vectors and the
+! Calculate the matrix of overlaps between the converged vectors and the
 ! unconverged subspace vectors
 !-----------------------------------------------------------------------
       call dgemm('T','N',nconv,nsubvec,matdim,1.0d0,&

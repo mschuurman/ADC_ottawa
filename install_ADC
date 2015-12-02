@@ -42,59 +42,6 @@ fi
 #lapackflag='-llapack'
 
 #-----------------------------------------------------------------------
-# If the adc program is to be installed, determine whether to install
-# using the PETSc/SLEPc libraries
-#-----------------------------------------------------------------------
-if [ "$target" == 'adc' ] || [ -z $target ];then
-
-    echo
-    read -p "Do you wish to install using the PETSc/SLEPc libraries (y/n) " ext
-
-    valid=0
-    while [ "$valid" == '0' ]; do
-	if [ "$ext" == 'y' ]; then
-	    valid=1
-	    args+=" "EXTDIAG=true
-	elif [ "$ext" == 'n' ]; then
-	    valid=1
-	    args+=" "EXTDIAG=false
-	else
-	    read -p "Invalid answer: y or n only: " ext
-	fi
-    done
-
-fi
-
-#-----------------------------------------------------------------------
-# Determine the path to the SLEPc install directory
-#-----------------------------------------------------------------------
-if [ -z $slepcpath ]; then
-
-    if [ -z $SLEPC_DIR ]; then
-	found=false
-    else
-	if [ -d $SLEPC_DIR ]; then
-	    found=true
-	else
-	    found=false
-	fi
-    fi
-
-    if [ "$found" == 'false' ]; then
-	if [ -d $HOME/slepc*/conf/ ]; then
-	    slepcpath=`ls -d $HOME/slepc*/conf/ | sed 's/conf\///g'`
-	else
-	    read -p "Please enter the path to the SLEPc install directory:  " slepcpath	
-	fi
-    else
-	slepcpath=$SLEPC_DIR
-    fi
-
-fi
-
-args+=" "SLEPC_DIR=$slepcpath
-
-#-----------------------------------------------------------------------
 # Determine BLAS and LAPACK compiler flags
 #-----------------------------------------------------------------------
 if [ -z $blasflag ]; then
