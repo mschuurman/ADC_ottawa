@@ -19,7 +19,7 @@
       use propagate_prepare
       use guessvecs
       use channels
-      use adc_ph, only: mp2
+      use mp2
 
       implicit none
     
@@ -32,9 +32,9 @@
       real(d)                              :: t1,t2
 
 !-----------------------------------------------------------------------  
-! Calculation of the MP2 correlation energy
+! Calculation of the MP2 correlation energy and D2 diagnostic
 !-----------------------------------------------------------------------  
-      call MP2(e_mp2)
+      call mp2_master(e_mp2)
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 

@@ -23,66 +23,6 @@ contains
 
 !#######################################################################
 
-  subroutine MP2(E_MP2)
-
-    integer              :: r,s,u,v,nsym1,nsym2,i,j,a,b,cnt
-    real(d), intent(out) :: E_MP2
-    real(d)              :: DA,eijc,term,etotal
-
-    E_MP2 = 0._d
-    etotal = 0._d
-    cnt=0
-    do r=nOcc+1,nBas
-       a=roccnum(r)  !r
-       
-       do s=nOcc+1,nBas
-          b=roccnum(s) !s
-          
-          do u=1,nOcc
-             i=roccnum(u) !u
-
-             do v=1,nOcc
-                j=roccnum(v) !v
-
-             nsym1=MT(orbSym(i),orbSym(a))
-             nsym2=MT(orbSym(j),orbSym(b))
-
-
-             if  (MT(nsym1,nsym2) .eq. 1)  then
-
-                cnt=cnt+1
-
-                eijc=e(i)+e(j)-e(a)-e(b)
-
-                term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a))
-
-                term=term/eijc
-
-                E_MP2 = E_MP2 + term
-
-             else
-
-                 eijc=e(i)+e(j)-e(a)-e(b)
-                term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a)) / eijc
-                etotal = etotal + term
-                if(abs(term).gt.1e-5)write(ilog,100)labsym(orbsym(i)),i,labsym(orbsym(j)),j,labsym(orbsym(a)),a,labsym(orbsym(b)),b,MT(nsym1,nsym2),term
-
-
-             endif
-
-          end do
-       end do
-    end do 
-  end do
-
-  if(Etotal.gt.1e-5)write(ilog,*)'E[sym residual]=',Etotal
-
-100 format(a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') sym=',i3,'term=',f15.8)
-  
-  end subroutine MP2
-
-!#######################################################################
-
 !!$Indices are supplied in the order: PH,PH
 
 !!$Zeroth order contribution K_ak,a'k'. The condition that a=a', k=k'

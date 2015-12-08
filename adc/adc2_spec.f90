@@ -13,6 +13,7 @@
         use fspace
         use misc
         use guessvecs
+        use mp2
 
         implicit none
 
@@ -30,9 +31,9 @@
         real*8, dimension(:), allocatable    :: mtmf
 
 !-----------------------------------------------------------------------
-! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
+! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
-        call run_mp2(e0)
+        call mp2_master(e0)
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 
@@ -1210,63 +1211,6 @@
        return
 
      end subroutine tdm_davstates_final
-
-!#######################################################################
-
-      subroutine run_mp2(e0)
-        
-        use constants
-        use parameters
-!        use diagnostics        
-        use adc_ph, only: mp2
-
-        implicit none
-
-        integer           :: i
-        real(d)           :: e0,d2
-        character(len=60) :: atmp
-
-!-----------------------------------------------------------------------
-! Calculation of the MP2 correlation energy
-!-----------------------------------------------------------------------
-        call MP2(E_MP2)
-
-!-----------------------------------------------------------------------
-! Calculation of the D2 diagnostic
-!-----------------------------------------------------------------------
-!        if (ld2) call mp2_d2(d2)
-
-!-----------------------------------------------------------------------
-! Output results
-!-----------------------------------------------------------------------
-        e0=Ehf+E_MP2
- 
-        write(ilog,'(/,2x,90a)') ('*',i=1,90)
-
-        write(ilog,'(2x,1a)') '*'
-        atmp='* HF energy:'
-        write(ilog,'(2x,a25,2x,F18.10)') adjustl(atmp),Ehf
-
-        write(ilog,'(2x,1a)') '*'
-        atmp='* MP2 correlation energy:'
-        write(ilog,'(2x,a25,2x,F18.10)') adjustl(atmp),E_MP2
-
-        write(ilog,'(2x,1a)') '*'
-        atmp='* MP2 energy:'
-        write(ilog,'(2x,a25,2x,F18.10)') adjustl(atmp),e0
-
-        if (ld2) then
-           write(ilog,'(2x,1a)') '*'
-           atmp='* D2 diagnostic:'
-           write(ilog,'(2x,a25,2x,F18.10)') adjustl(atmp),d2
-        endif
-
-        write(ilog,'(2x,1a)') '*'
-        write(ilog,'(2x,90a,/)') ('*',i=1,90)
-
-        return
-
-      end subroutine run_mp2
 
 !#######################################################################
 

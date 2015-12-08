@@ -23,7 +23,6 @@ args=""
 if [ -f "ADC.CONFIG" ]; then
     blasflag=`cat ADC.CONFIG | grep LIB_BLAS | sed 's/.*=//g'`
     lapackflag=`cat ADC.CONFIG | grep LIB_LAPACK | sed 's/.*=//g'`
-    slepcpath=`cat ADC.CONFIG | grep SLEPC_DIR | sed 's/.*=//g'`
 fi
 
 #-----------------------------------------------------------------------
@@ -67,7 +66,6 @@ fi
 
 echo "LIB_BLAS=$blasflag" >>ADC.CONFIG
 echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
-echo "SLEPC_PATH=$slepcpath" >>ADC.CONFIG
 
 #-----------------------------------------------------------------------
 # Calls to make
