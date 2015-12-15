@@ -129,6 +129,14 @@
       grdi=-10.0d0
       grdf=10.0d0
 
+!-----------------------------------------------------------------------
+! Target state matching
+!-----------------------------------------------------------------------
+      ltarg=.false.
+      detfile=''
+      targqcfiles=''
+      detthrsh=0.0d0
+
       return
 
     end subroutine set_defaults

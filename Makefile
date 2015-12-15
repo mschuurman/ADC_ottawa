@@ -105,6 +105,7 @@ ADCLIB= adclib/defaults.o \
 	adclib/Propagate.o \
 	adclib/dyson_calc.o \
 	adclib/dyson_io.o \
+	adclib/target_matching.o \
 	adclib/mp2.o
 
 ADC_MAIN=adc/adc1_spec.o \
@@ -175,6 +176,7 @@ ADC_OBJ=accuracy.o \
 	Propagate.o \
         dyson_calc.o \
 	dyson_io.o \
+	target_matching.o \
 	mp2.o \
         guessvecs.o \
 	adc1_spec.o \

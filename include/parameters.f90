@@ -256,6 +256,14 @@ integer :: lmax,nelen,ngrdpnts
 real(d) :: zcore,eleni,elenf,grdi,grdf
 
 !!$************************************************
+!!$**********Target State Matching*****************
+!!$************************************************
+real(d)                          :: detthrsh
+character(len=120)               :: detfile
+character(len=120), dimension(2) :: targqcfiles
+logical                          :: ltarg
+
+!!$************************************************
 !!$**********Other Parameters**********************
 !!$************************************************
 integer                                     :: natm

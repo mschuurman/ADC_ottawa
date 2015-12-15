@@ -7,7 +7,7 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state = 0
+initial_state = 1
 
 dipole_component = x
 
@@ -17,30 +17,35 @@ mem=500
 
 diag_section
  preconditioner = olsen
- maxvec = 30
+ maxvec = 10
  nstates = 2
  block_size = 5
  tol = 1d-5
  maxit = 500
-# guess = adc1
+ guess = adc1
 end-diag_section
 
-diag_final_section
- preconditioner = olsen
- nstates = 10
- block_size = 20
- tol=1d-5
- maxit=700
-# guess=adc1
-#  maxvec=90
- deflate
-end-diag_final_section
-
-#lanczos_section
+#diag_final_section
+# preconditioner = olsen
+# nstates = 10
 # block_size = 20
-# iter=50
-# guess=adc1
-## mem=500
-#end-lanczos_section
+# tol=1d-5
+# maxit=700
+## guess=adc1
+##  maxvec=90
+# deflate
+#end-diag_final_section
+
+target_section
+detfile=targetdet.dat
+qcfiles=target_gamess.log,target_gamess.dat
+thrsh=0.01
+end-target_section
+
+lanczos_section
+ block_size = 20
+ iter=50
+ guess=adc1
+end-lanczos_section
 
 end-input

@@ -14,6 +14,7 @@
         use misc
         use guessvecs
         use mp2
+        use targetmatching
 
         implicit none
 
@@ -57,6 +58,11 @@
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
+
+!-----------------------------------------------------------------------
+! Target state matching
+!-----------------------------------------------------------------------
+        if (ltarg) call target_master(kpq,ndim)
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states

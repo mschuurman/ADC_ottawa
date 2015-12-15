@@ -268,6 +268,13 @@
             if (keyword(1).ne.'end-dyson_section') goto 45
             i=inkw
             
+         else if (keyword(i).eq.'target_section') then            
+            ltarg=.true.
+50          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-target_section') goto 50
+            i=inkw
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -334,7 +341,12 @@
 ! Read the Dyson section
 !-----------------------------------------------------------------------
         if (ldyson) call rddysoninp
-        
+
+!-----------------------------------------------------------------------
+! Read the target state section
+!-----------------------------------------------------------------------
+        if (ltarg) call rdtargetinp
+
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
@@ -517,6 +529,24 @@
             msg='Iterative diagonalisation of the IP-ADC(2) &
                  Hamiltonian has been requested, but the diag_final &
                  section is missing...'
+            goto 999
+         endif
+      endif
+
+!-----------------------------------------------------------------------
+! Target state section
+!-----------------------------------------------------------------------
+      if (ltarg) then
+         if (detthrsh.eq.0.0d0) then
+            msg='The Slater determinant threshold has not been given'
+            goto 999
+         endif
+         if (detfile.eq.'') then
+            msg='The Slater determinant file name has not been given'
+            goto 999
+         endif
+         if (targqcfiles(1).eq.'') then
+            msg='The target state QC filename(s) have not been given'
             goto 999
          endif
       endif
@@ -1009,7 +1039,7 @@
       if (keyword(1).ne.'dyson_section') goto 1
 
 !-----------------------------------------------------------------------
-! Read the Lanczos parameters
+! Read the Dyson orbital parameters
 !-----------------------------------------------------------------------
 5    call rdinp(iin)
       
@@ -1170,6 +1200,93 @@
       return
       
     end subroutine rddysoninp
+
+!#######################################################################
+
+    subroutine rdtargetinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Read to the target state section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'target_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the target state matching parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-target_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'thrsh') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) detthrsh
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'detfile') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),'(a)') detfile
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'qcfiles') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),'(a)') targqcfiles(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),'(a)') targqcfiles(2)
+               endif
+            else
+               goto 100
+            endif
+
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+         
+
+      return
+
+    end subroutine rdtargetinp
       
 !#######################################################################
 
