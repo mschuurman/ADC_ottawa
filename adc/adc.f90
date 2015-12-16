@@ -112,7 +112,7 @@ program adc
      case(1) ! ADC(1), full diagonalisation
         call adc1_spec()
      case(2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
-        call adc2_spec()
+        call adc2_spec(gamess_info)
      case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
         call adc2_ener()
      end select

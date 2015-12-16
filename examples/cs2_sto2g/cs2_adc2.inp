@@ -37,8 +37,8 @@ end-diag_section
 #end-diag_final_section
 
 target_section
-detfile=targetdet.dat
-qcfiles=target_gamess.log,target_gamess.dat
+detfile=s2_det.dat
+mofile=ref_mos.dat
 thrsh=0.01
 end-target_section
 

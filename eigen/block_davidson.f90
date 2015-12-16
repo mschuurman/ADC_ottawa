@@ -577,7 +577,7 @@
 ! Table header
 !-----------------------------------------------------------------------
       if (k.eq.1) then
-         write(ilog,'(/,53a)') ('*',j=1,53)
+         write(ilog,'(53a)') ('*',j=1,53)
          write(ilog,'(4(a,6x))') &
               'Iteration','Energies','Residuals','Converged'
          write(ilog,'(53a)') ('*',j=1,53)
@@ -586,7 +586,7 @@
 !-----------------------------------------------------------------------
 ! Information from the current iteration
 !-----------------------------------------------------------------------
-      write(ilog,'(/)')
+      write(ilog,*)
       do i=1,nstates_curr
          if (norm(i).lt.tol) then
             aconv='y'
@@ -892,7 +892,7 @@
       ! Force a collapse of the subspace if a deflation has occurred
       if (ldeflate.and.nconv.gt.nconv_prev) lcollapse=.true.
 
-      if (lcollapse) write(ilog,'(/,2x,a)') 'Collapsing the subspace'
+!      if (lcollapse) write(ilog,'(/,2x,a)') 'Collapsing the subspace'
       
       ! Calculate the new subspace vectors
       if (ipre.eq.1) then

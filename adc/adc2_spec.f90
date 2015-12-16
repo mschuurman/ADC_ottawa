@@ -6,7 +6,7 @@
 
 !#######################################################################
 
-      subroutine adc2_spec()
+      subroutine adc2_spec(gam)
         
         use constants
         use parameters
@@ -30,6 +30,7 @@
         real(d), dimension(:,:), allocatable :: rvec
         real(d), dimension(:), allocatable   :: vec_init
         real*8, dimension(:), allocatable    :: mtmf
+        type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
@@ -62,7 +63,7 @@
 !-----------------------------------------------------------------------
 ! Target state matching
 !-----------------------------------------------------------------------
-        if (ltarg) call target_master(kpq,ndim)
+        if (ltarg) call target_master(kpq,ndim,gam)
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states

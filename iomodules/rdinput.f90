@@ -537,16 +537,17 @@
 ! Target state section
 !-----------------------------------------------------------------------
       if (ltarg) then
-         if (detthrsh.eq.0.0d0) then
+         if (detthrsh.eq.-1.0d0) then
             msg='The Slater determinant threshold has not been given'
             goto 999
          endif
          if (detfile.eq.'') then
-            msg='The Slater determinant file name has not been given'
+            msg='The target Slater determinant file name has not been &
+                 given'
             goto 999
          endif
-         if (targqcfiles(1).eq.'') then
-            msg='The target state QC filename(s) have not been given'
+         if (mofile.eq.'') then
+            msg='The target MO file has not been given'
             goto 999
          endif
       endif
@@ -1250,18 +1251,14 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'qcfiles') then
+         else if (keyword(i).eq.'mofile') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),'(a)') targqcfiles(1)
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  read(keyword(i),'(a)') targqcfiles(2)
-               endif
+               read(keyword(i),'(a)') mofile
             else
                goto 100
             endif
-
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

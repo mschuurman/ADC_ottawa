@@ -134,8 +134,8 @@
 !-----------------------------------------------------------------------
       ltarg=.false.
       detfile=''
-      targqcfiles=''
-      detthrsh=0.0d0
+      mofile=''
+      detthrsh=-1.0d0
 
       return
 

@@ -259,8 +259,7 @@ real(d) :: zcore,eleni,elenf,grdi,grdf
 !!$**********Target State Matching*****************
 !!$************************************************
 real(d)                          :: detthrsh
-character(len=120)               :: detfile
-character(len=120), dimension(2) :: targqcfiles
+character(len=120)               :: detfile,mofile
 logical                          :: ltarg
 
 !!$************************************************
