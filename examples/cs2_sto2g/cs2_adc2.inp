@@ -37,9 +37,10 @@ end-diag_section
 #end-diag_final_section
 
 target_section
-detfile=s2_det.dat
+detfile=s1_det.dat
 mofile=ref_mos.dat
-thrsh=0.01
+detthrsh=0.01
+ovrthrsh=0.5
 end-target_section
 
 lanczos_section

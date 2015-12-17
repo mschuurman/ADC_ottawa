@@ -61,16 +61,10 @@
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
 
 !-----------------------------------------------------------------------
-! Target state matching
-!-----------------------------------------------------------------------
-        if (ltarg) call target_master(kpq,ndim,gam)
-
-!-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0) &
-             call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,&
-             kpq)
+        if (statenumber.gt.0) call initial_space_tdm(ener,rvec,ndim,&
+             mtm,tmvec,osc_str,kpq)
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
@@ -88,6 +82,11 @@
 
            write(ilog,'(/,70a,/)') ('*',i=1,70)
         endif
+
+!-----------------------------------------------------------------------
+! Selection of the initial state by matching to a target CI state
+!-----------------------------------------------------------------------
+        if (ltarg.and.statenumber.ne.0) call target_master(kpq,ndim,gam)
 
 !-----------------------------------------------------------------------
 ! Set the initial state vector and energy

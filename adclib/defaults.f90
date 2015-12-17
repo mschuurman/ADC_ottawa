@@ -136,6 +136,7 @@
       detfile=''
       mofile=''
       detthrsh=-1.0d0
+      ovrthrsh=-1.0d0
 
       return
 

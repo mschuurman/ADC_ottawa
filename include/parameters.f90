@@ -258,7 +258,7 @@ real(d) :: zcore,eleni,elenf,grdi,grdf
 !!$************************************************
 !!$**********Target State Matching*****************
 !!$************************************************
-real(d)                          :: detthrsh
+real(d)                          :: detthrsh,ovrthrsh
 character(len=120)               :: detfile,mofile
 logical                          :: ltarg
 

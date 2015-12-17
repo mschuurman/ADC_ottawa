@@ -82,7 +82,14 @@
          else if (keyword(i).eq.'initial_state') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) statenumber
+               if (keyword(i).eq.'target') then
+                  ! Assign any integer i>0: this is 
+                  ! necessary to get around checks on the 
+                  ! statenumber
+                  statenumber=999
+               else
+                  read(keyword(i),*) statenumber
+               endif
             else
                goto 100
             endif
@@ -539,6 +546,10 @@
       if (ltarg) then
          if (detthrsh.eq.-1.0d0) then
             msg='The Slater determinant threshold has not been given'
+            goto 999
+         endif
+         if (ovrthrsh.eq.-1.0d0) then
+            msg='The initial state overlap threshold has not been given'
             goto 999
          endif
          if (detfile.eq.'') then
@@ -1235,14 +1246,22 @@
 10       continue
          i=i+1
 
-         if (keyword(i).eq.'thrsh') then
+         if (keyword(i).eq.'detthrsh') then
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) detthrsh
             else
                goto 100
             endif
-
+            
+         else if (keyword(i).eq.'ovrthrsh') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) ovrthrsh
+            else
+               goto 100
+            endif
+            
          else if (keyword(i).eq.'detfile') then
             if (keyword(i+1).eq.'=') then
                i=i+2

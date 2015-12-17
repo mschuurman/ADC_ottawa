@@ -83,6 +83,8 @@
 
       write(ilog,'(a,F7.5,/)') ' Determinant threshold: ',detthrsh
 
+      write(ilog,'(a,F7.5,/)') ' Overlap threshold:     ',ovrthrsh
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -113,7 +115,8 @@
       call fill_onv_adc(kpq,ndim)
 
 !-----------------------------------------------------------------------
-! Output norms and S^2 expectation values
+! Calculate norms and S^2 expectation values for the Slater 
+! determinant expansions (target and ~ADC)
 !-----------------------------------------------------------------------
       call checkwf
 
@@ -124,9 +127,21 @@
       call calc_overlaps(gamess_internal)
 
 !-----------------------------------------------------------------------
+! Output information
+!-----------------------------------------------------------------------
+      call write_table
+
+!-----------------------------------------------------------------------
+! Select the initial state
+!-----------------------------------------------------------------------
+      call select_istate
+
+!-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      call finalise      
+      call finalise
+
+      write(ilog,'(/,70a)') ('-',k=1,70)
 
       return
 
@@ -700,27 +715,7 @@
       do i=1,davstates
          norm_adc(i)=sqrt(dot_product(c_adc(:,i),c_adc(:,i)))
       enddo
-
-!-----------------------------------------------------------------------
-! Output wavefunction information
-!-----------------------------------------------------------------------
-      write(ilog,'(/,65a)') ('*',i=1,65)
-      write(ilog,'(a)') '  State  Determinants  Norm          S^2         &
-            S^2/<psi|psi>'
-      write(ilog,'(65a)') ('*',i=1,65)
-
-      ! Target state
-       write(ilog,'(a6,1x,i4,9x,3(3x,F10.7))'),'Target',nsd_targ,&
-              norm_targ,s2_targ,s2_targ/norm_targ**2
-
-      ! Approximate ADC states
-      do i=1,davstates
-         write(ilog,'(i3,4x,i4,9x,3(3x,F10.7))'),i,nsd_adc(i),&
-              norm_adc(i),s2_adc(i),s2_adc(i)/norm_adc(i)**2
-      enddo
-
-      write(ilog,'(65a)') ('*',i=1,65)
-
+      
       return
 
     end subroutine checkwf
@@ -887,6 +882,8 @@
       real(d)             :: detsmk
       type(gam_structure) :: gamess_internal
 
+      real(d) :: tmp
+
 !-----------------------------------------------------------------------
 ! Set the no. AOs
 !-----------------------------------------------------------------------
@@ -913,8 +910,8 @@
             do k=1,nsd_adc(i)
 
                ! Construct the matrix S^mk of overlaps between
-               ! the MOs occupied in the target ket <m| and the
-               ! ~ADC bra |k>
+               ! the MOs occupied in the target bra <m| and the
+               ! ~ADC ket |k>
                call fill_spinorbital_integrals(onv_targ(:,m),&
                     onv_adc(:,k,i),smk,smo)
 
@@ -928,14 +925,15 @@
 
          enddo
 
-         print*,i,overlap(i)
-
       enddo
 
       return
 
     end subroutine calc_overlaps
 
+!#######################################################################
+! basis_overlaps: Calculates the target-internal AO and MO overlap 
+!                 matrices
 !#######################################################################
 
     subroutine basis_overlaps(gamess_internal)
@@ -968,7 +966,7 @@
 ! AO-to-MO transformation matrices
 !-----------------------------------------------------------------------
       ao2mo_adc=gamess_internal%vectors(1:nao_adc,1:nbas)
-      ao2mo_targ=gamess_internal%vectors(1:nao_targ,1:nbas_targ)
+      ao2mo_targ=gamess_target%vectors(1:nao_targ,1:nbas_targ)
 
 !-----------------------------------------------------------------------
 ! Calculation of the target (bra) - internal (ket) AO overlap matrix
@@ -1067,9 +1065,9 @@
     function determinant_overlap(sdet) result(overdet)
       
       use constants
-
+      
       implicit none
-
+      
       real(d), intent(in) :: sdet(:,:)
       real(d)             :: overdet
       real(d)             :: scr(nel,nel) ! Buffer for the 1-particle 
@@ -1077,39 +1075,122 @@
       scr     = sdet
       overdet = determinant(scr)
 
-    return
+      return
 
-  end function determinant_overlap
+    end function determinant_overlap
 
 !#######################################################################
 ! determinant: Calculates the determinant of a sqaure matrix.
 !              Taken from superdyson.
 !#######################################################################
 
-  real(d) function determinant(mat)
+    real(d) function determinant(mat)
     
-    real(d), intent(inout) :: mat(:,:) ! Matrix destroyed on exit
-    integer                :: order, info
-    integer                :: ipvt(size(mat,dim=1))
-    real(d)                :: work(size(mat,dim=1))
-    real(d)                :: detx(2)
-
-    order = size(mat,dim=1)
-    if (order==0) stop 'null matrix passed to determinant'
-
-    call dgefa(mat,order,order,ipvt,info)
+      real(d), intent(inout) :: mat(:,:) ! Matrix destroyed on exit
+      integer                :: order, info
+      integer                :: ipvt(size(mat,dim=1))
+      real(d)                :: work(size(mat,dim=1))
+      real(d)                :: detx(2)
+      
+      order = size(mat,dim=1)
+      if (order==0) stop 'null matrix passed to determinant'
+      
+      call dgefa(mat,order,order,ipvt,info)
    
-    call dgedi(mat,order,order,ipvt,detx,work,10)
+      call dgedi(mat,order,order,ipvt,detx,work,10)
 
-    determinant = detx(1) * 10.0d0**detx(2)
+      determinant = detx(1) * 10.0d0**detx(2)
 
-    return
+      return
 
-  end function determinant
+    end function determinant
 
 !#######################################################################
 
-    subroutine finalise
+    subroutine write_table
+
+      use channels
+
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Output overlaps, norms and S^2 expectation values
+!-----------------------------------------------------------------------
+      write(ilog,'(/,65a)') ('*',i=1,48)
+      write(ilog,'(21x,a)') 'Summary'
+      write(ilog,'(65a)') ('*',i=1,48)
+      write(ilog,'(a)') '|i>     ndet    norm       <S^2>     <Target|i>'
+      write(ilog,'(65a)') ('*',i=1,48)
+      
+      ! Target state
+      write(ilog,'(a6,2x,i3,2(4x,F7.4))') 'Target',nsd_targ,&
+           norm_targ,s2_targ/norm_targ**2
+
+      ! Approximate ADC states
+      do i=1,davstates
+         write(ilog,'(i2,6x,i3,3(4x,F7.4))') i,nsd_adc(i),&
+              norm_adc(i),s2_adc(i)/norm_adc(i)**2,overlap(i)
+      enddo
+
+      write(ilog,'(65a)') ('*',i=1,48)
+
+      return
+
+    end subroutine write_table
+
+!#######################################################################
+
+    subroutine select_istate
+      
+      use channels
+      use constants
+      use parameters
+      use iomod
+
+      implicit none
+
+      integer :: i,count,id
+
+!-----------------------------------------------------------------------
+! Die here if: (1) There are no states ~ADC states |i> for which
+!                  <Target|i> >= ovrthrsh;
+!              (2) There are more than one ~ADC states |i> for which
+!                  <Target|i> >= ovrthrsh.
+!
+! Else, set the initial state number and carry on.
+!-----------------------------------------------------------------------
+      count=0
+      
+      do i=1,davstates
+         if (abs(overlap(i)).ge.ovrthrsh) then
+            count=count+1
+            id=i
+         endif
+      enddo
+
+      if (count.eq.1) then
+         statenumber=id
+         write(ilog,'(/,x,a,x,i2,x,a)') 'State',id,'selected'
+      else if (count.gt.1) then
+         write(errmsg,'(a,x,F10.7)') &
+              'There exists more than one state with <Target|i> >=',&
+              ovrthrsh
+         call error_control
+      else
+         write(errmsg,'(a,x,F10.7)') &
+              'There exists no states with <Target|i> >=',ovrthrsh
+         call error_control
+      endif
+
+      return
+
+    end subroutine select_istate
+
+!#######################################################################
+
+  subroutine finalise
 
       implicit none
 
