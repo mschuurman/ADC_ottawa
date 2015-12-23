@@ -88,10 +88,10 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      allocate(nsd_adc(davstates))
-      allocate(s2_adc(davstates))
-      allocate(norm_adc(davstates))
-      allocate(overlap(davstates))
+      allocate(nsd_adc(0:davstates))
+      allocate(s2_adc(0:davstates))
+      allocate(norm_adc(0:davstates))
+      allocate(overlap(0:davstates))
 
       nel=2*nocc
       allocate(smk(nel,nel))
@@ -264,6 +264,10 @@
 !-----------------------------------------------------------------------
       maxnsd=0
 
+      ! Ground state
+      nsd_adc(0)=1
+      
+      ! Excited states
       do i=1,davstates
 
          ! Read the next ADC state vector from file
@@ -397,18 +401,23 @@
 ! Allocate arrays
 !-----------------------------------------------------------------------
       allocate(coeff(ndim))
-      allocate(onv_adc(nbas,maxnsd,davstates))
-      allocate(c_adc(maxnsd,davstates))
+      allocate(onv_adc(nbas,maxnsd,0:davstates))
+      allocate(c_adc(maxnsd,0:davstates))
 
 !-----------------------------------------------------------------------
 ! Initialisation
 !-----------------------------------------------------------------------
       onv_adc(1:nocc,:,:)=2
       onv_adc(nocc+1:nbas,:,:)=0
-
+      c_adc=0.0d0
+      
 !-----------------------------------------------------------------------
 ! Fill in the ON vector for each ADC state
 !-----------------------------------------------------------------------
+      ! Ground (Hartee-Fock) state
+      c_adc(1,0)=1.0d0
+      
+      ! Excited states
       do s=1,davstates
          
          ! Read the next state vector from file
@@ -700,7 +709,7 @@
               nsd_targ,nbas_targ)
 
       ! Approximate ADC states
-      do i=1,davstates
+      do i=0,davstates
          call calc_s2(c_adc(:,i),onv_adc(:,:,i),s2_adc(i),maxnsd,&
               nsd_adc(i),nbas)
       enddo
@@ -712,7 +721,7 @@
       norm_targ=sqrt(dot_product(c_targ(:),c_targ(:)))
 
       ! Approximate ADC states
-      do i=1,davstates
+      do i=0,davstates
          norm_adc(i)=sqrt(dot_product(c_adc(:,i),c_adc(:,i)))
       enddo
       
@@ -901,7 +910,7 @@
       overlap=0.0d0
 
       ! Loop over ADC states
-      do i=1,davstates
+      do i=0,davstates
 
          ! Loop over target determinants
          do m=1,nsd_targ
@@ -1129,7 +1138,7 @@
            norm_targ,s2_targ/norm_targ**2
 
       ! Approximate ADC states
-      do i=1,davstates
+      do i=0,davstates
          write(ilog,'(i2,6x,i3,3(4x,F7.4))') i,nsd_adc(i),&
               norm_adc(i),s2_adc(i)/norm_adc(i)**2,overlap(i)
       enddo
@@ -1163,7 +1172,7 @@
 !-----------------------------------------------------------------------
       count=0
       
-      do i=1,davstates
+      do i=0,davstates
          if (abs(overlap(i)).ge.ovrthrsh) then
             count=count+1
             id=i

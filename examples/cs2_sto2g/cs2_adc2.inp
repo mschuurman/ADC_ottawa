@@ -31,13 +31,13 @@ end-diag_section
 # block_size = 20
 # tol=1d-5
 # maxit=700
-## guess=adc1
+## gues=adc1
 ##  maxvec=90
 # deflate
 #end-diag_final_section
 
 target_section
-detfile=s1_det.dat
+detfile=s0_det.dat
 mofile=ref_mos.dat
 detthrsh=0.01
 ovrthrsh=0.5
