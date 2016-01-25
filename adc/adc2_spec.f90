@@ -1160,41 +1160,41 @@
           if (abs(osc_str(i)).lt.tol) cycle
           count=count+1
           if (count.lt.10) then
-             write(iout,'(a1,i1,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
-             write(iout,'(a1,i1,a1,F11.5)') 'f',count,'=',osc_str(i)
+             write(iout,'(a2,i1,a1,F11.5)') 'e'//tranmom2,count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a2,i1,a1,F11.5)') 'f'//tranmom2,count,'=',osc_str(i)
           else if (count.lt.100) then
-             write(iout,'(a1,i2,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
-             write(iout,'(a1,i2,a1,F11.5)') 'f',count,'=',osc_str(i)
+             write(iout,'(a2,i2,a1,F11.5)') 'e'//tranmom2,count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a2,i2,a1,F11.5)') 'f'//tranmom2,count,'=',osc_str(i)
           else
-             write(iout,'(a1,i3,a1,F11.5)') 'e',count,'=',(ener(i)-e_init)*eh2ev
-             write(iout,'(a1,i3,a1,F11.5)') 'f',count,'=',osc_str(i)
+             write(iout,'(a2,i3,a1,F11.5)') 'e'//tranmom2,count,'=',(ener(i)-e_init)*eh2ev
+             write(iout,'(a2,i3,a1,F11.5)') 'f'//tranmom2,count,'=',osc_str(i)
           endif
        enddo
        
        do i=1,count
           if (i.lt.10) then             
-             write(iout,'(a1,i1,a5,i1,a10,i1,a15)') &
-                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+             write(iout,'(a2,i1,a6,i1,a11,i1,a15)') &
+                  'g'//tranmom2,i,'(x)=f'//tranmom2,i,'*exp(-(x-e'//tranmom2,i,')**2/(2*sigsq))'
           else if (i.lt.100) then
-             write(iout,'(a1,i2,a5,i2,a10,i2,a15)') &
-                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+             write(iout,'(a2,i2,a6,i2,a11,i2,a15)') &
+                  'g'//tranmom2,i,'(x)=f'//tranmom2,i,'*exp(-(x-e'//tranmom2,i,')**2/(2*sigsq))'
           else
-             write(iout,'(a1,i3,a5,i3,a10,i3,a15)') &
-                  'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+             write(iout,'(a2,i3,a6,i3,a11,i3,a15)') &
+                  'g'//tranmom2,i,'(x)=f'//tranmom2,i,'*exp(-(x-e'//tranmom2,i,')**2/(2*sigsq))'
           endif
        enddo
 
-       atmp='f(x)='
-       k=6
+       atmp='f'//tranmom2//'(x)='
+       k=7
        do i=1,count
           if (i.lt.10) then
-             write(atmp(k:k+6),'(a2,i1,a3)') '+g',i,'(x)'
+             write(atmp(k:k+6),'(a3,i1,a3)') '+g'//tranmom2,i,'(x)'
              k=k+7
           else if (i.lt.100) then
-             write(atmp(k:k+7),'(a2,i2,a3)') '+g',i,'(x)'
+             write(atmp(k:k+7),'(a3,i2,a3)') '+g'//tranmom2,i,'(x)'
              k=k+8
           else
-             write(atmp(k:k+8),'(a2,i3,a3)') '+g',i,'(x)'
+             write(atmp(k:k+8),'(a3,i3,a3)') '+g'//tranmom2,i,'(x)'
              k=k+9
           endif
        enddo
@@ -1208,7 +1208,7 @@
        
        write(iout,'(a)') 'set size ratio 0.4'
        write(iout,'(a)') 'set samples 5000'       
-       write(iout,'(a)') 'plot f(x) lt -1 notitle'
+       write(iout,'(a)') 'plot f'//tranmom2//'(x) lt -1 notitle'
        write(iout,'(a)') 'replot ''osc.dat'' with impulses lt -1 notitle'
        write(iout,'(a)') 'pause -1'
 

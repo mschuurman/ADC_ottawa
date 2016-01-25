@@ -103,11 +103,11 @@ program adc
 !-----------------------------------------------------------------------
 ! Perform the ADC calculation
 !-----------------------------------------------------------------------
-  ! Approximate Dyson orbital calculation
   if (ldyson) then
+     ! Approximate Dyson orbital calculation
      call adc2_dyson(gamess_info)
   else
-  ! Spectrum calculation
+     ! Spectrum or energy calculations
      select case(method)
      case(1) ! ADC(1), full diagonalisation
         call adc1_spec()

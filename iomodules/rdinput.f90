@@ -219,7 +219,7 @@
             else
                goto 100
             endif
-            
+
          else if (keyword(i).eq.'geometry') then
             lrungamess=.true.
 40          continue
@@ -1299,7 +1299,6 @@
          
       endif
          
-
       return
 
     end subroutine rdtargetinp
