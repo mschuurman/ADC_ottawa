@@ -9,14 +9,8 @@ module get_matrix
 
   implicit none
 
-  ! 125 Kb per record
-!  integer, parameter :: buf_size=8192
-
   ! 100 Mb per record
   integer, parameter :: buf_size=6553600
-
-  ! 250 Mb per record
-!  integer, parameter :: buf_size=16384000
 
 contains
   
@@ -1980,7 +1974,6 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
     end subroutine register2
 
   end subroutine get_offdiag_adc2ext_save
-
 
 !#######################################################################
 
@@ -5903,23 +5896,985 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     end subroutine register2
 
   end subroutine get_offdiag_adc2ext_save_GS
+
+!#######################################################################
  
+  subroutine get_offdiag_adc2ext_save_omp(ndim,kpq,nbuf,count,chr)
+   
+    use omp_lib
+    use iomod
+    
+    implicit none
+    
+    integer, intent(in) :: ndim
+    integer*8, intent(out) :: count
+    integer, intent(out) :: nbuf
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    character(1), intent(in) :: chr
+  
+    integer :: inda,indb,indj,indk,spin
+    integer :: indapr,indbpr,indjpr,indkpr,spinpr 
+    
+    character(30) :: name
+    integer :: rec_count
+    integer :: i,j,k,nlim,dim_count,ndim1,unt
+    integer :: lim1i, lim2i, lim1j, lim2j
+    real(d) :: arr_offdiag_ij
+    
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiag
+    
+    integer                              :: nvirt,a,b,nzero
+    real(d), dimension(:,:), allocatable :: ca,cb
+    real(d)                              :: t1,t2
+
+
+    ! OMP related things
+    integer                                       :: nthreads,tid
+    integer, dimension(:), allocatable            :: hamunit    
+    integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
+    integer*8, dimension(:), allocatable          :: count_omp
+    integer, dimension(:), allocatable            :: rec_count_omp
+    integer, dimension(:), allocatable            :: nlim_omp
+    integer*8                                     :: nonzero
+    integer                                       :: n,nprev,itmp
+    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    character(len=120), dimension(:), allocatable :: hamfile
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+  !$omp parallel
+  nthreads=omp_get_num_threads()
+  !$omp end parallel
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+  allocate(oi(buf_size))
+  allocate(oj(buf_size))
+  allocate(file_offdiag(buf_size))
+
+  allocate(hamunit(nthreads))
+  allocate(hamfile(nthreads))
+  allocate(oi_omp(nthreads,buf_size))
+  allocate(oj_omp(nthreads,buf_size))
+  allocate(file_offdiag_omp(nthreads,buf_size))
+  allocate(count_omp(nthreads))
+  allocate(rec_count_omp(nthreads))
+  allocate(nlim_omp(nthreads))
+
+!-----------------------------------------------------------------------
+! Open the working Hamiltonian files
+!-----------------------------------------------------------------------
+  do i=1,nthreads
+     call freeunit(hamunit(i))
+     hamfile(i)='SCRATCH/hmlt.off.'
+     k=len_trim(hamfile(i))+1
+     if (i.lt.10) then
+        write(hamfile(i)(k:k),'(i1)') i
+     else
+        write(hamfile(i)(k:k+1),'(i2)') i
+     endif
+     open(unit=hamunit(i),file=hamfile(i),status='unknown',&
+          access='sequential',form='unformatted')
+  enddo
+
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+  call cpu_time(t1)
+  
+  nvirt=nbas-nocc
+  allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+  
+  !$omp parallel do private(i,j) shared(ca)
+  ! CA_ph_ph
+  do i=1,nvirt
+     do j=i,nvirt
+        ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
+        ca(j,i)=ca(i,j)
+     enddo
+  enddo
+  !$omp end parallel do
+
+  !$omp parallel do private(i,j) shared(cb)
+  ! CB_ph_ph
+  do i=1,nocc
+     do j=i,nocc
+        cb(i,j)=CB_ph_ph(i,j)
+        cb(j,i)=cb(i,j)
+     enddo
+  enddo
+  !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Open the Hamiltonian file
+!-----------------------------------------------------------------------
+  name="SCRATCH/hmlt.off"//chr
+  unt=12
+  
+  write(ilog,*) "Writing the off-diagonal part of ADC matrix in file ", name
+  OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
+       FORM='UNFORMATTED')
+
+!-----------------------------------------------------------------------
+! Initialise counters
+!-----------------------------------------------------------------------
+  count=0
+  rec_count=0
+
+  count_omp=0
+  rec_count_omp=0
+
+!-----------------------------------------------------------------------
+! ph-ph block
+!-----------------------------------------------------------------------
+     ndim1=kpq(1,0)
+       
+     !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit,ca,cb)
+     do i=1,ndim1
+        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+        do j=1,i-1
+           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+           arr_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
+
+           if(indj .eq. indjpr)&
+                arr_offdiag_ij= arr_offdiag_ij+ca(inda-nocc,indapr-nocc)
+
+           if(inda .eq. indapr)&
+                arr_offdiag_ij= arr_offdiag_ij+cb(indj,indjpr)
+
+           arr_offdiag_ij=arr_offdiag_ij+CC_ph_ph(inda,indj,indapr,indjpr)
+
+           tid=1+omp_get_thread_num()
+             
+           if (abs(arr_offdiag_ij).gt.minc) then
+              count_omp(tid)=count_omp(tid)+1
+              file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+              oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+              oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+              ! Checking if the buffer is full 
+              if (mod(count_omp(tid),buf_size).eq.0) then
+                 rec_count_omp(tid)=rec_count_omp(tid)+1
+                 nlim_omp(tid)=buf_size
+                 ! Saving off-diag part in file
+                 call wrtoffdg(hamunit(tid),buf_size,&
+                      file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                      oj_omp(tid,:),nlim_omp(tid))
+              endif
+           endif
+           
+        end do
+     end do
+     !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! ph-2p2h block 
+!-----------------------------------------------------------------------
+!!$ Coupling to the i=j,a=b configs
+
+     dim_count=kpq(1,0)
+
+       !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(2,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)    
+             arr_offdiag_ij=C5_ph_2p2h(inda,indj,indapr,indjpr)
+
+             tid=1+omp_get_thread_num()
+             
+             if (abs(arr_offdiag_ij).gt.minc) then
+                count_omp(tid)=count_omp(tid)+1
+                file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+                oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+                oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+                ! Checking if the buffer is full 
+                if (mod(count_omp(tid),buf_size).eq.0) then
+                   rec_count_omp(tid)=rec_count_omp(tid)+1
+                   nlim_omp(tid)=buf_size
+                   ! Saving off-diag part in file
+                   call wrtoffdg(hamunit(tid),buf_size,&
+                        file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                        oj_omp(tid,:),nlim_omp(tid))
+                endif
+             endif
+             
+          end do
+       end do
+       !$omp end parallel do
+
+!!$ Coupling to the i=j,a|=b configs   
+       
+       dim_count=dim_count+kpq(2,0)
+       
+       !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(3,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C4_ph_2p2h(inda,indj,indapr,indbpr,indjpr)
+
+             tid=1+omp_get_thread_num()
+             
+             if (abs(arr_offdiag_ij).gt.minc) then
+                count_omp(tid)=count_omp(tid)+1
+                file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+                oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+                oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+                ! Checking if the buffer is full 
+                if (mod(count_omp(tid),buf_size).eq.0) then
+                   rec_count_omp(tid)=rec_count_omp(tid)+1
+                   nlim_omp(tid)=buf_size
+                   ! Saving off-diag part in file
+                   call wrtoffdg(hamunit(tid),buf_size,&
+                        file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                        oj_omp(tid,:),nlim_omp(tid))
+                endif
+             endif
+             
+          end do
+       end do
+       !$omp end parallel do
+
+!!$ Coupling to the i|=j,a=b configs
+       
+       dim_count=dim_count+kpq(3,0)
+       
+       !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(4,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr)
+
+             tid=1+omp_get_thread_num()
+
+             if (abs(arr_offdiag_ij).gt.minc) then
+                count_omp(tid)=count_omp(tid)+1
+                file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+                oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+                oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+                ! Checking if the buffer is full 
+                if (mod(count_omp(tid),buf_size).eq.0) then
+                   rec_count_omp(tid)=rec_count_omp(tid)+1
+                   nlim_omp(tid)=buf_size
+                   ! Saving off-diag part in file
+                   call wrtoffdg(hamunit(tid),buf_size,&
+                        file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                        oj_omp(tid,:),nlim_omp(tid))
+                endif
+             endif
+             
+          end do
+       end do
+       !$omp end parallel do
+
+!!$ Coupling to the i|=j,a|=b I configs
+       
+       dim_count=dim_count+kpq(4,0)
+
+       !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(5,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)  
+             arr_offdiag_ij=C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+
+             tid=1+omp_get_thread_num()
+
+             if (abs(arr_offdiag_ij).gt.minc) then
+                count_omp(tid)=count_omp(tid)+1
+                file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+                oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+                oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+                ! Checking if the buffer is full 
+                if (mod(count_omp(tid),buf_size).eq.0) then
+                   rec_count_omp(tid)=rec_count_omp(tid)+1
+                   nlim_omp(tid)=buf_size
+                   ! Saving off-diag part in file
+                   call wrtoffdg(hamunit(tid),buf_size,&
+                        file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                        oj_omp(tid,:),nlim_omp(tid))
+              endif
+           endif
+             
+          end do
+       end do
+       !$omp end parallel do
+
+!!$ Coupling to the i|=j,a|=b II configs
+       
+       dim_count=dim_count+kpq(5,0)
+
+       !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+       do i=1,ndim1
+          call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+          do j=dim_count+1,dim_count+kpq(5,0)
+             call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+             arr_offdiag_ij=C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr)
+
+             tid=1+omp_get_thread_num()
+
+             if (abs(arr_offdiag_ij).gt.minc) then
+                count_omp(tid)=count_omp(tid)+1
+                file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+                oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+                oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+                ! Checking if the buffer is full 
+                if (mod(count_omp(tid),buf_size).eq.0) then
+                   rec_count_omp(tid)=rec_count_omp(tid)+1
+                   nlim_omp(tid)=buf_size
+                   ! Saving off-diag part in file
+                   call wrtoffdg(hamunit(tid),buf_size,&
+                        file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                        oj_omp(tid,:),nlim_omp(tid))
+                endif
+             endif
+
+          end do
+       end do
+       !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! 2p2h-2p2h block
+!-----------------------------------------------------------------------
+!!$ (1,1) block
+    
+    lim1i=kpq(1,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)
+    lim1j=lim1i
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i       
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          
+          arr_offdiag_ij=C_1_1(inda,indj,indapr,indjpr)           
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+          
+       enddo
+    enddo
+    !$omp end parallel do
+
+!!$ (2,1) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+    
+!$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_2_1(inda,indb,indj,indapr,indjpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+          
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (3,1) block
+     
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+ 
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_1(inda,indj,indk,indapr,indjpr)
+           
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4i,1) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit) 
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_1(inda,indb,indj,indk,indapr,indjpr)
+           
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+          
+       end do
+    end do 
+    !$omp end parallel do
+
+!!$ (4ii,1) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_1(inda,indb,indj,indk,indapr,indjpr)
+            
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do 
+    !$omp end parallel do
+
+!!$ (2,2) block
+
+    lim1i=kpq(1,0)+kpq(2,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    lim1j=lim1i
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          arr_offdiag_ij=C_2_2(inda,indb,indj,indapr,indbpr,indjpr)
+          
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (3,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_2(inda,indj,indk,indapr,indbpr,indjpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4i,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_2(inda,indb,indj,indk,indapr,indbpr,indjpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4ii,2) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_2(inda,indb,indj,indk,indapr,indbpr,indjpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (3,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    lim1j=lim1i
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_3_3(inda,indj,indk,indapr,indjpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4i,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_3(inda,indb,indj,indk,indapr,indjpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+
+
+!!$ (4ii,3) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_3(inda,indb,indj,indk,indapr,indjpr,indkpr)
+           
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+          
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4i,4i) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    lim1j=lim1i
+
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4i_4i(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+
+!!$ (4ii,4i) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+1
+    lim2j=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+ 
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,lim2j
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          arr_offdiag_ij=C_4ii_4i(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+   
+!!$ (4ii,4ii) block 
+
+    lim1i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+1
+    lim2i=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)+kpq(5,0)
+    lim1j=lim1i
+ 
+    !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit)
+    do i=lim1i,lim2i
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       do j=lim1j,i-1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr) 
+          arr_offdiag_ij=C_4ii_4ii(inda,indb,indj,indk,indapr,indbpr,indjpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(arr_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=arr_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(hamunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       end do
+    end do
+    !$omp end parallel do
+   
+!-----------------------------------------------------------------------
+! Assemble the complete hmlt.off file
+!-----------------------------------------------------------------------    
+    count=0
+    do i=1,nthreads
+       count=count+count_omp(i)
+    enddo
+
+    ! Complete records
+    do i=1,nthreads
+       do j=1,rec_count_omp(i)
+          rec_count=rec_count+1
+          read(hamunit(i)) file_offdiag(:),oi(:),oj(:),nlim
+          call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
+               buf_size)
+       enddo
+    enddo
+
+    ! Incomplete records
+    n=count_omp(1)
+    file_offdiag(1:n)=file_offdiag_omp(1,1:n)
+    oi(1:n)=oi_omp(1,1:n)
+    oj(1:n)=oj_omp(1,1:n)
+    nprev=n
+    do i=2,nthreads
+       
+       n=n+count_omp(i)
+              
+       if (n.gt.buf_size) then
+          ! The buffer is full. Write the buffer to disk and
+          ! then save the remaining elements for thread i to the
+          ! buffer
+          !
+          ! Elements for thread i that can fit into the buffer
+          itmp=buf_size-nprev
+          file_offdiag(nprev+1:buf_size)=file_offdiag_omp(i,1:itmp)
+          oi(nprev+1:buf_size)=oi_omp(i,1:itmp)
+          oj(nprev+1:buf_size)=oj_omp(i,1:itmp)
+          rec_count=rec_count+1
+          call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
+               buf_size)
+          !
+          ! Elements for thread i that couldn't fit into the buffer
+          n=count_omp(i)-itmp
+          file_offdiag(1:n)=file_offdiag_omp(i,itmp+1:count_omp(i))
+          oi(1:n)=oi_omp(i,itmp+1:count_omp(i))
+          oj(1:n)=oj_omp(i,itmp+1:count_omp(i))
+       else
+          ! The buffer is not yet full. Add all elements for thread i
+          ! to the buffer
+          file_offdiag(nprev+1:n)=file_offdiag_omp(i,1:count_omp(i))          
+          oi(nprev+1:n)=oi_omp(i,1:count_omp(i))          
+          oj(nprev+1:n)=oj_omp(i,1:count_omp(i))          
+       endif
+
+       nprev=n
+    enddo
+
+    ! Last, potentially incomplete buffer
+    if (n.gt.0) then
+       nlim=count-buf_size*int(rec_count,8)
+       call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+       rec_count=rec_count+1
+       nbuf=rec_count
+    endif
+    
+    ! Close files
+    close(unt)
+    do i=1,nthreads
+       close(hamunit(i))
+    enddo
+
+    ! Delete the working files
+    do i=1,nthreads
+       call system('rm -rf '//trim(hamfile(i)))
+    enddo
+
+    write(ilog,*) 'rec_counts',nbuf
+    write(ilog,*) count,' off-diagonal elements saved in file ', name
+
+!-----------------------------------------------------------------------    
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+
+    deallocate(hamunit)
+    deallocate(hamfile)
+    deallocate(oi_omp)
+    deallocate(oj_omp)
+    deallocate(file_offdiag_omp)
+    deallocate(count_omp)
+    deallocate(rec_count_omp)
+    deallocate(nlim_omp)
+
+    return
+
+  end subroutine get_offdiag_adc2ext_save_omp
+
+!#######################################################################
+
 end module get_matrix
-
-    
-    
-       
-       
-       
-       
-       
-       
-    
-    
-    
-    
-
-    
-    
-    
-    

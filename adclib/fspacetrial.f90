@@ -424,17 +424,20 @@ contains
 
   subroutine write_fspace_adc2e_1(ndim,kpq,noffdel,chr) 
 
-    integer, intent(in) :: ndim
+    integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    character(1), intent(in) :: chr
-    integer*8, intent(out) :: noffdel 
-
-    integer :: ndim1,ndim2,nbuf,i
+    character(1), intent(in)                            :: chr
+    integer*8, intent(out)                              :: noffdel 
+    integer                                              :: ndim1,ndim2,nbuf,i
 
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     write(ilog,*) 'in write_space'
-    call get_offdiag_adc2ext_save(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+!    call get_offdiag_adc2ext_save(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+    call get_offdiag_adc2ext_save_omp(ndim,kpq(:,:),nbuf,noffdel,chr)
+
     call get_diag_adc2ext_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
 
   end subroutine write_fspace_adc2e_1
