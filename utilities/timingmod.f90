@@ -32,6 +32,28 @@
         
       end subroutine get_time
 
-!#######################################################################    
+!#######################################################################
+
+      subroutine times(twall,tcpu)
+
+        use constants
+
+        implicit none
+
+        real(d) :: twall,tcpu
+        integer :: c,cr,cm
+
+        ! cpu time
+        call cpu_time(tcpu)
+
+        ! wall time
+        call system_clock(c,cr,cm)
+        twall=real(c)/real(cr)
+        
+        return
+
+      end subroutine times
+
+!#######################################################################
 
   end module timingmod

@@ -422,7 +422,7 @@
 ! Write the final space ADC(2) Hamiltonian to disk
 !-----------------------------------------------------------------------
         write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
-        
+
         if (method_f.eq.2) then
            ! ADC(2)-s
            if (lcvsfinal) then

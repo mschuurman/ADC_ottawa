@@ -456,7 +456,11 @@ contains
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     write(ilog,*) 'in write_space'
-    call get_offdiag_adc2ext_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+!    call get_offdiag_adc2ext_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+    call get_offdiag_adc2ext_save_cvs_omp(ndim,kpq(:,:),nbuf,noffdel,chr)
+
     call get_diag_adc2ext_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
 
   end subroutine write_fspace_adc2e_1_cvs
@@ -1457,15 +1461,5 @@ contains
     call vdiagonalise(ndim,arr(:,:),evector(:))
 
   end subroutine get_fspace_adc2e_direct_MIO
-
-
-
-
-
-
-
-
-
-
 
 end module fspace

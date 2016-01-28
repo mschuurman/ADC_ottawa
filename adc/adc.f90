@@ -16,13 +16,19 @@ program adc
   use vpqrsmod
   use rungamess
   use import_gamess
-
+  use timingmod
+  
   implicit none
   
   integer, dimension(2) :: shp
-  real(d)               :: time
+  real(d)               :: tw1,tw2,tc1,tc2
   character(len=72)     :: gam_chkpt,gam_log
   type(gam_structure)   :: gamess_info
+
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+  call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Setting up the multiplication table
@@ -123,9 +129,12 @@ program adc
 !-----------------------------------------------------------------------    
   call system('rm -rf SCRATCH')
 
-  call cpu_time(time)
-
-  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final Time:',time," s"
+!-----------------------------------------------------------------------    
+! Output timings and stop
+!-----------------------------------------------------------------------    
+  call times(tw2,tc2)
+  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final wall time:',tw2-tw1," s"
+  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final cpu time: ',tc2-tc1," s"
 
   STOP
   
