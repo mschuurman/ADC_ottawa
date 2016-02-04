@@ -6048,7 +6048,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !-----------------------------------------------------------------------
      ndim1=kpq(1,0)
        
-     !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit,kpq) firstprivate(buf_size2,minc2,ndim1)
+     !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit,kpq) firstprivate(buf_size2,minc2,dim_count,ndim1)
      do i=1,ndim1
         call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
         do j=1,i-1
@@ -7049,8 +7049,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 ! ph-ph block
 !-----------------------------------------------------------------------
      ndim1=kpq(1,0)
-       
-     write(ilog,*) "ph-ph block"
 
      !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit,kpq) firstprivate(buf_size2,minc2,ndim1)
      do i=1,ndim1
@@ -7092,8 +7090,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 ! ph-2p2h block 
 !-----------------------------------------------------------------------
 !!$ Coupling to the i|=j,a=b configs
-       
-     write(ilog,*) "ph-2p2h, i|=j,a=b block"
 
        dim_count=kpq(1,0)
              
@@ -7126,8 +7122,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
        !$omp end parallel do
 
 !!$ Coupling to the i|=j,a|=b I configs
-       
-     write(ilog,*) "ph-2p2h, i|=j,a|=b I block"
 
        dim_count=dim_count+kpq(4,0)
 
@@ -7162,8 +7156,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !!$ Coupling to the i|=j,a|=b II configs
        
        dim_count=dim_count+kpq(5,0)
-
-     write(ilog,*) "ph-2p2h, i|=j,a|=b II block"
 
      !$omp parallel do private(i,j,arr_offdiag_ij,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr,tid) shared(count_omp,file_offdiag_omp,rec_count_omp,nlim_omp,oi_omp,oj_omp,hamunit,kpq) firstprivate(buf_size2,minc2,dim_count,ndim1)
        do i=1,ndim1

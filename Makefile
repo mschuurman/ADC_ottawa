@@ -234,27 +234,23 @@ MCSPLINE_OBJ = constants.o \
 	mcspmod.o \
 	mcspline.o
 
-KNIT = include/constants.o \
+RELAX2 = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	stieltjes_ap/knitmod.o \
-	stieltjes_ap/knit.o
+	relax2/relaxmod.o \
+	relax2/relax2.o
 
-KNIT_OBJ = constants.o \
+RELAX2_OBJ = constants.o \
 	channels.o \
 	iomod.o \
 	parsemod.o \
-	knitmod.o \
-	knit.o
+	relaxmod.o \
+	relax2.o
 
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
-#adc: $(OBJECTS)
-#	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) $(SLEPC_LIBS) -o adc.x 
-#	rm -f *.o *~ *.mod
-
 adc: $(OBJECTS)
 	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) -o adc.x 
 	rm -f *.o *~ *.mod 2>/dev/null
@@ -267,8 +263,8 @@ mcspline: $(MCSPLINE)
 	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
 	rm -f *.o *~ *.mod
 
-knit: $(KNIT)
-	$(F90) $(F90OPTS) $(KNIT_OBJ) -o knit.x
+relax2: $(RELAX2)
+	$(F90) $(F90OPTS) $(RELAX2_OBJ) -o relax2.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

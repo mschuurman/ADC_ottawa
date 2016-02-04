@@ -29,12 +29,12 @@
       real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
                                               osc_str
       real(d), dimension(:,:), allocatable :: rvec
-      real(d)                              :: t1,t2
+      real(d)                              :: e0,t1,t2
 
 !-----------------------------------------------------------------------  
 ! Calculation of the MP2 correlation energy and D2 diagnostic
 !-----------------------------------------------------------------------  
-      call mp2_master(e_mp2)
+      call mp2_master(e0)
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 

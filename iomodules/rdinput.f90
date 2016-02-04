@@ -1326,7 +1326,7 @@
 
       return
 
-    end subroutine getdiffinfo 
+    end subroutine getdiffinfo
 
 !#######################################################################
 
