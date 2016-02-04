@@ -1,7 +1,7 @@
 ################################################
 # ADC section
 ################################################
-method = adc2-x, adc2-x
+method = adc2-s, adc2-s
 
 istate_symm = 1
 
@@ -11,7 +11,7 @@ initial_state = 0
 
 dipole_component = y
 
-cvs
+#cvs
 
 mem=500
 
@@ -27,8 +27,8 @@ mem=500
 
 diag_final_section
  preconditioner = olsen
- nstates = 30
- block_size = 60
+ nstates = 20
+ block_size = 30
  tol=1d-5
  maxit=700
  maxvec=600

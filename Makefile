@@ -234,20 +234,6 @@ MCSPLINE_OBJ = constants.o \
 	mcspmod.o \
 	mcspline.o
 
-RELAX2 = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	relax2/relaxmod.o \
-	relax2/relax2.o
-
-RELAX2_OBJ = constants.o \
-	channels.o \
-	iomod.o \
-	parsemod.o \
-	relaxmod.o \
-	relax2.o
-
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -261,10 +247,6 @@ stieltjes_ap: $(STIELTJES_AP)
 
 mcspline: $(MCSPLINE)
 	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
-	rm -f *.o *~ *.mod
-
-relax2: $(RELAX2)
-	$(F90) $(F90OPTS) $(RELAX2_OBJ) -o relax2.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

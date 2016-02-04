@@ -561,7 +561,10 @@ contains
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     
-    call get_offdiag_adc2_save(ndim,kpq(:,:),nbuf,noffdel,chr)
+!    call get_offdiag_adc2_save(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+    call get_offdiag_adc2_save_omp(ndim,kpq(:,:),nbuf,noffdel,chr)
+
     call get_diag_adc2_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
     
   end subroutine write_fspace_adc2_1
@@ -580,7 +583,10 @@ contains
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     
-    call get_offdiag_adc2_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+!    call get_offdiag_adc2_save_cvs(ndim,kpq(:,:),nbuf,noffdel,chr)
+
+    call get_offdiag_adc2_save_cvs_omp(ndim,kpq(:,:),nbuf,noffdel,chr)
+
     call get_diag_adc2_save(ndim1,ndim2,kpq(:,:),nbuf,chr)
     
   end subroutine write_fspace_adc2_1_cvs
