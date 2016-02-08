@@ -29,7 +29,7 @@
       real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
                                               osc_str
       real(d), dimension(:,:), allocatable :: rvec
-      real(d)                              :: e0,t1,t2
+      real(d)                              :: e0
 
 !-----------------------------------------------------------------------  
 ! Calculation of the MP2 correlation energy and D2 diagnostic
