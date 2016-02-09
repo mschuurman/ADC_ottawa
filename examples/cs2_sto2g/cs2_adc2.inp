@@ -7,7 +7,7 @@ istate_symm = 1
 
 dipole_symm = 1
 
-initial_state = 0
+initial_state = 1
 
 dipole_component = y
 
@@ -15,15 +15,15 @@ dipole_component = y
 
 mem=500
 
-#diag_section
-# preconditioner = olsen
-# maxvec = 10
-# nstates = 2
-# block_size = 5
-# tol = 1d-5
-# maxit = 500
-# guess = adc1
-#end-diag_section
+diag_section
+ preconditioner = olsen
+ maxvec = 10
+ nstates = 2
+ block_size = 5
+ tol = 1d-5
+ maxit = 500
+ guess = adc1
+end-diag_section
 
 diag_final_section
  preconditioner = olsen
@@ -34,13 +34,6 @@ diag_final_section
  maxvec=600
  deflate
 end-diag_final_section
-
-target_section
-detfile=s0_det.dat
-mofile=ref_mos.dat
-detthrsh=0.01
-ovrthrsh=0.5
-end-target_section
 
 #lanczos_section
 # block_size = 20

@@ -1,1100 +1,2384 @@
-module get_matrix_DIPOLE
+  module get_matrix_DIPOLE
   
-  use constants
-  use parameters
-  use D_matrix
-  use misc
-  use filetools
-  use dipole_ph
-  use iomod
-  use channels
-  
-  implicit none
-
-  integer, parameter :: buf_size=8192
-  
-contains
-
-
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*ON THE FLY SCALAR PRODUCT OF THE DIPOLE MATRIX WITH THE INITIAL STATE VECTOR*!
-!!$*ON THE FLY SCALAR PRODUCT OF THE DIPOLE MATRIX WITH THE INITIAL STATE VECTOR*!
-!!$*ON THE FLY SCALAR PRODUCT OF THE DIPOLE MATRIX WITH THE INITIAL STATE VECTOR*!
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*******************************************************************************
-
-
-!!$------------------------------------------------------------------------------
-!!$------------------------------------ ADC2 ------------------------------------
-!!$------------------------------------------------------------------------------
-
-  subroutine get_dipole_initial_product(ndim,ndimf,kpq,kpqf,autvec,travec)
-
-!!$The difference from the earlier routine is that this routine
-!! returns the total number of saved els to a caller. 
-    
-    use timingmod
+    use constants
+    use parameters
+    use D_matrix
+    use misc
+    use filetools
+    use dipole_ph
+    use iomod
+    use channels
+    use omp_lib
 
     implicit none
-
-    integer, intent(in) :: ndim,ndimf
-    real(d), dimension(ndim), intent(in) :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
-    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     
-    integer :: inda,indb,indk,indl,spin
-    integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-    
-    character(10) :: name
-    integer :: i,j,nlim,rec_count,dim_count,ndim1,dim_countf,ndim1f
-    real(d) :: ar_offdiag_ij
-    integer :: k,k1,b,b1 
-
-    
-    integer                                  :: nvirt,itmp,itmp1,dim
-    integer, dimension(10)                   :: unit
+    integer, parameter                       :: buf_size=8192
+    integer                                  :: nthreads
+    real(d), parameter                       :: vectol=1d-8
     real(d), dimension(:,:), allocatable     :: pre_vv,pre_oo
     real(d), dimension(:,:,:,:), allocatable :: D261,D262,D263,D264
-    real(d), parameter                       :: vectol=1d-8
-    real(d)                                  :: func,mem4indx
-    logical                                  :: lincore
+    real(d), dimension(:), allocatable       :: sum1thread
 
-    write(ilog,'(/,90a)') ('-',i=1,90)
-    write(ilog,'(2x,a)') & 
-         'Contracting the IS representation of the dipole operator &
-         with the initial state vector'
-    write(ilog,'(90a)') ('-',i=1,90)
+  contains
+
+!#######################################################################
+! On the fly scalar product of the ADC(2) dipole matrix with the 
+! initial state vector
+!#######################################################################
+
+    subroutine get_dipole_initial_product(ndim,ndimf,kpq,kpqf,autvec,&
+         travec)
+
+      use timingmod      
+
+      implicit none
+      
+      
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+      integer, intent(in)                    :: ndim,ndimf
+      integer                                :: inda,indb,indk,indl,&
+                                                spin,indapr,indbpr,&
+                                                indkpr,indlpr,spinpr
+      integer                                :: i,j,nlim,rec_count,&
+                                                dim_count,ndim1,&
+                                                dim_countf,ndim1f
+      integer                                :: k,k1,b,b1 
+      real(d), dimension(ndim), intent(in)   :: autvec
+      real(d), dimension(ndimf), intent(out) :: travec
+      real(d)                                :: ar_offdiag_ij
+      character(10)                          :: name
+
+      integer                                :: nvirt,itmp,itmp1,dim
+      real(d)                                :: func,mem4indx
+      real(d)                                :: tw1,tw2,tc1,tc2
+
+!-----------------------------------------------------------------------
+! Output where we are at
+!-----------------------------------------------------------------------
+      write(ilog,'(/,90a)') ('-',i=1,90)
+      write(ilog,'(2x,a)') & 
+           'Contracting the IS representation of the dipole operator &
+           with the initial state vector'
+      write(ilog,'(90a)') ('-',i=1,90)
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+    write(ilog,'(/,2x,a,x,i2)') "nthreads:",nthreads
+    
+    allocate(sum1thread(nthreads))
+    
+!-----------------------------------------------------------------------
+! Initialise things
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
+      nvirt=nbas-nocc
+      travec(:)=0.0d0      
 
 !-----------------------------------------------------------------------
 ! Calculate the density matrix
 ! Note that we only need to calculate the occupied-unoccupied part
 !-----------------------------------------------------------------------
-    call density_matrix_ov_block
-
+      call density_matrix_ov_block
+    
 !-----------------------------------------------------------------------
 ! Precalculation of function values
 !-----------------------------------------------------------------------
-    call dmatrix_precalc(pre_vv,pre_oo,D261,D262,D263,D264,vectol,&
-       lincore,unit,autvec,ndim,kpq,kpqf)
+      call dmatrix_precalc(autvec,ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------
-! Calculation of the product of the intermediate state representation 
-! of the dipole operator with the initial state
+! Final space 1h1p configurations
 !-----------------------------------------------------------------------
-    call get_time(1)
+      write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
 
-    write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
+      ! Final space 1h1p configs
+      ndim1f=kpqf(1,0)
+      do i=1,ndim1f
+         
+         call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+         
+         ! Initial space 1h1p configs
+         call dmatrix_f1h1p_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
 
-    travec(:)=0.0d0
+         ! Initial space 2h2p i=j, a=b configs
+         call dmatrix_f1h1p_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
 
-! THE INDEX i RUNS IN THE 1H1P  BLOCK OF (FINAL) CONFIGURATIONS  
-    ndim1f=kpqf(1,0)
-    do i=1,ndim1f
+         ! Initial space 2h2p i=j, a|=b configs
+         call dmatrix_f1h1p_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
+   
+         ! Initial space i|=j,a=b configs
+         call dmatrix_f1h1p_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
 
-       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
-
-       ndim1=kpq(1,0)
-       do j=1,ndim1
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
-          
-          call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
-               indkpr,unit,lincore,D261,D262,D263,D264)
-
-          ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
-          ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
-
-          if(indk .eq. indkpr) then
-             itmp=inda-nocc
-             itmp1=indapr-nocc
-             ar_offdiag_ij = ar_offdiag_ij + pre_vv(itmp,itmp1)
-          end if
-
-          if(inda .eq. indapr) then
-             ar_offdiag_ij = ar_offdiag_ij + pre_oo(indk,indkpr)
-          end if
-
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
- 
-          ar_offdiag_ij = 0.d0
-
-          if((indk .eq. indkpr).and. (inda .eq. indapr))&
-               ar_offdiag_ij = D5_1_ph_2p2h(inda,indk,indbpr,indlpr) + D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
-          
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D5_2_ph_2p2h(inda,indk,indbpr,indkpr) + D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
-
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D5_3_ph_2p2h(inda,indk,indapr,indlpr) + D5_7_ph_2p2h(inda,indk,indapr,indlpr)
-          
-          if((indk .eq. indlpr)  .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D5_4_ph_2p2h(inda,indk,indapr,indkpr) + D5_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-          
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle 
-
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
-
-          ar_offdiag_ij = 0.d0
-
-          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = D4_1_ph_2p2h(inda,indk,indbpr,indlpr) + D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
-          
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D4_2_ph_2p2h(inda,indk,indbpr,indkpr) + D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
-          
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D4_3_ph_2p2h(inda,indk,indapr,indlpr) + D4_7_ph_2p2h(inda,indk,indapr,indlpr)
-          
-          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D4_4_ph_2p2h(inda,indk,indapr,indkpr) + D4_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-          
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
- 
-          ar_offdiag_ij = 0.d0
-
-          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = D3_1_ph_2p2h(inda,indk,indbpr,indlpr) + D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D3_2_ph_2p2h(inda,indk,indbpr,indkpr) + D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
-
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D3_3_ph_2p2h(inda,indk,indapr,indlpr) + D3_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D3_4_ph_2p2h(inda,indk,indapr,indkpr) + D3_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-          
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
+         ! Initial space i|=j,a|=b I configs
+         call dmatrix_f1h1p_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
        
-!!$ Coupling to the i|=j,a|=b I configs
-       
-       dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
+         ! Initial space i|=j,a|=b II configs
+         call dmatrix_f1h1p_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+              inda,indb,indk,indl,spin)
 
-          if (abs(autvec(j)).lt.vectol) cycle
+    enddo
 
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+!-----------------------------------------------------------------------
+! Final space 2h2p i=j, a=b configurations
+! N.B. this block is zero under the CVS approximation
+!-----------------------------------------------------------------------
 
-          ar_offdiag_ij = 0.d0
-
-
-          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = D1_1_ph_2p2h(inda,indk,indbpr,indlpr) + D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D1_2_ph_2p2h(inda,indk,indbpr,indkpr) + D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
-
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D1_3_ph_2p2h(inda,indk,indapr,indlpr) + D1_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D1_4_ph_2p2h(inda,indk,indapr,indkpr) + D1_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
- 
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
- 
-          ar_offdiag_ij = 0.d0
-
-          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = D2_1_ph_2p2h(inda,indk,indbpr,indlpr) + D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_2p2h(inda,indk,indbpr,indkpr) + D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
-
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_2p2h(inda,indk,indapr,indlpr) + D2_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_2p2h(inda,indk,indapr,indkpr) + D2_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!       print*,i,travec(i)
-
-    end do
-
-! end of the 1h1piblock part:all the 1h1pblock element of travec have been
-! computed!!!
-
-
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-!THE INDEX i RUNS IN THE FIRST 2H2P BLOCK OF (FINAL) CONFIGURATIONS a=b i=j
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
+    ! PRIMED AND UNPRIMED INDICES SWITCH FROM HERE...
 
     dim_countf=kpqf(1,0)
 
     if (.not.lcvsfinal) then
 
-    do i=dim_countf+1,dim_countf+kpqf(2,0)
-       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
-   
-       ndim1=kpq(1,0)
-       do j=1,ndim1
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       do i=dim_countf+1,dim_countf+kpqf(2,0)
        
-         ar_offdiag_ij = 0.d0
+          call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)   
 
-         if((indk .eq. indkpr).and. (inda .eq. indapr))&
-              ar_offdiag_ij = D5_1_ph_2p2h(inda,indk,indbpr,indlpr) + D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          ! Initial space 1h1p configs
+          call dmatrix_f2h2p1_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-         if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij + D5_2_ph_2p2h(inda,indk,indbpr,indkpr) + D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
-         
-         if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D5_3_ph_2p2h(inda,indk,indapr,indlpr) + D5_7_ph_2p2h(inda,indk,indapr,indlpr)
-         
-         if((indk .eq. indlpr)  .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D5_4_ph_2p2h(inda,indk,indapr,indkpr) + D5_8_ph_2p2h(inda,indk,indapr,indkpr)
-         
-         if(inda .eq. indapr)&
-              ar_offdiag_ij = ar_offdiag_ij + D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-         if(inda .eq. indbpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-         if(indk .eq. indkpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-         if(indk .eq. indlpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-         
-         travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-         
-      end do
-
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
-
-!!$ (1,1) block
- 
-       ar_offdiag_ij = 0.d0
-
-       ar_offdiag_ij = ar_offdiag_ij +  D_1_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
+          ! Initial space 2h2p i=j, a=b configs
+          call dmatrix_f2h2p1_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
     
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-!!$ (1,2) block
- 
-       ar_offdiag_ij = 0.d0
-
-       ar_offdiag_ij = ar_offdiag_ij +D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
+          ! Initial space 2h2p i=j, a|=b configs
+          call dmatrix_f2h2p1_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
           
-          if (abs(autvec(j)).lt.vectol) cycle
-          
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-          ar_offdiag_ij = 0.d0
-
-!!$ (1,3) block
-
-          ar_offdiag_ij = ar_offdiag_ij +D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-          
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-          
-       end do
+          ! Initial space 2h2p i|=j, a=b configs
+          call dmatrix_f2h2p1_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
        
-!!$ Coupling to the i|=j,a|=b I configs
-       
-      dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
+          ! Initial space 2h2p i|=j, a|=b I configs
+          call dmatrix_f2h2p1_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-          if (abs(autvec(j)).lt.vectol) cycle
+          ! Initial space 2h2p i|=j, a|=b II configs
+          call dmatrix_f2h2p1_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (1,4i) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
- 
-          if (abs(autvec(j)).lt.vectol) cycle
-
-         call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (1,4ii) block
-    
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-! end of the first i cycle: the first travec element has been computed!!!
-
-!       write(ilog,*),i,travec(i)
-
-    end do
+       enddo
     
     endif
 
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-!THE INDEX i RUNS IN THE SECOND BLOCK OF 2H2P (FINAL) CONFIGURATIONS  a/=b i=j
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-
+!-----------------------------------------------------------------------
+! Final space 2h2p i=j, a|=b configurations
+! N.B. this block is zero under the CVS approximation
+!-----------------------------------------------------------------------
     dim_countf=dim_countf+kpqf(2,0)
 
     if (.not.lcvsfinal) then
 
-    do i=dim_countf+1,dim_countf+kpqf(3,0)
+       do i=dim_countf+1,dim_countf+kpqf(3,0)
 
-       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+          call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
 
-       ndim1=kpq(1,0)
-       do j=1,ndim1
+          ! Initial space 1h1p configs
+          call dmatrix_f2h2p2_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
           
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
-       
-         ar_offdiag_ij = 0.d0
-
-         if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij +D4_1_ph_2p2h(inda,indk,indbpr,indlpr) + D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
-         
-         if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij + D4_2_ph_2p2h(inda,indk,indbpr,indkpr) + D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
-
-         if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D4_3_ph_2p2h(inda,indk,indapr,indlpr) + D4_7_ph_2p2h(inda,indk,indapr,indlpr)
-
-         if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D4_4_ph_2p2h(inda,indk,indapr,indkpr) + D4_8_ph_2p2h(inda,indk,indapr,indkpr)
-
-         if(inda .eq. indapr)&
-              ar_offdiag_ij = ar_offdiag_ij + D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-         if(inda .eq. indbpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-         if(indk .eq. indkpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-         if(indk .eq. indlpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-         
-         travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-      end do
-
-
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
+          ! Initial space 2h2p configs i=j, a=b
+          call dmatrix_f2h2p2_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
           
-          if (abs(autvec(j)).lt.vectol) cycle
+          ! Initial space 2h2p configs i=j, a|=b
+          call dmatrix_f2h2p2_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-         call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
- 
-       ar_offdiag_ij = 0.d0
+          ! Initial space 2h2p configs i|=j, a=b
+          call dmatrix_f2h2p2_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-!!$ (2,1) block
-    
-       ar_offdiag_ij = ar_offdiag_ij +D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+          ! Initial space 2h2p configs i|=j, a|=b I
+          call dmatrix_f2h2p2_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+          ! Initial space 2h2p configs i|=j, a|=b II
+          call dmatrix_f2h2p2_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+               indapr,indbpr,indkpr,indlpr,spinpr)
 
-       end do
-    
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (2,2) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_2_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (2,3) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-       
-!!$ Coupling to the i|=j,a|=b I configs
-       
-       dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (2,4i) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
- 
-          if (abs(autvec(j)).lt.vectol) cycle
-
-         call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (2,4ii) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!       write(ilog,*),i,travec(i)
-
-! end of the first i cycle: the first travec element has been computed!!!
-
-    end do
+       enddo
     
     endif
 
-
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-!THE INDEX i RUNS IN THE THIRD BLOCK OF 2H2P (FINAL) CONFIGURATIONS  a=b i/=j
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-
+!-----------------------------------------------------------------------
+! Final space 2h2p i|=j, a=b configurations
+!-----------------------------------------------------------------------
     dim_countf=dim_countf+kpqf(3,0)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
+
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
 
-    
-       ndim1=kpq(1,0)
-       do j=1,ndim1
+       ! Initial space 1h1p configs
+       call dmatrix_f2h2p3_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-          if (abs(autvec(j)).lt.vectol) cycle
+       ! Initial space 2h2p i=j, a=b configs
+       call dmatrix_f2h2p3_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
-       
-         ar_offdiag_ij = 0.d0
+       ! Initial space 2h2p i=j, a|=b configs
+       call dmatrix_f2h2p3_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-         if((indk .eq. indkpr).and.(inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij +D3_1_ph_2p2h(inda,indk,indbpr,indlpr) + D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+       ! Initial space 2h2p i|=j, a=b configs
+       call dmatrix_f2h2p3_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-         if((indk .eq. indlpr).and.(inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij + D3_2_ph_2p2h(inda,indk,indbpr,indkpr) + D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
-         
-         if((indk .eq. indkpr).and.(inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D3_3_ph_2p2h(inda,indk,indapr,indlpr) + D3_7_ph_2p2h(inda,indk,indapr,indlpr)
-         
-         if((indk .eq. indlpr).and.(inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D3_4_ph_2p2h(inda,indk,indapr,indkpr) + D3_8_ph_2p2h(inda,indk,indapr,indkpr)
-         
-         if(inda .eq. indapr)&
-              ar_offdiag_ij = ar_offdiag_ij + D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-         if(inda .eq. indbpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-         if(indk .eq. indkpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-         if(indk .eq. indlpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-         
-         travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+       ! Initial space 2h2p i|=j, a|=b I configs
+       call dmatrix_f2h2p3_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-       end do
+       ! Initial space 2h2p i|=j, a|=b II configs
+       call dmatrix_f2h2p3_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
+    enddo
 
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (3,1) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (3,2) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (3,3) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_3_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-       
-!!$ Coupling to the i|=j,a|=b I configs
-       
-       dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (3,4i) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
- 
-          if (abs(autvec(j)).lt.vectol) cycle
-
-         call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (3,4ii) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-    end do
-
-!       write(ilog,*),i,travec(i)
-
-! end of the first i cycle: the first travec element has been computed!!!
-
-    end do
-
-
-
-
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-!THE INDEX i RUNS IN THE 4I BLOCK OF 2H2P (FINAL) CONFIGURATIONS  a/=b i/=j   SPIN CASE 1
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************    
-
+!-----------------------------------------------------------------------
+! Final space 2h2p i|=j, a|=b I configurations
+!-----------------------------------------------------------------------
     dim_countf=dim_countf+kpqf(4,0)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
+
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
 
-    
-       ndim1=kpq(1,0)
-       do j=1,ndim1
-          
-          if (abs(autvec(j)).lt.vectol) cycle
+       ! Initial space 1h1p configs
+       call dmatrix_f2h2p4I_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       ! Initial space 2h2p i=j, a=b configs
+       call dmatrix_f2h2p4I_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
+
+       ! Initial space 2h2p i=j, a|=b configs
+       call dmatrix_f2h2p4I_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       ! Initial space 2h2p i|=j, a=b configs
+       call dmatrix_f2h2p4I_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
        
-         ar_offdiag_ij = 0.d0
+       ! Initial space 2h2p i|=j, a|=b I configs
+       call dmatrix_f2h2p4I_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-         if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij +D1_1_ph_2p2h(inda,indk,indbpr,indlpr) + D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
-         
-         if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-              ar_offdiag_ij = ar_offdiag_ij + D1_2_ph_2p2h(inda,indk,indbpr,indkpr) + D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
-         
-         if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D1_3_ph_2p2h(inda,indk,indapr,indlpr) + D1_7_ph_2p2h(inda,indk,indapr,indlpr)
-         
-         if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-              ar_offdiag_ij = ar_offdiag_ij + D1_4_ph_2p2h(inda,indk,indapr,indkpr) + D1_8_ph_2p2h(inda,indk,indapr,indkpr)
-         
-
-         if(inda .eq. indapr)&
-              ar_offdiag_ij = ar_offdiag_ij + D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-         if(inda .eq. indbpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-         if(indk .eq. indkpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-         if(indk .eq. indlpr)&
-              ar_offdiag_ij = ar_offdiag_ij + D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-         
-         
-         travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-      end do
-
-
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4i,1) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (4i,2) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4i,3) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-
-       end do
+       ! Initial space 2h2p i|=j, a|=b II configs
+       call dmatrix_f2h2p4I_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
        
-!!$ Coupling to the i|=j,a|=b I configs
-       
-       dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
+    enddo
 
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (4i,4i) block
-
-       ar_offdiag_ij = D_4i_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4i,4ii) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!       write(ilog,*),i,travec(i)
-
-! end of the first i cycle: the first travec element has been computed!!!
-
-    end do
-
-
-
-
-
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-!THE INDEX i RUNS IN THE 4II BLOCK OF 2H2P (FINAL) CONFIGURATIOS  a/=b i/=j SPIN CASE 2
-!*************************************************************************
-!*************************************************************************
-!*************************************************************************
-
+!-----------------------------------------------------------------------
+! Final space 2h2p i|=j, a|=b II configurations
+!-----------------------------------------------------------------------
     dim_countf=dim_countf+kpqf(5,0)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
+
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
 
+       ! Initial space 1h1p configs
+       call dmatrix_f2h2p4II_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
+
+       ! Initial space 2h2p i=j, a=b configs
+       call dmatrix_f2h2p4II_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
+
+       ! Initial space 2h2p i=j, a|=b configs
+       call dmatrix_f2h2p4II_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
     
-       ndim1=kpq(1,0)
-       do j=1,ndim1
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       ! Initial space 2h2p i|=j, a=b configs
+       call dmatrix_f2h2p4II_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
        
-          ar_offdiag_ij = 0.d0
+       ! Initial space 2h2p i|=j, a|=b I configs
+       call dmatrix_f2h2p4II_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-          if((indk .eq. indkpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij +D2_1_ph_2p2h(inda,indk,indbpr,indlpr) + D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
-          
-          if((indk .eq. indlpr) .and. (inda .eq. indapr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_2_ph_2p2h(inda,indk,indbpr,indkpr) + D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
-          
-          if((indk .eq. indkpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_3_ph_2p2h(inda,indk,indapr,indlpr) + D2_7_ph_2p2h(inda,indk,indapr,indlpr)
-          
-          if((indk .eq. indlpr) .and. (inda .eq. indbpr))&
-               ar_offdiag_ij = ar_offdiag_ij + D2_4_ph_2p2h(inda,indk,indapr,indkpr) + D2_8_ph_2p2h(inda,indk,indapr,indkpr)
-          
-          if(inda .eq. indapr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
-          if(inda .eq. indbpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
-          if(indk .eq. indkpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
-          if(indk .eq. indlpr)&
-               ar_offdiag_ij = ar_offdiag_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
-          
-          travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-          
-       end do
+       ! Initial space 2h2p i|=j, a|=b II configs
+       call dmatrix_f2h2p4II_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+            indapr,indbpr,indkpr,indlpr,spinpr)
 
-
-       dim_count=kpq(1,0)
-       do j=dim_count+1,dim_count+kpq(2,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4ii,1) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i=j,a|=b configs   
-    
-       dim_count=dim_count+kpq(2,0)
-       do j=dim_count+1,dim_count+kpq(3,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (4ii,2) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-    
-!!$ Coupling to the i|=j,a=b configs
-    
-       dim_count=dim_count+kpq(3,0)
-       do j=dim_count+1,dim_count+kpq(4,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4ii,3) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
- 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-       
-!!$ Coupling to the i|=j,a|=b I configs
-       
-       dim_count=dim_count+kpq(4,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
-
-       ar_offdiag_ij = 0.d0
-
-!!$ (4ii,4i) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
- 
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!!$ Coupling to the i|=j,a|=b II configs
-       
-       dim_count=dim_count+kpq(5,0)
-       do j=dim_count+1,dim_count+kpq(5,0)
-
-          if (abs(autvec(j)).lt.vectol) cycle
-
-          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
- 
-       ar_offdiag_ij = 0.d0
-
-!!$ (4ii,4ii) block
-
-       ar_offdiag_ij = ar_offdiag_ij +D_4ii_4ii_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
-
-       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
-
-       end do
-
-!       write(ilog,*),i,travec(i)
-
-! end of the first i cycle: the first travec element has been computed!!!
-
-    end do
+    enddo
 
 !-----------------------------------------------------------------------
-! Close scratch files and deallocate arrays
+! Deallocate arrays
 !-----------------------------------------------------------------------
-    ! Close scratch files
-    if (.not.lincore) then
-       do i=1,4
-          close(unit(i))
-       enddo
-    endif
-
-    ! Deallocate two-index arrays
     deallocate(pre_vv,pre_oo)
-
-    ! Deallocate four-index arrays
     if (allocated(D261)) deallocate(D261)
     if (allocated(D262)) deallocate(D262)
     if (allocated(D263)) deallocate(D263)
     if (allocated(D264)) deallocate(D264)
 
-    call get_time(2)
+    deallocate(sum1thread)
 
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',dt,'s'
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
 
   end subroutine get_dipole_initial_product
+
+!#######################################################################
+  
+  subroutine dmatrix_f1h1p_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+       inda,indb,indk,indl,spin)
+    
+    implicit none
+
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                       :: i,ndim,ndimf
+    integer                                   :: inda,indb,indk,indl,&
+                                                 spin,indapr,indbpr,&
+                                                 indkpr,indlpr,spinpr
+    integer                                   :: j,ndim1,itmp,itmp1,tid
+    real(d)                                   :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)      :: autvec
+    real(d), dimension(ndimf), intent(out)    :: travec
+
+    sum1thread=0.0d0
+
+    ndim1=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij,itmp,itmp1) &
+    !$omp& shared(autvec,kpq,pre_vv,pre_oo,sum1thread)
+    do j=1,ndim1
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+            
+       call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
+            indkpr)
+            
+       ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
+       ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
+
+       if(indk.eq.indkpr) then
+          itmp=inda-nocc
+          itmp1=indapr-nocc
+          ar_offdiag_ij=ar_offdiag_ij+pre_vv(itmp,itmp1)
+       endif
+       
+       if(inda.eq.indapr) then
+          ar_offdiag_ij=ar_offdiag_ij+pre_oo(indk,indkpr)
+       endif
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+      
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i1h1p
+
+!#######################################################################
+
+  subroutine dmatrix_f1h1p_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       inda,indb,indk,indl,spin)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
+       
+       ar_offdiag_ij = 0.d0
+       
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+            +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+   
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i2h2p1
+
+!#######################################################################
+
+  subroutine dmatrix_f1h1p_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       inda,indb,indk,indl,spin)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle 
+
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+            
+       ar_offdiag_ij=0.d0
+            
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+            
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+            
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+            
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+           
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i2h2p2
+
+!#######################################################################
+
+  subroutine dmatrix_f1h1p_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       inda,indb,indk,indl,spin)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+            
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+       
+       ar_offdiag_ij=0.d0
+            
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+            
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+           
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i2h2p3
+
+!#######################################################################
+
+  subroutine dmatrix_f1h1p_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+      inda,indb,indk,indl,spin)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+&
+            D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+&
+            D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i2h2p4I
+
+!#######################################################################
+
+ subroutine dmatrix_f1h1p_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+      inda,indb,indk,indl,spin)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+ 
+    !$omp parallel do &
+    !$omp& private(j,tid,indapr,indbpr,indkpr,indlpr,spinpr,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+ 
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+ 
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+       
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij&
+            +D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+      
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f1h1p_i2h2p4II
+
+!#######################################################################
+
+  ! PRIMED AND UNPRIMED INDICES SWITCH FROM HERE...
+
+  subroutine dmatrix_f2h2p1_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,ndim1,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    ndim1=kpq(1,0)
+
+    !$omp parallel do & 
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp shared(autvec,kpq,sum1thread)
+    do j=1,ndim1
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+            +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+       if((indk.eq.indlpr) .and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+        
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f2h2p1_i1h1p
+
+!#######################################################################
+  
+  subroutine dmatrix_f2h2p1_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+       
+       ar_offdiag_ij=D_1_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p1_i2h2p1
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p1_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+      
+    enddo
+    !$omp end parallel do
+
+    do j=1,nthreads
+       travec(i)=travec(i)+sum1thread(j)
+    enddo
+
+    return
+
+  end subroutine dmatrix_f2h2p1_i2h2p2
+
+!#######################################################################
+ 
+  subroutine dmatrix_f2h2p1_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+          
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    do j=1,nthreads
+       travec(i)=travec(i)+sum1thread(j)
+    enddo
+
+    return
+
+  end subroutine dmatrix_f2h2p1_i2h2p3
+
+!#######################################################################  
+
+  subroutine dmatrix_f2h2p1_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+       
+    enddo
+    !$omp end parallel do
+
+    do j=1,nthreads
+       travec(i)=travec(i)+sum1thread(j)
+    enddo
+
+    return
+
+  end subroutine dmatrix_f2h2p1_i2h2p4I
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p1_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+ 
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+       ar_offdiag_ij=&
+            D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+      
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f2h2p1_i2h2p4II
+
+!#######################################################################
+
+ subroutine dmatrix_f2h2p2_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+      indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,ndim1,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    ndim1=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=1,ndim1
+          
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+       ar_offdiag_ij=0.d0
+       
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i1h1p
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p2_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+          
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+       ar_offdiag_ij=D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+       
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i2h2p1
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p2_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_2_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i2h2p2
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p2_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i2h2p3
+
+!#######################################################################
+
+    subroutine dmatrix_f2h2p2_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+         indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i2h2p4I
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p2_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+      
+       ar_offdiag_ij=&
+            D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p2_i2h2p4II
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p3_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+    
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,ndim1,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    ndim1=kpq(1,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=1,ndim1
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+         
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+ 
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+!         travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+       
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p3_i1h1p
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p3_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+
+       ar_offdiag_ij=D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p3_i2h2p1
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p3_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p3_i2h2p2
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p3_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+              
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=D_3_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+       
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+    
+    return
+
+  end subroutine dmatrix_f2h2p3_i2h2p3
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p3_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+      indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p3_i2h2p4I
+
+!#######################################################################
+
+    subroutine dmatrix_f2h2p3_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+         indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=&
+            D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+      
+!      travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p3_i2h2p4II
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4I_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,ndim1,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    ndim1=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=1,ndim1
+          
+       tid=1+omp_get_thread_num()
+       
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+            +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i1h1p
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4I_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+       ar_offdiag_ij=D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i2h2p1
+
+!#######################################################################
+  
+  subroutine dmatrix_f2h2p4I_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i2h2p2
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4I_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+       ar_offdiag_ij=D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i2h2p3
+
+!#######################################################################
+  
+  subroutine dmatrix_f2h2p4I_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+       
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=&
+            D_4i_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i2h2p4I
+
+!#######################################################################
+
+    subroutine dmatrix_f2h2p4I_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+         indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=&
+            D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4I_i2h2p4II
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4II_i1h1p(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,ndim1,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    ndim1=kpq(1,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=1,ndim1
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+       ar_offdiag_ij=0.d0
+
+       if((indk.eq.indkpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+                 +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+       if((indk.eq.indlpr).and.(inda.eq.indapr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+            +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          
+       if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+            +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+       if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+            ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+            +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+       if(inda.eq.indapr)&
+            ar_offdiag_ij=ar_offdiag_ij+D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          
+       if(inda.eq.indbpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+       if(indk.eq.indkpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          
+       if(indk.eq.indlpr)&
+            ar_offdiag_ij=ar_offdiag_ij+D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+ 
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+      
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i1h1p
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4II_i2h2p1(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+    
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)
+    
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(2,0)
+          
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+       ar_offdiag_ij=&
+            D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i2h2p1
+
+!#######################################################################
+  
+  subroutine dmatrix_f2h2p4II_i2h2p2(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(3,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+       ar_offdiag_ij=&
+            D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i2h2p2
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4II_i2h2p3(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(4,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+       ar_offdiag_ij=&
+            D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i2h2p3
+
+!#######################################################################
+  
+  subroutine dmatrix_f2h2p4II_i2h2p4I(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+       
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+       ar_offdiag_ij=&
+            D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i2h2p4I
+
+!#######################################################################
+
+  subroutine dmatrix_f2h2p4II_i2h2p4II(i,ndim,ndimf,kpq,travec,autvec,&
+       indapr,indbpr,indkpr,indlpr,spinpr)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                    :: ndim,ndimf,i
+    integer                                :: inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,&
+                                              indkpr,indlpr,spinpr
+    integer                                :: j,dim_count,tid
+    real(d)                                :: ar_offdiag_ij
+    real(d), dimension(ndim), intent(in)   :: autvec
+    real(d), dimension(ndimf), intent(out) :: travec
+
+    sum1thread=0.0d0
+    
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+
+    !$omp parallel do &
+    !$omp& private(j,tid,inda,indb,indk,indl,spin,ar_offdiag_ij) &
+    !$omp& shared(autvec,kpq,sum1thread)
+    do j=dim_count+1,dim_count+kpq(5,0)
+
+       tid=1+omp_get_thread_num()
+
+       if (abs(autvec(j)).lt.vectol) cycle
+
+       call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+       ar_offdiag_ij=&
+            D_4ii_4ii_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+!       travec(i)=travec(i)+ar_offdiag_ij*autvec(j)
+
+       sum1thread(tid)=sum1thread(tid)+ar_offdiag_ij*autvec(j)
+
+    enddo
+    !$omp end parallel do
+
+    travec(i)=travec(i)+sum(sum1thread)
+
+    return
+
+  end subroutine dmatrix_f2h2p4II_i2h2p4II
 
 !#######################################################################
 
@@ -1105,8 +2389,9 @@ contains
     implicit none
 
     integer :: k,a
+    real(d) :: tw1,tw2,tc1,tc2
 
-    call get_time(1)
+    call times(tw1,tc1)
 
     write(ilog,'(/,2x,a)') 'Calculating the occupied-unoccupied part of &
          the density matrix...'
@@ -1114,15 +2399,17 @@ contains
     allocate(density(nbas,nbas))
     density=0.0d0
 
+    !$omp parallel do private(k,a) shared(density)
     do k=1,nocc
        do a=nocc+1,nbas
          density(k,a)=calc_density(k,a)
        enddo
     enddo
+    !$omp end parallel do
 
-    call get_time(2)
+    call times(tw2,tc2)
     
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',dt,'s'
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
 
@@ -1130,8 +2417,7 @@ contains
 
 !#######################################################################
 
-  subroutine dmatrix_precalc(pre_vv,pre_oo,D261,D262,D263,D264,vectol,&
-       lincore,unit,autvec,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc(autvec,ndim,kpq,kpqf)
 
     implicit none
 
@@ -1139,61 +2425,36 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
     integer                                             :: nvirt
-    integer, dimension(10)                              :: unit
-    real(d), dimension(:,:), allocatable                :: pre_vv,pre_oo
-    real(d), dimension(:,:,:,:), allocatable            :: D261,D262,D263,&
-                                                           D264
     real(d)                                             :: vectol,mem4indx
     real(d), dimension(ndim), intent(in)                :: autvec
-    logical                                             :: lincore
 
 !-----------------------------------------------------------------------
-! Allocate and initialise the arrays that will hold the two-index terms
+! Allocate and initialise arrays
 !-----------------------------------------------------------------------
     nvirt=nbas-nocc
     allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
 
-!-----------------------------------------------------------------------
-! Determine the ammount (in MB) of memory required to hold the 
-! intermediate four-index terms.
-! If we are above the threshold maxmem, then we will write these
-! terms to disk
-!-----------------------------------------------------------------------
-    mem4indx=4.0d0*8.0d0*(nvirt**2)*(nocc**2)/(1024.0d0**2)
-    if (mem4indx.le.maxmem) then
-       lincore=.true.
-       allocate(D261(nvirt,nocc,nocc,nvirt))
-       allocate(D262(nvirt,nocc,nocc,nvirt))
-       allocate(D263(nvirt,nvirt,nocc,nocc))
-       allocate(D264(nvirt,nvirt,nocc,nocc))
-       D261=0.0d0
-       D262=0.0d0
-       D263=0.0d0
-       D264=0.0d0       
-    else
-       lincore=.false.
-    endif
-
-!-----------------------------------------------------------------------
-! If we are saving the intermediate four-index term to disk, then open 
-! the scratch files that will hold these terms
-!-----------------------------------------------------------------------
-    if (.not.lincore) call open_scratch_files(unit)
-
+    allocate(D261(nvirt,nocc,nocc,nvirt))
+    allocate(D262(nvirt,nocc,nocc,nvirt))
+    allocate(D263(nvirt,nvirt,nocc,nocc))
+    allocate(D264(nvirt,nvirt,nocc,nocc))
+    D261=0.0d0
+    D262=0.0d0
+    D263=0.0d0
+    D264=0.0d0       
+    
 !-----------------------------------------------------------------------
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&
-         unit,lincore,D261,D262,D263,D264)
+    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,&
-         kpqf,vectol)
+    call dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
 
     return
 
@@ -1201,8 +2462,7 @@ contains
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_2indx(pre_vv,pre_oo,nvirt,autvec,ndim,kpq,&
-       kpqf,vectol)
+  subroutine dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
 
     use timingmod
 
@@ -1216,17 +2476,14 @@ contains
                                               indlpr,spinpr,b,b1,itmp2,k,&
                                               k1,kpr,j1
     integer, dimension(:,:), allocatable   :: iszeroa,iszerok
-    real(d), dimension(nvirt,nvirt)        :: pre_vv
-    real(d), dimension(nocc,nocc)          :: pre_oo
     real(d), dimension(ndim), intent(in)   :: autvec
     real(d), intent(in)                    :: vectol
 
     real(d), dimension(:,:), allocatable :: tau_2_2_1,tau_2_2_2,&
                                             tau_4_2_1,tau_4_2_2
-    real(d)                              :: ftmp1,ftmp2
+    real(d)                              :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
 
-
-    call get_time(1)
+    call times(tw1,tc1)
 
     write(ilog,'(/,2x,a)') 'Precomputing two-index terms...'
 
@@ -1247,7 +2504,9 @@ contains
 !-----------------------------------------------------------------------
     iszeroa=0
     iszerok=0
-
+    !$omp parallel do &
+    !$omp& private(i,j,inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr,itmp,itmp1) &
+    !$omp& shared(kpq,kpqf,autvec,iszeroa,iszerok)
     do i=1,kpqf(1,0)
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
        do j=1,kpq(1,0)
@@ -1259,29 +2518,32 @@ contains
           iszerok(indk,indkpr)=1
        enddo
     enddo
+    !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Unoccupied-unoccupied terms
 !-----------------------------------------------------------------------
-    ! D2_2_1_ph_ph and D2_2_2_ph_ph intermediate terms
-    itmp=0
+    !$omp parallel do &
+    !$omp& private(a,itmp,b,itmp1) &
+    !$omp& shared(tau_2_2_1,tau_2_2_2)
     do a=nocc+1,nbas
-       itmp=itmp+1
-       itmp1=0
+       itmp=a-nocc
        do b=nocc+1,nbas
-          itmp1=itmp1+1
+          itmp1=b-nocc
           tau_2_2_1(itmp,itmp1)=tau_D2_2_1(a,b)
           tau_2_2_2(itmp,itmp1)=tau_D2_2_2(a,b) 
       enddo
     enddo
+    !$omp end parallel do
 
     pre_vv=0.0d0
-    itmp=0
+    !$omp parallel do &
+    !$omp& private(a,itmp,apr,itmp1,ftmp1,ftmp2,b1,b,itmp2) &
+    !$omp& shared(iszeroa,pre_vv,roccnum,tau_2_2_1,tau_2_2_2,dpl)
     do a=nocc+1,nbas
-       itmp=itmp+1
-       itmp1=0
+       itmp=a-nocc
        do apr=nocc+1,nbas
-          itmp1=itmp1+1
+          itmp1=apr-nocc
 
           if (iszeroa(itmp,itmp1).eq.0) cycle
 
@@ -1296,10 +2558,9 @@ contains
           ! Contributions from D2_2_1_ph_ph and D2_2_2_ph_ph
           ftmp1=0.0d0
           ftmp2=0.0d0
-          itmp2=0
           do b1=nocc+1,nbas
              b=roccnum(b1)
-             itmp2=itmp2+1
+             itmp2=b1-nocc
              ftmp1=ftmp1+tau_2_2_1(itmp,itmp2)*dpl(b,apr)
              ftmp2=ftmp2+tau_2_2_2(itmp1,itmp2)*dpl(b,a)
           enddo
@@ -1309,19 +2570,24 @@ contains
 
        enddo
     enddo
+    !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Occupied-occupied terms
-!-----------------------------------------------------------------------
-    ! D4_2_1_ph_ph and D4_2_2_ph_ph intermediate terms
+!-----------------------------------------------------------------------    
+    !$omp parallel do private(j,k) shared(tau_4_2_1,tau_4_2_2)
     do j=1,nocc
        do k=1,nocc
           tau_4_2_1(j,k)=tau_D2_4_1(j,k)
           tau_4_2_2(j,k)=tau_D2_4_2(j,k)
        enddo
     enddo
+    !$omp end parallel do
 
     pre_oo=0.0d0
+    !$omp parallel do &
+    !$omp& private(k,kpr,ftmp1,ftmp2,j1,j) &
+    !$omp& shared(iszerok,pre_oo,roccnum,tau_4_2_1,tau_4_2_2,dpl)
     do k=1,nocc
        do kpr=1,nocc
 
@@ -1348,6 +2614,7 @@ contains
 
        enddo
     enddo
+    !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1359,9 +2626,8 @@ contains
     deallocate(tau_4_2_1)
     deallocate(tau_4_2_2)
 
-    call get_time(2)
-
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',dt,'s'
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
 
@@ -1369,46 +2635,7 @@ contains
 
 !#######################################################################
 
-  subroutine open_scratch_files(unit)
-
-   implicit none
-    
-    integer                :: i
-    integer, dimension(10) :: unit
-    character(len=60)      :: filename
-    logical(kind=4)        :: ldir
-
-!-----------------------------------------------------------------------    
-! Open the scratch files
-!-----------------------------------------------------------------------
-    filename='SCRATCH/D2.6.1.akkprb'
-    call freeunit(unit(1))
-    open(unit(1),file=filename,form='unformatted',status='unknown',&
-         access='direct',recl=8)
-
-    filename='SCRATCH/D2.6.2.aprkkprb'
-    call freeunit(unit(2))
-    open(unit(2),file=filename,form='unformatted',status='unknown',&
-         access='direct',recl=8)
-
-    filename='SCRATCH/D2.6.3.aaprkj'
-    call freeunit(unit(3))
-    open(unit(3),file=filename,form='unformatted',status='unknown',&
-         access='direct',recl=8)
-
-    filename='SCRATCH/D2.6.4.aaprkprj'
-    call freeunit(unit(4))
-    open(unit(4),file=filename,form='unformatted',status='unknown',&
-         access='direct',recl=8)
-
-    return
-    
-  end subroutine open_scratch_files
-
-!#######################################################################
-
-  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol,&
-       unit,lincore,D261,D262,D263,D264)
+  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
 
     use timingmod
 
@@ -1417,106 +2644,79 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
     integer                                  :: nvirt,ndim,a,apr,k,&
-                                                kpr,b,j,irec,itmp
-    integer, dimension(10)                   :: unit
+                                                kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
     real(d), dimension(ndim), intent(in)     :: autvec
     real(d), intent(in)                      :: vectol
-    real(d)                                  :: ftmp
-    real(d), dimension(:,:,:,:), allocatable :: D261
-    real(d), dimension(:,:,:,:), allocatable :: D262
-    real(d), dimension(:,:,:,:), allocatable :: D263
-    real(d), dimension(:,:,:,:), allocatable :: D264
+    real(d)                                  :: tw1,tw2,tc1,tc2
     character(len=60)                        :: filename
-    logical                                  :: lincore
 
-    call get_time(1)
+    call times(tw1,tc1)
 
     write(ilog,'(/,2x,a)') 'Precomputing four-index terms...'
 
 !-----------------------------------------------------------------------
 ! (1) D2.6.1.akkprb
 !-----------------------------------------------------------------------
-    irec=0
+    !$omp parallel do private(a,k,kpr,b) shared(D261)
     do a=nocc+1,nbas
        do k=1,nocc
           do kpr=1,nocc
              do b=nocc+1,nbas
-                if (lincore) then
-                   D261(a-nocc,k,kpr,b-nocc)=tau_D2_6_1(a,k,kpr,b)
-                else
-                   irec=irec+1
-                   ftmp=tau_D2_6_1(a,k,kpr,b)
-                   write(unit(1),rec=irec) ftmp
-                endif
+                D261(a-nocc,k,kpr,b-nocc)=tau_D2_6_1(a,k,kpr,b)
              enddo
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! (2) D2.6.2.aprkkprb
 !-----------------------------------------------------------------------
-    irec=0
+    !$omp parallel do private(apr,k,kpr,b) shared(D262)
     do apr=nocc+1,nbas
        do k=1,nocc
           do kpr=1,nocc
              do b=nocc+1,nbas
-                if (lincore) then
-                   D262(apr-nocc,k,kpr,b-nocc)=tau_D2_6_2(apr,k,kpr,b)
-                else
-                   irec=irec+1
-                   ftmp=tau_D2_6_2(apr,k,kpr,b)
-                   write(unit(2),rec=irec) ftmp
-                endif
+                D262(apr-nocc,k,kpr,b-nocc)=tau_D2_6_2(apr,k,kpr,b)
              enddo
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! (3) D2.6.3.aprkkprb
 !-----------------------------------------------------------------------
-    irec=0
+    !$omp parallel do private(a,apr,k,j) shared(D263)
     do a=nocc+1,nbas
        do apr=nocc+1,nbas
           do k=1,nocc
              do j=1,nocc
-                if (lincore) then
-                   D263(a-nocc,apr-nocc,k,j)=tau_D2_6_3(a,apr,k,j)
-                else
-                   irec=irec+1
-                   ftmp=tau_D2_6_3(a,apr,k,j)
-                   write(unit(3),rec=irec) ftmp
-                endif
+                D263(a-nocc,apr-nocc,k,j)=tau_D2_6_3(a,apr,k,j)
              enddo
           enddo
        enddo
     enddo
+    !$omp end parallel do
     
 !-----------------------------------------------------------------------
 ! (4) D2.6.4.aaprkprj
 !-----------------------------------------------------------------------
-    irec=0
+    !$omp parallel do private(a,apr,kpr,j) shared(D264)
     do a=nocc+1,nbas
        do apr=nocc+1,nbas
           do kpr=1,nocc
              do j=1,nocc
-                if (lincore) then
-                   D264(a-nocc,apr-nocc,kpr,j)=tau_D2_6_4(a,apr,kpr,j)
-                else
-                   irec=irec+1
-                   ftmp=tau_D2_6_4(a,apr,kpr,j)
-                   write(unit(4),rec=irec) ftmp                
-                endif
+                D264(a-nocc,apr-nocc,kpr,j)=tau_D2_6_4(a,apr,kpr,j)
              enddo
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
-    call get_time(2)
-
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',dt,'s'
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
 
@@ -1524,19 +2724,12 @@ contains
 
 !#######################################################################
 
-  subroutine contract_4indx_dpl(func,a,apr,k,kpr,unit,lincore,&
-       D261,D262,D263,D264)
+  subroutine contract_4indx_dpl(func,a,apr,k,kpr)
 
     implicit none
 
     real(d)                                  :: func,ftmp,curr
     integer                                  :: a,apr,k,kpr,itmp,b,b1,j,j1
-    integer, dimension(10)                   :: unit
-    logical                                  :: lincore
-    real(d), dimension(:,:,:,:), allocatable :: D261
-    real(d), dimension(:,:,:,:), allocatable :: D262
-    real(d), dimension(:,:,:,:), allocatable :: D263
-    real(d), dimension(:,:,:,:), allocatable :: D264
 
 !-----------------------------------------------------------------------
 ! Function value to be returned: func
@@ -1547,17 +2740,10 @@ contains
 ! (1) D2.6.1.akkprb
 !-----------------------------------------------------------------------
     ! Contract the intermediate four-index terms with the dipole matrix
-    curr=0.0d0
+    curr=0.0d0    
     do b1=nocc+1,nbas
        b=roccnum(b1)
-       if (lincore) then
-          curr=curr+dpl(b,apr)*D261(a-nocc,k,kpr,b1-nocc)
-       else
-          itmp=(a-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
-               +(kpr-1)*nvirt+(b1-nocc)
-          read(unit(1),rec=itmp) ftmp
-       endif
-          curr=curr+dpl(b,apr)*ftmp
+       curr=curr+dpl(b,apr)*D261(a-nocc,k,kpr,b1-nocc)
     enddo
     
     ! Normalisation
@@ -1572,14 +2758,7 @@ contains
     curr=0.0d0
     do b1=nocc+1,nbas
        b=roccnum(b1)
-       if (lincore) then
-          curr=curr+dpl(b,a)*D262(apr-nocc,k,kpr,b1-nocc)
-       else
-          itmp=(apr-nocc-1)*nocc*nocc*nvirt+(k-1)*nocc*nvirt&
-               +(kpr-1)*nvirt+(b1-nocc)
-          read(unit(2),rec=itmp) ftmp
-          curr=curr+dpl(b,a)*ftmp
-       endif
+       curr=curr+dpl(b,a)*D262(apr-nocc,k,kpr,b1-nocc)
     enddo
     
     ! Normalisation
@@ -1594,14 +2773,7 @@ contains
     curr=0.0d0
     do j1=1,nocc
        j=roccnum(j1)
-       if (lincore) then
-          curr=curr+dpl(kpr,j)*D263(a-nocc,apr-nocc,k,j1)
-       else
-          itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
-               +(k-1)*nocc+j1
-          read(unit(3),rec=itmp) ftmp
-          curr=curr+dpl(kpr,j)*ftmp
-       endif
+       curr=curr+dpl(kpr,j)*D263(a-nocc,apr-nocc,k,j1)
     enddo
 
     ! Normalisation
@@ -1616,14 +2788,7 @@ contains
     curr=0.0d0
     do j1=1,nocc
        j=roccnum(j1)
-       if (lincore) then
-          curr=curr+dpl(k,j)*D264(a-nocc,apr-nocc,kpr,j1)
-       else
-          itmp=(a-nocc-1)*nvirt*nocc*nocc+(apr-nocc-1)*nocc*nocc&
-               +(kpr-1)*nocc+j1
-          read(unit(4),rec=itmp) ftmp
-          curr=curr+dpl(k,j)*ftmp
-       endif
+       curr=curr+dpl(k,j)*D264(a-nocc,apr-nocc,kpr,j1)
     enddo
 
     ! Normalisation
