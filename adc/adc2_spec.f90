@@ -300,11 +300,6 @@
                                                      osc_str
         real(d), dimension(:,:), allocatable      :: rvec
 
-
-        write(ilog,'(/,2x,a,x,a1,x,a)') 'Calculating the transition moments &
-             between the ground state and the Davidson states in &
-             the',tranmom2,'direction'
-
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------

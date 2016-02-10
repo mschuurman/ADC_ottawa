@@ -9,7 +9,7 @@ dipole_symm = 1
 
 initial_state = 1
 
-dipole_component = y
+dipole_component = x
 
 #cvs
 
