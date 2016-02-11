@@ -8,9 +8,12 @@ initial_state=1
 
 dipole_component = x
 
+mem=2000
+
 diag_section
- nstates = 10
- block_size = 40
+ nstates = 3
+ block_size = 6
+ maxvec=18
  tol=1d-6
  maxit=1000
  guess=adc1

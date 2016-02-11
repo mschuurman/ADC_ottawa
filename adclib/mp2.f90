@@ -66,15 +66,28 @@
         use constants
         use parameters
         use vpqrsmod
+        use omp_lib
 
         implicit none
 
-        integer :: r,s,u,v,nsym1,nsym2,i,j,a,b,cnt
+        integer :: r,s,u,v,nsym1,nsym2,i,j,a,b
         real(d) :: DA,eijc,term,etotal
 
-        E_MP2 = 0._d
-        etotal = 0._d
-        cnt=0
+        integer                            :: nthreads,tid
+        real(d), dimension(:), allocatable :: sum1thread
+
+        !$omp parallel
+        nthreads=omp_get_num_threads()
+        !$omp end parallel
+        allocate(sum1thread(nthreads))
+        sum1thread=0.0d0
+        
+        E_MP2 = 0.0d0
+        etotal = 0.0d0
+
+        !$omp parallel do &
+        !$omp& private(r,a,s,b,u,i,v,j,nsym1,nsym2,eijc,term,tid) &
+        !$omp& shared(sum1thread,e,orbsym,roccnum,MT)
         do r=nOcc+1,nBas
            a=roccnum(r)  !r
            
@@ -86,14 +99,13 @@
                  
                  do v=1,nOcc
                     j=roccnum(v) !v
+
+                    tid=1+omp_get_thread_num()
                     
                     nsym1=MT(orbSym(i),orbSym(a))
                     nsym2=MT(orbSym(j),orbSym(b))
-
-
+                    
                     if  (MT(nsym1,nsym2) .eq. 1)  then
-
-                       cnt=cnt+1
 
                        eijc=e(i)+e(j)-e(a)-e(b)
                        
@@ -101,18 +113,9 @@
                        
                        term=term/eijc
 
-                       E_MP2 = E_MP2 + term
-
-                    else
-
-                       eijc=e(i)+e(j)-e(a)-e(b)
-                       term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a)) / eijc
-                       etotal = etotal + term
-                       if(abs(term).gt.1e-5) write(ilog,100) &
-                            labsym(orbsym(i)),i,labsym(orbsym(j)),j,&
-                            labsym(orbsym(a)),a,labsym(orbsym(b)),b,&
-                            MT(nsym1,nsym2),term
-
+!                       E_MP2 = E_MP2 + term
+                       
+                       sum1thread(tid)=sum1thread(tid)+term
                        
                     endif
                     
@@ -120,10 +123,11 @@
               end do
            end do
         end do
-        
-        if(Etotal.gt.1e-5) write(ilog,*) 'E[sym residual]=',Etotal
-        
-100     format(a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') ',a3,'(',i3,') sym=',i3,'term=',f15.8)
+        !$omp end parallel do
+
+        E_MP2=sum(sum1thread)
+
+        deallocate(sum1thread)
         
         return
         
@@ -140,7 +144,8 @@
       use constants
       use parameters
       use iomod
-
+      use omp_lib
+      
       implicit none
 
       integer                              :: i,j,k,a,b,c,albl,blbl,&
@@ -160,9 +165,12 @@
 ! Calculation of T^o * T^o
 !-----------------------------------------------------------------------
       toto=0.0d0
+
+      !$omp parallel do &
+      !$omp& private(i,j,k,a,b) &
+      !$omp& shared(toto)
       do i=1,nocc
          do j=1,nocc
-
             do k=1,nocc
                do a=nocc+1,nbas
                   do b=nocc+1,nbas
@@ -170,22 +178,22 @@
                   enddo
                enddo
             enddo
-
          enddo
       enddo
-
+      !$omp end parallel do
+      
 !-----------------------------------------------------------------------
 ! Calculation of T^v * T^v
 !-----------------------------------------------------------------------
       tvtv=0.0d0
-      albl=0
+
+      !$omp parallel do &
+      !$omp& private(a,albl,b,blbl,i,j,c) &
+      !$omp& shared(tvtv)
       do a=nocc+1,nbas
-         albl=albl+1
-        
-         blbl=0
+         albl=a-nocc
          do b=nocc+1,nbas
-            blbl=blbl+1
-            
+            blbl=b-nocc            
             do i=1,nocc
                do j=1,nocc
                   do c=nocc+1,nbas
@@ -194,10 +202,10 @@
                   enddo
                enddo
             enddo
-
          enddo
       enddo
-
+      !$omp end parallel do
+      
 !-----------------------------------------------------------------------
 ! Eigenvalues of T^o * T^o
 !-----------------------------------------------------------------------
