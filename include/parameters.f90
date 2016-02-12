@@ -130,7 +130,8 @@ module parameters
                                           statenumber,denord,davstates_f
   integer, parameter                   :: nhcentre=40
   integer, dimension(0:nhcentre)       :: hcentre
-  real(d)                              :: minc,mspacewi,mspacewf
+  real(d)                              :: mspacewi,mspacewf
+  real(d), parameter                   :: minc=1d-11
   real(d)                              :: dlim
   integer, dimension(:), allocatable   :: roccnum
   integer, dimension(8,8)              :: MT

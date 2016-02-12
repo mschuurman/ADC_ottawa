@@ -709,6 +709,9 @@
          else if (keyword(i).eq.'deflate') then
             ldfl=.true.
             
+         else if (keyword(i).eq.'nodfl') then
+            ldfl=.false.
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -871,7 +874,10 @@
             
          else if (keyword(i).eq.'deflate') then
             ldfl_f=.true.
-            
+                        
+         else if (keyword(i).eq.'nodfl') then
+            ldfl_f=.false.
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
