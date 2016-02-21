@@ -60,6 +60,7 @@
       precon=1
       maxsubdim=-1
       ldfl=.true.
+      solver=1
       
       ! Final space
       davstates_f=0
@@ -71,11 +72,11 @@
       precon_f=1
       maxsubdim_f=-1
       ldfl_f=.true.
+      solver_f=1
       
       ! Common
       ndavcalls=0
       eigentype=1
-      solver=1
 
 !-----------------------------------------------------------------------
 ! Lanczos parameters

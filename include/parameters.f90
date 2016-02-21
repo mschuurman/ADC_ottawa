@@ -186,8 +186,8 @@ module parameters
 !!$**********Davidson Parameters*******************
 !!$************************************************
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
-                 ndavcalls,eigentype,solver,precon,&
-                 precon_f,maxsubdim,maxsubdim_f
+                 ndavcalls,eigentype,solver,solver_f,&
+                 precon,precon_f,maxsubdim,maxsubdim_f
   real(d)     :: davtarg
   character*1 :: hamflag
   logical     :: lextdiag,ldfl,ldfl_f

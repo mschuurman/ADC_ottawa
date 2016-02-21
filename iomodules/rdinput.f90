@@ -664,7 +664,7 @@
                i=i+2
                if (keyword(i).eq.'davidson') then
                   solver=1
-               else if (keyword(i).eq.'krylov') then
+               else if (keyword(i).eq.'relaxation') then
                   solver=2
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
@@ -829,9 +829,9 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'davidson') then
-                  solver=1
-               else if (keyword(i).eq.'krylov') then
-                  solver=2
+                  solver_f=1
+               else if (keyword(i).eq.'relaxation') then
+                  solver_f=2
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control

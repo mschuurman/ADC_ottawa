@@ -238,7 +238,7 @@
         use constants
         use parameters
         use fspace
-        use davmod
+        use diagmod
         
         implicit none
 
@@ -274,7 +274,7 @@
         write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time=',time," s"
 
 !-----------------------------------------------------------------------
-! Block-Davidson diagonalisation
+! Diagonalisation
 !-----------------------------------------------------------------------
         call master_eig(ndim,noffd,'i')
 
@@ -289,7 +289,7 @@
 
         use constants
         use parameters
-        use davmod
+        use diagmod
         use get_moment
 
         implicit none
@@ -372,9 +372,9 @@
         use parameters
         use fspace
         use get_matrix_dipole
-        use davmod
+        use diagmod
         use guessvecs
-
+        
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
@@ -435,7 +435,7 @@
         endif
 
 !-----------------------------------------------------------------------
-! Block-Davidson diagonalisation in the final space
+! Diagonalisation in the final space
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
 
@@ -1064,7 +1064,7 @@
         use parameters
         use iomod, only: freeunit
         use misc, only: dsortindxa1,table2
-        use davmod, only: readdavvc
+        use diagmod, only: readdavvc
         
         implicit none
 

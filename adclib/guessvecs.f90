@@ -150,7 +150,7 @@
 ! Write the ADC(1) eigenvectors to file
 !-----------------------------------------------------------------------
       iout=22
-
+      
       open(iout,file='SCRATCH/adc1_vecs',form='unformatted',&
            status='unknown')
 

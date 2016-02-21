@@ -230,26 +230,20 @@ contains
              if (ic.eq.0) then
                 isym=MT(orbSym(cah),orbSym(a))
 
-                if (isym.eq.targetsym) then
-                   kpq(1,0)=kpq(1,0)+1
-                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                   kpq(:,kpq(1,0))=col(:)
-                endif
-
-!                if(nirrep .eq. nirrep2) then
-!                   if(isym .eq. 1) then
-!                      kpq(1,0)=kpq(1,0)+1
-!                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                      kpq(:,kpq(1,0))=col(:)
-!                   end if
-!                else
-!                   isym2=MT(nirrep,nirrep2)
-!                   if(isym .eq. isym2) then
-!                      kpq(1,0)=kpq(1,0)+1
-!                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                      kpq(:,kpq(1,0))=col(:)
-!                   end if
-!                end if
+                if(nirrep .eq. nirrep2) then
+                   if(isym .eq. 1) then
+                      kpq(1,0)=kpq(1,0)+1
+                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                      kpq(:,kpq(1,0))=col(:)
+                   end if
+                else
+                   isym2=MT(nirrep,nirrep2)
+                   if(isym .eq. isym2) then
+                      kpq(1,0)=kpq(1,0)+1
+                      call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                      kpq(:,kpq(1,0))=col(:)
+                   end if
+                end if
              endif
           end do
        end do
@@ -263,26 +257,20 @@ contains
              
              isym=MT(orbSym(cah),orbSym(a))
 
-             if (isym.eq.targetsym) then
-                kpq(1,0)=kpq(1,0)+1
-                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                kpq(:,kpq(1,0))=col(:)
-             endif
-
-!             if(nirrep .eq. nirrep2) then
-!                if(isym .eq. 1) then
-!                   kpq(1,0)=kpq(1,0)+1
-!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                   kpq(:,kpq(1,0))=col(:)
-!                end if
-!             else
-!                isym2=MT(nirrep,nirrep2)
-!                if(isym .eq. isym2) then
-!                   kpq(1,0)=kpq(1,0)+1
-!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                   kpq(:,kpq(1,0))=col(:)
-!                end if
-!             end if
+             if(nirrep .eq. nirrep2) then
+                if(isym .eq. 1) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                end if
+             else
+                isym2=MT(nirrep,nirrep2)
+                if(isym .eq. isym2) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                end if
+             end if
 
           end do
        end do
@@ -314,28 +302,21 @@ contains
 
              isym=MT(orbSym(cah),orbSym(a))
 
-             if (isym.eq.targetsym) then
-                kpq(1,0)=kpq(1,0)+1
-                call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-                kpq(:,kpq(1,0))=col(:)
+             isym=MT(orbSym(cah),orbSym(a))
+             if(nirrep .eq. nirrep2) then
+                if(isym .eq. 1) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                endif
+             else
+                isym2=MT(nirrep,nirrep2)
+                if(isym .eq. isym2) then
+                   kpq(1,0)=kpq(1,0)+1
+                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
+                   kpq(:,kpq(1,0))=col(:)
+                endif
              endif
-
-
-!             isym=MT(orbSym(cah),orbSym(a))
-!             if(nirrep .eq. nirrep2) then
-!                if(isym .eq. 1) then
-!                   kpq(1,0)=kpq(1,0)+1
-!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                   kpq(:,kpq(1,0))=col(:)
-!                endif
-!             else
-!                isym2=MT(nirrep,nirrep2)
-!                if(isym .eq. isym2) then
-!                   kpq(1,0)=kpq(1,0)+1
-!                   call fill_indices(col(:),1,1,a,-1,cah,-1,0)
-!                   kpq(:,kpq(1,0))=col(:)
-!                endif
-!             endif
           endif
        enddo
     enddo
@@ -405,38 +386,28 @@ contains
           
              isym1=MT(orbSym(i),orbSym(j))
              
-             if (isym1.eq.targetsym) then
-                do ap=nOcc+1,nBas
-                   a=roccnum(ap)
-                   cnti=cnti+1
-                   kpq(4,0)=kpq(4,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,j,3) 
-                   kpq(:,cnti)=col(:)
-                end do
-             endif
-
-!             if(nirrep .eq. nirrep2) then
-!                if (isym1 .eq. 1) then
-!                   do ap=nOcc+1,nBas
-!                      a=roccnum(ap)
-!                      cnti=cnti+1
-!                      kpq(4,0)=kpq(4,0)+1
-!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                      kpq(:,cnti)=col(:)
-!                   end do
-!                end if
-!             else
-!                isym2=MT(nirrep,nirrep2)
-!                if (isym1 .eq. isym2) then
-!                   do ap=nOcc+1,nBas
-!                      a=roccnum(ap)
-!                      cnti=cnti+1
-!                      kpq(4,0)=kpq(4,0)+1
-!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                      kpq(:,cnti)=col(:)
-!                   end do
-!                end if
-!             end if
+             if(nirrep .eq. nirrep2) then
+                if (isym1 .eq. 1) then
+                   do ap=nOcc+1,nBas
+                      a=roccnum(ap)
+                      cnti=cnti+1
+                      kpq(4,0)=kpq(4,0)+1
+                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+                      kpq(:,cnti)=col(:)
+                   end do
+                end if
+             else
+                isym2=MT(nirrep,nirrep2)
+                if (isym1 .eq. isym2) then
+                   do ap=nOcc+1,nBas
+                      a=roccnum(ap)
+                      cnti=cnti+1
+                      kpq(4,0)=kpq(4,0)+1
+                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+                      kpq(:,cnti)=col(:)
+                   end do
+                end if
+             end if
              
           endif
 
@@ -466,44 +437,36 @@ contains
                    b=roccnum(bp)
                    isym2=MT(orbSym(a),orbSym(b))
                    
-                   isym3=MT(isym1,isym2)
-                   if (isym3.eq.targetsym) then
-                      cnti=cnti+1
-                      kpq(5,0)=kpq(5,0)+1
-                      call fill_indices(col(:),2,11,a,b,i,j,4)
-                      kpq(:,cnti)=col(:)
-                   endif
-
-!                   if(nirrep .eq. nirrep2) then
-!                      if(MT(isym1,isym2) .eq. 1) then 
-!                         if(einit .le. (ei+ej)) then
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         else
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         end if
-!                      end if
-!                   else
-!                      isym3=MT(nirrep,nirrep2)
-!                      if(MT(isym1,isym2) .eq. isym3) then 
-!                         if(einit .le. (ei+ej)) then
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         else
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         end if
-!                      end if
-!                   end if
+                   if(nirrep .eq. nirrep2) then
+                      if(MT(isym1,isym2) .eq. 1) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   else
+                      isym3=MT(nirrep,nirrep2)
+                      if(MT(isym1,isym2) .eq. isym3) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   end if
                    
                 end do
              end do
@@ -1231,8 +1194,7 @@ contains
     
 !!$a=b,i=j i=hcentre(ih)
        
-!       if(nirrep .eq. nirrep2) then
-       if (targetsym.eq.1) then
+       if(nirrep .eq. nirrep2) then
 
           do ih=1,hcentre(0)
              i=hcentre(ih)
@@ -1266,61 +1228,52 @@ contains
              b=roccnum(bp)
              isym1=MT(orbSym(a),orbSym(b))
              
-             if (isym1.eq.targetsym) then
-                call iscore(i,ic)
-                if (lffrzcore.and.ic.eq.1) cycle
-                cnti=cnti+1
-                kpq(3,0)=kpq(3,0)+1
-                call fill_indices(col(:),2,1,a,b,i,i,2)
-                kpq(:,cnti)=col(:)                
-             endif
+             if(nirrep .eq. nirrep2) then
+                if(isym1 .eq. 1) then
+                   do ih=1,hcentre(0)
+                      i=hcentre(ih)
+                      ei=abs(e(i))
 
-!             if(nirrep .eq. nirrep2) then
-!                if(isym1 .eq. 1) then
-!                   do ih=1,hcentre(0)
-!                      i=hcentre(ih)
-!                      ei=abs(e(i))
-!
-!                      call iscore(i,ic)
-!                      if (lffrzcore.and.ic.eq.1) cycle
-!                      
-!                      if(einit .le. 2._d*ei) then
-!                         cnti=cnti+1
-!                         kpq(3,0)=kpq(3,0)+1
-!                         call fill_indices(col(:),2,1,a,b,i,i,2)
-!                         kpq(:,cnti)=col(:)
-!                      else
-!                         cnti=cnti+1
-!                         kpq(3,0)=kpq(3,0)+1
-!                         call fill_indices(col(:),2,1,a,b,i,i,2)
-!                         kpq(:,cnti)=col(:)
-!                      end if
-!                   end do
-!                end if
-!             else
-!                isym2=MT(nirrep,nirrep2)
-!                if(isym1 .eq. isym2) then
-!                   do ih=1,hcentre(0)
-!                      i=hcentre(ih)
-!                      ei=abs(e(i))
-!
-!                      call iscore(i,ic)
-!                      if (lffrzcore.and.ic.eq.1) cycle
-!
-!                      if(einit .le. 2._d*ei) then
-!                         cnti=cnti+1
-!                         kpq(3,0)=kpq(3,0)+1
-!                         call fill_indices(col(:),2,1,a,b,i,i,2)
-!                         kpq(:,cnti)=col(:)
-!                      else
-!                         cnti=cnti+1
-!                         kpq(3,0)=kpq(3,0)+1
-!                         call fill_indices(col(:),2,1,a,b,i,i,2)
-!                         kpq(:,cnti)=col(:)
-!                      end if
-!                   end do
-!                end if
-!             end if
+                      call iscore(i,ic)
+                      if (lffrzcore.and.ic.eq.1) cycle
+                      
+                      if(einit .le. 2._d*ei) then
+                         cnti=cnti+1
+                         kpq(3,0)=kpq(3,0)+1
+                         call fill_indices(col(:),2,1,a,b,i,i,2)
+                         kpq(:,cnti)=col(:)
+                      else
+                         cnti=cnti+1
+                         kpq(3,0)=kpq(3,0)+1
+                         call fill_indices(col(:),2,1,a,b,i,i,2)
+                         kpq(:,cnti)=col(:)
+                      end if
+                   end do
+                end if
+             else
+                isym2=MT(nirrep,nirrep2)
+                if(isym1 .eq. isym2) then
+                   do ih=1,hcentre(0)
+                      i=hcentre(ih)
+                      ei=abs(e(i))
+
+                      call iscore(i,ic)
+                      if (lffrzcore.and.ic.eq.1) cycle
+
+                      if(einit .le. 2._d*ei) then
+                         cnti=cnti+1
+                         kpq(3,0)=kpq(3,0)+1
+                         call fill_indices(col(:),2,1,a,b,i,i,2)
+                         kpq(:,cnti)=col(:)
+                      else
+                         cnti=cnti+1
+                         kpq(3,0)=kpq(3,0)+1
+                         call fill_indices(col(:),2,1,a,b,i,i,2)
+                         kpq(:,cnti)=col(:)
+                      end if
+                   end do
+                end if
+             end if
              
           end do
        end do
@@ -1343,42 +1296,33 @@ contains
              
              isym1=MT(orbSym(i),orbSym(j))
 
-             if (isym1.eq.targetsym) then
-                do ap=nOcc+1,nBas
-                   a=roccnum(ap)
-                   cnti=cnti+1
-                   kpq(4,0)=kpq(4,0)+1
-                   call fill_indices(col(:),2,1,a,a,i,j,3) 
-                   kpq(:,cnti)=col(:)
-                end do
-             endif
-
-!             if(nirrep .eq. nirrep2) then
-!                if (isym1 .eq. 1) then
-!                   do ap=nOcc+1,nBas
-!                      a=roccnum(ap)
-!                      cnti=cnti+1
-!                      kpq(4,0)=kpq(4,0)+1
-!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                      kpq(:,cnti)=col(:)
-!                   end do
-!                end if
-!             else 
-!                isym2=MT(nirrep,nirrep2)
-!                if (isym1 .eq. isym2) then
-!                   do ap=nOcc+1,nBas
-!                      a=roccnum(ap)
-!                      cnti=cnti+1
-!                      kpq(4,0)=kpq(4,0)+1
-!                      call fill_indices(col(:),2,1,a,a,i,j,3) 
-!                      kpq(:,cnti)=col(:)
-!                   end do
-!                end if
-!             end if
+             if(nirrep .eq. nirrep2) then
+                if (isym1 .eq. 1) then
+                   do ap=nOcc+1,nBas
+                      a=roccnum(ap)
+                      cnti=cnti+1
+                      kpq(4,0)=kpq(4,0)+1
+                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+                      kpq(:,cnti)=col(:)
+                   end do
+                end if
+             else 
+                isym2=MT(nirrep,nirrep2)
+                if (isym1 .eq. isym2) then
+                   do ap=nOcc+1,nBas
+                      a=roccnum(ap)
+                      cnti=cnti+1
+                      kpq(4,0)=kpq(4,0)+1
+                      call fill_indices(col(:),2,1,a,a,i,j,3) 
+                      kpq(:,cnti)=col(:)
+                   end do
+                end if
+             end if
              
           end do
        end do
 
+       
 !a|=b,i|=j spin I
 
        do ih=1,hcentre(0)
@@ -1402,44 +1346,36 @@ contains
                    b=roccnum(bp)
                    isym2=MT(orbSym(a),orbSym(b))
 
-                   isym3=MT(isym1,isym2)
-                   if (isym3.eq.targetsym) then
-                      cnti=cnti+1
-                      kpq(5,0)=kpq(5,0)+1
-                      call fill_indices(col(:),2,11,a,b,i,j,4)
-                      kpq(:,cnti)=col(:)
-                   endif
-
-!                   if(nirrep .eq. nirrep2) then
-!                      if(MT(isym1,isym2) .eq. 1) then 
-!                         if(einit .le. (ei+ej)) then
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         else
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         end if
-!                      end if
-!                   else
-!                      isym3=MT(nirrep,nirrep2)
-!                      if(MT(isym1,isym2) .eq. isym3) then 
-!                         if(einit .le. (ei+ej)) then
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         else
-!                            cnti=cnti+1
-!                            kpq(5,0)=kpq(5,0)+1
-!                            call fill_indices(col(:),2,11,a,b,i,j,4)
-!                            kpq(:,cnti)=col(:)
-!                         end if
-!                      end if
-!                   end if
+                   if(nirrep .eq. nirrep2) then
+                      if(MT(isym1,isym2) .eq. 1) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   else
+                      isym3=MT(nirrep,nirrep2)
+                      if(MT(isym1,isym2) .eq. isym3) then 
+                         if(einit .le. (ei+ej)) then
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         else
+                            cnti=cnti+1
+                            kpq(5,0)=kpq(5,0)+1
+                            call fill_indices(col(:),2,11,a,b,i,j,4)
+                            kpq(:,cnti)=col(:)
+                         end if
+                      end if
+                   end if
                    
                 end do
              end do

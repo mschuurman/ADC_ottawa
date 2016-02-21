@@ -59,7 +59,7 @@
         use parameters
         use guessvecs
         use fspace
-        use davmod
+        use diagmod
         use iomod, only: freeunit
         use misc
 
@@ -326,7 +326,7 @@
         use fspace
         use iomod, only: freeunit
         use fspace
-        use davmod
+        use diagmod
         use guessvecs
 
         implicit none

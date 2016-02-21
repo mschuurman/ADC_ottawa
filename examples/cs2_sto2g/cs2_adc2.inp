@@ -16,23 +16,25 @@ dipole_component = x
 mem=500
 
 diag_section
+ method=relaxation
  preconditioner = olsen
- maxvec = 10
- nstates = 2
- block_size = 5
+ nstates = 3
+ block_size = 6
+ maxvec = 12
  tol = 1d-5
  maxit = 500
  guess = adc1
 end-diag_section
 
 diag_final_section
+ method=davidson
  preconditioner = olsen
+ maxvec = 120
  nstates = 20
  block_size = 30
- tol=1d-5
- maxit=700
- maxvec=600
- deflate
+ tol = 1d-5
+ maxit = 500
+# guess = adc1
 end-diag_final_section
 
 #lanczos_section

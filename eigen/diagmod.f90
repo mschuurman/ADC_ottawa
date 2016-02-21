@@ -1,4 +1,4 @@
-  module davmod
+  module diagmod
   
     use constants
     use parameters
@@ -15,11 +15,13 @@
     subroutine master_eig(ndim,noffd,flag)
     
       use block_davidson
-
+      use relaxmod
+      
       implicit none
 
       integer, intent(in)      :: ndim
       integer*8, intent(in)    :: noffd
+      integer                  :: es
       character(1), intent(in) :: flag
 
 !-----------------------------------------------------------------------
@@ -29,9 +31,22 @@
       hamflag=flag
 
 !-----------------------------------------------------------------------
+! Set the eigensolver
+!-----------------------------------------------------------------------
+      if (hamflag.eq.'i') then
+         es=solver
+      else if (hamflag.eq.'f') then
+         es=solver_f
+      endif
+      
+!-----------------------------------------------------------------------
 ! Call to the main eigensolver routine
 !-----------------------------------------------------------------------
-      call davdiag_block(ndim,noffd)
+      if (es.eq.1) then
+         call davdiag_block(ndim,noffd)
+      else if (es.eq.2) then
+         call relaxation(ndim,noffd)
+      endif
          
       return
 
@@ -95,4 +110,4 @@
 
 !#######################################################################
 
-  end module davmod
+  end module diagmod

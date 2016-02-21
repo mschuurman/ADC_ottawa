@@ -84,8 +84,9 @@ QCLIB=	qclib/vpqrsmod.o \
 	qclib/scf_electronic_structure.o 
 
 EIGEN=eigen/block_davidson.o \
-	eigen/davmod.o \
-	eigen/block_lanczos.o
+	eigen/relaxation.o \
+	eigen/diagmod.o \
+	eigen/block_lanczos.o 
 
 ADCLIB= adclib/defaults.o \
 	adclib/orbindx.o \
@@ -170,7 +171,8 @@ ADC_OBJ=accuracy.o \
 	fspacetrial.o \
 	fspace2.o \
 	block_davidson.o \
-	davmod.o \
+	relaxation.o \
+	diagmod.o \
 	block_lanczos.o \
 	photoionisation.o \
 	Propagate.o \
