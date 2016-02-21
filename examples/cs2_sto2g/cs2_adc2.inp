@@ -17,10 +17,8 @@ mem=500
 
 diag_section
  method=relaxation
- preconditioner = olsen
- nstates = 3
- block_size = 6
- maxvec = 12
+ nstates = 2
+ block_size = 2
  tol = 1d-5
  maxit = 500
  guess = adc1

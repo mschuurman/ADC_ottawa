@@ -4,8 +4,7 @@
 !
 ! A collection of N trial vectors are taken as a set of initial
 ! time-dependent electronic wavefunctions and propagated in negative
-! imaginary time using the short iterative Lanczos method, followed by
-! an orthogonalisation step.
+! imaginary time using a modified short iterative Lanczos method.
 !
 ! It is not clear yet whether this will be more effective than the
 ! block Davidson method.
@@ -43,7 +42,7 @@
 
       integer, intent(in)      :: matdim
       integer*8, intent(in)    :: noffd
-      integer                  :: n,k
+      integer                  :: n,k,l
       character(len=120)       :: atmp
       
 !-----------------------------------------------------------------------
@@ -52,15 +51,15 @@
       if (hamflag.eq.'i') then
          vecfile=davname
          nstates=davstates
-         nblock=(5/4)*davstates
+         nblock=dmain
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
-         nblock=(5/4)*davstates_f
+         nblock=dmain_f
       endif
 
       ! Timestep
-      dt=100.0d0
+      dt=10.0d0
 
       ! Convergence tolerance
       eps=1d-6
@@ -134,21 +133,17 @@
 
          ! Update the time
          currtime=currtime+n*dt
-
+         
          ! Propagate the wavefunctions to the next timestep using
          ! the short iterative Lanczos algorithm    
          do k=1,nblock
             if (.not.lconv(k)) then
-                 call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
-              else
-                 vec_new(:,k)=vec_old(:,k)
-              endif
-           enddo
-
-         ! Orthogonalise the propagated wavefunctions amongst
-         ! themselves
-         call orthonorm
-
+               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
+            else
+               vec_new(:,k)=vec_old(:,k)
+            endif
+         enddo
+         
          ! Calculate the energies
          call hxc(matdim,noffd,vec_new,hxvec)
          do k=1,nblock
@@ -368,7 +363,7 @@
 !-----------------------------------------------------------------------
 ! Maximum dimension of the Krylov space
 !-----------------------------------------------------------------------
-      krydim=100
+      krydim=20
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -397,7 +392,7 @@
       lanvec(:,1)=q
       
       ! alpha_1
-      call hxkryvec(ista,matdim,noffd,q,r)
+      call hxkryvec(ista,1,matdim,noffd,q,r)
       alpha(1)=dot_product(q,r)
 
       ! beta_1
@@ -410,13 +405,20 @@
          q=r/beta(j-1)
          qmat(:,j)=q
 
-         call hxkryvec(ista,matdim,noffd,q,r)
+         call hxkryvec(ista,j,matdim,noffd,q,r)
          r=r-beta(j-1)*v
 
          alpha(j)=dot_product(q,r)
 
          r=r-alpha(j)*q
-        
+
+         ! TEST
+         do n=1,j
+            ftmp=dot_product(qmat(:,n),r)
+            r=r-ftmp*qmat(:,n)
+         enddo
+         ! TEST
+         
          beta(j)=sqrt(dot_product(r,r))
 
          ! NOTE THAT IF beta_j IS ~0 THEN WE NEED TO TERMINATE HERE
@@ -455,6 +457,12 @@
       enddo
 
 !-----------------------------------------------------------------------
+! Renormalisation
+!-----------------------------------------------------------------------
+      ftmp=dot_product(vecprop,vecprop)
+      vecprop=vecprop/sqrt(ftmp)
+      
+!-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
       deallocate(kryvec)
@@ -475,7 +483,7 @@
 
 !#######################################################################
     
-    subroutine hxkryvec(ista,matdim,noffd,vecin,vecout)
+    subroutine hxkryvec(ista,krynum,matdim,noffd,vecin,vecout)
 
       use iomod, only: freeunit
       use constants
@@ -483,12 +491,10 @@
       
       implicit none
 
-      integer, intent(in)        :: ista,matdim
+      integer, intent(in)        :: ista,matdim,krynum
       integer*8, intent(in)      :: noffd
+      integer                    :: iham,nlim,i,j,k,l,m,n
       real(d), dimension(matdim) :: vecin,vecout
-
-      integer                    :: iham
-      integer                    :: nlim,i,j,k,l,m,n
       real(d)                    :: dp
       character(len=70)          :: filename
 
@@ -496,11 +502,16 @@
 
 !-----------------------------------------------------------------------
 ! Q |Psi>
+!
+! Note that this projection only need to be performed for the 2nd
+! Krylov vector in the series
 !-----------------------------------------------------------------------
-      do i=1,ista-1
-         dp=dot_product(vec_new(:,i),vecin)
-         vecin=vecin-dp*vec_new(:,i)
-      enddo
+      if (krynum.eq.2) then
+         do i=1,ista-1
+            dp=dot_product(vec_new(:,i),vecin)
+            vecin=vecin-dp*vec_new(:,i)
+         enddo
+      endif
          
 !-----------------------------------------------------------------------
 ! H Q |Psi>
@@ -551,39 +562,6 @@
       
     end subroutine hxkryvec
       
-!#######################################################################
-
-    subroutine orthonorm
-
-      implicit none
-
-      integer :: m,n
-      real(d) :: ftmp
-
-      do m=1,nblock
-         do n=1,m-1
-            ftmp=dot_product(vec_new(:,m),vec_new(:,n))
-            vec_new(:,m)=vec_new(:,m)-&
-                 ftmp*vec_new(:,n)/dot_product(vec_new(:,n),vec_new(:,n))
-         enddo
-      enddo
-      do m=1,nblock
-         do n=1,m-1
-            ftmp=dot_product(vec_new(:,m),vec_new(:,n))
-            vec_new(:,m)=vec_new(:,m)-&
-                 ftmp*vec_new(:,n)/dot_product(vec_new(:,n),vec_new(:,n))
-         enddo
-      enddo
-
-      do n=1,nblock
-         ftmp=sqrt(dot_product(vec_new(:,n),vec_new(:,n)))
-         vec_new(:,n)=vec_new(:,n)/ftmp
-      enddo
-      
-      return
-      
-    end subroutine orthonorm
-
 !#######################################################################
 
     subroutine check_conv(matdim,noffd)
