@@ -17,8 +17,8 @@ mem=500
 
 diag_section
  method=relaxation
- nstates = 2
- block_size = 2
+ nstates = 20
+ block_size = 25
  tol = 1d-5
  maxit = 500
  guess = adc1

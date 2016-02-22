@@ -4,7 +4,7 @@
 !
 ! A collection of N trial vectors are taken as a set of initial
 ! time-dependent electronic wavefunctions and propagated in negative
-! imaginary time using a modified short iterative Lanczos method.
+! imaginary time using a modified short iterative Lanczos algorithm.
 !
 ! It is not clear yet whether this will be more effective than the
 ! block Davidson method.
@@ -59,10 +59,10 @@
       endif
 
       ! Timestep
-      dt=10.0d0
+      dt=150.0d0
 
       ! Convergence tolerance
-      eps=1d-6
+      eps=1e-6
 
       ! Current time
       currtime=0.0d0      
@@ -135,7 +135,7 @@
          currtime=currtime+n*dt
          
          ! Propagate the wavefunctions to the next timestep using
-         ! the short iterative Lanczos algorithm    
+         ! a modified short iterative Lanczos algorithm    
          do k=1,nblock
             if (.not.lconv(k)) then
                call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
@@ -160,7 +160,7 @@
          call wrtable(n)
          
          ! Exit if all wavefunctions have converged
-         if (nconv.eq.nblock) then
+         if (nconv.ge.nstates) then
             write(ilog,'(/,2x,a,/)') 'All states have converged'
             exit
          endif
@@ -173,7 +173,7 @@
 !-----------------------------------------------------------------------
 ! Exit here if not all states have converged
 !-----------------------------------------------------------------------
-      if (nconv.lt.nblock) then
+      if (nconv.lt.nstates) then
          errmsg='Not all wavefunctions have converged. Quitting here.'
          call error_control
       endif
@@ -344,8 +344,8 @@
 
 !#######################################################################
 ! silstep: propagates the wavefunction vector vec0 forward by a
-!          single timestep using the short iterative Lanczos method to
-!          yield the wavefunction vector vecprop
+!          single timestep using a modified short iterative Lanczos 
+!          algorithm to yield the wavefunction vector vecprop
 !#######################################################################
 
     subroutine silstep(ista,matdim,noffd,vec0,vecprop)
@@ -356,20 +356,18 @@
       integer*8, intent(in)                :: noffd
       integer                              :: ista,krydim,i,j,n,info
       real(d), dimension(matdim)           :: vec0,vecprop
-      real(d), dimension(:,:), allocatable :: kryvec,lanvec,qmat,eigvec
+      real(d), dimension(:,:), allocatable :: qmat,eigvec
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,work,a
-      real(d)                              :: ftmp
+      real(d)                              :: dp
       
 !-----------------------------------------------------------------------
 ! Maximum dimension of the Krylov space
 !-----------------------------------------------------------------------
-      krydim=20
+      krydim=100
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      allocate(kryvec(matdim,krydim))
-      allocate(lanvec(matdim,krydim))
       allocate(qmat(matdim,krydim))
       allocate(r(matdim))
       allocate(q(matdim))
@@ -385,12 +383,17 @@
 !-----------------------------------------------------------------------
       qmat=0.0d0
 
-      ! First vector is Psi(t0)
+      ! First vector is Psi_n(t) orthogonalised against the already
+      ! propagated wavefunctions
+      do i=1,ista-1
+         dp=dot_product(vec_new(:,i),vec0)
+         vec0=vec0-dp*vec_new(:,i)
+      enddo
+      dp=dot_product(vec0,vec0)
+      vec0=vec0/sqrt(dp)
       q=vec0
       qmat(:,1)=q
 
-      lanvec(:,1)=q
-      
       ! alpha_1
       call hxkryvec(ista,1,matdim,noffd,q,r)
       alpha(1)=dot_product(q,r)
@@ -412,13 +415,6 @@
 
          r=r-alpha(j)*q
 
-         ! TEST
-         do n=1,j
-            ftmp=dot_product(qmat(:,n),r)
-            r=r-ftmp*qmat(:,n)
-         enddo
-         ! TEST
-         
          beta(j)=sqrt(dot_product(r,r))
 
          ! NOTE THAT IF beta_j IS ~0 THEN WE NEED TO TERMINATE HERE
@@ -459,14 +455,12 @@
 !-----------------------------------------------------------------------
 ! Renormalisation
 !-----------------------------------------------------------------------
-      ftmp=dot_product(vecprop,vecprop)
-      vecprop=vecprop/sqrt(ftmp)
+      dp=dot_product(vecprop,vecprop)
+      vecprop=vecprop/sqrt(dp)
       
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(kryvec)
-      deallocate(lanvec)
       deallocate(qmat)
       deallocate(r)
       deallocate(q)
@@ -586,25 +580,29 @@
 !-----------------------------------------------------------------------      
       ! <psi_k|H|psi_k>^2
       call hxc(matdim,noffd,vec_new,tmpvec)      
-      do k=1,nstates
+      do k=1,nblock
          hpsi2(k)=dot_product(vec_new(:,k),tmpvec(:,k))
          hpsi2(k)=hpsi2(k)**2
       enddo
 
       ! <psi_k|H^2|psi_k>      
       call hxc(matdim,noffd,tmpvec,tmpvec2)
-      do k=1,nstates
+      do k=1,nblock
          h2psi(k)=dot_product(vec_new(:,k),tmpvec2(:,k))
       enddo
 
       ! sigma_k
-      nconv=0
       do k=1,nblock
          sigma(k)=sqrt(abs(h2psi(k)-hpsi2(k)))
-         if (sigma(k).lt.eps) then
-            nconv=nconv+1
-            lconv(k)=.true.
-         endif
+         if (sigma(k).lt.eps) lconv(k)=.true.
+      enddo
+
+      ! No. converged states (N.B. this runs over nstates rather than
+      ! nblock as higher-lying states may converge before the lowest
+      ! nstates states of interest)
+      nconv=0
+      do k=1,nstates
+         if (sigma(k).lt.eps) nconv=nconv+1
       enddo
       
 !-----------------------------------------------------------------------
@@ -713,7 +711,7 @@
 !-----------------------------------------------------------------------
 ! Write the eigenpairs to file
 !-----------------------------------------------------------------------
-      do i=1,nblock
+      do i=1,nstates
          write(idav) i,ener(i),vec_new(:,i)
       enddo
 
