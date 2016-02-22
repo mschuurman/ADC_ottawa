@@ -20,18 +20,20 @@
     use constants
     use parameters
     use channels
+    use timingmod
 
     save
 
     integer                              :: maxbl,nrec,nblock,nconv,&
-                                            nstates
+                                            nstates,krydim
     integer, dimension(:), allocatable   :: indxi,indxj
     real(d), dimension(:), allocatable   :: hii,hij,ener,sigma
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
-    real(d)                              :: dt,eps,currtime
+    real(d)                              :: step,eps,currtime
     character(len=36)                    :: vecfile
     logical, dimension(:), allocatable   :: lconv
-    
+    logical                              :: lincore
+
   contains
 
 !#######################################################################
@@ -43,8 +45,14 @@
       integer, intent(in)      :: matdim
       integer*8, intent(in)    :: noffd
       integer                  :: n,k,l
+      real(d)                  :: tw1,tw2,tc1,tc2
       character(len=120)       :: atmp
       
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
+
 !-----------------------------------------------------------------------
 ! Set the block-relaxation parameters
 !-----------------------------------------------------------------------
@@ -59,7 +67,7 @@
       endif
 
       ! Timestep
-      dt=150.0d0
+      step=100.0d0
 
       ! Convergence tolerance
       eps=1e-6
@@ -67,6 +75,9 @@
       ! Current time
       currtime=0.0d0      
       
+      ! Maximum dimension of the Krylov space
+      krydim=70
+
 !-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
@@ -79,7 +90,7 @@
       write(ilog,'(/,70a)') ('-',k=1,70)
       write(ilog,'(2x,a)') trim(atmp)
       write(ilog,'(70a,/)') ('-',k=1,70)
-      
+
 !-----------------------------------------------------------------------
 ! Allocatation and initialisation of arrays
 !-----------------------------------------------------------------------
@@ -105,6 +116,12 @@
       lconv=.false.
 
 !-----------------------------------------------------------------------
+! Determine whether or not we can perform the matrix-vector
+! multiplication in-core
+!-----------------------------------------------------------------------
+      call isincore(matdim,noffd)
+
+!-----------------------------------------------------------------------
 ! TEMPORARY: force the loading of a guess ADC(1) vector from file
 !-----------------------------------------------------------------------
       call getadc1vec(matdim)
@@ -115,10 +132,16 @@
       call rdham_on(matdim)
       
 !-----------------------------------------------------------------------
+! If the matrix-vector multiplication is to proceed in-core, then
+! read the off-diagonal Hamiltonian matrix from disk
+!-----------------------------------------------------------------------
+      if (lincore) call rdham_off(noffd)
+
+!-----------------------------------------------------------------------
 ! Output the initial energies and convergence information
 !-----------------------------------------------------------------------
       vec_new=vec_old
-      call hxc(matdim,noffd,vec_new,hxvec)
+      call hxpsi_all(matdim,noffd,vec_new,hxvec)
       do k=1,nblock
          ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
       enddo
@@ -132,7 +155,7 @@
       do n=1,30
 
          ! Update the time
-         currtime=currtime+n*dt
+         currtime=currtime+n*step
          
          ! Propagate the wavefunctions to the next timestep using
          ! a modified short iterative Lanczos algorithm    
@@ -145,7 +168,7 @@
          enddo
          
          ! Calculate the energies
-         call hxc(matdim,noffd,vec_new,hxvec)
+         call hxpsi_all(matdim,noffd,vec_new,hxvec)
          do k=1,nblock
             ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
          enddo
@@ -193,10 +216,70 @@
       deallocate(ener)
       deallocate(sigma)
       deallocate(lconv)
+      if (allocated(hij)) deallocate(hij)
+      if (allocated(indxi)) deallocate(indxi)
+      if (allocated(indxj)) deallocate(indxj)
+
+!-----------------------------------------------------------------------    
+! Output timings
+!-----------------------------------------------------------------------    
+      call times(tw2,tc2)
+      write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
 
       return
       
     end subroutine relaxation
+
+!#######################################################################
+
+    subroutine isincore(matdim,noffd)
+
+      use constants
+      use parameters, only: maxmem
+
+      implicit none
+
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      real(d)               :: mem
+
+      mem=0.0d0
+
+      ! On-diagonal Hamiltonian matrix elements
+      mem=mem+8.0d0*matdim/1024.0d0**2
+
+      ! Non-zero off-diagonal Hamiltonian matrix element values
+      mem=mem+8.0d0*noffd/1024.0d0**2
+
+      ! Indices of the non-zero off-diagonal Hamiltonian matrix elements
+      mem=mem+8.0d0*noffd/1024.0d0**2
+
+      ! |Psi_n(t)> and |Psi_n(t+dt)>, n=1,nblock
+      mem=mem+8.0d0*nblock*matdim/1024.0d0**2
+      
+      ! H |Psi>
+      mem=mem+8.0d0*nblock*matdim/1024.0d0**2
+
+      ! SIL: Lanczos vectors
+      mem=mem+8.0d0*krydim*matdim/1024.0d0**2
+
+      ! SIL: work arrays
+      mem=mem+8.0d0*3*matdim/1024.0d0**2
+      
+      ! Determine whether we can hold the Hamiltonian matrix in-core
+      if (mem.lt.maxmem) then
+         lincore=.true.
+         write(ilog,'(2x,a,/)') 'Matrix-vector multiplication will &
+              proceed in-core'
+      else
+         lincore=.false.
+         write(ilog,'(2x,a,/)') 'Matrix-vector multiplication will &
+              proceed out-of-core'
+      endif
+
+      return
+
+    end subroutine isincore
 
 !#######################################################################
 
@@ -282,10 +365,66 @@
       return
 
     end subroutine rdham_on
+
+!#######################################################################
     
+    subroutine rdham_off(noffd)
+
+      use iomod, only: freeunit
+      use constants
+      use parameters
+      
+      implicit none
+      
+      integer*8, intent(in)              :: noffd
+      integer                            :: iham,count,k,nlim
+      integer, dimension(:), allocatable :: itmp1,itmp2
+      real(d), dimension(:), allocatable :: ftmp
+      character(len=70)                  :: filename
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(hij(noffd))
+      allocate(indxi(noffd))
+      allocate(indxj(noffd))
+
+!-----------------------------------------------------------------------
+! Off-diagonal elements
+!-----------------------------------------------------------------------
+      allocate(ftmp(maxbl))
+      allocate(itmp1(maxbl))
+      allocate(itmp2(maxbl))
+
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.offc'
+      endif
+
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      count=0
+      do k=1,nrec
+         read(iham) ftmp(:),itmp1(:),itmp2(:),nlim
+         hij(count+1:count+nlim)=ftmp(1:nlim)
+         indxi(count+1:count+nlim)=itmp1(1:nlim)
+         indxj(count+1:count+nlim)=itmp2(1:nlim)
+         count=count+nlim
+      enddo
+
+      deallocate(ftmp,itmp1,itmp2)
+
+      close(iham)
+
+      return
+
+    end subroutine rdham_off
+
 !#######################################################################
 
-    subroutine hxc(matdim,noffd,vecin,vecout)
+    subroutine hxpsi_all(matdim,noffd,vecin,vecout)
 
       use iomod, only: freeunit
       use constants
@@ -297,50 +436,67 @@
       integer*8, intent(in)             :: noffd
       integer                           :: iham,nlim,i,j,k,l,m,n
       real(d), dimension(matdim,nblock) :: vecin,vecout
-      character(len=70)                 :: filename
-
-      vecout=0.0d0
+      character(len=70)                 :: filename      
 
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
+      vecout=0.0d0
+      !$omp parallel do private(m,n) shared(vecin,vecout,hii)
       do m=1,nblock
          do n=1,matdim
             vecout(n,m)=hii(n)*vecin(n,m)
          enddo
       enddo
+      !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Contribution from the off-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      if (.not.lincore) then
+         
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))      
+         if (hamflag.eq.'i') then
+            filename='SCRATCH/hmlt.offi'
+         else if (hamflag.eq.'f') then
+            filename='SCRATCH/hmlt.offc'
+         endif
+
+         open(iham,file=filename,status='old',access='sequential',&
+              form='unformatted')
+         
+         do k=1,nrec
+            read(iham) hij(:),indxi(:),indxj(:),nlim
+            !$omp parallel do private(m,l) shared(vecout,hij,vecin,indxi,indxj)
+            do l=1,nlim
+               do m=1,nblock
+                  vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
+                  vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
+               enddo
+            enddo
+            !$omp end parallel do
+         enddo
+         
+         close(iham)
+
+         deallocate(hij,indxi,indxj)
       
-      if (hamflag.eq.'i') then
-         filename='SCRATCH/hmlt.offi'
-      else if (hamflag.eq.'f') then
-         filename='SCRATCH/hmlt.offc'
-      endif
+      else        
 
-      open(iham,file=filename,status='old',access='sequential',&
-           form='unformatted')
-
-      do k=1,nrec
-         read(iham) hij(:),indxi(:),indxj(:),nlim
-         do l=1,nlim
-            do m=1,nblock
+         !$omp parallel do private(m,l) shared(vecout,hij,vecin,indxi,indxj)
+         do m=1,nblock
+            do l=1,noffd
                vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
                vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
             enddo
          enddo
-      enddo
+         !$omp end parallel do
 
-      close(iham)
+      endif
 
-      deallocate(hij,indxi,indxj)
-      
       return
       
-    end subroutine hxc
+    end subroutine hxpsi_all
 
 !#######################################################################
 ! silstep: propagates the wavefunction vector vec0 forward by a
@@ -350,20 +506,18 @@
 
     subroutine silstep(ista,matdim,noffd,vec0,vecprop)
 
+      use iomod
+
       implicit none
 
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
-      integer                              :: ista,krydim,i,j,n,info
+      integer                              :: ista,i,j,n,info
       real(d), dimension(matdim)           :: vec0,vecprop
       real(d), dimension(:,:), allocatable :: qmat,eigvec
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,work,a
-      real(d)                              :: dp
-      
-!-----------------------------------------------------------------------
-! Maximum dimension of the Krylov space
-!-----------------------------------------------------------------------
-      krydim=100
+      real(d)                              :: dp,maxstep,bprod,kdfac,&
+                                              toler,expnt
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -383,8 +537,8 @@
 !-----------------------------------------------------------------------
       qmat=0.0d0
 
-      ! First vector is Psi_n(t) orthogonalised against the already
-      ! propagated wavefunctions
+      ! The first vector is |Psi_n(t)> orthogonalised against the 
+      ! already propagated wavefunctions and then renormalised
       do i=1,ista-1
          dp=dot_product(vec_new(:,i),vec0)
          vec0=vec0-dp*vec_new(:,i)
@@ -404,11 +558,15 @@
 
       ! Remaining vectors
       do j=2,krydim
+
          v=q
+
          q=r/beta(j-1)
+
          qmat(:,j)=q
 
          call hxkryvec(ista,j,matdim,noffd,q,r)
+
          r=r-beta(j-1)*v
 
          alpha(j)=dot_product(q,r)
@@ -421,6 +579,27 @@
          
       enddo
 
+!-----------------------------------------------------------------------
+! Estimate the maximum step size for the given error tolerance
+!-----------------------------------------------------------------------
+      toler=1e-2
+
+      kdfac=1.0d0
+      do i=1,krydim-1
+         kdfac=kdfac*real(i)
+      enddo
+
+      bprod=1.0d0
+      do i=1,krydim
+         bprod=bprod*beta(i)
+      enddo
+
+      expnt=1.0d0/(2.0d0*(krydim-1))
+
+      maxstep=(toler*(kdfac/bprod)**2)**expnt
+
+!      print*,maxstep
+
 !-----------------------------------------------------------------------      
 ! Diagonalise the Lanczos state representation of the Hamiltonian
 !-----------------------------------------------------------------------
@@ -428,10 +607,9 @@
            work,info)
 
       if (info.ne.0) then
-         write(ilog,'(/,2x,a,/)') 'Diagonalisation of the Lanczos &
-              state representation of the Hamiltonian failed in &
-              subroutine silstep'
-         STOP
+         errmsg='Diagonalisation of the Lanczos state representation &
+              of the Hamiltonian failed in subroutine silstep'
+         call error_control
       endif
 
 !-----------------------------------------------------------------------
@@ -443,7 +621,8 @@
       a=0.0d0
       do j=1,krydim
          do n=1,krydim
-            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*dt)*eigvec(1,n)
+            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*step)*eigvec(1,n)
+!            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*maxstep)*eigvec(1,n)
          enddo
       enddo
 
@@ -485,9 +664,9 @@
       
       implicit none
 
-      integer, intent(in)        :: ista,matdim,krynum
+      integer, intent(in)        :: ista,matdim
       integer*8, intent(in)      :: noffd
-      integer                    :: iham,nlim,i,j,k,l,m,n
+      integer                    :: krynum,iham,nlim,i,j,k,l,m,n
       real(d), dimension(matdim) :: vecin,vecout
       real(d)                    :: dp
       character(len=70)          :: filename
@@ -496,9 +675,6 @@
 
 !-----------------------------------------------------------------------
 ! Q |Psi>
-!
-! Note that this projection only need to be performed for the 2nd
-! Krylov vector in the series
 !-----------------------------------------------------------------------
       if (krynum.eq.2) then
          do i=1,ista-1
@@ -506,43 +682,63 @@
             vecin=vecin-dp*vec_new(:,i)
          enddo
       endif
-         
+      
 !-----------------------------------------------------------------------
 ! H Q |Psi>
 !
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
+      !$omp parallel do private(n) shared(vecin,vecout,hii)
       do n=1,matdim
          vecout(n)=hii(n)*vecin(n)
       enddo
+      !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! H Q |Psi>
 !
 ! Contribution from the off-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+
+      if (.not.lincore) then
+
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
       
-      if (hamflag.eq.'i') then
-         filename='SCRATCH/hmlt.offi'
-      else if (hamflag.eq.'f') then
-         filename='SCRATCH/hmlt.offc'
-      endif
+         if (hamflag.eq.'i') then
+            filename='SCRATCH/hmlt.offi'
+         else if (hamflag.eq.'f') then
+            filename='SCRATCH/hmlt.offc'
+         endif
+         
+         open(iham,file=filename,status='old',access='sequential',&
+              form='unformatted')
+         
+         do k=1,nrec
+            read(iham) hij(:),indxi(:),indxj(:),nlim
+            !$omp parallel do private(l) shared(vecout,hij,vecin,indxi,indxj)
+            do l=1,nlim
+               vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
+               vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
+            enddo
+            !$omp end parallel do
+         enddo
 
-      open(iham,file=filename,status='old',access='sequential',&
-           form='unformatted')
+         close(iham)
+         
+         deallocate(hij,indxi,indxj)
 
-      do k=1,nrec
-         read(iham) hij(:),indxi(:),indxj(:),nlim
-         do l=1,nlim               
+      else
+
+         ! RUNNING THIS PART OF THE MATRIX-VECTOR MULTIPLICATION
+         ! USING OMP GIVES ERRONEOUS RESULTS...
+!         !$omp parallel do private(l) shared(vecout,hij,vecin,indxi,indxj)
+         do l=1,noffd
             vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
             vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
          enddo
-      enddo
+!         !$omp end parallel do
 
-      close(iham)
-
-      deallocate(hij,indxi,indxj)
+      endif
 
 !-----------------------------------------------------------------------
 ! Q H Q |Psi>
@@ -551,7 +747,7 @@
          dp=dot_product(vec_new(:,i),vecout)
          vecout=vecout-dp*vec_new(:,i)
       enddo
-      
+            
       return
       
     end subroutine hxkryvec
@@ -579,14 +775,14 @@
 ! sigma_k=sqrt(<psi_k|H^2|psi_k> - <psi_k|H|psi_k>^2)
 !-----------------------------------------------------------------------      
       ! <psi_k|H|psi_k>^2
-      call hxc(matdim,noffd,vec_new,tmpvec)      
+      call hxpsi_all(matdim,noffd,vec_new,tmpvec)      
       do k=1,nblock
          hpsi2(k)=dot_product(vec_new(:,k),tmpvec(:,k))
          hpsi2(k)=hpsi2(k)**2
       enddo
 
       ! <psi_k|H^2|psi_k>      
-      call hxc(matdim,noffd,tmpvec,tmpvec2)
+      call hxpsi_all(matdim,noffd,tmpvec,tmpvec2)
       do k=1,nblock
          h2psi(k)=dot_product(vec_new(:,k),tmpvec2(:,k))
       enddo

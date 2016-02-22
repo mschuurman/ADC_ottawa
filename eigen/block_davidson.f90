@@ -29,14 +29,21 @@
       use channels
       use constants
       use parameters
+      use timingmod
 
       implicit none
 
       integer, intent(in)   :: matdim
       integer*8, intent(in) :: noffd
       integer               :: k
+      real(d)               :: tw1,tw2,tc1,tc2
       character(len=120)    :: atmp
       
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
+
 !-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
@@ -107,6 +114,12 @@
 ! Deallocate arrays
 !-----------------------------------------------------------------------
       call davfinalise
+
+!-----------------------------------------------------------------------    
+! Output timings
+!-----------------------------------------------------------------------    
+      call times(tw2,tc2)
+      write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
       
       return
 
