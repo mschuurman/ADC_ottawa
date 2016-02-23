@@ -13,15 +13,19 @@ dipole_component = x
 
 #cvs
 
-mem=500
+mem=1500
 
 diag_section
  method=relaxation
  nstates = 20
  block_size = 25
  tol = 1d-5
+
+ timestep=100.0
+ krydim=100
  maxit = 500
  guess = adc1
+
 end-diag_section
 
 diag_final_section

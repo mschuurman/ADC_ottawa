@@ -25,14 +25,14 @@
     save
 
     integer                              :: maxbl,nrec,nblock,nconv,&
-                                            nstates,krydim
+                                            nstates,krydim,niter
     integer, dimension(:), allocatable   :: indxi,indxj
     real(d), dimension(:), allocatable   :: hii,hij,ener,sigma
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
     real(d)                              :: step,eps,currtime
     character(len=36)                    :: vecfile
     logical, dimension(:), allocatable   :: lconv
-    logical                              :: lincore
+    logical                              :: lincore,lrdadc1,lrandom
 
   contains
 
@@ -54,31 +54,6 @@
       call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
-! Set the block-relaxation parameters
-!-----------------------------------------------------------------------
-      if (hamflag.eq.'i') then
-         vecfile=davname
-         nstates=davstates
-         nblock=dmain
-      else if (hamflag.eq.'f') then
-         vecfile=davname_f
-         nstates=davstates_f
-         nblock=dmain_f
-      endif
-
-      ! Timestep
-      step=100.0d0
-
-      ! Convergence tolerance
-      eps=1e-6
-
-      ! Current time
-      currtime=0.0d0      
-      
-      ! Maximum dimension of the Krylov space
-      krydim=70
-
-!-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
       atmp='Block-relaxation in the'
@@ -94,26 +69,7 @@
 !-----------------------------------------------------------------------
 ! Allocatation and initialisation of arrays
 !-----------------------------------------------------------------------
-      allocate(hii(matdim))
-      hii=0.0d0
-      
-      allocate(vec_old(matdim,nblock))
-      vec_old=0.0d0
-
-      allocate(vec_new(matdim,nblock))
-      vec_new=0.0d0
-
-      allocate(hxvec(matdim,nblock))
-      hxvec=0.0d0
-
-      allocate(ener(nblock))
-      ener=0.0d0
-      
-      allocate(sigma(nblock))
-      sigma=0.0d0
-
-      allocate(lconv(nblock))
-      lconv=.false.
+      call initialise(matdim)      
 
 !-----------------------------------------------------------------------
 ! Determine whether or not we can perform the matrix-vector
@@ -122,9 +78,9 @@
       call isincore(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! TEMPORARY: force the loading of a guess ADC(1) vector from file
+! Set the initial vectors
 !-----------------------------------------------------------------------
-      call getadc1vec(matdim)
+      call initvec(matdim)
 
 !-----------------------------------------------------------------------
 ! Read the on-diagonal elements of the Hamiltonian matrix from disk
@@ -141,10 +97,7 @@
 ! Output the initial energies and convergence information
 !-----------------------------------------------------------------------
       vec_new=vec_old
-      call hxpsi_all(matdim,noffd,vec_new,hxvec)
-      do k=1,nblock
-         ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
-      enddo
+      call getener(matdim,noffd)
       call check_conv(matdim,noffd)
       call wrtable(0)
 
@@ -152,7 +105,7 @@
 ! Perform the block-relaxation calculation
 !-----------------------------------------------------------------------
       ! Loop over timesteps
-      do n=1,30
+      do n=1,niter
 
          ! Update the time
          currtime=currtime+n*step
@@ -168,11 +121,8 @@
          enddo
          
          ! Calculate the energies
-         call hxpsi_all(matdim,noffd,vec_new,hxvec)
-         do k=1,nblock
-            ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
-         enddo
-
+         call getener(matdim,noffd)
+         
          ! Sort the wavefunctions by energy
          call sortwf(matdim)
          
@@ -209,16 +159,7 @@
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(hii)
-      deallocate(vec_old)
-      deallocate(vec_new)
-      deallocate(hxvec)
-      deallocate(ener)
-      deallocate(sigma)
-      deallocate(lconv)
-      if (allocated(hij)) deallocate(hij)
-      if (allocated(indxi)) deallocate(indxi)
-      if (allocated(indxj)) deallocate(indxj)
+      call finalise
 
 !-----------------------------------------------------------------------    
 ! Output timings
@@ -230,6 +171,73 @@
       
     end subroutine relaxation
 
+!#######################################################################
+
+    subroutine initialise(matdim)
+
+      implicit none
+
+      integer, intent(in) :: matdim
+
+!-----------------------------------------------------------------------
+! Initialisation of parameter values
+!-----------------------------------------------------------------------
+      if (hamflag.eq.'i') then
+         vecfile=davname
+         nstates=davstates
+         nblock=dmain
+         krydim=kdim
+         step=stepsize
+         eps=davtol
+         niter=maxiter
+      else if (hamflag.eq.'f') then
+         vecfile=davname_f
+         nstates=davstates_f
+         nblock=dmain_f
+         krydim=kdim_f
+         step=stepsize_f
+         eps=davtol_f
+         niter=maxiter_f
+      endif
+
+      ! Current time
+      currtime=0.0d0      
+
+!-----------------------------------------------------------------------
+! Allocation of arays
+!-----------------------------------------------------------------------
+      ! On-diagonal elements of the Hamiltonian matrix
+      allocate(hii(matdim))
+      hii=0.0d0
+
+      ! |Psi_n(t)>
+      allocate(vec_old(matdim,nblock))
+      vec_old=0.0d0
+
+      ! |Psi_n(t+dt)>
+      allocate(vec_new(matdim,nblock))
+      vec_new=0.0d0
+
+      ! H |Psi_n>
+      allocate(hxvec(matdim,nblock))
+      hxvec=0.0d0
+
+      ! Energies
+      allocate(ener(nblock))
+      ener=0.0d0
+
+      ! Standard devations
+      allocate(sigma(nblock))
+      sigma=0.0d0
+
+      ! Convergence flags
+      allocate(lconv(nblock))
+      lconv=.false.
+      
+      return
+      
+    end subroutine initialise
+      
 !#######################################################################
 
     subroutine isincore(matdim,noffd)
@@ -283,22 +291,57 @@
 
 !#######################################################################
 
-    subroutine getadc1vec(matdim)
+    subroutine initvec(matdim)
+
+      implicit none
+
+      integer, intent(in) :: matdim
+
+      ! Determine whether the initial vectors are to be constructed from
+      ! the ADC(1) eigenvectors, random noise or as single ISs
+      lrdadc1=.false.
+      lrandom=.false.      
+      if (hamflag.eq.'i'.and.ladc1guess) then
+         lrdadc1=.true.
+      else if (hamflag.eq.'f'.and.ladc1guess_f) then
+         lrdadc1=.true.
+      endif
+      if (hamflag.eq.'i'.and.lnoise) then
+         lrandom=.true.
+      else if (hamflag.eq.'f'.and.lnoise_f) then
+         lrandom=.true.
+      endif
       
+      if (lrdadc1) then
+         ! Construct the initial vectors from the ADC(1) eigenvectors
+         call initvec_adc1
+      else if (lrandom) then
+         ! Construct the initial vectors as random orthonormal unit
+         ! vectors
+         call initvec_random(matdim)
+      else
+         ! Use a single IS for each initial vector
+         call initvec_ondiag(matdim)
+      endif
+      
+      return
+      
+    end subroutine initvec
+      
+!#######################################################################
+
+    subroutine initvec_adc1
+
       use iomod, only: freeunit
       use constants
       use parameters
 
       implicit none
 
-      integer, intent(in)   :: matdim
-      
       integer                              :: iadc1,dim1,i
       integer, dimension(:), allocatable   :: indx1
       real(d), dimension(:,:), allocatable :: vec1
-      
-      vec_old=0.0d0
-      
+
 !-----------------------------------------------------------------------
 ! Open the ADC(1) eigenvector file
 !-----------------------------------------------------------------------
@@ -316,19 +359,120 @@
 
       read(iadc1) dim1,vec1
 
+!-----------------------------------------------------------------------
+! Set the initial Davidson vectors
+!-----------------------------------------------------------------------
+      vec_old=0.0d0
       do i=1,nblock
          vec_old(1:dim1,i)=vec1(:,i)
       enddo
-      
+
 !-----------------------------------------------------------------------
 ! Close the ADC(1) eigenvector file
 !-----------------------------------------------------------------------
       close(iadc1)
+
+      return
+
+    end subroutine initvec_adc1
+
+!#######################################################################
+
+    subroutine initvec_ondiag(matdim)
+
+      use iomod, only: freeunit
+      use constants
+      use parameters
+      use misc, only: dsortindxa1
+
+      implicit none
+
+      integer, intent(in)                :: matdim
+      integer                            :: iham,i,k
+      integer, dimension(:), allocatable :: indx_hii
+      real(d), dimension(:), allocatable :: hii
+      character(len=70)                  :: filename
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(hii(matdim))
+      allocate(indx_hii(matdim))
+
+!-----------------------------------------------------------------------
+! Open file
+!-----------------------------------------------------------------------
+      call freeunit(iham)
       
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.diai'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.diac'
+      endif
+
+      open(iham,file=filename,status='old',access='sequential',&
+        form='unformatted') 
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal Hamiltonian matrix elements
+!-----------------------------------------------------------------------
+      read(iham) maxbl,nrec
+      read(iham) hii
+
+!-----------------------------------------------------------------------
+! Determine the indices of the on-diagonal elements with the smallest
+! absolute values
+!-----------------------------------------------------------------------
+      hii=abs(hii)   
+      call dsortindxa1('A',matdim,hii,indx_hii)
+
+!-----------------------------------------------------------------------
+! Set the initial vectors
+!-----------------------------------------------------------------------
+      vec_old=0.0d0
+      do i=1,nblock
+         k=indx_hii(i)
+         vec_old(k,i)=1.0d0
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(hii)
+      deallocate(indx_hii)
+
+!-----------------------------------------------------------------------
+! Close file
+!-----------------------------------------------------------------------
+      close(iham)
+
+      return
+
+    end subroutine initvec_ondiag
+
+!#######################################################################
+
+    subroutine initvec_random(matdim)
+
+      implicit none
+
+      integer, intent(in) :: matdim      
+      integer             :: n,k
+      real(d)             :: ftmp
+      
+      do n=1,nblock
+         do k=1,matdim
+            call random_number(ftmp)
+            vec_old(k,n)=ftmp
+         enddo
+         ftmp=dot_product(vec_old(:,n),vec_old(:,n))
+         vec_old(:,n)=vec_old(:,n)/sqrt(ftmp)
+      enddo
+         
       return
       
-    end subroutine getadc1vec
-
+    end subroutine initvec_random
+      
 !#######################################################################
     
     subroutine rdham_on(matdim)
@@ -422,6 +566,26 @@
 
     end subroutine rdham_off
 
+!#######################################################################
+
+    subroutine getener(matdim,noffd)
+
+      implicit none
+
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: k
+
+      call hxpsi_all(matdim,noffd,vec_new,hxvec)
+
+      do k=1,nblock
+         ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
+      enddo
+      
+      return
+      
+    end subroutine getener
+      
 !#######################################################################
 
     subroutine hxpsi_all(matdim,noffd,vecin,vecout)
@@ -919,6 +1083,27 @@
       return
       
     end subroutine wreigenpairs
+
+!#######################################################################
+
+    subroutine finalise
+
+      implicit none
+
+      deallocate(hii)
+      deallocate(vec_old)
+      deallocate(vec_new)
+      deallocate(hxvec)
+      deallocate(ener)
+      deallocate(sigma)
+      deallocate(lconv)
+      if (allocated(hij)) deallocate(hij)
+      if (allocated(indxi)) deallocate(indxi)
+      if (allocated(indxj)) deallocate(indxj)
+      
+      return
+      
+    end subroutine finalise
       
 !#######################################################################
     

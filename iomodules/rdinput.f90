@@ -633,6 +633,8 @@
                i=i+2
                if (keyword(i).eq.'adc1') then
                   ladc1guess=.true.
+               else if (keyword(i).eq.'noise') then
+                  lnoise=.true.
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -711,6 +713,22 @@
             
          else if (keyword(i).eq.'nodfl') then
             ldfl=.false.
+
+         else if (keyword(i).eq.'krydim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'timestep') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) stepsize
+            else
+               goto 100
+            endif
             
          else
             ! Exit if the keyword is not recognised
@@ -799,6 +817,8 @@
                i=i+2
                if (keyword(i).eq.'adc1') then
                   ladc1guess_f=.true.
+               else if (keyword(i).eq.'noise') then
+                  lnoise_f=.true.
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -878,6 +898,22 @@
          else if (keyword(i).eq.'nodfl') then
             ldfl_f=.false.
 
+         else if (keyword(i).eq.'krydim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) kdim_f
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'timestep') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) stepsize_f
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

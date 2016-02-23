@@ -139,6 +139,7 @@ module parameters
   integer, dimension(:), allocatable   :: stvc_mxc
   integer                              :: ninista
   logical                              :: ladc1guess,ladc1guess_f
+  logical                              :: lnoise,lnoise_f
   real(d), dimension(:), allocatable   :: adc1en,adc1en_f
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal
@@ -191,6 +192,12 @@ module parameters
   real(d)     :: davtarg
   character*1 :: hamflag
   logical     :: lextdiag,ldfl,ldfl_f
+
+!!$************************************************
+!!$**********Relaxation Parameters*****************
+!!$************************************************
+  integer :: kdim,kdim_f
+  real(d) :: stepsize,stepsize_f
   
   character*3 :: POLARIZATION
 
