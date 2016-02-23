@@ -730,6 +730,21 @@
                goto 100
             endif
             
+         else if (keyword(i).eq.'ortho') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'unmodified') then
+                  rlxortho=1
+               else if (keyword(i).eq.'modified') then
+                  rlxortho=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -910,6 +925,21 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) stepsize_f
+            else
+               goto 100
+            endif
+            
+         else if (keyword(i).eq.'ortho') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'unmodified') then
+                  rlxortho_f=1
+               else if (keyword(i).eq.'modified') then
+                  rlxortho_f=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
             else
                goto 100
             endif

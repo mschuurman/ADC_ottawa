@@ -17,13 +17,14 @@ mem=1500
 
 diag_section
  method=relaxation
- nstates = 20
- block_size = 25
- tol = 1d-5
+ nstates = 6
+ block_size = 7
+ tol = 1d-6
 
- timestep=100.0
- krydim=100
+ timestep = 100.0
+ krydim = 100
  maxit = 500
+# ortho = unmodified 
  guess = adc1
 
 end-diag_section
@@ -31,10 +32,10 @@ end-diag_section
 diag_final_section
  method=davidson
  preconditioner = olsen
- maxvec = 120
- nstates = 20
- block_size = 30
- tol = 1d-5
+ maxvec = 20
+ nstates = 6
+ block_size = 10
+ tol = 1d-6
  maxit = 500
 # guess = adc1
 end-diag_final_section

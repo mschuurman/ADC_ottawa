@@ -85,12 +85,14 @@
       kdim=10
       stepsize=10.0d0      
       lnoise=.false.
-      
+      rlxortho=2
+
       ! Final space
       kdim_f=10
       stepsize_f=10.0d0
       lnoise_f=.false.
-      
+      rlxortho_f=2
+
 !-----------------------------------------------------------------------
 ! Lanczos parameters
 !-----------------------------------------------------------------------      

@@ -4,7 +4,7 @@
 !
 ! A collection of N trial vectors are taken as a set of initial
 ! time-dependent electronic wavefunctions and propagated in negative
-! imaginary time using a modified short iterative Lanczos algorithm.
+! imaginary time using the short iterative Lanczos algorithm.
 !
 ! It is not clear yet whether this will be more effective than the
 ! block Davidson method.
@@ -25,9 +25,9 @@
     save
 
     integer                              :: maxbl,nrec,nblock,nconv,&
-                                            nstates,krydim,niter
+                                            nstates,krydim,niter,iortho
     integer, dimension(:), allocatable   :: indxi,indxj
-    real(d), dimension(:), allocatable   :: hii,hij,ener,sigma
+    real(d), dimension(:), allocatable   :: hii,hij,ener,res
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
     real(d)                              :: step,eps,currtime
     character(len=36)                    :: vecfile
@@ -111,15 +111,20 @@
          currtime=currtime+n*step
          
          ! Propagate the wavefunctions to the next timestep using
-         ! a modified short iterative Lanczos algorithm    
+         ! the SIL algorithm    
          do k=1,nblock
-            if (.not.lconv(k)) then
-               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
-            else
+            if (lconv(k).and.iortho.eq.2) then
                vec_new(:,k)=vec_old(:,k)
+            else
+               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
             endif
          enddo
          
+         ! If the unmodified SIL algorithm is being used, then
+         ! orthogonalise the propagated wavefunctions amongst 
+         ! themselves
+         if (iortho.eq.1) call orthowf(matdim)
+
          ! Calculate the energies
          call getener(matdim,noffd)
          
@@ -190,6 +195,7 @@
          step=stepsize
          eps=davtol
          niter=maxiter
+         iortho=rlxortho
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -198,6 +204,7 @@
          step=stepsize_f
          eps=davtol_f
          niter=maxiter_f
+         iortho=rlxortho_f
       endif
 
       ! Current time
@@ -226,9 +233,9 @@
       allocate(ener(nblock))
       ener=0.0d0
 
-      ! Standard devations
-      allocate(sigma(nblock))
-      sigma=0.0d0
+      ! Residuals
+      allocate(res(nblock))
+      res=0.0d0
 
       ! Convergence flags
       allocate(lconv(nblock))
@@ -568,6 +575,40 @@
 
 !#######################################################################
 
+    subroutine orthowf(matdim)
+
+      implicit none
+      
+      integer, intent(in) :: matdim
+      integer             :: i,j
+      real(d)             :: dp
+
+      ! Double modified Gram-Schmidt orthogonalisation
+      do i=1,nblock
+         do j=1,i-1
+            dp=dot_product(vec_new(:,i),vec_new(:,j))
+            vec_new(:,i)=vec_new(:,i)-dp*vec_new(:,j)
+         enddo
+      enddo
+      do i=1,nblock
+         do j=1,i-1
+            dp=dot_product(vec_new(:,i),vec_new(:,j))
+            vec_new(:,i)=vec_new(:,i)-dp*vec_new(:,j)
+         enddo
+      enddo
+
+      ! Normalisation
+      do i=1,nblock
+         dp=dot_product(vec_new(:,i),vec_new(:,i))
+         vec_new(:,i)=vec_new(:,i)/sqrt(dp)
+      enddo
+
+      return
+
+    end subroutine orthowf
+
+!#######################################################################
+
     subroutine getener(matdim,noffd)
 
       implicit none
@@ -701,14 +742,18 @@
 !-----------------------------------------------------------------------
       qmat=0.0d0
 
-      ! The first vector is |Psi_n(t)> orthogonalised against the 
-      ! already propagated wavefunctions and then renormalised
-      do i=1,ista-1
-         dp=dot_product(vec_new(:,i),vec0)
-         vec0=vec0-dp*vec_new(:,i)
-      enddo
-      dp=dot_product(vec0,vec0)
-      vec0=vec0/sqrt(dp)
+      ! The first vector is either |Psi_n(t)> (unmodified algorithm) 
+      ! or |Psi_n(t)> orthogonalised against the already propagated 
+      ! wavefunctions and then renormalised (modified algorithm)
+      if (iortho.eq.2) then
+         do i=1,ista-1
+            dp=dot_product(vec_new(:,i),vec0)
+            vec0=vec0-dp*vec_new(:,i)
+         enddo
+         dp=dot_product(vec0,vec0)
+         vec0=vec0/sqrt(dp)
+      endif
+
       q=vec0
       qmat(:,1)=q
 
@@ -840,13 +885,15 @@
 !-----------------------------------------------------------------------
 ! Q |Psi>
 !-----------------------------------------------------------------------
-      if (krynum.eq.2) then
-         do i=1,ista-1
-            dp=dot_product(vec_new(:,i),vecin)
-            vecin=vecin-dp*vec_new(:,i)
-         enddo
+      if (iortho.eq.2) then
+         if (krynum.eq.2) then
+            do i=1,ista-1
+               dp=dot_product(vec_new(:,i),vecin)
+               vecin=vecin-dp*vec_new(:,i)
+            enddo
+         endif
       endif
-      
+
 !-----------------------------------------------------------------------
 ! H Q |Psi>
 !
@@ -907,11 +954,13 @@
 !-----------------------------------------------------------------------
 ! Q H Q |Psi>
 !-----------------------------------------------------------------------
-      do i=1,ista-1
-         dp=dot_product(vec_new(:,i),vecout)
-         vecout=vecout-dp*vec_new(:,i)
-      enddo
-            
+      if (iortho.eq.2) then
+         do i=1,ista-1
+            dp=dot_product(vec_new(:,i),vecout)
+            vecout=vecout-dp*vec_new(:,i)
+         enddo
+      endif
+
       return
       
     end subroutine hxkryvec
@@ -925,36 +974,26 @@
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
       integer                              :: k
-      real(d), dimension(:,:), allocatable :: tmpvec,tmpvec2
+      real(d), dimension(:,:), allocatable :: hpsi
+      real(d), dimension(:), allocatable   :: resvec
       real(d), dimension(nblock)           :: hpsi2,h2psi
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      allocate(tmpvec(matdim,nblock))
-      allocate(tmpvec2(matdim,nblock))
-      
+      allocate(hpsi(matdim,nblock))
+      allocate(resvec(matdim))
+
 !-----------------------------------------------------------------------
-! Calculate the standard deviations
-! sigma_k=sqrt(<psi_k|H^2|psi_k> - <psi_k|H|psi_k>^2)
+! Residuals r_k=|| H |psi_k> - E_k |psi_k> ||
 !-----------------------------------------------------------------------      
-      ! <psi_k|H|psi_k>^2
-      call hxpsi_all(matdim,noffd,vec_new,tmpvec)      
+      call hxpsi_all(matdim,noffd,vec_new,hpsi)
+      
       do k=1,nblock
-         hpsi2(k)=dot_product(vec_new(:,k),tmpvec(:,k))
-         hpsi2(k)=hpsi2(k)**2
-      enddo
-
-      ! <psi_k|H^2|psi_k>      
-      call hxpsi_all(matdim,noffd,tmpvec,tmpvec2)
-      do k=1,nblock
-         h2psi(k)=dot_product(vec_new(:,k),tmpvec2(:,k))
-      enddo
-
-      ! sigma_k
-      do k=1,nblock
-         sigma(k)=sqrt(abs(h2psi(k)-hpsi2(k)))
-         if (sigma(k).lt.eps) lconv(k)=.true.
+         resvec=hpsi(:,k)-ener(k)*vec_new(:,k)
+         res(k)=dot_product(resvec,resvec)
+         res(k)=sqrt(res(k))
+         if (res(k).lt.eps) lconv(k)=.true.
       enddo
 
       ! No. converged states (N.B. this runs over nstates rather than
@@ -962,15 +1001,15 @@
       ! nstates states of interest)
       nconv=0
       do k=1,nstates
-         if (sigma(k).lt.eps) nconv=nconv+1
+         if (res(k).lt.eps) nconv=nconv+1
       enddo
-      
+
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(tmpvec)
-      deallocate(tmpvec2)
-      
+      deallocate(hpsi)
+      deallocate(resvec)
+
       return
       
     end subroutine check_conv
@@ -1026,7 +1065,7 @@
       if (k.eq.0) then
          write(ilog,'(61a)') ('*',j=1,61)
          write(ilog,'(a)') &
-              'Iteration   Time       Energies    Sigma           Converged'
+              'Iteration   Time       Energies    Residuals       Converged'
          write(ilog,'(61a)') ('*',j=1,61)
       endif
 
@@ -1042,10 +1081,10 @@
          endif         
          if (i.eq.1) then
             write(ilog,'(i4,3x,F10.3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 k,currtime,ener(i)*eh2ev,sigma(i),aconv
+                 k,currtime,ener(i)*eh2ev,res(i),aconv
          else
             write(ilog,'(20x,F12.7,3x,E13.7,3x,a1)') &
-                 ener(i)*eh2ev,sigma(i),aconv
+                 ener(i)*eh2ev,res(i),aconv
          endif
       enddo
 
