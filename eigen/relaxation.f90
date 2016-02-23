@@ -1134,7 +1134,6 @@
       deallocate(vec_new)
       deallocate(hxvec)
       deallocate(ener)
-      deallocate(sigma)
       deallocate(lconv)
       if (allocated(hij)) deallocate(hij)
       if (allocated(indxi)) deallocate(indxi)
