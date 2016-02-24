@@ -745,6 +745,14 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'siltol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) siltol
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -940,6 +948,14 @@
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
                endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'siltol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) siltol_f
             else
                goto 100
             endif

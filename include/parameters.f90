@@ -197,7 +197,7 @@ module parameters
 !!$**********Relaxation Parameters*****************
 !!$************************************************
   integer :: kdim,kdim_f,rlxortho,rlxortho_f
-  real(d) :: stepsize,stepsize_f
+  real(d) :: stepsize,stepsize_f,siltol,siltol_f
   
   character*3 :: POLARIZATION
 

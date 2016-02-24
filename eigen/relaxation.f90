@@ -27,9 +27,9 @@
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,iortho
     integer, dimension(:), allocatable   :: indxi,indxj
-    real(d), dimension(:), allocatable   :: hii,hij,ener,res
+    real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
-    real(d)                              :: step,eps,currtime
+    real(d)                              :: step,eps,toler
     character(len=36)                    :: vecfile
     logical, dimension(:), allocatable   :: lconv
     logical                              :: lincore,lrdadc1,lrandom
@@ -108,7 +108,7 @@
       do n=1,niter
 
          ! Update the time
-         currtime=currtime+n*step
+!         currtime=currtime+n*step
          
          ! Propagate the wavefunctions to the next timestep using
          ! the SIL algorithm    
@@ -196,6 +196,7 @@
          eps=davtol
          niter=maxiter
          iortho=rlxortho
+         toler=siltol
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -205,10 +206,8 @@
          eps=davtol_f
          niter=maxiter_f
          iortho=rlxortho_f
+         toler=siltol_f
       endif
-
-      ! Current time
-      currtime=0.0d0      
 
 !-----------------------------------------------------------------------
 ! Allocation of arays
@@ -241,6 +240,10 @@
       allocate(lconv(nblock))
       lconv=.false.
       
+      ! Current times
+      allocate(currtime(nblock))
+      currtime=0.0d0
+
       return
       
     end subroutine initialise
@@ -715,9 +718,8 @@
       real(d), dimension(matdim)           :: vec0,vecprop
       real(d), dimension(:,:), allocatable :: qmat,eigvec
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,work,a
-      real(d)                              :: dp,maxstep,bprod,kdfac,&
-                                              toler,expnt
-      
+      real(d)                              :: dp,norm,err,dtau
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -728,7 +730,7 @@
       allocate(alpha(krydim))
       allocate(beta(krydim))
       allocate(eigvec(krydim,krydim))
-      allocate(work(2*krydim-2))
+      allocate(work(2*(krydim)-2))
       allocate(a(krydim))
       
 !-----------------------------------------------------------------------
@@ -782,27 +784,6 @@
          
       enddo
 
-!-----------------------------------------------------------------------
-! Estimate the maximum step size for the given error tolerance
-!-----------------------------------------------------------------------
-      toler=1e-2
-
-      kdfac=1.0d0
-      do i=1,krydim-1
-         kdfac=kdfac*real(i)
-      enddo
-
-      bprod=1.0d0
-      do i=1,krydim
-         bprod=bprod*beta(i)
-      enddo
-
-      expnt=1.0d0/(2.0d0*(krydim-1))
-
-      maxstep=(toler*(kdfac/bprod)**2)**expnt
-
-!      print*,maxstep
-
 !-----------------------------------------------------------------------      
 ! Diagonalise the Lanczos state representation of the Hamiltonian
 !-----------------------------------------------------------------------
@@ -816,16 +797,20 @@
       endif
 
 !-----------------------------------------------------------------------
-! Calculate the wavefunction at time t0+dt
-!
+! Calculate the wavefunction at time t0+dt, with dt being determined
+! adaptively s.t. the estimated error in |Psi(t0+dt)> is below
+! threshold.
 ! Note that following the call to dstev, the alpha array contains the
-! eigenvalues of the Lanczos state representation of the Hamiltonian
+! eigenvalues of the Lanczos state representation of the Hamiltonian.
 !-----------------------------------------------------------------------
+      dtau=step
+
+10    continue
+
       a=0.0d0
       do j=1,krydim
          do n=1,krydim
-            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*step)*eigvec(1,n)
-!            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*maxstep)*eigvec(1,n)
+            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*dtau)*eigvec(1,n)
          enddo
       enddo
 
@@ -834,11 +819,21 @@
          vecprop=vecprop+a(j)*qmat(:,j)
       enddo
 
+      norm=sqrt(dot_product(vecprop,vecprop))
+      
+      err=abs(a(krydim)/norm)
+
+      if (err.gt.toler) then
+         dtau=dtau/2.0d0
+         goto 10
+      endif
+
+      currtime(ista)=currtime(ista)+dtau
+
 !-----------------------------------------------------------------------
-! Renormalisation
+! Renormalise the propagated wavefunction
 !-----------------------------------------------------------------------
-      dp=dot_product(vecprop,vecprop)
-      vecprop=vecprop/sqrt(dp)
+      vecprop=vecprop/norm
       
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1067,10 +1062,10 @@
          endif         
          if (i.eq.1) then
             write(ilog,'(i4,3x,F10.3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 k,currtime,ener(i)*eh2ev,res(i),aconv
+                 k,currtime(i),ener(i)*eh2ev,res(i),aconv
          else
-            write(ilog,'(20x,F12.7,3x,E13.7,3x,a1)') &
-                 ener(i)*eh2ev,res(i),aconv
+            write(ilog,'(7x,F10.3,3x,F12.7,3x,E13.7,3x,a1)') &
+                 currtime(i),ener(i)*eh2ev,res(i),aconv
          endif
       enddo
 
