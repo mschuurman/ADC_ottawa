@@ -21,8 +21,8 @@ diag_section
  block_size = 7
  tol = 1d-6
 
- timestep = 100.0
- krydim = 100
+ timestep = 100
+ krydim = 60
  maxit = 500
 # ortho = unmodified 
  guess = adc1

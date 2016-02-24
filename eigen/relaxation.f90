@@ -647,13 +647,11 @@
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
       vecout=0.0d0
-      !$omp parallel do private(m,n) shared(vecin,vecout,hii)
       do m=1,nblock
          do n=1,matdim
             vecout(n,m)=hii(n)*vecin(n,m)
          enddo
       enddo
-      !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! Contribution from the off-diagonal elements of the Hamiltonian matrix
@@ -672,14 +670,12 @@
          
          do k=1,nrec
             read(iham) hij(:),indxi(:),indxj(:),nlim
-            !$omp parallel do private(m,l) shared(vecout,hij,vecin,indxi,indxj)
             do l=1,nlim
                do m=1,nblock
                   vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
                   vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
                enddo
             enddo
-            !$omp end parallel do
          enddo
          
          close(iham)
@@ -688,14 +684,12 @@
       
       else        
 
-         !$omp parallel do private(m,l) shared(vecout,hij,vecin,indxi,indxj)
          do m=1,nblock
             do l=1,noffd
                vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
                vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
             enddo
          enddo
-         !$omp end parallel do
 
       endif
 
@@ -899,11 +893,9 @@
 !
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
-      !$omp parallel do private(n) shared(vecin,vecout,hii)
       do n=1,matdim
          vecout(n)=hii(n)*vecin(n)
       enddo
-      !$omp end parallel do
 
 !-----------------------------------------------------------------------
 ! H Q |Psi>
@@ -926,12 +918,10 @@
          
          do k=1,nrec
             read(iham) hij(:),indxi(:),indxj(:),nlim
-            !$omp parallel do private(l) shared(vecout,hij,vecin,indxi,indxj)
             do l=1,nlim
                vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
                vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
             enddo
-            !$omp end parallel do
          enddo
 
          close(iham)
@@ -940,14 +930,10 @@
 
       else
 
-         ! RUNNING THIS PART OF THE MATRIX-VECTOR MULTIPLICATION
-         ! USING OMP GIVES ERRONEOUS RESULTS...
-!         !$omp parallel do private(l) shared(vecout,hij,vecin,indxi,indxj)
          do l=1,noffd
             vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
             vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
          enddo
-!         !$omp end parallel do
 
       endif
 
