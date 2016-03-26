@@ -32,6 +32,11 @@
         real*8, dimension(:), allocatable    :: mtmf
         type(gam_structure)                  :: gam
 
+!        ! TEST                                                                                                                                              
+!        call orbrlx2                                                                                                                                        
+!        STOP                                                                                                                                                
+!        ! TEST
+        
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
@@ -1213,6 +1218,178 @@
 
      end subroutine tdm_davstates_final
 
+!#######################################################################
+
+     subroutine orbrlx2
+
+       use constants
+       use parameters
+       use vpqrsmod
+       
+       implicit none
+
+       integer               :: ncoreorb,cindx,vindx,c,a,i
+       real(d)               :: term0,rterm,sterm,pterm,delta_ai,&
+                                ftmp,tot,u1p1h
+       real(d), dimension(2) :: term1
+
+       ! Temporary hard-wiring of parameters                                                                                                                 
+       !                                                                                                                                                     
+       ! No. core orbitals                                                                                                                                   
+       ncoreorb=2
+       ! C 1s                                                                                                                                                
+       cindx=2
+       ! 3s                                                                                                                                                  
+!       vindx=9                                                                                                                                              
+       ! pi*                                                                                                                                                 
+!       vindx=13                                                                                                                                             
+       ! 3p_1                                                                                                                                                
+!       vindx=10                                                                                                                                             
+       ! 3p_2                                                                                                                                                
+       vindx=11
+
+!-----------------------------------------------------------------------                                                                                     
+! Zeroth-order term                                                                                                                                          
+!-----------------------------------------------------------------------                                                                                     
+       term0=e(vindx)-e(cindx)
+
+!-----------------------------------------------------------------------                                                                                     
+! First-order term                                                                                                                                           
+!-----------------------------------------------------------------------                                                                                     
+       term1(1)=-vpqrs(cindx,cindx,vindx,vindx)
+       term1(2)=2.0d0*vpqrs(cindx,vindx,vindx,cindx)
+
+!-----------------------------------------------------------------------                                                                                     
+! 1h1p term                                                                                                                                                  
+!-----------------------------------------------------------------------                                                                                     
+       u1p1h=0.0d0
+       do a=nocc+1,nbas
+          if (a.eq.vindx) cycle
+          delta_ai=1.0d0/(e(vindx)-e(a))
+          ftmp=(vpqrs(vindx,a,cindx,cindx)-2.0d0*vpqrs(vindx,cindx,cindx,a))**2
+          u1p1h=u1p1h+delta_ai*ftmp
+       enddo
+
+!-----------------------------------------------------------------------                                                                                     
+! Relaxation energy                                                                                                                                          
+!-----------------------------------------------------------------------                                                                                     
+!       ! Paper II                                                                                                                                           
+!       rterm=0.0d0                                                                                                                                          
+!       do c=1,ncoreorb                                                                                                                                      
+!          if (c.eq.cindx) cycle                                                                                                                             
+!          do i=1,nocc                                                                                                                                       
+!             do a=nocc+1,nbas                                                                                                                               
+!                delta_ai=1.0d0/(e(a)-e(i))                                                                                                                  
+!                rterm=rterm-2.0d0*delta_ai*vpqrs(c,cindx,i,a)**2                                                                                            
+!                if (a.eq.vindx) rterm=rterm+delta_ai*vpqrs(c,cindx,i,a)**2                                                                                  
+!             enddo                                                                                                                                          
+!          enddo                                                                                                                                             
+!       enddo                                                                                                                                                
+
+       ! Paper I                                                                                                                                             
+       rterm=0.0d0
+       do i=1,nocc
+          do a=nocc+1,nbas
+             if (a.eq.vindx) cycle
+             delta_ai=1.0d0/(e(a)-e(i))
+             ftmp=vpqrs(cindx,cindx,i,a)**2
+             ftmp=ftmp-vpqrs(cindx,cindx,i,a)*vpqrs(cindx,a,i,cindx)
+             ftmp=ftmp+vpqrs(cindx,a,i,cindx)**2
+             rterm=rterm-2.0d0*delta_ai*ftmp
+          enddo
+       enddo
+       do i=1,nocc
+          delta_ai=1.0d0/(e(vindx)-e(i))
+          ftmp=(vpqrs(cindx,cindx,i,vindx)+vpqrs(cindx,vindx,i,cindx))**2
+          rterm=rterm-delta_ai*ftmp
+       enddo
+
+!-----------------------------------------------------------------------                                                                                     
+! Screening energy                                                                                                                                           
+!-----------------------------------------------------------------------                                                                                     
+!       ! Paper II                                                                                                                                           
+!       sterm=0.0d0                                                                                                                                          
+!       do i=1,nocc                                                                                                                                          
+!          do a=nocc+1,nbas                                                                                                                                  
+!             delta_ai=1.0d0/(e(a)-e(i))                                                                                                                     
+!             sterm=sterm &                                                                                                                                  
+!                  +4.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)                                                                             
+!             if (a.eq.vindx) sterm=sterm &                                                                                                                  
+!                  -2.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)                                                                             
+!          enddo                                                                                                                                             
+!       enddo                                                                                                                                                
+
+       ! Paper I                                                                                                                                             
+       sterm=0.0d0
+       do i=1,nocc
+          do a=nocc+1,nbas
+             if (a.eq.vindx) cycle
+             delta_ai=1.0d0/(e(a)-e(i))
+             ftmp=2.0d0*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)
+             ftmp=ftmp-vpqrs(cindx,cindx,i,a)*vpqrs(vindx,a,i,vindx)
+             ftmp=ftmp-vpqrs(cindx,a,i,cindx)*vpqrs(vindx,vindx,i,a)
+             ftmp=ftmp+2.0d0*vpqrs(cindx,a,i,cindx)*vpqrs(vindx,a,i,vindx)
+             sterm=sterm+2.0d0*delta_ai*ftmp
+          enddo
+       enddo
+       do i=1,nocc
+          delta_ai=1.0d0/(e(vindx)-e(i))
+          ftmp=(vpqrs(cindx,cindx,i,vindx)+vpqrs(cindx,vindx,i,cindx))*vpqrs(vindx,vindx,i,vindx)
+          sterm=sterm+2.0d0*delta_ai*ftmp
+       enddo
+
+!-----------------------------------------------------------------------                                                                                     
+! Polarisation energy                                                                                                                                        
+!-----------------------------------------------------------------------                                                                                     
+!       ! Paper II                                                                                                                                           
+!       pterm=0.0d0                                                                                                                                          
+!       do i=1,nocc                                                                                                                                          
+!          do a=nocc+1,nbas                                                                                                                                  
+!             delta_ai=1.0d0/(e(a)-e(i))                                                                                                                     
+!             pterm=pterm-2.0d0*delta_ai*vpqrs(vindx,vindx,i,a)**2                                                                                           
+!             if (a.eq.vindx) pterm=pterm+delta_ai*vpqrs(vindx,vindx,i,a)**2                                                                                 
+!          enddo                                                                                                                                             
+!       enddo                                                                                                                                                
+
+       ! Paper I                                                                                                                                             
+       pterm=0.0d0
+       do i=1,nocc
+          do a=nocc+1,nbas
+             if (a.eq.vindx) cycle
+             delta_ai=1.0d0/(e(a)-e(i))
+             ftmp=vpqrs(vindx,vindx,i,a)**2
+             ftmp=ftmp-vpqrs(vindx,vindx,i,a)*vpqrs(vindx,a,i,vindx)
+             ftmp=ftmp+vpqrs(vindx,a,i,vindx)**2
+             pterm=pterm-2.0d0*delta_ai*ftmp
+          enddo
+       enddo
+
+       do i=1,nocc
+          delta_ai=1.0d0/(e(vindx)-e(i))
+          ftmp=vpqrs(vindx,vindx,i,vindx)**2
+          pterm=pterm-delta_ai*ftmp
+       enddo
+
+!-----------------------------------------------------------------------                                                                                     
+! Output the various contributions                                                                                                                           
+!-----------------------------------------------------------------------                                                                                     
+       tot=term0+term1(1)+term1(2)+u1p1h+rterm+sterm+pterm
+
+       write(ilog,'(/,a,2(2x,i2))') "c, v:",cindx,vindx
+       write(ilog,*) "Total:",tot
+       write(ilog,*) "0:",term0
+       write(ilog,*) "1, total:",term1(1)+term1(2)
+       write(ilog,*) "1, Coulomb:",term1(1)
+       write(ilog,*) "1, Exchange:",term1(2)
+       write(ilog,*) "U_vc(1p1h):",u1p1h
+       write(ilog,*) "R:",rterm
+       write(ilog,*) "S:",sterm
+       write(ilog,*) "P:",pterm
+
+       return
+
+     end subroutine orbrlx2
+       
 !#######################################################################
 
     end module adc2specmod
