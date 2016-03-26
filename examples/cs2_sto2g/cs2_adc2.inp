@@ -24,9 +24,9 @@ diag_section
  tol = 1d-6
 
  timestep = 200
- krydim = 20
+ krydim = 15
  maxit = 500
- siltol=1e-3
+ siltol=1e-6
 # ortho = unmodified 
  guess = adc1
 

@@ -26,7 +26,7 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,iortho
-    integer, dimension(:), allocatable   :: indxi,indxj
+    integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
     real(d)                              :: step,eps,toler
@@ -244,6 +244,10 @@
       allocate(currtime(nblock))
       currtime=0.0d0
 
+      ! SIL Krylov subspace dimensions
+      allocate(sildim(nblock))
+      sildim=0.0d0
+      
       return
       
     end subroutine initialise
@@ -714,10 +718,11 @@
 
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
-      integer                              :: ista,i,j,n,info
+      integer                              :: ista,i,j,n,info,truedim
       real(d), dimension(matdim)           :: vec0,vecprop
       real(d), dimension(:,:), allocatable :: qmat,eigvec
-      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,work,a
+      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,&
+                                              eigval,work,a,tmparr
       real(d)                              :: dp,norm,err,dtau
 
 !-----------------------------------------------------------------------
@@ -730,7 +735,8 @@
       allocate(alpha(krydim))
       allocate(beta(krydim))
       allocate(eigvec(krydim,krydim))
-      allocate(work(2*(krydim)-2))
+      allocate(eigval(krydim))
+      allocate(tmparr(krydim))
       allocate(a(krydim))
       
 !-----------------------------------------------------------------------
@@ -761,66 +767,81 @@
       r=r-alpha(1)*q
       beta(1)=sqrt(dot_product(r,r))
 
+      truedim=1
+      
       ! Remaining vectors
       do j=2,krydim
+                 
+         truedim=truedim+1
 
+         ! Compute the next vector and pair of matrix elements
          v=q
-
          q=r/beta(j-1)
-
          qmat(:,j)=q
-
          call hxkryvec(ista,j,matdim,noffd,q,r)
-
          r=r-beta(j-1)*v
-
          alpha(j)=dot_product(q,r)
-
          r=r-alpha(j)*q
-
          beta(j)=sqrt(dot_product(r,r))
 
-         ! NOTE THAT IF beta_j IS ~0 THEN WE NEED TO TERMINATE HERE
+         ! Calculate the expansion of the propagated wavefunction in the
+         ! current Lanczos state basis.
+         ! If the error is below threshold, then exit here.
+         ! Else, carry on and compute the next Lanczos vector.
+         if (j.gt.2) then
 
+            ! Diagonalise the Lanczos state representation of the
+            ! Hamiltonian
+            allocate(work((2*(truedim)-2)))
+            eigval=alpha
+            tmparr=beta
+            call dstev('V',truedim,eigval(1:truedim),tmparr(1:truedim-1),&
+                 eigvec(1:truedim,1:truedim),truedim,work,info)
+
+            ! Calculate the epansion coefficients for |Psi(t0_dt)> in
+            ! the Lanczos state basis
+            a=0.0d0
+            dtau=step
+            do i=1,truedim
+               do n=1,truedim
+                  a(i)=a(i)+eigvec(i,n)*exp(-eigval(n)*dtau)*eigvec(1,n)
+               enddo
+            enddo            
+            norm=sqrt(dot_product(a,a))
+            a=a/norm
+
+            ! Calcuate the error and exit if we are below
+            ! threshold
+            err=abs(a(truedim))
+            deallocate(work)
+            if (err.lt.toler) exit
+
+         endif
+         
       enddo
-
-!-----------------------------------------------------------------------      
-! Diagonalise the Lanczos state representation of the Hamiltonian
-!-----------------------------------------------------------------------
-      call dstev('V',krydim,alpha,beta(1:krydim-1),eigvec,krydim,&
-           work,info)
-
-      if (info.ne.0) then
-         errmsg='Diagonalisation of the Lanczos state representation &
-              of the Hamiltonian failed in subroutine silstep'
-         call error_control
-      endif
 
 !-----------------------------------------------------------------------
 ! Calculate the wavefunction at time t0+dt, with dt being determined
 ! adaptively s.t. the estimated error in |Psi(t0+dt)> is below
 ! threshold.
-! Note that following the call to dstev, the alpha array contains the
-! eigenvalues of the Lanczos state representation of the Hamiltonian.
 !-----------------------------------------------------------------------
       dtau=step
 
 10    continue
-
       a=0.0d0
-      do j=1,krydim
-         do n=1,krydim
-            a(j)=a(j)+eigvec(j,n)*exp(-alpha(n)*dtau)*eigvec(1,n)
+      do j=1,truedim
+         do n=1,truedim
+            a(j)=a(j)+eigvec(j,n)*exp(-eigval(n)*dtau)*eigvec(1,n)
          enddo
       enddo
-
+      
       ! OLD
 !      vecprop=0.0d0
-!      do j=1,krydim
+!      do j=1,truedim
 !         vecprop=vecprop+a(j)*qmat(:,j)
 !      enddo
 !      norm=sqrt(dot_product(vecprop,vecprop))      
-!      err=abs(a(krydim)/norm)
+!      err=abs(a(truedim)/norm)
 !      if (err.gt.toler) then
 !         dtau=dtau/2.0d0
 !         goto 10
@@ -831,21 +852,27 @@
       ! For orthonormal Lanczos vectors, this holds true:
       norm=sqrt(dot_product(a,a))
       a=a/norm
-      err=abs(a(krydim))
+      err=abs(a(truedim))
       if (err.gt.toler) then
          dtau=dtau/2.0d0
          goto 10
       endif
       vecprop=0.0d0
-      do j=1,krydim
+      do j=1,truedim
          vecprop=vecprop+a(j)*qmat(:,j)
       enddo
-
+      
 !-----------------------------------------------------------------------
 ! Update the propagation time for the current state
 !-----------------------------------------------------------------------
       currtime(ista)=currtime(ista)+dtau
 
+!-----------------------------------------------------------------------
+! Save the Krylov subspace dimension that was used for the current
+! state in this iteration
+!-----------------------------------------------------------------------
+      sildim(ista)=truedim
+      
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -856,9 +883,10 @@
       deallocate(alpha)
       deallocate(beta)
       deallocate(eigvec)
-      deallocate(work)
+      deallocate(eigval)
+      deallocate(tmparr)
       deallocate(a)
-
+      
       return
       
     end subroutine silstep
@@ -1016,7 +1044,7 @@
 
       integer, intent(in)                  :: matdim
       integer                              :: i
-      integer, dimension(nblock)           :: indx
+      integer, dimension(nblock)           :: indx,itmp
       real(d), dimension(nblock)           :: tmpval
       real(d), dimension(:,:), allocatable :: tmpvec
 
@@ -1047,6 +1075,12 @@
          tmpval(i)=currtime(indx(i))
       enddo
       currtime=tmpval
+
+      ! Krylov subspace dimensions
+      do i=1,nblock
+         itmp(i)=sildim(indx(i))
+      enddo
+      sildim=itmp
       
       deallocate(tmpvec)
       
@@ -1071,10 +1105,10 @@
 ! Table header
 !-----------------------------------------------------------------------
       if (k.eq.0) then
-         write(ilog,'(61a)') ('*',j=1,61)
-         write(ilog,'(a)') &
-              'Iteration   Time       Energies    Residuals       Converged'
-         write(ilog,'(61a)') ('*',j=1,61)
+         write(ilog,'(64a)') ('*',j=1,64)
+         write(ilog,'(a)') 'Iteration   Time   Kdim    Energies    &
+              Residuals       Converged'         
+         write(ilog,'(64a)') ('*',j=1,64)
       endif
 
 !-----------------------------------------------------------------------
@@ -1088,11 +1122,11 @@
             aconv='n'
          endif         
          if (i.eq.1) then
-            write(ilog,'(i4,3x,F10.3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 k,currtime(i),ener(i)*eh2ev,res(i),aconv
+            write(ilog,'(i4,3x,F10.3,2x,i3,3x,F12.7,3x,E13.7,3x,a1)') &
+                 k,currtime(i),sildim(i),ener(i)*eh2ev,res(i),aconv
          else
-            write(ilog,'(7x,F10.3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 currtime(i),ener(i)*eh2ev,res(i),aconv
+            write(ilog,'(7x,F10.3,2x,i3,3x,F12.7,3x,E13.7,3x,a1)') &
+                 currtime(i),sildim(i),ener(i)*eh2ev,res(i),aconv
          endif
       enddo
 
@@ -1143,6 +1177,7 @@
       deallocate(hxvec)
       deallocate(ener)
       deallocate(lconv)
+      deallocate(sildim)
       if (allocated(hij)) deallocate(hij)
       if (allocated(indxi)) deallocate(indxi)
       if (allocated(indxj)) deallocate(indxj)
