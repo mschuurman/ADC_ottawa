@@ -11,6 +11,8 @@ initial_state = 1
 
 dipole_component = x
 
+frozen_core=initial,final
+
 #cvs
 
 mem=1500

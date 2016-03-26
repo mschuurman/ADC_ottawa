@@ -781,7 +781,7 @@
          beta(j)=sqrt(dot_product(r,r))
 
          ! NOTE THAT IF beta_j IS ~0 THEN WE NEED TO TERMINATE HERE
-         
+
       enddo
 
 !-----------------------------------------------------------------------      
@@ -814,27 +814,38 @@
          enddo
       enddo
 
+      ! OLD
+!      vecprop=0.0d0
+!      do j=1,krydim
+!         vecprop=vecprop+a(j)*qmat(:,j)
+!      enddo
+!      norm=sqrt(dot_product(vecprop,vecprop))      
+!      err=abs(a(krydim)/norm)
+!      if (err.gt.toler) then
+!         dtau=dtau/2.0d0
+!         goto 10
+!      endif
+!      vecprop=vecprop/norm
+      
+      ! NEW
+      ! For orthonormal Lanczos vectors, this holds true:
+      norm=sqrt(dot_product(a,a))
+      a=a/norm
+      err=abs(a(krydim))
+      if (err.gt.toler) then
+         dtau=dtau/2.0d0
+         goto 10
+      endif
       vecprop=0.0d0
       do j=1,krydim
          vecprop=vecprop+a(j)*qmat(:,j)
       enddo
 
-      norm=sqrt(dot_product(vecprop,vecprop))
-      
-      err=abs(a(krydim)/norm)
-
-      if (err.gt.toler) then
-         dtau=dtau/2.0d0
-         goto 10
-      endif
-
+!-----------------------------------------------------------------------
+! Update the propagation time for the current state
+!-----------------------------------------------------------------------
       currtime(ista)=currtime(ista)+dtau
 
-!-----------------------------------------------------------------------
-! Renormalise the propagated wavefunction
-!-----------------------------------------------------------------------
-      vecprop=vecprop/norm
-      
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -1010,16 +1021,32 @@
       real(d), dimension(:,:), allocatable :: tmpvec
 
       allocate(tmpvec(matdim,nblock))
-      
+
       call dsortindxa1('A',nblock,ener,indx)
 
+      ! Wavefunctions
       do i=1,nblock
-         tmpval(i)=ener(indx(i))
          tmpvec(:,i)=vec_new(:,indx(i))
       enddo
-
-      ener=tmpval
       vec_new=tmpvec
+      
+      ! Energies
+      do i=1,nblock
+         tmpval(i)=ener(indx(i))
+      enddo
+      ener=tmpval
+
+      ! Residuals
+      do i=1,nblock
+         tmpval(i)=res(indx(i))
+      enddo
+      res=tmpval
+
+      ! Current times
+      do i=1,nblock
+         tmpval(i)=currtime(indx(i))
+      enddo
+      currtime=tmpval
       
       deallocate(tmpvec)
       
