@@ -5,13 +5,6 @@
 ########################################################################
 
 #-----------------------------------------------------------------------
-# Inclusion of other makefiles
-#-----------------------------------------------------------------------
-ifeq ($(EXTDIAG),true)
-	include ${SLEPC_DIR}/conf/slepc_common
-endif
-
-#-----------------------------------------------------------------------
 # Compiler flags
 #-----------------------------------------------------------------------
 
@@ -38,14 +31,14 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
-ifeq ($(EXTDIAG),true)
-	LIBS+=""${SLEPC_EPS_LIB} -I${PETSC_DIR}/include -I${SLEPC_DIR}/include
-endif
 
 #-----------------------------------------------------------------------
 # Define object files
 #-----------------------------------------------------------------------
 
+########################################################################
+# ADC code
+########################################################################
 MULTI = multi/accuracy.o \
 	multi/printing.o \
 	multi/timer.o \
@@ -187,7 +180,9 @@ ADC_OBJ=accuracy.o \
 	adc2_dyson.o \
 	adc.o
 
-# Arbitrary precision Stieltjes imaging code
+########################################################################
+# Stieltjes imaging code
+########################################################################
 STIELTJES_AP = mpfun/second.o \
 	mpfun/mpfuna.o \
 	mpfun/mpfunbq.o \
@@ -222,6 +217,9 @@ STIELTJES_AP_OBJ = second.o \
         simod.o \
         stieltjes_ap.o
 
+########################################################################
+# Monotonicity-constrained spline interpolation code
+########################################################################
 MCSPLINE = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
@@ -236,6 +234,27 @@ MCSPLINE_OBJ = constants.o \
 	mcspmod.o \
 	mcspline.o
 
+########################################################################
+# Numerical Hessian code
+########################################################################
+NUMHESS = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	numhess/hessmod.o \
+	numhess/prepmod.o \
+	numhess/calcmod.o \
+	numhess/numhess.o
+
+NUMHESS_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	hessmod.o \
+	prepmod.o \
+	calcmod.o \
+	numhess.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -249,6 +268,10 @@ stieltjes_ap: $(STIELTJES_AP)
 
 mcspline: $(MCSPLINE)
 	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
+	rm -f *.o *~ *.mod
+
+numhess: $(NUMHESS)
+	$(F90) $(F90OPTS) $(NUMHESS_OBJ) $(LIBS) -o numhess.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
