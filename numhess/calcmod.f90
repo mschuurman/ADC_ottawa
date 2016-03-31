@@ -780,7 +780,8 @@
       
       implicit none
       
-      integer                       :: i,j,error,e2
+      integer                       :: i,j,k,error,e2
+      integer, dimension(ncoo)      :: indx
       real(d), dimension(ncoo,ncoo) :: tmp
       real(d), dimension(ncoo)      :: lambda
       real(d), dimension(3*ncoo)    :: work
@@ -838,49 +839,133 @@
 ! Reorder the ground state normal mode and frequency arrays s.t. the
 ! zero-frequency terms come last
 !-----------------------------------------------------------------------
-      call dbubble(freq0,q0,ncoo,ncoo)
+      call dsortindxa1('A',ncoo,freq0,indx)
 
-      tmp=q0
-      q0(:,1:ncoo-nzero)=tmp(:,nzero+1:ncoo)
-      q0(:,ncoo-nzero+1:ncoo)=tmp(:,1:nzero)
+      k=0
+      do i=nzero+1,ncoo
+         k=k+1
+         tmp(:,k)=q0(:,indx(i))
+         lambda(k)=freq0(indx(i))
+      enddo
+      
+      k=ncoo-nzero
+      do i=1,nzero
+         k=k+1
+         tmp(:,k)=q0(:,indx(i))
+         lambda(k)=freq0(indx(i))
+      enddo
 
-      lambda=freq0
-      freq0(1:ncoo-nzero)=lambda(nzero+1:ncoo)
-      freq0(ncoo-nzero+1:ncoo)=lambda(1:nzero)
+      q0=tmp
+      freq0=lambda
 
       return
       
     end subroutine diaghess_gs
 
 !#######################################################################
-    
-    subroutine dbubble(vector,matrix,vecdim,matdim)
+
+    subroutine dsortindxa1(order,ndim,arrin,indx)
 
       use constants
 
       implicit none
 
-      integer :: vecdim,matdim,i,j,k
-      real(d) :: vector(vecdim),matrix(vecdim,matdim),swap
+      character(1), intent(in) :: order
+      integer, intent(in) :: ndim
+      real(d), dimension(ndim), intent(in) :: arrin
+      integer, dimension(ndim), intent(inout) :: indx
+    
+      integer :: i,l,ir,indxt,j
+      real(d) :: q
 
-      do i = 1,vecdim-1
-         do j = i+1,vecdim
-            if (vector(i) .gt. vector(j)) then
-               swap = vector(i)
-               vector(i) = vector(j)
-               vector(j) = swap
-               do k = 1,matdim
-                  swap = matrix(i,k)
-                  matrix(i,k) = matrix(j,k)
-                  matrix(j,k) = swap
-               enddo
-            endif
-         enddo
-      enddo
+!!$ The subroutine is taken from the NR p233, employs heapsort.
 
-      return
-
-    end subroutine dbubble
+      do i= 1,ndim
+         indx(i)=i
+      end do
+      
+      l=ndim/2+1
+      ir=ndim
+      
+      if(order .eq. 'D') then
+         
+10       continue
+         if(l .gt. 1) then
+            l=l-1
+            indxt=indx(l)
+            q=arrin(indxt)
+         else
+            indxt=indx(ir)
+            q=arrin(indxt)
+            indx(ir)=indx(1)
+            ir=ir-1
+            if(ir .eq. 1) then
+               indx(1)=indxt
+               return
+            end if
+         end if
+         
+         i=l
+         j=l+l
+         
+20       if(j .le. ir) then
+            if(j .lt. ir) then
+               if(arrin(indx(j)) .gt. arrin(indx(j+1))) j=j+1 !
+            end if
+            if(q .gt. arrin(indx(j))) then !
+               indx(i)=indx(j)
+               i=j
+               j=j+j
+            else
+               j=ir+1
+            end if
+            go to 20
+         end if
+         indx(i)=indxt
+         go to 10
+         
+      elseif(order .eq. 'A') then
+       
+100      continue
+      if(l .gt. 1) then
+         l=l-1
+         indxt=indx(l)
+         q=arrin(indxt)
+      else
+         indxt=indx(ir)
+         q=arrin(indxt)
+         indx(ir)=indx(1)
+         ir=ir-1
+         if(ir .eq. 1) then
+            indx(1)=indxt
+            return
+         end if
+      end if
+      
+      i=l
+      j=l+l
+      
+200   if(j .le. ir) then
+         if(j .lt. ir) then
+            if(arrin(indx(j)) .lt. arrin(indx(j+1))) j=j+1 !
+         end if
+         if(q .lt. arrin(indx(j))) then !
+            indx(i)=indx(j)
+            i=j
+            j=j+j
+         else
+            j=ir+1
+         end if
+         go to 200
+      end if
+      indx(i)=indxt
+      go to 100
+      
+   end if
+    
+   return
+   
+ end subroutine dsortindxa1
 
 !#######################################################################
 
@@ -1041,17 +1126,17 @@
 !-----------------------------------------------------------------------
 ! Frequency scale the gradients and Hessians
 !-----------------------------------------------------------------------
-      do n=1,nsta
-         do i=1,ncoo-nzero
-    
-            gradq0(n,i)=gradq0(n,i)/sqrt(freq0(i))
-            
-            do j=1,ncoo-nzero
-               hessq0(n,i,j)=hessq0(n,i,j)/sqrt(freq0(i)*freq0(j))
-            enddo
-
-         enddo
-      enddo
+!      do n=1,nsta
+!         do i=1,ncoo-nzero
+!    
+!            gradq0(n,i)=gradq0(n,i)/sqrt(freq0(i))
+!            
+!            do j=1,ncoo-nzero
+!               hessq0(n,i,j)=hessq0(n,i,j)/sqrt(freq0(i)*freq0(j))
+!            enddo
+!
+!         enddo
+!      enddo
 
 !-----------------------------------------------------------------------
 ! Preamble
@@ -1086,11 +1171,11 @@
 !-----------------------------------------------------------------------
 ! Hessians
 !-----------------------------------------------------------------------
-      write(unit,'(2/,a)') '# Hessians'
+      write(unit,'(2/,a)') '# Hessians: Off-diagonal elements'
       do n=1,nsta
          write(unit,'(/,a,1x,i3)') 'State:',n
          do i=1,ncoo-nzero
-            do j=i,ncoo-nzero
+            do j=i+1,ncoo-nzero
                write(unit,'(2(i3,3x),F7.4)') i,j,hessq0(n,i,j)
             enddo
          enddo
