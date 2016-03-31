@@ -6,12 +6,13 @@
 
     save
     
-    integer                                :: nzero
+    integer                                :: nzero,nmodes
     integer, dimension(:), allocatable     :: iimag
     real(d), dimension(:), allocatable     :: ener,mass,freq0
-    real(d), dimension(:,:), allocatable   :: grad,gradq0,q0
+    real(d), dimension(:,:), allocatable   :: grad,gradq0,q0,hess_gs
     real(d), dimension(:,:,:), allocatable :: hess,hessq0
     real(d), parameter                     :: eh2ev=27.2113845d0
+    real(d), parameter                     :: b2a=0.529177249d0
 
   contains
 
@@ -46,18 +47,18 @@
       call getener
 
 !-----------------------------------------------------------------------
-! Calculate the Hessians
+! Calculate the gradients and Hessians
 !-----------------------------------------------------------------------
       call calc_hess
 
 !-----------------------------------------------------------------------
-! Mass-weight the Hessians
+! Mass-weight the ground-state Hessian
 !-----------------------------------------------------------------------
       call mass_weight
 
 !-----------------------------------------------------------------------
 ! Project out the rotational and translational degrees of freedom
-! from all Hessians
+! from the ground state Hessians
 !-----------------------------------------------------------------------
       call proj_hess
 
@@ -68,7 +69,7 @@
 
 !-----------------------------------------------------------------------
 ! Transform the gradients and Hessians to be in terms of the ground 
-! state normal modes
+! state mass- and frequency-scaled normal modes
 !-----------------------------------------------------------------------
       call transform
 
@@ -568,6 +569,13 @@
       enddo
 
 !-----------------------------------------------------------------------
+! Save a copy of the ground-state Hessian to be used in the calculation
+! of the ground state normal modes
+!-----------------------------------------------------------------------
+      allocate(hess_gs(ncoo,ncoo))
+      hess_gs=hess(1,:,:)
+
+!-----------------------------------------------------------------------
 ! Calculate the gradients for each state
 !-----------------------------------------------------------------------
       do n=1,nsta
@@ -575,6 +583,16 @@
             grad(n,i)=(pos(n,i)-neg(n,i))/(2.0d0*diff)
          enddo
       enddo
+
+!-----------------------------------------------------------------------
+! Convert the gradients to units of eV/Angtrom 
+!-----------------------------------------------------------------------
+      grad=grad*eh2ev/b2a
+
+!-----------------------------------------------------------------------
+! Convert the Hessians to units of eV/Angtrom 
+!-----------------------------------------------------------------------
+      hess=hess*eh2ev/b2a**2
 
       return
 
@@ -614,14 +632,14 @@
       enddo
 
 !-----------------------------------------------------------------------
-! Mass-weight the Hessians
+! Mass-weight the ground state Hessian
 !-----------------------------------------------------------------------
       do i=1,ncoo
          do j=1,ncoo
-            hess(:,i,j)=hess(:,i,j)/sqrt(mass(i)*mass(j))
+            hess_gs(i,j)=hess_gs(i,j)/sqrt(mass(i)*mass(j))
          enddo
       enddo
-
+      
       return
 
     end subroutine mass_weight
@@ -759,11 +777,11 @@
       enddo
       pmat=pmat-rmat
 
-      ! Similarity transform the Hessians using the projection
-      ! matrix P
+      ! Similarity transform the ground state Hessian using the 
+      ! projection matrix P
       do i=1,nsta
-         tmpmat=matmul(hess(i,:,:),pmat)
-         hess(i,:,:)=matmul(pmat,tmpmat)
+         tmpmat=matmul(hess_gs(:,:),pmat)
+         hess_gs(:,:)=matmul(pmat,tmpmat)
       enddo
 
       return
@@ -786,7 +804,7 @@
       real(d), dimension(ncoo)      :: lambda
       real(d), dimension(3*ncoo)    :: work
       real(d), parameter            :: tol=1e-5
-      real(d)                       :: norm
+      real(d)                       :: norm,ftmp
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -798,7 +816,7 @@
 !-----------------------------------------------------------------------
 ! Diagonalise the ground state projected, mass-weigthe Hessian
 !-----------------------------------------------------------------------
-      q0=hess(1,:,:)
+      q0=hess_gs(:,:)
 
       e2=3*ncoo
 
@@ -835,6 +853,8 @@
          call error_control
       endif
 
+      nmodes=ncoo-nzero
+
 !-----------------------------------------------------------------------
 ! Reorder the ground state normal mode and frequency arrays s.t. the
 ! zero-frequency terms come last
@@ -857,6 +877,23 @@
 
       q0=tmp
       freq0=lambda
+
+!-----------------------------------------------------------------------
+! Convert the frequencies to eV
+!-----------------------------------------------------------------------
+      freq0=freq0*0.6373641d0
+
+!-----------------------------------------------------------------------
+! Mass and frequency scale the transformation matrix.
+!
+! N.B. the scaling used here is for frequencies in eV, mass in amu
+!      and length in Angstrom
+!-----------------------------------------------------------------------
+      do i=1,ncoo-nzero
+         do j=1,ncoo
+            q0(j,i)=q0(j,i)/(15.4644*sqrt(freq0(i))*sqrt(mass(j)))
+         enddo
+      enddo
 
       return
       
@@ -976,7 +1013,7 @@
 
       implicit none
 
-      integer                       :: i
+      integer                       :: i,j
       real(d), dimension(ncoo,ncoo) :: tmpmat
 
 !-----------------------------------------------------------------------
@@ -991,16 +1028,25 @@
 !-----------------------------------------------------------------------
 ! Hessians
 !-----------------------------------------------------------------------
+!      do i=1,nsta
+!         tmpmat=matmul(hess(i,:,:),q0)
+!         hessq0(i,:,:)=matmul(transpose(q0),tmpmat)
+!      enddo
+
       do i=1,nsta
-         tmpmat=matmul(hess(i,:,:),q0)
-         hessq0(i,:,:)=matmul(transpose(q0),tmpmat)
+         tmpmat(:,1:nmodes)=matmul(hess(i,:,:),q0(:,1:nmodes))
+         hessq0(i,1:nmodes,1:nmodes)=matmul(transpose(q0(:,1:nmodes)),tmpmat(:,1:nmodes))
       enddo
 
 !-----------------------------------------------------------------------
 ! Gradients
 !-----------------------------------------------------------------------
+!      do i=1,nsta
+!         gradq0(i,:)=matmul(transpose(q0),grad(i,:))
+!      enddo
+
       do i=1,nsta
-         gradq0(i,:)=matmul(transpose(q0),grad(i,:))
+         gradq0(i,1:nmodes)=matmul(transpose(q0(:,1:nmodes)),grad(i,:))
       enddo
 
       return
@@ -1120,32 +1166,16 @@
 
       implicit none
 
-      integer            :: unit,i,j,n
-      real(d), parameter :: fac=0.637364082d0
-
-!-----------------------------------------------------------------------
-! Frequency scale the gradients and Hessians
-!-----------------------------------------------------------------------
-!      do n=1,nsta
-!         do i=1,ncoo-nzero
-!    
-!            gradq0(n,i)=gradq0(n,i)/sqrt(freq0(i))
-!            
-!            do j=1,ncoo-nzero
-!               hessq0(n,i,j)=hessq0(n,i,j)/sqrt(freq0(i)*freq0(j))
-!            enddo
-!
-!         enddo
-!      enddo
+      integer :: unit,i,j,n
 
 !-----------------------------------------------------------------------
 ! Preamble
 !-----------------------------------------------------------------------
       write(unit,'(68a)') ('#',i=1,68)
       write(unit,'(a)') '# Gradients and Hessians in terms of the &
-           mass- and frequency-scaled'
-      write(unit,'(a)') '# ground state normal modes'
-!      write(unit,'(a)') '# All quantities are given in units of eV'
+           dimensionless mass- and'
+      write(unit,'(a)') '# frequency-scaled ground state normal modes.'
+      write(unit,'(a)') '# All quantities are given in units of eV'
       write(unit,'(68a)') ('#',i=1,68)
 
 !-----------------------------------------------------------------------
@@ -1153,7 +1183,6 @@
 !-----------------------------------------------------------------------
       write(unit,'(2/,a)') '# Frequencies'
       do i=1,ncoo-nzero
-!         write(unit,'(i3,3x,F6.4)') i,freq0(i)*fac
          write(unit,'(i3,3x,F6.4)') i,freq0(i)
       enddo
 
@@ -1171,6 +1200,14 @@
 !-----------------------------------------------------------------------
 ! Hessians
 !-----------------------------------------------------------------------
+      write(unit,'(2/,a)') '# Hessians: On-diagonal elements'
+      do n=1,nsta
+         write(unit,'(/,a,1x,i3)') 'State:',n
+         do i=1,ncoo-nzero
+            write(unit,'(i3,3x,F7.4)') i,hessq0(n,i,i)
+         enddo
+      enddo
+
       write(unit,'(2/,a)') '# Hessians: Off-diagonal elements'
       do n=1,nsta
          write(unit,'(/,a,1x,i3)') 'State:',n

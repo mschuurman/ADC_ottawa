@@ -38,7 +38,14 @@
       call system(acmmnd)
 
 !-----------------------------------------------------------------------
-! (1) Geometries required for the quadratic (on-diagonal) terms
+! Reference geometry
+!-----------------------------------------------------------------------
+      ityp=0
+      xcoo=xcoo0
+      call wrfile(0,0,0,0)
+
+!-----------------------------------------------------------------------
+! Geometries required for the quadratic (on-diagonal) terms
 !-----------------------------------------------------------------------
       ityp=1
 
@@ -61,7 +68,7 @@
       enddo
 
 !-----------------------------------------------------------------------
-! (1) Geometries required for the bilinear (off-diagonal) terms
+! Geometries required for the bilinear (off-diagonal) terms
 !-----------------------------------------------------------------------
       ityp=2
       
@@ -108,6 +115,11 @@
 !-----------------------------------------------------------------------
 ! Write the filename
 !-----------------------------------------------------------------------
+      ! Reference geometry
+      if (ityp.eq.0) then
+         filename='adcinp/adc_x000.inp'
+      endif
+
       ! Quadratic (on-diagonal) terms
       if (ityp.eq.1) then
          if (d1.eq.1) then
