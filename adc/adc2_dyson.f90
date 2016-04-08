@@ -34,7 +34,7 @@
 ! Initial space diagonalisation
 !-----------------------------------------------------------------------  
         if (statenumber.gt.0) call calc_initial_state(kpq,ndim,ndims,&
-             vec_init,einit,time)
+             vec_init,einit,time,gam)
 
 !-----------------------------------------------------------------------
 ! Final space diagonalisation (ionized states)
@@ -53,7 +53,8 @@
 
 !#######################################################################
 
-      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,einit,time)
+      subroutine calc_initial_state(kpq,ndim,ndims,vec_init,einit,&
+           time,gam)
 
         use constants
         use parameters
@@ -62,6 +63,8 @@
         use diagmod
         use iomod, only: freeunit
         use misc
+        use targetmatching
+        use import_gamess
 
         implicit none
 
@@ -71,6 +74,7 @@
         real(d)                              :: einit,time
         real(d), dimension(:), allocatable   :: vec_init
         character(len=120)                   :: msg
+        type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -144,6 +148,11 @@
         call wrstateinfo_neutral(ndim,kpq,itmp,davname,davstates)
 
         write(ilog,'(/,70a,/)') ('*',i=1,70)
+
+!-----------------------------------------------------------------------
+! Selection of the initial state by matching to a target CI state
+!-----------------------------------------------------------------------
+        if (ltarg.and.statenumber.ne.0) call target_master(kpq,ndim,gam)
 
 !-----------------------------------------------------------------------
 ! Load the initial state vector into memory
@@ -449,6 +458,8 @@
         call freeunit(inorm)
         open(inorm,file='dyson_norms',form='formatted',&
              status='unknown')
+        write(inorm,'(a)') &
+             '#     E (a.u.)        E - E_i (eV)    ||psi_d||'
 
         ! Dyson orbital expansion coefficients
         call freeunit(icoeff)
@@ -498,7 +509,7 @@
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
            de=(eigval-ei)*eh2ev
-           write(inorm,'(2(2x,F13.7))') de,norm
+           write(inorm,'(3(2x,F14.8))') eigval+ehf+e_mp2,de,norm
            write(icoeff,'(/,a,x,i4)') 'Cation state',n
            do i=1,nbas
               write(icoeff,'(i4,F13.7)') i,dyscoeff(i)

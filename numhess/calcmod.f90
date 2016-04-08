@@ -590,7 +590,7 @@
       grad=grad*eh2ev/b2a
 
 !-----------------------------------------------------------------------
-! Convert the Hessians to units of eV/Angtrom 
+! Convert the Hessians to units of eV/Angtrom^2
 !-----------------------------------------------------------------------
       hess=hess*eh2ev/b2a**2
 
@@ -1028,11 +1028,6 @@
 !-----------------------------------------------------------------------
 ! Hessians
 !-----------------------------------------------------------------------
-!      do i=1,nsta
-!         tmpmat=matmul(hess(i,:,:),q0)
-!         hessq0(i,:,:)=matmul(transpose(q0),tmpmat)
-!      enddo
-
       do i=1,nsta
          tmpmat(:,1:nmodes)=matmul(hess(i,:,:),q0(:,1:nmodes))
          hessq0(i,1:nmodes,1:nmodes)=matmul(transpose(q0(:,1:nmodes)),tmpmat(:,1:nmodes))
@@ -1041,10 +1036,6 @@
 !-----------------------------------------------------------------------
 ! Gradients
 !-----------------------------------------------------------------------
-!      do i=1,nsta
-!         gradq0(i,:)=matmul(transpose(q0),grad(i,:))
-!      enddo
-
       do i=1,nsta
          gradq0(i,1:nmodes)=matmul(transpose(q0(:,1:nmodes)),grad(i,:))
       enddo
@@ -1106,7 +1097,7 @@
       open(unit,file='eigvec.xyz',form='formatted',status='unknown')
 
 !-----------------------------------------------------------------------
-! Undo the mass-scaling
+! Undo the mass-scaling of the normal modes
 !-----------------------------------------------------------------------
       do i=1,ncoo
          do j=1,ncoo
@@ -1175,15 +1166,29 @@
       write(unit,'(a)') '# Gradients and Hessians in terms of the &
            dimensionless mass- and'
       write(unit,'(a)') '# frequency-scaled ground state normal modes.'
-      write(unit,'(a)') '# All quantities are given in units of eV'
+      write(unit,'(a)') '# All quantities are given in units of eV.'
       write(unit,'(68a)') ('#',i=1,68)
+
+!-----------------------------------------------------------------------
+! System dimensions
+!-----------------------------------------------------------------------
+      write(unit,'(2/,a,3x,i3)') '# nstates:',nsta
+      write(unit,'(a,4x,i3)') '# nmodes:',nmodes
 
 !-----------------------------------------------------------------------
 ! Frequencies
 !-----------------------------------------------------------------------
       write(unit,'(2/,a)') '# Frequencies'
-      do i=1,ncoo-nzero
+      do i=1,nmodes
          write(unit,'(i3,3x,F6.4)') i,freq0(i)
+      enddo
+
+!-----------------------------------------------------------------------
+! Energies
+!-----------------------------------------------------------------------
+      write(unit,'(2/,a)') '# Energies'
+      do i=1,nsta
+         write(unit,'(i3,3x,F8.4)') i,(ref(i)-ref(1))*eh2ev
       enddo
 
 !-----------------------------------------------------------------------
@@ -1192,7 +1197,7 @@
       write(unit,'(2/,a)') '# Gradients'
       do n=1,nsta
          write(unit,'(/,a,1x,i3)') 'State:',n
-         do i=1,ncoo-nzero
+         do i=1,nmodes
             write(unit,'(i3,3x,F7.4)') i,gradq0(n,i)
          enddo
       enddo
@@ -1203,7 +1208,7 @@
       write(unit,'(2/,a)') '# Hessians: On-diagonal elements'
       do n=1,nsta
          write(unit,'(/,a,1x,i3)') 'State:',n
-         do i=1,ncoo-nzero
+         do i=1,nmodes
             write(unit,'(i3,3x,F7.4)') i,hessq0(n,i,i)
          enddo
       enddo
@@ -1211,8 +1216,8 @@
       write(unit,'(2/,a)') '# Hessians: Off-diagonal elements'
       do n=1,nsta
          write(unit,'(/,a,1x,i3)') 'State:',n
-         do i=1,ncoo-nzero
-            do j=i+1,ncoo-nzero
+         do i=1,nmodes
+            do j=i+1,nmodes
                write(unit,'(2(i3,3x),F7.4)') i,j,hessq0(n,i,j)
             enddo
          enddo
