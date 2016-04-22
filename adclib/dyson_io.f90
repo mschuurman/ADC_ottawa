@@ -144,7 +144,7 @@
 !-----------------------------------------------------------------------
 ! Cartesian coordinates
 !-----------------------------------------------------------------------
-        write(imolden,'(/,a)') '[Atoms] Angs'
+        write(imolden,'(a)') '[Atoms] Angs'
         atmcnt=0
         do i=1,gam%natoms
            
@@ -165,7 +165,7 @@
 !-----------------------------------------------------------------------
         atmcnt=0
 
-        write(imolden,'(/,a)') '[GTO]'
+        write(imolden,'(a)') '[GTO]'
         ! Loop over atoms
         do i=1,gam%natoms
 

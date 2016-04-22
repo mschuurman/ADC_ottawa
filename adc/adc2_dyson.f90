@@ -458,8 +458,8 @@
         call freeunit(inorm)
         open(inorm,file='dyson_norms',form='formatted',&
              status='unknown')
-        write(inorm,'(a)') &
-             '#     E (a.u.)        E - E_i (eV)    ||psi_d||'
+        write(inorm,'(a)') '#     E (a.u.)        E - E_i (eV)    &
+             ||psi_d||       ||psi_d||**2'
 
         ! Dyson orbital expansion coefficients
         call freeunit(icoeff)
@@ -509,7 +509,7 @@
            ! Output the Dyson orbital norm and coefficients
            norm=sqrt(dot_product(dyscoeff,dyscoeff))
            de=(eigval-ei)*eh2ev
-           write(inorm,'(3(2x,F14.8))') eigval+ehf+e_mp2,de,norm
+           write(inorm,'(4(2x,F14.8))') eigval+ehf+e_mp2,de,norm,norm**2
            write(icoeff,'(/,a,x,i4)') 'Cation state',n
            do i=1,nbas
               write(icoeff,'(i4,F13.7)') i,dyscoeff(i)

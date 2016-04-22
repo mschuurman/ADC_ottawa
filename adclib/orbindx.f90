@@ -51,6 +51,8 @@
          endif
       enddo
 
+
+
       return
 
     end subroutine coreindx

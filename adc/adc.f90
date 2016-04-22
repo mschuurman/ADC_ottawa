@@ -76,11 +76,6 @@ program adc
   call rdgeom(gam_log)
   call load_gamess(gam_chkpt,gam_log,gamess_info)
 
-!-----------------------------------------------------------------------
-! Read orbital symmetries
-!-----------------------------------------------------------------------
-!  call rdorbsym
-
 !-----------------------------------------------------------------------  
 ! Rearranging orbitals such that occ. orbs preceed unoccupied orbs.
 !-----------------------------------------------------------------------  
