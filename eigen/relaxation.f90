@@ -116,7 +116,8 @@
             if (lconv(k).and.iortho.eq.2) then
                vec_new(:,k)=vec_old(:,k)
             else
-               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
+!               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
+               call modified_silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
             endif
          enddo
          
@@ -706,7 +707,7 @@
 
 !#######################################################################
 ! silstep: propagates the wavefunction vector vec0 forward by a
-!          single timestep using a modified short iterative Lanczos 
+!          single timestep using the short iterative Lanczos 
 !          algorithm to yield the wavefunction vector vecprop
 !#######################################################################
 
@@ -891,6 +892,346 @@
       
     end subroutine silstep
 
+!#######################################################################
+! modified_silstep: propagates the wavefunction vector vec0 forward by
+!                   a single timestep using a modified short iterative
+!                   Lanczos algorithm to yield the wavefunction vector
+!                   vecprop
+!
+!                   The modification to the original SIL algorithm is
+!                   that described in Appendix A of
+!                   Z. Phys. D, 42, 113 (1997)
+!#######################################################################
+    
+    subroutine modified_silstep(ista,matdim,noffd,vec0,vecprop)
+
+      use iomod
+
+      implicit none
+
+      integer, intent(in)                  :: matdim
+      integer*8, intent(in)                :: noffd
+      integer                              :: ista,i,j,n,info,truedim
+      real(d), dimension(matdim)           :: vec0,vecprop
+      real(d), dimension(:,:), allocatable :: qmat,eigvec
+      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,&
+                                              eigval,work,a,tmparr
+      real(d)                              :: dp,norm,err,dtau
+
+
+      real(d), dimension(:), allocatable   :: eigval_mod,a_mod,diffvec
+      real(d), dimension(:,:), allocatable :: eigvec_mod
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(qmat(matdim,krydim+1))
+      allocate(r(matdim))
+      allocate(q(matdim))
+      allocate(v(matdim))
+      allocate(alpha(krydim))
+      allocate(beta(krydim))
+      allocate(eigvec(krydim,krydim))
+      allocate(eigval(krydim))
+      allocate(tmparr(krydim))
+      allocate(a(krydim))
+      allocate(eigvec_mod(krydim+1,krydim+1))
+      allocate(eigval_mod(krydim+1))
+      allocate(a_mod(krydim+1))
+      allocate(diffvec(krydim+1))
+      
+!-----------------------------------------------------------------------
+! Generate the Lanczos vectors
+!-----------------------------------------------------------------------
+      qmat=0.0d0
+
+      ! The first vector is either |Psi_n(t)> (unmodified algorithm) 
+      ! or |Psi_n(t)> orthogonalised against the already propagated 
+      ! wavefunctions and then renormalised (modified algorithm)
+      if (iortho.eq.2) then
+         do i=1,ista-1
+            dp=dot_product(vec_new(:,i),vec0)
+            vec0=vec0-dp*vec_new(:,i)
+         enddo
+         dp=dot_product(vec0,vec0)
+         vec0=vec0/sqrt(dp)
+      endif
+
+      q=vec0
+      qmat(:,1)=q
+
+      ! alpha_1
+      call hxkryvec(ista,1,matdim,noffd,q,r)
+      alpha(1)=dot_product(q,r)
+
+      ! beta_1
+      r=r-alpha(1)*q
+      beta(1)=sqrt(dot_product(r,r))
+
+      truedim=1
+      
+      ! Remaining vectors
+      do j=2,krydim
+                 
+         truedim=truedim+1
+
+         ! Compute the next vector and pair of matrix elements
+         v=q
+         q=r/beta(j-1)
+         qmat(:,j)=q
+         call hxkryvec(ista,j,matdim,noffd,q,r)
+         r=r-beta(j-1)*v
+         alpha(j)=dot_product(q,r)
+         r=r-alpha(j)*q
+         beta(j)=sqrt(dot_product(r,r))
+
+         ! Calculate the expansion of the propagated wavefunction in the
+         ! current Lanczos state basis.
+         ! If the error is below threshold, then exit here.
+         ! Else, carry on and compute the next Lanczos vector.
+         if (j.gt.2) then
+
+            ! Diagonalise the UNMODIFIED Lanczos state representation
+            ! of the Hamiltonian
+            call sil_eigenpairs(truedim,alpha(1:truedim),beta(1:truedim-1),&
+                 eigval(1:truedim),eigvec(1:truedim,1:truedim))
+            
+            ! Calculate the UNMODIFIED epansion coefficients for |Psi(t0_dt)>
+            ! in the Lanczos state basis
+            a=0.0d0
+            call sil_expcoeff(truedim,a(1:truedim),eigval(1:truedim),&
+                 eigvec(1:truedim,1:truedim),step)
+
+            ! Diagonalise the MODIFIED Lanczos state representation
+            ! of the Hamiltonian
+            call modified_sil_eigenpairs(truedim,alpha(1:truedim),&
+                 beta(1:truedim),eigval_mod(1:truedim+1),&
+                 eigvec_mod(1:truedim+1,1:truedim+1))
+
+            ! Calculate the MODIFIED epansion coefficients for |Psi(t0_dt)>
+            ! in the Lanczos state basis
+            a_mod=0.0d0
+            call sil_expcoeff(truedim+1,a_mod(1:truedim+1),&
+                 eigval_mod(1:truedim+1),&
+                 eigvec_mod(1:truedim+1,1:truedim+1),step)
+            
+            ! Calcuate the error and exit if we are below
+            ! threshold
+            diffvec=a_mod
+            diffvec(1:truedim)=diffvec(1:truedim)-a(1:truedim)
+            err=sqrt(dot_product(diffvec,diffvec))
+            if (err.lt.toler) exit
+
+         endif
+
+      enddo
+
+!-----------------------------------------------------------------------      
+! Calculate the last Lanczos state vector
+!-----------------------------------------------------------------------
+      q=r/beta(truedim)
+      qmat(:,truedim+1)=q
+
+!-----------------------------------------------------------------------
+! Calculate the expansion coefficients, with dt being determined
+! adaptively s.t. the estimated error in |Psi(t0+dt)> is below
+! threshold.
+!-----------------------------------------------------------------------
+      dtau=step
+
+10    continue
+
+      ! Calculate the UNMODIFED expansion coefficients
+      a=0.0d0
+      call sil_expcoeff(truedim,a(1:truedim),eigval(1:truedim),&
+           eigvec(1:truedim,1:truedim),dtau)
+
+      ! Calculate the MODIFED expansion coefficients
+      a_mod=0.0d0
+      call sil_expcoeff(truedim+1,a_mod(1:truedim+1),&
+           eigval_mod(1:truedim+1),&
+           eigvec_mod(1:truedim+1,1:truedim+1),dtau)
+      
+      ! Calculate the error estimate
+      diffvec=a_mod
+      diffvec(1:truedim)=diffvec(1:truedim)-a(1:truedim)
+      err=sqrt(dot_product(diffvec,diffvec))
+
+      ! If the estimated error is above threshold, then reduce the
+      ! timestep and recalculate the coefficients
+      if (err.gt.toler) then
+         dtau=dtau/1.25d0
+         goto 10
+      endif
+
+!-----------------------------------------------------------------------
+! Calculate the wavefunction at time t0+dt
+!-----------------------------------------------------------------------      
+      vecprop=0.0d0
+      do j=1,truedim+1
+         vecprop=vecprop+a_mod(j)*qmat(:,j)
+      enddo
+      
+!-----------------------------------------------------------------------
+! Update the propagation time for the current state
+!-----------------------------------------------------------------------
+      currtime(ista)=currtime(ista)+dtau
+
+!-----------------------------------------------------------------------
+! Save the Krylov subspace dimension that was used for the current
+! state in this iteration
+!-----------------------------------------------------------------------
+      sildim(ista)=truedim+1
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(qmat)
+      deallocate(r)
+      deallocate(q)
+      deallocate(v)
+      deallocate(alpha)
+      deallocate(beta)
+      deallocate(eigvec)
+      deallocate(eigval)
+      deallocate(tmparr)
+      deallocate(a)
+      deallocate(eigvec_mod)
+      deallocate(eigval_mod)
+      deallocate(a_mod)
+      deallocate(diffvec)
+      
+      return
+      
+    end subroutine modified_silstep
+
+!#######################################################################
+
+    subroutine sil_eigenpairs(n,alpha,beta,eigval,eigvec)
+
+      use channels
+      use constants
+      use iomod
+      
+      implicit none
+
+      integer                            :: n,info
+      real(d), dimension(n)              :: alpha,eigval
+      real(d), dimension(n-1)            :: beta,tmparr
+      real(d), dimension(n,n)            :: eigvec
+      real(d), dimension(:), allocatable :: work
+
+!-----------------------------------------------------------------------
+! Allocate work arrays
+!-----------------------------------------------------------------------
+      allocate(work(2*n-2))
+
+!-----------------------------------------------------------------------
+! Diagonalise the Lanzcos state representation of the Hamiltonian
+!-----------------------------------------------------------------------
+      eigval=alpha
+      tmparr=beta
+      call dstev('V',n,eigval(1:n),tmparr(1:n-1),eigvec(1:n,1:n),n,&
+           work,info)
+
+!-----------------------------------------------------------------------
+! Check that the diagonalisation succeeded, and die here if not.
+!-----------------------------------------------------------------------
+      if (info.ne.0) then
+         errmsg='Diagonalisation of the Lanczos state representation &
+              of the Hamiltonian failed in subroutine sil_eigenpairs'
+         call error_control
+      endif
+      
+!-----------------------------------------------------------------------
+! Deallocate work arrays
+!-----------------------------------------------------------------------
+      deallocate(work)
+      
+      return
+      
+    end subroutine sil_eigenpairs
+
+!#######################################################################
+
+    subroutine modified_sil_eigenpairs(n,alpha,beta,eigval,eigvec)
+
+      use channels
+      use constants
+      use iomod
+      
+      implicit none
+
+      integer                            :: n,info
+      real(d), dimension(n)              :: alpha,beta
+      real(d), dimension(n+1)            :: eigval
+      real(d), dimension(n)              :: tmparr
+      real(d), dimension(n+1,n+1)        :: eigvec
+      real(d), dimension(:), allocatable :: work
+
+!-----------------------------------------------------------------------
+! Allocate work arrays
+!-----------------------------------------------------------------------
+      allocate(work(2*(n+1)-2))
+
+!-----------------------------------------------------------------------
+! Diagonalise the modified Lanzcos state representation of the
+! Hamiltonian
+!-----------------------------------------------------------------------
+      eigval(1:n)=alpha
+      eigval(n+1)=alpha(n)
+      tmparr=beta
+      call dstev('V',n+1,eigval(1:n+1),tmparr(1:n),eigvec(1:n+1,1:n+1),&
+           n+1,work,info)
+
+!-----------------------------------------------------------------------
+! Check that the diagonalisation succeeded, and die here if not.
+!-----------------------------------------------------------------------
+      if (info.ne.0) then
+         errmsg='Diagonalisation of the Lanczos state representation &
+              of the Hamiltonian failed in subroutine &
+              modified_sil_eigenpairs'
+         call error_control
+      endif
+      
+!-----------------------------------------------------------------------
+! Deallocate work arrays
+!-----------------------------------------------------------------------
+      deallocate(work)
+
+      return
+      
+    end subroutine modified_sil_eigenpairs
+      
+!#######################################################################
+
+    subroutine sil_expcoeff(n,coeff,eigval,eigvec,dtau)
+      
+      use constants
+      
+      implicit none
+
+      integer                 :: n,i,k
+      real(d), dimension(n)   :: coeff,eigval
+      real(d), dimension(n,n) :: eigvec
+      real(d)                 :: dtau,norm
+
+      coeff=0.0d0
+
+      do i=1,n
+         do k=1,n
+            coeff(i)=coeff(i)+eigvec(i,k)*exp(-eigval(k)*dtau)*eigvec(1,k)
+         enddo
+      enddo
+
+      norm=sqrt(dot_product(coeff,coeff))
+
+      coeff=coeff/norm
+      
+      return
+      
+    end subroutine sil_expcoeff
+    
 !#######################################################################
     
     subroutine hxkryvec(ista,krynum,matdim,noffd,vecin,vecout)
