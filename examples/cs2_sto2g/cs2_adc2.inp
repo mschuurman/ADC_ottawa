@@ -23,6 +23,7 @@ dipole_moment
 energy_only
 
 diag_section
+
 #method=relaxation
 #nstates = 6
 #block_size = 7
