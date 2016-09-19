@@ -331,21 +331,18 @@ contains
   subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str,&
        kpq,kpqdim2,flag)
     
-    integer, intent(in) :: ndim1,ndim2
-    real(d), dimension(ndim2), intent(in) :: en,tmvec,osc_str
+    integer, intent(in)                         :: ndim1,ndim2
+    integer, dimension(:), allocatable          :: indx
+    integer                                     :: i,j,nlim,k
+    integer                                     :: kpqdim2,iout
+    integer, dimension(7,0:kpqdim2-1)           :: kpq
+    real(d), dimension(ndim2), intent(in)       :: en,tmvec,osc_str
     real(d), dimension(ndim1,ndim2), intent(in) :: vspace
-
-    real(d), dimension(:), allocatable :: coeff
-    integer, dimension(:), allocatable :: indx
-    integer :: i,j,nlim,k
-
-    integer                           :: kpqdim2,iout
-    integer, dimension(7,0:kpqdim2-1) :: kpq
-
-    character(len=1)  :: flag
-    character(len=70) :: filename
+    real(d), dimension(:), allocatable          :: coeff
+    character(len=1)                            :: flag
+    character(len=70)                           :: filename
     
-100 FORMAT(60("-"),/)    
+100 FORMAT(60("-"),/)
 101 FORMAT(4(A10,2x),/)
 102 FORMAT(I10,x,"|",4(F10.5,2x),"|",x,5(F8.6,"(",I7,")",1x)) 
     
@@ -360,8 +357,8 @@ contains
        filename='davstates.dat'
     else if (flag.eq.'f') then
        filename='davstates_f.dat'
-    endif
-    
+    endif    
+
     open(iout,file=filename,form='formatted',status='unknown')
 
     write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
@@ -372,7 +369,7 @@ contains
        call dsortindxa1('D',ndim1,coeff(:),indx(:))
        coeff(:)=vspace(:,i)
        call wrstateinfo(i,indx,coeff,kpq,kpqdim2,en(i),tmvec(i),&
-            osc_str(i),ndim1,iout)
+            osc_str(i),ndim1,iout,flag)
     end do
 
     close(iout)
@@ -384,7 +381,7 @@ contains
 !#######################################################################
 
   subroutine wrstateinfo(i,indx,coeff,kpq,kpqdim2,en,tmvec,osc_str,&
-       ndim1,iout)
+       ndim1,iout,flag)
 
     implicit none
 
@@ -396,6 +393,7 @@ contains
     real(d), parameter                :: tol=0.05d0
     character(len=120)                :: fmat
     character(len=2)                  :: spincase
+    character(len=1)                  :: flag
     
 !-----------------------------------------------------------------------
 ! State energy in a.u.
@@ -438,6 +436,19 @@ contains
     if (ltdm_gs2i) then
        write(ilog,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str
        write(iout,'(2x,a,5x,F10.5)') 'Oscillator Strength:',osc_str
+    endif
+
+!-----------------------------------------------------------------------
+! Dipole moment along the chosen direction
+!-----------------------------------------------------------------------
+    if (ldipole) then
+       if (flag.eq.'i'.and.statenumber.gt.0.or.method.lt.0) then
+          write(ilog,'(2x,a,11x,F10.5)') 'Dipole Moment:',dipmom(i)
+          write(iout,'(2x,a,11x,F10.5)') 'Dipole Moment:',dipmom(i)
+       else if (flag.eq.'f') then
+          write(ilog,'(2x,a,11x,F10.5)') 'Dipole Moment:',dipmom_f(i)
+          write(iout,'(2x,a,11x,F10.5)') 'Dipole Moment:',dipmom_f(i)
+       endif
     endif
 
 !-----------------------------------------------------------------------

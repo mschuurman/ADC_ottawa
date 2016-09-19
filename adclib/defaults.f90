@@ -32,6 +32,7 @@
       ldiagfinal=.false.
       hinit=1
       maxmem=250.0d0
+      ldipole=.false.
 
 !-----------------------------------------------------------------------
 ! CVS-ADC parameters

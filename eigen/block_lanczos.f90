@@ -49,7 +49,7 @@ module block_lanczos
       allocate(rmat(matdim,blocksize))
       allocate(tmpmat(matdim,blocksize))
       allocate(amat(blocksize,blocksize))
-      allocate(bmat(blocksize,blocksize))      
+      allocate(bmat(blocksize,blocksize))
       allocate(tmat(nvec,nvec))
       qmat1=0.0d0
       qmat2=0.0d0

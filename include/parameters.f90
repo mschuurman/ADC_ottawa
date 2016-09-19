@@ -120,6 +120,12 @@ module parameters
 !!
 !!$real maxmem - memory threshold (in Mb) before disk-based algorithms
 !!               are used
+!!
+!!$logical ldipole - flag used to determine whether to calculate the
+!!                   excited-state dipole moments
+!!
+!!$real dipmom - dipole moments for the initial space states
+!!$real dipmom_f - dipole moments for the final space states
 
   logical                              :: debug
   character(1)                         :: tranmom,tranmom2
@@ -157,6 +163,8 @@ module parameters
   logical                              :: lifrzcore,lffrzcore
   logical                              :: ldiagfinal
   real(d)                              :: maxmem
+  logical                              :: ldipole
+  real(d), dimension(:), allocatable   :: dipmom,dipmom_f
 
 !!$************************************************
 !!$**********Physical Constants********************

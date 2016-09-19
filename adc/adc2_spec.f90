@@ -32,11 +32,11 @@
         real*8, dimension(:), allocatable    :: mtmf
         type(gam_structure)                  :: gam
 
-!        ! TEST                                                                                                                                              
-!        call orbrlx2                                                                                                                                        
-!        STOP                                                                                                                                                
 !        ! TEST
-        
+!        call orbrlx2
+!        STOP
+!        ! TEST
+
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
@@ -46,7 +46,7 @@
 ! Calculate guess initial space vectors from an ADC(1) calculation if 
 ! requested.
 !-----------------------------------------------------------------------  
-  if (ladc1guess) call adc1_guessvecs
+        if (ladc1guess) call adc1_guessvecs
 
 !-----------------------------------------------------------------------
 ! Determine the 1h1p and 2h2p subspaces
@@ -64,6 +64,14 @@
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
+
+!-----------------------------------------------------------------------
+! If requested, calculate the dipole moments for the final states
+! N.B. This is only meaningful if the final states are Davidson states
+!-----------------------------------------------------------------------
+        if (ldipole.and.ldiagfinal) then
+           call initial_space_dipole(ndim,ndims,kpq)
+        endif
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
@@ -112,6 +120,14 @@
            vec_init,mtmf,noffdf)
 
 !-----------------------------------------------------------------------
+! If requested, calculate the dipole moments for the final states
+! N.B. This is only meaningful if the final states are Davidson states
+!-----------------------------------------------------------------------
+        if (ldipole.and.ldiagfinal) then
+           call final_space_dipole(ndimf,ndimsf,kpqf)
+        endif
+        
+!-----------------------------------------------------------------------
 ! Calculate the transition moments and oscillator strengths between 
 ! the initial state and the final states
 !
@@ -127,6 +143,8 @@
         if (allocated(rvec)) deallocate(rvec)
         if (allocated(vec_init)) deallocate(vec_init)        
         if (allocated(travec)) deallocate(travec)
+        if (allocated(dipmom)) deallocate(dipmom)
+        if (allocated(dipmom_f)) deallocate(dipmom_f)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -899,6 +917,118 @@
 
 !#######################################################################
 
+      subroutine initial_space_dipole(ndim,ndims,kpq)
+
+        use channels
+        use constants
+        use parameters
+        use diagmod, only: readdavvc
+        use get_matrix_dipole
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
+        integer                                   :: ndim,ndims,i,k
+        real(d), dimension(:,:), allocatable      :: rvec,dmvec
+        real(d), dimension(davstates_f)           :: ener
+
+!-----------------------------------------------------------------------
+! Read the initial space Davidson states from file
+!-----------------------------------------------------------------------
+        allocate(rvec(ndim,davstates))
+        call readdavvc(davstates,ener,rvec,'i',ndim)
+
+!-----------------------------------------------------------------------
+! Form the dmvec vectors: contractions of the IS representation of the
+! dipole operator with the initial state vectors
+! -----------------------------------------------------------------------
+        allocate(dmvec(ndim,davstates))
+        write(ilog,'(/,2x,a,/)') "Calculating the initial state dipole &
+             moments..."
+        do i=1,davstates
+           write(ilog,'(90a)') ('-', k=1,90)
+           write(ilog,'(2x,a,1x,i2)') "State:",i
+           call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
+                rvec(:,i),dmvec(:,i))
+        enddo
+
+!-----------------------------------------------------------------------
+! Contract the dmvec vectors with the final state vectors to yield the
+! final state dipole moments
+!-----------------------------------------------------------------------
+        allocate(dipmom(davstates))
+        do i=1,davstates
+           dipmom(i)=dot_product(rvec(:,i),dmvec(:,i))
+        enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(rvec)
+        deallocate(dmvec)
+
+        return
+
+      end subroutine initial_space_dipole
+
+!#######################################################################
+
+      subroutine final_space_dipole(ndimf,ndimsf,kpqf)
+        
+        use channels
+        use constants
+        use parameters
+        use diagmod, only: readdavvc
+        use get_matrix_dipole
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+        integer                                   :: ndimf,ndimsf,i,k
+        real(d), dimension(:,:), allocatable      :: rvec,dmvec
+        real(d), dimension(davstates_f)           :: ener
+
+!-----------------------------------------------------------------------
+! Read the final space Davidson states from file
+!-----------------------------------------------------------------------
+        allocate(rvec(ndimf,davstates_f))
+        call readdavvc(davstates_f,ener,rvec,'f',ndimf)
+
+!-----------------------------------------------------------------------
+! Form the dmvec vectors: contractions of the IS representation of the
+! dipole operator with the final state vectors
+! -----------------------------------------------------------------------
+        allocate(dmvec(ndimf,davstates_f))
+        write(ilog,'(/,2x,a,/)') "Calculating the final state dipole &
+             moments..."
+        do i=1,davstates_f
+           write(ilog,'(90a)') ('-', k=1,90)
+           write(ilog,'(2x,a,1x,i2)') "State:",i
+           call get_dipole_initial_product(ndimf,ndimf,kpqf,kpqf,&
+                rvec(:,i),dmvec(:,i))
+        enddo
+
+!-----------------------------------------------------------------------
+! Contract the dmvec vectors with the final state vectors to yield the
+! final state dipole moments
+!-----------------------------------------------------------------------
+        allocate(dipmom_f(davstates_f))
+        do i=1,davstates_f
+           dipmom_f(i)=dot_product(rvec(:,i),dmvec(:,i))
+        enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(rvec)
+        deallocate(dmvec)
+
+        return
+
+      end subroutine final_space_dipole
+
+!#######################################################################
+
       subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
 
         use constants
@@ -1233,35 +1363,35 @@
                                 ftmp,tot,u1p1h
        real(d), dimension(2) :: term1
 
-       ! Temporary hard-wiring of parameters                                                                                                                 
-       !                                                                                                                                                     
-       ! No. core orbitals                                                                                                                                   
+       ! Temporary hard-wiring of parameters
+       !
+       ! No. core orbitals
        ncoreorb=2
-       ! C 1s                                                                                                                                                
+       ! C 1s
        cindx=2
-       ! 3s                                                                                                                                                  
-!       vindx=9                                                                                                                                              
-       ! pi*                                                                                                                                                 
-!       vindx=13                                                                                                                                             
-       ! 3p_1                                                                                                                                                
-!       vindx=10                                                                                                                                             
-       ! 3p_2                                                                                                                                                
+       ! 3s         
+!       vindx=9
+       ! pi*
+!       vindx=13
+       ! 3p_1
+!       vindx=10
+       ! 3p_2
        vindx=11
 
-!-----------------------------------------------------------------------                                                                                     
-! Zeroth-order term                                                                                                                                          
-!-----------------------------------------------------------------------                                                                                     
+!-----------------------------------------------------------------------
+! Zeroth-order term
+!-----------------------------------------------------------------------
        term0=e(vindx)-e(cindx)
 
-!-----------------------------------------------------------------------                                                                                     
-! First-order term                                                                                                                                           
-!-----------------------------------------------------------------------                                                                                     
+!-----------------------------------------------------------------------
+! First-order term
+!-----------------------------------------------------------------------
        term1(1)=-vpqrs(cindx,cindx,vindx,vindx)
        term1(2)=2.0d0*vpqrs(cindx,vindx,vindx,cindx)
 
-!-----------------------------------------------------------------------                                                                                     
-! 1h1p term                                                                                                                                                  
-!-----------------------------------------------------------------------                                                                                     
+!-----------------------------------------------------------------------
+! 1h1p term
+!-----------------------------------------------------------------------
        u1p1h=0.0d0
        do a=nocc+1,nbas
           if (a.eq.vindx) cycle
@@ -1270,23 +1400,23 @@
           u1p1h=u1p1h+delta_ai*ftmp
        enddo
 
-!-----------------------------------------------------------------------                                                                                     
-! Relaxation energy                                                                                                                                          
-!-----------------------------------------------------------------------                                                                                     
-!       ! Paper II                                                                                                                                           
-!       rterm=0.0d0                                                                                                                                          
-!       do c=1,ncoreorb                                                                                                                                      
-!          if (c.eq.cindx) cycle                                                                                                                             
-!          do i=1,nocc                                                                                                                                       
-!             do a=nocc+1,nbas                                                                                                                               
-!                delta_ai=1.0d0/(e(a)-e(i))                                                                                                                  
-!                rterm=rterm-2.0d0*delta_ai*vpqrs(c,cindx,i,a)**2                                                                                            
-!                if (a.eq.vindx) rterm=rterm+delta_ai*vpqrs(c,cindx,i,a)**2                                                                                  
-!             enddo                                                                                                                                          
-!          enddo                                                                                                                                             
-!       enddo                                                                                                                                                
+!-----------------------------------------------------------------------
+! Relaxation energy
+!-----------------------------------------------------------------------
+!       ! Paper II
+!       rterm=0.0d0
+!       do c=1,ncoreorb
+!          if (c.eq.cindx) cycle
+!          do i=1,nocc
+!             do a=nocc+1,nbas
+!                delta_ai=1.0d0/(e(a)-e(i))
+!                rterm=rterm-2.0d0*delta_ai*vpqrs(c,cindx,i,a)**2
+!                if (a.eq.vindx) rterm=rterm+delta_ai*vpqrs(c,cindx,i,a)**2
+!             enddo
+!          enddo
+!       enddo
 
-       ! Paper I                                                                                                                                             
+       ! Paper I
        rterm=0.0d0
        do i=1,nocc
           do a=nocc+1,nbas
@@ -1304,22 +1434,22 @@
           rterm=rterm-delta_ai*ftmp
        enddo
 
-!-----------------------------------------------------------------------                                                                                     
-! Screening energy                                                                                                                                           
-!-----------------------------------------------------------------------                                                                                     
-!       ! Paper II                                                                                                                                           
-!       sterm=0.0d0                                                                                                                                          
-!       do i=1,nocc                                                                                                                                          
-!          do a=nocc+1,nbas                                                                                                                                  
-!             delta_ai=1.0d0/(e(a)-e(i))                                                                                                                     
-!             sterm=sterm &                                                                                                                                  
-!                  +4.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)                                                                             
-!             if (a.eq.vindx) sterm=sterm &                                                                                                                  
-!                  -2.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)                                                                             
-!          enddo                                                                                                                                             
-!       enddo                                                                                                                                                
+!-----------------------------------------------------------------------
+! Screening energy
+!-----------------------------------------------------------------------
+!       ! Paper II
+!       sterm=0.0d0
+!       do i=1,nocc
+!          do a=nocc+1,nbas
+!             delta_ai=1.0d0/(e(a)-e(i))
+!             sterm=sterm &
+!                  +4.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)
+!             if (a.eq.vindx) sterm=sterm &
+!                  -2.0d0*delta_ai*vpqrs(cindx,cindx,i,a)*vpqrs(vindx,vindx,i,a)
+!          enddo
+!       enddo
 
-       ! Paper I                                                                                                                                             
+       ! Paper I
        sterm=0.0d0
        do i=1,nocc
           do a=nocc+1,nbas
@@ -1338,20 +1468,20 @@
           sterm=sterm+2.0d0*delta_ai*ftmp
        enddo
 
-!-----------------------------------------------------------------------                                                                                     
-! Polarisation energy                                                                                                                                        
-!-----------------------------------------------------------------------                                                                                     
-!       ! Paper II                                                                                                                                           
-!       pterm=0.0d0                                                                                                                                          
-!       do i=1,nocc                                                                                                                                          
-!          do a=nocc+1,nbas                                                                                                                                  
-!             delta_ai=1.0d0/(e(a)-e(i))                                                                                                                     
-!             pterm=pterm-2.0d0*delta_ai*vpqrs(vindx,vindx,i,a)**2                                                                                           
-!             if (a.eq.vindx) pterm=pterm+delta_ai*vpqrs(vindx,vindx,i,a)**2                                                                                 
-!          enddo                                                                                                                                             
-!       enddo                                                                                                                                                
+!-----------------------------------------------------------------------
+! Polarisation energy
+!-----------------------------------------------------------------------
+!       ! Paper II
+!       pterm=0.0d0
+!       do i=1,nocc
+!          do a=nocc+1,nbas
+!             delta_ai=1.0d0/(e(a)-e(i))
+!             pterm=pterm-2.0d0*delta_ai*vpqrs(vindx,vindx,i,a)**2
+!             if (a.eq.vindx) pterm=pterm+delta_ai*vpqrs(vindx,vindx,i,a)**2
+!          enddo
+!       enddo
 
-       ! Paper I                                                                                                                                             
+       ! Paper I
        pterm=0.0d0
        do i=1,nocc
           do a=nocc+1,nbas
@@ -1370,9 +1500,9 @@
           pterm=pterm-delta_ai*ftmp
        enddo
 
-!-----------------------------------------------------------------------                                                                                     
-! Output the various contributions                                                                                                                           
-!-----------------------------------------------------------------------                                                                                     
+!-----------------------------------------------------------------------
+! Output the various contributions
+!-----------------------------------------------------------------------
        tot=term0+term1(1)+term1(2)+u1p1h+rterm+sterm+pterm
 
        write(ilog,'(/,a,2(2x,i2))') "c, v:",cindx,vindx

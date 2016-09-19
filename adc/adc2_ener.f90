@@ -24,11 +24,11 @@
       implicit none
     
       integer, dimension(:,:), allocatable :: kpq
-      integer                              :: ndim,ndims,i,itmp,ista
+      integer                              :: ndim,ndims,i,k,itmp,ista
       integer*8                            :: noffd
       real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
                                               osc_str
-      real(d), dimension(:,:), allocatable :: rvec
+      real(d), dimension(:,:), allocatable :: rvec,dmvec
       real(d)                              :: e0
 
 !-----------------------------------------------------------------------  
@@ -143,7 +143,27 @@
             osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2
          enddo
       endif
-      
+
+!-----------------------------------------------------------------------
+! If requested, calculate the excited state dipole moments
+!-----------------------------------------------------------------------
+      if (ldipole) then         
+         allocate(dmvec(ndim,davstates))
+         allocate(dipmom(davstates))
+         write(ilog,'(/,2x,a,/)') "Calculating the initial state dipole &
+              moments..."
+         do i=1,davstates
+            write(ilog,'(90a)') ('-', k=1,90)
+            write(ilog,'(2x,a,1x,i2)') "State:",i
+            call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
+                 rvec(:,i),dmvec(:,i))
+            dipmom(i)=dot_product(rvec(:,i),dmvec(:,i))
+         enddo
+      endif
+
+!-----------------------------------------------------------------------
+! Output the ADC(2) state information
+!-----------------------------------------------------------------------      
       itmp=1+nBas**2*4*nOcc**2
       call table2(ndim,davstates,ener(1:davstates),&
            rvec(:,1:davstates),tmvec(1:davstates),&

@@ -2243,7 +2243,7 @@
     write(ilog,'(/,2x,a)') 'Calculating the occupied-unoccupied part of &
          the density matrix...'
 
-    allocate(density(nbas,nbas))
+    if (.not.allocated(density)) allocate(density(nbas,nbas))
     density=0.0d0
 
     !$omp parallel do private(k,a) shared(density)

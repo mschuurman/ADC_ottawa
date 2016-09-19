@@ -282,6 +282,9 @@
             if (keyword(1).ne.'end-target_section') goto 50
             i=inkw
 
+         else if (keyword(i).eq.'dipole_moment') then
+            ldipole=.true.
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

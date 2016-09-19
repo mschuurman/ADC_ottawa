@@ -1,6 +1,7 @@
 ################################################
 # ADC section
 ################################################
+
 method = adc2-s, adc2-s
 
 istate_symm = 1
@@ -9,7 +10,7 @@ dipole_symm = 1
 
 initial_state = 1
 
-dipole_component = x
+dipole_component = z
 
 frozen_core=initial,final
 
@@ -17,29 +18,40 @@ frozen_core=initial,final
 
 mem=1500
 
+dipole_moment
+
+energy_only
+
 diag_section
- method=relaxation
- nstates = 6
- block_size = 7
- tol = 1d-6
+#method=relaxation
+#nstates = 6
+#block_size = 7
+#tol = 1d-6
+#timestep = 200
+#krydim = 15
+#maxit = 500
+#siltol=1e-6
+## ortho = unmodified
+#guess = adc1
 
- timestep = 200
- krydim = 15
- maxit = 500
- siltol=1e-6
-# ortho = unmodified 
- guess = adc1
-
+method=davidson
+preconditioner = olsen
+maxvec = 20
+nstates = 6
+block_size = 10
+tol = 1d-6
+maxit = 500
+# guess = adc1
 end-diag_section
 
 diag_final_section
- method=davidson
- preconditioner = olsen
- maxvec = 20
- nstates = 6
- block_size = 10
- tol = 1d-6
- maxit = 500
+method=davidson
+preconditioner = olsen
+maxvec = 20
+nstates = 6
+block_size = 10
+tol = 1d-6
+maxit = 500
 # guess = adc1
 end-diag_final_section
 
@@ -48,5 +60,4 @@ end-diag_final_section
 # iter=50
 # guess=adc1
 #end-lanczos_section
-
 end-input
