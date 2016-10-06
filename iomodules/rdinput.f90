@@ -638,6 +638,8 @@
                   ladc1guess=.true.
                else if (keyword(i).eq.'noise') then
                   lnoise=.true.
+               else if (keyword(i).eq.'subdiag') then
+                  lsubdiag=.true.
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -845,6 +847,8 @@
                   ladc1guess_f=.true.
                else if (keyword(i).eq.'noise') then
                   lnoise_f=.true.
+               else if (keyword(i).eq.'subdiag') then
+                  lsubdiag_f=.true.
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control

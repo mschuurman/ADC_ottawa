@@ -86,6 +86,7 @@
       kdim=10
       stepsize=10.0d0      
       lnoise=.false.
+      lsubdiag=.false.
       rlxortho=2
       siltol=1e-5
       
@@ -93,6 +94,7 @@
       kdim_f=10
       stepsize_f=10.0d0
       lnoise_f=.false.
+      lsubdiag_f=.false.
       rlxortho_f=2
       siltol_f=1e-5
 

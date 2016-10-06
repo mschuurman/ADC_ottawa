@@ -146,6 +146,7 @@ module parameters
   integer                              :: ninista
   logical                              :: ladc1guess,ladc1guess_f
   logical                              :: lnoise,lnoise_f
+  logical                              :: lsubdiag,lsubdiag_f
   real(d), dimension(:), allocatable   :: adc1en,adc1en_f
   real(d)                              :: davtol,davtol_f
   logical                              :: lcvs,lcvsfinal

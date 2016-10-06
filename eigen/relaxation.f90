@@ -32,7 +32,7 @@
     real(d)                              :: step,eps,toler
     character(len=36)                    :: vecfile
     logical, dimension(:), allocatable   :: lconv
-    logical                              :: lincore,lrdadc1,lrandom
+    logical                              :: lincore,lrdadc1,lrandom,lsub
 
   contains
 
@@ -78,11 +78,6 @@
       call isincore(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! Set the initial vectors
-!-----------------------------------------------------------------------
-      call initvec(matdim)
-
-!-----------------------------------------------------------------------
 ! Read the on-diagonal elements of the Hamiltonian matrix from disk
 !-----------------------------------------------------------------------
       call rdham_on(matdim)
@@ -93,6 +88,11 @@
 !-----------------------------------------------------------------------
       if (lincore) call rdham_off(noffd)
 
+!-----------------------------------------------------------------------
+! Set the initial vectors
+!-----------------------------------------------------------------------
+      call initvec(matdim,noffd)
+      
 !-----------------------------------------------------------------------
 ! Output the initial energies and convergence information
 !-----------------------------------------------------------------------
@@ -107,16 +107,12 @@
       ! Loop over timesteps
       do n=1,niter
 
-         ! Update the time
-!         currtime=currtime+n*step
-         
          ! Propagate the wavefunctions to the next timestep using
          ! the SIL algorithm    
          do k=1,nblock
             if (lconv(k).and.iortho.eq.2) then
                vec_new(:,k)=vec_old(:,k)
             else
-!               call silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
                call modified_silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
             endif
          enddo
@@ -125,7 +121,7 @@
          ! orthogonalise the propagated wavefunctions amongst 
          ! themselves
          if (iortho.eq.1) call orthowf(matdim)
-
+         
          ! Calculate the energies
          call getener(matdim,noffd)
          
@@ -306,16 +302,19 @@
 
 !#######################################################################
 
-    subroutine initvec(matdim)
+    subroutine initvec(matdim,noffd)
 
       implicit none
 
-      integer, intent(in) :: matdim
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
 
       ! Determine whether the initial vectors are to be constructed from
-      ! the ADC(1) eigenvectors, random noise or as single ISs
+      ! the ADC(1) eigenvectors, random noise, the eigenvectors of the
+      ! Hamiltonian represented in a subspace of ISs, or as single ISs
       lrdadc1=.false.
-      lrandom=.false.      
+      lrandom=.false.
+      lsub=.false.
       if (hamflag.eq.'i'.and.ladc1guess) then
          lrdadc1=.true.
       else if (hamflag.eq.'f'.and.ladc1guess_f) then
@@ -326,6 +325,11 @@
       else if (hamflag.eq.'f'.and.lnoise_f) then
          lrandom=.true.
       endif
+      if (hamflag.eq.'i'.and.lsubdiag) then
+         lsub=.true.
+      else if (hamflag.eq.'f'.and.lsubdiag_f) then
+         lsub=.true.
+      endif
       
       if (lrdadc1) then
          ! Construct the initial vectors from the ADC(1) eigenvectors
@@ -334,6 +338,10 @@
          ! Construct the initial vectors as random orthonormal unit
          ! vectors
          call initvec_random(matdim)
+      else if (lsub) then
+         ! Construct the initial vectors from the eigenvectors of the
+         ! Hamiltonian represented in a subspace of ISs
+         call initvec_subdiag(matdim,noffd)
       else
          ! Use a single IS for each initial vector
          call initvec_ondiag(matdim)
@@ -375,7 +383,7 @@
       read(iadc1) dim1,vec1
 
 !-----------------------------------------------------------------------
-! Set the initial Davidson vectors
+! Set the initial vectors
 !-----------------------------------------------------------------------
       vec_old=0.0d0
       do i=1,nblock
@@ -386,7 +394,7 @@
 ! Close the ADC(1) eigenvector file
 !-----------------------------------------------------------------------
       close(iadc1)
-
+      
       return
 
     end subroutine initvec_adc1
@@ -472,9 +480,10 @@
       implicit none
 
       integer, intent(in) :: matdim      
-      integer             :: n,k
-      real(d)             :: ftmp
-      
+      integer             :: n,k,i,j
+      real(d)             :: ftmp,dp
+
+      ! Generate a set of random vectors
       do n=1,nblock
          do k=1,matdim
             call random_number(ftmp)
@@ -483,10 +492,191 @@
          ftmp=dot_product(vec_old(:,n),vec_old(:,n))
          vec_old(:,n)=vec_old(:,n)/sqrt(ftmp)
       enddo
-         
+
+      ! Orthogonalisation
+      do i=1,nblock
+         do j=1,i-1
+            dp=dot_product(vec_old(:,i),vec_old(:,j))
+            vec_old(:,i)=vec_old(:,i)-dp*vec_old(:,j)
+         enddo
+      enddo
+      do i=1,nblock
+         do j=1,i-1
+            dp=dot_product(vec_old(:,i),vec_old(:,j))
+            vec_old(:,i)=vec_old(:,i)-dp*vec_old(:,j)
+         enddo
+      enddo
+
+      ! Normalisation
+      do i=1,nblock
+         dp=dot_product(vec_old(:,i),vec_old(:,i))
+         vec_old(:,i)=vec_old(:,i)/sqrt(dp)
+      enddo
+      
       return
       
     end subroutine initvec_random
+
+!#######################################################################
+
+    subroutine initvec_subdiag(matdim,noffd)
+
+      use misc, only: dsortindxa1
+      
+      implicit none
+
+      integer, intent(in)                  :: matdim
+      integer*8, intent(in)                :: noffd
+      integer, dimension(:), allocatable   :: full2sub,sub2full,indxhii
+      integer                              :: subdim,i,j,k,i1,j1,e2,&
+                                              error,iham,nlim,l
+      real(d), dimension(:,:), allocatable :: hsub
+      real(d), dimension(:), allocatable   :: subeig,work
+      character(len=70)                    :: filename
+      
+      ! Temporary hard-wiring of the subspace dimension
+      subdim=1000
+      
+!-----------------------------------------------------------------------
+! Sort the on-diagonal Hamiltonian matrix elements in order of
+! ascending value
+!-----------------------------------------------------------------------
+      allocate(indxhii(matdim))
+      call dsortindxa1('A',matdim,hii,indxhii)
+
+!-----------------------------------------------------------------------
+! Ensure that the subdim'th IS is not degenerate with subdim+1'th IS,
+! and if it is, increase subdim accordingly
+!-----------------------------------------------------------------------
+5     continue
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6) then
+         subdim=subdim+1
+         goto 5
+      endif
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(full2sub(matdim))
+      allocate(sub2full(subdim))
+      allocate(hsub(subdim,subdim))
+      allocate(subeig(subdim))
+      allocate(work(3*subdim))
+
+!-----------------------------------------------------------------------
+! Set the full space-to-subsace mappings
+!-----------------------------------------------------------------------
+      full2sub=0
+      do i=1,subdim
+         k=indxhii(i)
+         sub2full(i)=k
+         full2sub(k)=i
+      enddo
+      
+!-----------------------------------------------------------------------
+! Construct the Hamiltonian matrix in the subspace
+!-----------------------------------------------------------------------
+      hsub=0.0d0
+
+      ! On-diagonal elements
+      do i=1,subdim
+         k=sub2full(i)
+         hsub(i,i)=hii(k)
+      enddo
+
+      ! Off-diagonal elements
+      if (lincore) then
+         ! Loop over all off-diagonal elements of the full space
+         ! Hamiltonian
+         do k=1,noffd
+            ! Indices of the current off-diagonal element of the
+            ! full space Hamiltonian
+            i=indxi(k)
+            j=indxj(k)
+            ! If both indices correspond to subspace ISs, then
+            ! add the element to subspace Hamiltonian
+            if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
+               i1=full2sub(i)
+               j1=full2sub(j)
+               hsub(i1,j1)=hij(k)               
+               hsub(j1,i1)=hsub(i1,j1)
+            endif
+         enddo
+      else
+         ! Open the off-diagonal element file
+         call freeunit(iham)
+         if (hamflag.eq.'i') then
+            filename='SCRATCH/hmlt.offi'
+         else if (hamflag.eq.'f') then
+            filename='SCRATCH/hmlt.offc'
+         endif
+         open(iham,file=filename,status='old',access='sequential',&
+              form='unformatted')
+         ! Allocate arrays
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+         ! Loop over records
+         do k=1,nrec
+            read(iham) hij(:),indxi(:),indxj(:),nlim
+            ! Loop over the non-zero elements of the full space
+            ! Hamiltonian in the current record
+            do l=1,nlim
+               ! Indices of the current off-diagonal element of the
+               ! full space Hamiltonian
+               i=indxi(l)
+               j=indxj(l)
+               ! If both indices correspond to subspace ISs, then
+               ! add the element to subspace Hamiltonian
+               if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
+                  i1=full2sub(i)
+                  j1=full2sub(j)
+                  hsub(i1,j1)=hij(l)
+                  hsub(j1,i1)=hsub(i1,j1)
+               endif
+            enddo
+         enddo
+         ! Close the off-diagonal element file
+         close(iham)
+         ! Deallocate arrays
+         deallocate(hij,indxi,indxj)
+      endif
+
+!-----------------------------------------------------------------------
+! Diagonalise the subspace Hamiltonian
+!-----------------------------------------------------------------------
+      e2=3*subdim
+      call dsyev('V','U',subdim,hsub,subdim,subeig,work,e2,error)
+
+      if (error.ne.0) then
+         errmsg='The diagonalisation of the subspace Hamiltonian failed.'
+         call error_control
+      endif
+
+!-----------------------------------------------------------------------
+! Construct the initial vectors from the subspace vectors.
+! Note that after calling dsyev, hsub now holds the eigenvectors of
+! the subspace Hamiltonian.
+!-----------------------------------------------------------------------
+      vec_old=0.0d0
+      do i=1,nblock
+         do j=1,subdim
+            k=sub2full(j)
+            vec_old(k,i)=hsub(j,i)            
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(indxhii)
+      deallocate(full2sub)
+      deallocate(sub2full)
+      deallocate(hsub)
+      deallocate(subeig)
+      deallocate(work)
+
+      return
+      
+    end subroutine initvec_subdiag
       
 !#######################################################################
     
@@ -630,7 +820,7 @@
       do k=1,nblock
          ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
       enddo
-
+      
       return
       
     end subroutine getener
@@ -1258,9 +1448,7 @@
          if (krynum.eq.2) then
             do i=1,ista-1
                dp=dot_product(vec_new(:,i),vecin)
-               vecin=vecin-dp*vec_new(:,i)               
-               dp=dot_product(vecin,vecin)
-               vecin=vecin/sqrt(dp)
+               vecin=vecin-dp*vec_new(:,i)
             enddo
          endif
       endif
@@ -1351,7 +1539,6 @@
 ! Residuals r_k=|| H |psi_k> - E_k |psi_k> ||
 !-----------------------------------------------------------------------      
       call hxpsi_all(matdim,noffd,vec_new,hpsi)
-      
       do k=1,nblock
          resvec=hpsi(:,k)-ener(k)*vec_new(:,k)
          res(k)=dot_product(resvec,resvec)
@@ -1529,288 +1716,6 @@
       
     end subroutine finalise
       
-!#######################################################################
-
-    subroutine siblstep(matdim,noffd,vec0,vecprop)
-
-      use iomod
-
-      implicit none
-
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: blocksize,nvec,info,&
-                                              i,j,k,m,n,i1,j1,k1,k2,&
-                                              upper
-      real(d), dimension(matdim,nblock)    :: vec0,vecprop
-      real(d), dimension(:,:), allocatable :: qmat1,qmat2,umat,rmat,&
-                                              tmpmat,amat,bmat,tmat,&
-                                              lancvec
-      real(d), dimension(nblock)           :: tau
-      real(d), dimension(nblock)           :: work
-      real(d), dimension(:,:), allocatable :: eigvec
-      real(d), dimension(:), allocatable   :: eigval
-
-!-----------------------------------------------------------------------
-! Allocate and initialise the block-Lanczos arrays
-!-----------------------------------------------------------------------
-      ! Temporary: use blocksize variable name from the block_lanczos 
-      ! code
-      blocksize=nblock
-      
-      ! Here we are taking krydim to be the maximum no. of 
-      ! block-Lanczos iterations
-      nvec=blocksize*krydim
-
-      allocate(qmat1(matdim,blocksize))
-      allocate(qmat2(matdim,blocksize))
-      allocate(umat(matdim,blocksize))
-      allocate(rmat(matdim,blocksize))
-      allocate(tmpmat(matdim,blocksize))
-      allocate(amat(blocksize,blocksize))
-      allocate(bmat(blocksize,blocksize))
-      allocate(tmat(nvec,nvec))
-      allocate(lancvec(matdim,nvec))
-      allocate(eigval(nvec))
-      allocate(eigvec(nvec,nvec))
-      qmat1=0.0d0
-      qmat2=0.0d0
-      umat=0.0d0
-      rmat=0.0d0
-      amat=0.0d0
-      bmat=0.0d0
-      tmat=0.0d0
-      lancvec=0.0d0
-
-!-----------------------------------------------------------------------
-! Set the initial Lanczos vectors
-!-----------------------------------------------------------------------
-      qmat2=vec0
-
-!-----------------------------------------------------------------------
-! Perform the block-Lanczos iterations
-!-----------------------------------------------------------------------
-      do j=1,krydim
-
-         !--------------------------------------------------------------
-         ! (1) Save the Lanczos vectors from the last iteration
-         !--------------------------------------------------------------
-         k1=(j-1)*blocksize+1
-         k2=j*blocksize
-         lancvec(:,k1:k2)=qmat2(:,:)
-
-         !--------------------------------------------------------------
-         ! (2) Calculate the current block of on-diagonal elements of
-         !     the T-matrix
-         !--------------------------------------------------------------
-         call hxpsi_all(matdim,noffd,qmat2,umat)
-
-         call dgemm('N','T',matdim,blocksize,blocksize,1.0d0,qmat1,matdim,bmat,&
-              blocksize,0.0d0,tmpmat,matdim)
-         
-         umat=umat-tmpmat
-         
-         call dgemm('T','N',blocksize,blocksize,matdim,1.0d0,qmat2,matdim,umat,&
-              matdim,0.0d0,amat,blocksize)
-
-         !--------------------------------------------------------------
-         ! (3) Calculate the next block of Krylov vectors
-         !--------------------------------------------------------------
-         call dgemm('N','N',matdim,blocksize,blocksize,1.0d0,qmat2,matdim,amat,&
-              blocksize,0.0d0,tmpmat,matdim)
-
-         rmat=umat-tmpmat
-
-         !--------------------------------------------------------------
-         ! (4) Compute the QR factorization of the matrix of Krylov 
-         !     vectors
-         !--------------------------------------------------------------
-         ! dgeqrf will overwrite rmat, so instead use a copy of this
-         ! matrix
-         tmpmat=rmat
-
-         ! Compute the current block of off-diagonal elements of
-         ! the T-matrix
-         call dgeqrf(matdim,blocksize,tmpmat,matdim,tau,work,blocksize,info)
-         if (info.ne.0) then
-            write(ilog,'(/,2x,a,/)') 'dqerf failed in siblstep'
-            STOP
-         endif
-
-         ! Note that the B-matrix is upper-triangular
-         bmat=0.0d0
-         do k=1,blocksize
-            do i=1,k
-               bmat(i,k)=tmpmat(i,k)
-            enddo
-         enddo
-
-         ! Extract the next block of Lanczos vectors
-         call dorgqr(matdim,blocksize,blocksize,tmpmat,matdim,tau,work,&
-              blocksize,info)
-         if (info.ne.0) then
-            write(ilog,'(/,2x,a,/)') 'dorgqr failed in siblstep'
-            STOP
-         endif
-
-         ! Update the matrices of Lanczos vectors
-         qmat1=qmat2
-         qmat2=tmpmat
-
-         !--------------------------------------------------------------
-         ! (5) Fill in the next block of the T-matrix array
-         !--------------------------------------------------------------
-         i1=0                               ! Initialise the column counter
-         do m=(j-1)*blocksize+1,j*blocksize ! Loop over columns of T_j
-            i1=i1+1                         ! Increment the column counter
-            if (j.lt.ncycles) then
-               upper=(j+1)*blocksize
-            else
-               upper=j*blocksize
-            endif
-            j1=0                            ! Initialise the row counters
-            k1=0
-            k2=0
-            do n=(j-1)*blocksize+1,upper    ! Loop over rows of T_j
-               j1=j1+1                      ! Increment the main row counter
-               if (j1.le.blocksize) then    ! Contribution from A_j
-                  k1=k1+1
-                  tmat(n,m)=amat(k1,i1)
-               else                         ! Contribution from B_j
-                  k2=k2+1
-                  tmat(n,m)=bmat(k2,i1)
-               endif
-               tmat(m,n)=tmat(n,m)
-            enddo
-         enddo
-
-      enddo
-
-!-----------------------------------------------------------------------
-! Deallocate the block-Lanczos arrays now that they are not needed
-!-----------------------------------------------------------------------
-      deallocate(qmat1)
-      deallocate(qmat2)
-      deallocate(rmat)
-      deallocate(amat)
-      deallocate(bmat)
-      deallocate(tmpmat)
-      deallocate(umat)
-
-!-----------------------------------------------------------------------
-! Diagonalise the block-Lanczos state representation of the Hamiltonian
-!-----------------------------------------------------------------------
-      call diagmat_banded(tmat,eigvec,eigval,nvec,blocksize)
-
-!-----------------------------------------------------------------------
-! Propagate each wavefunction forwards in time to t0+dt
-!-----------------------------------------------------------------------
-      ! (1) Construct the block-Lanczos state representation of the
-      !     negative imaginary time-evolution operator U(dt)=exp(-Hdt)
-      allocate(umat(nvec,nvec))
-      umat=0.0d0
-
-      do i=1,nvec
-         do j=1,nvec
-            do k=1,nvec
-               umat(i,j)=umat(i,j)+&
-                    eigvec(i,k)*exp(-eigval(k)*step)*eigvec(j,k)
-            enddo
-         enddo
-      enddo
-
-      ! (2) Calculate the propagated wavefunctions
-      vecprop=0.0d0
-      do n=1,blocksize
-
-         ! Normalise the expansion coefficients for the
-         ! current wavefunction
-         umat(:,n)=umat(:,n)/sqrt(dot_product(umat(:,n),umat(:,n)))
-
-         ! Expansion of Psi(t0+dt) in the Lanczos state basis
-         do j=1,nvec
-            vecprop(:,n)=vecprop(:,n)+umat(j,n)*lancvec(:,j)
-         enddo
-
-      enddo
-
-      deallocate(umat)
-
-!-----------------------------------------------------------------------
-! Orthonormalisation of the propagated wavefunctions via the QR 
-! factorisation of the matrix of these wavefunctions.
-!-----------------------------------------------------------------------
-      call dgeqrf(matdim,blocksize,vecprop,matdim,tau,work,blocksize,info)
-
-      call dorgqr(matdim,blocksize,blocksize,vecprop,matdim,tau,work,&
-           blocksize,info)
-
-!-----------------------------------------------------------------------
-! Deallocate any remaining allocated arrays
-!-----------------------------------------------------------------------
-      deallocate(tmat)
-      deallocate(lancvec)
-      deallocate(eigval)
-      deallocate(eigvec)
-
-      currtime(:)=currtime(:)+step
-      sildim(:)=krydim
-
-      return
-
-    end subroutine siblstep
-
-!#######################################################################
-
-    subroutine diagmat_banded(matrix,eigvec,eigval,nvec,blocksize)
-
-      implicit none
-      
-      integer                              :: nvec,blocksize
-      integer                              :: i,j,iupper
-      real(d), dimension(nvec,nvec)        :: matrix
-
-      integer                              :: kd,ldab,error
-      real(d), dimension(blocksize+1,nvec) :: ab
-      real(d), dimension(nvec)             :: eigval
-      real(d), dimension(nvec,nvec)        :: eigvec
-      real(d), dimension(3*nvec-2)         :: work
-
-!-----------------------------------------------------------------------
-! Set dimensions required to be passed to dsbev
-!-----------------------------------------------------------------------
-      kd=blocksize
-      ldab=blocksize+1
-
-!-----------------------------------------------------------------------
-! Fill in the array ab holding the upper triangle of the projection of
-! the Hamiltonian onto the space spanned by the Lanczos vectors
-!-----------------------------------------------------------------------
-      ab=0.0d0
-      do j=1,nvec
-         iupper=min(nvec,j+kd)
-         do i=j,iupper
-            ab(1+i-j,j)=matrix(i,j)
-         enddo
-      enddo
-
-!-----------------------------------------------------------------------
-! Diagonalise the projection of the Hamiltonian onto the space spanned
-! by the Lanczos vectors
-!-----------------------------------------------------------------------
-      call dsbev('V','L',nvec,kd,ab,ldab,eigval,eigvec,nvec,work,error)
-
-      if (error.ne.0) then
-         write(ilog,'(/,2x,3a,/)') 'Diagonalisation of the Lanczos ',&
-              'representation of the Hamiltonian failed in ',&
-              'subroutine diagmat_banded (called from siblstep).'
-         STOP
-      endif
-
-      return
-
-    end subroutine diagmat_banded
-
 !#######################################################################
     
   end module relaxmod
