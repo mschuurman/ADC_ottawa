@@ -35,10 +35,11 @@
     logical, dimension(:), allocatable   :: lconv
     logical                              :: lincore,lrdadc1,lrandom,lsub
 
-    ! SIL-liu arrays
+    ! Krylov-Liu arrays
     integer                              :: maxvec
-    real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
+    real(d), dimension(:,:), allocatable :: subhmat,subsmat,kryvec,&
                                             vec_conv
+    real(d), dimension(:), allocatable   :: knorm
     
   contains
 
@@ -115,7 +116,7 @@
          call relaxation_sil(matdim,noffd)
       else if (algor.eq.2) then
          ! Basis reuse algorithm of Liu
-         call relaxation_sil_liu(matdim,noffd)
+         call relaxation_liu(matdim,noffd)
       endif
 
 !-----------------------------------------------------------------------
@@ -203,13 +204,13 @@
 
 !#######################################################################
 
-    subroutine relaxation_sil_liu(matdim,noffd)
+    subroutine relaxation_liu(matdim,noffd)
 
       implicit none
 
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
-      integer                              :: maxvecs,s,n,k1,k2
+      integer                              :: maxvecs,s,n
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -218,7 +219,7 @@
       ! Note that krydim+1 enters here as we generate one more vector
       ! per timestep than is used in forming the variational subspace
       maxvecs=(krydim+1)*niter
-
+      
       ! Representation of the Hamiltonian in the variational subspace
       allocate(subhmat(maxvecs,maxvecs))
       subhmat=0.0d0
@@ -228,9 +229,14 @@
       subsmat=0.0d0
 
       ! Vectors spanning the variational subspace
-      allocate(lancvec(matdim,maxvec))
-      lancvec=0.0d0
+      allocate(kryvec(matdim,maxvec))
+      kryvec=0.0d0
 
+      ! Norms of the Krylov vectors prior to normalisation (needed
+      ! for the calculation of the subspace Hamiltonian matrix
+      ! elements)
+      allocate(knorm(maxvec))
+      
       ! Converged states
       allocate(vec_conv(matdim,nblock))
       vec_conv=0.0d0
@@ -244,27 +250,21 @@
          ! Initialise arrays
          subhmat=0.0d0
          subsmat=0.0d0
-         lancvec=0.0d0
-         
+         kryvec=0.0d0
+
          ! Loop over timesteps
          do n=1,niter
          
-            ! Generation of the Lanczos vectors for the current
-            ! timestep.
-            ! Note that we also calculate the matrix elements of
-            ! the variational subspace representation of the Hamiltonian
-            ! corresponding to the current timestep here.
-            k1=(n-1)*(krydim+1)+1
-            k2=n*(krydim+1)
-            call get_lancvecs_current(s,n,matdim,noffd,lancvec(:,k1:k2))
-
-            ! Calculation of the Hamiltonian and overlap matrix elements
-            ! between the vectors calculated in this timestep and those
-            ! calculated in previous timesteps
-            call matel_diffsteps(n)
+            ! Generation of the Krylov vectors for the current
+            ! timestep
+            call get_kryvecs_current(s,n,matdim,noffd)
+            
+            ! Calculation of the subspace Hamiltonian and overlap
+            ! matrix elements
+            call subspace_matrices(n)
 
             ! Calculate |Psi(t+dt)>
-            call solve_subspace_tdse
+            call solve_subspace_tdse(n)
             
             STOP
             
@@ -278,12 +278,13 @@
 !-----------------------------------------------------------------------
       deallocate(subhmat)
       deallocate(subsmat)
-      deallocate(lancvec)
+      deallocate(kryvec)
+      deallocate(knorm)
       deallocate(vec_conv)
       
       return
       
-    end subroutine relaxation_sil_liu
+    end subroutine relaxation_liu
     
 !#######################################################################
 
@@ -1648,99 +1649,56 @@
 
 !#######################################################################
 
-    subroutine get_lancvecs_current(ista,istep,matdim,noffd,qmat)
+    subroutine get_kryvecs_current(ista,istep,matdim,noffd)
 
       implicit none
 
       integer, intent(in)                 :: matdim
       integer*8, intent(in)               :: noffd
-      integer                             :: ista,istep,i,j,truedim,&
-                                             k1,k2,count
-      real(d), dimension(matdim,krydim+1) :: qmat
+      integer                             :: ista,istep,i,j,k1,k2
       real(d)                             :: dp
-      real(d), dimension(:), allocatable  :: r,q,v,alpha,beta,&
-                                             eigval,work,a,tmparr
+      real(d), dimension(:), allocatable  :: r,q
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
       allocate(r(matdim))
       allocate(q(matdim))
-      allocate(v(matdim))
-      allocate(alpha(krydim))
-      allocate(beta(krydim))
-      allocate(eigval(krydim))
-      allocate(tmparr(krydim))
-      allocate(a(krydim))
       
 !-----------------------------------------------------------------------
-! Generate the Lanczos vectors
+! Generate the Krylov vectors
 !-----------------------------------------------------------------------
+      ! Index of the first Krylov vector
+      k1=(istep-1)*(krydim+1)+1
+
       ! The first vector is |Psi_n(t)> orthogonalised against the
       ! previously converged states and then renormalised
-      qmat(:,1)=vec_old(:,ista)
+      kryvec(:,k1)=vec_old(:,ista)
       do i=1,ista-1
-         dp=dot_product(vec_conv(:,i),qmat(:,1))
-         qmat(:,1)=qmat(:,1)-dp*vec_conv(:,i)
+         dp=dot_product(vec_conv(:,i),kryvec(:,k1))
+         kryvec(:,k1)=kryvec(:,k1)-dp*vec_conv(:,i)
       enddo
-      dp=dot_product(qmat(:,1),qmat(:,1))
-      qmat(:,1)=qmat(:,1)/sqrt(dp)
 
-      q=qmat(:,1)
+      dp=dot_product(kryvec(:,k1),kryvec(:,k1))
+      kryvec(:,k1)=kryvec(:,k1)/sqrt(dp)
+      knorm(k1)=sqrt(dp)
       
-      ! alpha_1
-      call hxkryvec(ista,1,matdim,noffd,q,r)
-      alpha(1)=dot_product(q,r)
-
-      ! beta_1
-      r=r-alpha(1)*q
-      beta(1)=sqrt(dot_product(r,r))
-
-      truedim=1
+      q=kryvec(:,k1)      
       
       ! Remaining vectors
-      do j=2,krydim
+      do j=k1+1,istep*(krydim+1)
 
-         truedim=truedim+1
-
-         ! Compute the next vector and pair of matrix elements
-         v=q
-         q=r/beta(j-1)
-         qmat(:,j)=q
          call hxkryvec(ista,j,matdim,noffd,q,r)
-         r=r-beta(j-1)*v
-         alpha(j)=dot_product(q,r)
-         r=r-alpha(j)*q
-         beta(j)=sqrt(dot_product(r,r))
+
+         dp=dot_product(r,r)
+         r=r/sqrt(dp)
+
+         kryvec(:,j)=r
+
+         knorm(j)=sqrt(dp)
          
-      enddo
-
-      ! Final Lanczos vector that is needed to compute the matrix
-      ! elements between this timestep's Lanczos vectors and those
-      ! of the previous timesteps
-      qmat(:,krydim+1)=q
-
-!-----------------------------------------------------------------------
-! Fill in the sub-block of the subspace Hamiltonian and overlap
-! matrices corresponding to the current timestep
-!-----------------------------------------------------------------------
-      k1=(istep-1)*krydim+1
-      k2=istep*krydim
-
-      ! Diagonal elements
-      count=0
-      do i=k1,k2
-         count=count+1
-         subhmat(i,i)=alpha(count)
-      enddo
-
-      ! Off-diagonal elements
-      count=0
-      do i=k1,k2-1
-         count=count+1
-         j=i+1
-         subhmat(i,j)=beta(count)
-         subhmat(j,i)=subhmat(i,j)         
+         q=kryvec(:,j)
+         
       enddo
 
 !-----------------------------------------------------------------------
@@ -1748,79 +1706,89 @@
 !-----------------------------------------------------------------------
       deallocate(r)
       deallocate(q)
-      deallocate(v)
-      deallocate(alpha)
-      deallocate(beta)
-      deallocate(eigval)
-      deallocate(tmparr)
-      deallocate(a)
 
       return
       
-    end subroutine get_lancvecs_current
+    end subroutine get_kryvecs_current
 
 !#######################################################################
 
-    subroutine matel_diffsteps(istep)
+    subroutine subspace_matrices(istep)
 
       implicit none
 
-      integer :: istep,n,i,j
+      integer :: istep,n,i,j,i1,j1
 
+!-----------------------------------------------------------------------
+! Fill in the sub-block of the subspace Hamiltonian and overlap
+! matrices corresponding to the current timestep
+!-----------------------------------------------------------------------
+      i1=(istep-1)*krydim
+      do i=(istep-1)*(krydim+1)+1,istep*(krydim+1)-1
+
+         i1=i1+1
+
+         j1=i1-1
+         do j=i,istep*(krydim+1)-1
+
+            j1=j1+1
+
+            ! H_ij
+            subhmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j+1))
+            subhmat(j1,i1)=subhmat(i1,j1)
+
+            ! S_ij
+            subsmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j))
+            subsmat(j1,i1)=subsmat(i1,j1)
+
+         enddo
+      enddo
+      
 !----------------------------------------------------------------------
-! Subspace Hamiltonian matrix
+! Couplings to the Krylov vectors of the previous timesteps
 !----------------------------------------------------------------------
       ! Loop over previous timesteps
       do n=1,istep-1
 
-         ! Loop over the Lanczos vectors of the nth timestep
-         do i=(n-1)*(krydim+1)+1,n*(krydim)
+         ! Loop over the Krylov vectors of the nth timestep
+         i1=(n-1)*krydim
+         do i=(n-1)*(krydim+1)+1,n*(krydim+1)-1
 
-            ! Loop over the Lanczos vectors of the current timestep
-            do j=(istep-1)*(krydim+1)+1,istep*krydim
+            i1=i1+1
+            
+            ! Loop over the Krylov vectors of the current timestep
+            j1=(istep-1)*krydim
+            do j=(istep-1)*(krydim+1)+1,istep*(krydim+1)-1
 
-               ! Calculate the matix element H_ij
-               subhmat(i,j)=dot_product(lancvec(:,i),lancvec(:,j+1))
-               subhmat(j,i)=subhmat(i,j)
+               j1=j1+1
+
+               ! H_ij
+               subhmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j+1))
+               subhmat(j1,i1)=subhmat(i1,j1)
+
+               ! S_ij
+               subsmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j))
+               subsmat(j1,i1)=subhmat(i1,j1)
                
             enddo
             
          enddo
             
       enddo
-         
-!----------------------------------------------------------------------
-! Subspace overlap matrix
-!----------------------------------------------------------------------
-      ! Loop over previous timesteps
-      do n=1,istep-1
 
-         ! Loop over the Lanczos vectors of the nth timestep
-         do i=(n-1)*(krydim+1)+1,n*(krydim)
-
-            ! Loop over the Lanczos vectors of the current timestep
-            do j=(istep-1)*(krydim+1)+1,istep*krydim
-
-               ! Calculate the matix element H_ij
-               subhmat(i,j)=dot_product(lancvec(:,i),lancvec(:,j))
-               subhmat(j,i)=subhmat(i,j)
-               
-            enddo
-            
-         enddo
-            
-      enddo
-      
       return
       
-    end subroutine matel_diffsteps
+    end subroutine subspace_matrices
 
 !#######################################################################
 
-    subroutine solve_subspace_tdse
+    subroutine solve_subspace_tdse(istep)
 
       implicit none
 
+
+      integer :: istep,k2
+      
 !----------------------------------------------------------------------
 ! Perform Lowdin's canonical orthogonalisation of the variational
 ! subspace basis vectors
