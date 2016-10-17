@@ -208,9 +208,9 @@
 
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: maxvecs,s,n
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: s,n
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -218,14 +218,14 @@
       ! Maximum no. of vectors that will be generated per state.
       ! Note that krydim+1 enters here as we generate one more vector
       ! per timestep than is used in forming the variational subspace
-      maxvecs=(krydim+1)*niter
+      maxvec=(krydim+1)*niter
       
       ! Representation of the Hamiltonian in the variational subspace
-      allocate(subhmat(maxvecs,maxvecs))
+      allocate(subhmat(maxvec,maxvec))
       subhmat=0.0d0
 
       ! Overlaps of the variational subspace vectors
-      allocate(subsmat(maxvecs,maxvecs))
+      allocate(subsmat(maxvec,maxvec))
       subsmat=0.0d0
 
       ! Vectors spanning the variational subspace
@@ -1657,13 +1657,15 @@
       integer*8, intent(in)               :: noffd
       integer                             :: ista,istep,i,j,k1,k2
       real(d)                             :: dp
-      real(d), dimension(:), allocatable  :: r,q
+      !real(d), dimension(:), allocatable  :: r,q
       
+      real(d), dimension(matdim) :: r,q
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      allocate(r(matdim))
-      allocate(q(matdim))
+      !allocate(r(matdim))
+      !allocate(q(matdim))
       
 !-----------------------------------------------------------------------
 ! Generate the Krylov vectors
@@ -1704,8 +1706,8 @@
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(r)
-      deallocate(q)
+      !deallocate(r)
+      !deallocate(q)
 
       return
       
@@ -1787,19 +1789,159 @@
       implicit none
 
 
-      integer :: istep,k2
-      
+      integer                              :: istep,nvec,nlin,nnull,&
+                                              error,i
+      real(d), dimension(:,:), allocatable :: transmat,mattrans,&
+                                              hmat1,eigvec
+      real(d), dimension(:), allocatable   :: eigval,work,vec0
+
 !----------------------------------------------------------------------
 ! Perform Lowdin's canonical orthogonalisation of the variational
-! subspace basis vectors
+! subspace basis vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
-      print*,
-      print*,"WRITE THE CANONICAL ORTHOGONALISATION CODE!"
+      call canonical_ortho(nvec,nlin,nnull,istep,transmat,mattrans,&
+           hmat1,vec0)
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+      allocate(eigval(nlin))
+      allocate(work(3*nlin))
+
+!----------------------------------------------------------------------
+! Diagonalise the transformed subspace Hamiltonian matrix, hmat1
+!----------------------------------------------------------------------
+      call dsyev('V','U',nlin,hmat1,nlin,eigval,work,3*nlin,error)
+      if (error.ne.0) then
+         errmsg='Diagonalisation of the transformed subspace &
+              Hamiltonian failed in solve_subspace_tdse'
+         call error_control
+      endif
+
+!----------------------------------------------------------------------
+! Propagate the wavefunction
+!----------------------------------------------------------------------
+      print*,"WRITE THE LIU PROPAGATION CODE"
       STOP
-      
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+      deallocate(transmat)
+      deallocate(mattrans)
+      deallocate(hmat1)
+      deallocate(eigval)
+      deallocate(vec0)
+      deallocate(work)
+
       return
 
     end subroutine solve_subspace_tdse
+
+!#######################################################################
+
+    subroutine canonical_ortho(nvec,nlin,nnull,istep,transmat,mattrans,&
+         hmat1,vec0)
+
+      implicit none
+
+      integer                              :: nvec,nlin,nnull,istep,&
+                                              error,i,j
+      real(d), dimension(:,:), allocatable :: smat,hmat,eigvec,&
+                                              smat1,hmat1,transmat,&
+                                              mattrans
+      real(d), dimension(:), allocatable   :: eigval,work,vec0
+      real(d), parameter                   :: eps=1e-6
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+      ! Number of subspace vectors
+      nvec=istep*krydim
+
+      allocate(smat(nvec,nvec))
+      allocate(hmat(nvec,nvec)) 
+      allocate(eigvec(nvec,nvec))
+      allocate(eigval(nvec))
+      allocate(work(3*nvec))
+
+!----------------------------------------------------------------------
+! Diagonalise the subspace overlap matrix
+!----------------------------------------------------------------------
+      smat(1:nvec,1:nvec)=subsmat(1:nvec,1:nvec)
+      hmat(1:nvec,1:nvec)=subhmat(1:nvec,1:nvec)
+
+      eigvec=smat
+      call dsyev('V','U',nvec,eigvec,nvec,eigval,work,3*nvec,error)
+
+      if (error.ne.0) then
+         errmsg='Diagonalisation of the subspace Hamiltonian failed &
+              in canonical_ortho'
+         call error_control
+      endif
+      
+!----------------------------------------------------------------------
+! Transform the subspace Hamiltonian to the space spanned by the
+! linearly indpendent vectors
+!
+! Note that the eigenvectors of the subspace overlap matrix are
+! arranged in order of increasing eigenvalues, and that this matrix
+! is positive semidefinite, i.e., the null space vectors will come
+! first
+!----------------------------------------------------------------------
+      ! Number of linearly independent vectors
+      nlin=0
+      do i=1,nvec
+         if (abs(eigval(i)).gt.eps) nlin=nlin+1
+      enddo
+
+      ! Number of null space vectors
+      nnull=nvec-nlin
+
+      ! Allocate arrays
+      allocate(smat1(nlin,nlin))
+      allocate(hmat1(nlin,nlin))
+      allocate(transmat(nvec,nlin))
+      allocate(mattrans(nlin,nvec))
+      allocate(vec0(nlin))
+
+      ! Set up the transformation matrices
+      transmat(1:nvec,1:nlin)=eigvec(1:nvec,nnull+1:nvec)
+      mattrans=transpose(transmat)
+      do i=1,nlin
+         transmat(:,i)=transmat(:,i)/sqrt(eigval(nnull+i))
+         mattrans(i,:)=mattrans(i,:)*sqrt(eigval(nnull+i))
+      enddo
+
+      ! Transformed subspace overlap and Hamiltonian matrices
+      ! N.B., we only calculate the transformed overlap matrix
+      ! for checking purposes...
+      smat1(1:nlin,1:nlin)=matmul(transpose(transmat),&
+           matmul(smat,transmat))      
+      hmat1(1:nlin,1:nlin)=matmul(transpose(transmat),&
+           matmul(hmat,transmat))
+
+!----------------------------------------------------------------------
+! Initial wavefunction in the basis of the transformed subspace vectors
+!
+! Note that in the basis of the original, untransformed subspace 
+! vectors, |Psi(0)> = (1,0,...,0)^T
+!----------------------------------------------------------------------
+      vec0(:)=mattrans(:,1)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+      deallocate(smat)
+      deallocate(hmat)
+      deallocate(eigval)
+      deallocate(eigvec)
+      deallocate(work)
+      deallocate(smat1)
+      
+      return
+
+    end subroutine canonical_ortho
     
 !#######################################################################
 
