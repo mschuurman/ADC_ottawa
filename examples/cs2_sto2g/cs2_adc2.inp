@@ -18,14 +18,14 @@ frozen_core=initial,final
 mem=1500
 
 diag_section
- method=relaxation
+ method=relaxation_liu
  nstates = 6
  block_size = 7
  tol = 1e-6
 
  timestep = 200
  krydim = 15
- maxit = 500
+ maxit = 20
  siltol=1e-6
 # ortho = unmodified 
  guess = subdiag

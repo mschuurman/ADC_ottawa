@@ -89,6 +89,7 @@
       lsubdiag=.false.
       rlxortho=2
       siltol=1e-5
+      rlxtype=1
       
      ! Final space
       kdim_f=10
@@ -97,7 +98,8 @@
       lsubdiag_f=.false.
       rlxortho_f=2
       siltol_f=1e-5
-
+      rlxtype_f=1
+      
 !-----------------------------------------------------------------------
 ! Lanczos parameters
 !-----------------------------------------------------------------------      

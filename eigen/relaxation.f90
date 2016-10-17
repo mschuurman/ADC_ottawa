@@ -25,7 +25,8 @@
     save
 
     integer                              :: maxbl,nrec,nblock,nconv,&
-                                            nstates,krydim,niter,iortho
+                                            nstates,krydim,niter,&
+                                            iortho,algor
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
@@ -34,6 +35,11 @@
     logical, dimension(:), allocatable   :: lconv
     logical                              :: lincore,lrdadc1,lrandom,lsub
 
+    ! SIL-liu arrays
+    integer                              :: maxvec
+    real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
+                                            vec_conv
+    
   contains
 
 !#######################################################################
@@ -44,7 +50,7 @@
 
       integer, intent(in)      :: matdim
       integer*8, intent(in)    :: noffd
-      integer                  :: n,k,l
+      integer                  :: k
       real(d)                  :: tw1,tw2,tc1,tc2
       character(len=120)       :: atmp
       
@@ -104,6 +110,52 @@
 !-----------------------------------------------------------------------
 ! Perform the block-relaxation calculation
 !-----------------------------------------------------------------------
+      if (algor.eq.1) then
+         ! Traditional SIL algorithm
+         call relaxation_sil(matdim,noffd)
+      else if (algor.eq.2) then
+         ! Basis reuse algorithm of Liu
+         call relaxation_sil_liu(matdim,noffd)
+      endif
+
+!-----------------------------------------------------------------------
+! Exit here if not all states have converged
+!-----------------------------------------------------------------------
+      if (nconv.lt.nstates) then
+         errmsg='Not all wavefunctions have converged. Quitting here.'
+         call error_control
+      endif
+
+!-----------------------------------------------------------------------
+! Write the converged eigenpairs to disk
+!-----------------------------------------------------------------------
+      call wreigenpairs
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      call finalise
+
+!-----------------------------------------------------------------------    
+! Output timings
+!-----------------------------------------------------------------------    
+      call times(tw2,tc2)
+      write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
+
+      return
+      
+    end subroutine relaxation
+
+!#######################################################################
+
+    subroutine relaxation_sil(matdim,noffd)
+
+      implicit none
+
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: n,k
+
       ! Loop over timesteps
       do n=1,niter
 
@@ -144,35 +196,95 @@
          vec_old=vec_new
          
       enddo
+      
+      return
+
+    end subroutine relaxation_sil
+
+!#######################################################################
+
+    subroutine relaxation_sil_liu(matdim,noffd)
+
+      implicit none
+
+      integer, intent(in)                  :: matdim
+      integer*8, intent(in)                :: noffd
+      integer                              :: maxvecs,s,n,k1,k2
 
 !-----------------------------------------------------------------------
-! Exit here if not all states have converged
+! Initialisation
 !-----------------------------------------------------------------------
-      if (nconv.lt.nstates) then
-         errmsg='Not all wavefunctions have converged. Quitting here.'
-         call error_control
-      endif
+      ! Maximum no. of vectors that will be generated per state.
+      ! Note that krydim+1 enters here as we generate one more vector
+      ! per timestep than is used in forming the variational subspace
+      maxvecs=(krydim+1)*niter
+
+      ! Representation of the Hamiltonian in the variational subspace
+      allocate(subhmat(maxvecs,maxvecs))
+      subhmat=0.0d0
+
+      ! Overlaps of the variational subspace vectors
+      allocate(subsmat(maxvecs,maxvecs))
+      subsmat=0.0d0
+
+      ! Vectors spanning the variational subspace
+      allocate(lancvec(matdim,maxvec))
+      lancvec=0.0d0
+
+      ! Converged states
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+      
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the SIL-Liu algorithm
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! Initialise arrays
+         subhmat=0.0d0
+         subsmat=0.0d0
+         lancvec=0.0d0
+         
+         ! Loop over timesteps
+         do n=1,niter
+         
+            ! Generation of the Lanczos vectors for the current
+            ! timestep.
+            ! Note that we also calculate the matrix elements of
+            ! the variational subspace representation of the Hamiltonian
+            ! corresponding to the current timestep here.
+            k1=(n-1)*(krydim+1)+1
+            k2=n*(krydim+1)
+            call get_lancvecs_current(s,n,matdim,noffd,lancvec(:,k1:k2))
+
+            ! Calculation of the Hamiltonian and overlap matrix elements
+            ! between the vectors calculated in this timestep and those
+            ! calculated in previous timesteps
+            call matel_diffsteps(n)
+
+            ! Calculate |Psi(t+dt)>
+            call solve_subspace_tdse
+            
+            STOP
+            
+         enddo
+            
+      enddo
+
 
 !-----------------------------------------------------------------------
-! Write the converged eigenpairs to disk
+! Finalisation
 !-----------------------------------------------------------------------
-      call wreigenpairs
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-      call finalise
-
-!-----------------------------------------------------------------------    
-! Output timings
-!-----------------------------------------------------------------------    
-      call times(tw2,tc2)
-      write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
-
+      deallocate(subhmat)
+      deallocate(subsmat)
+      deallocate(lancvec)
+      deallocate(vec_conv)
+      
       return
       
-    end subroutine relaxation
-
+    end subroutine relaxation_sil_liu
+    
 !#######################################################################
 
     subroutine initialise(matdim)
@@ -194,6 +306,7 @@
          niter=maxiter
          iortho=rlxortho
          toler=siltol
+         algor=rlxtype
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -204,8 +317,11 @@
          niter=maxiter_f
          iortho=rlxortho_f
          toler=siltol_f
+         algor=rlxtype_f
       endif
 
+      if (algor.eq.2) iortho=3
+      
 !-----------------------------------------------------------------------
 ! Allocation of arays
 !-----------------------------------------------------------------------
@@ -1445,12 +1561,19 @@
 ! Q |Psi>
 !-----------------------------------------------------------------------
       if (iortho.eq.2) then
+         ! SIL
          if (krynum.eq.2) then
             do i=1,ista-1
                dp=dot_product(vec_new(:,i),vecin)
                vecin=vecin-dp*vec_new(:,i)
             enddo
          endif
+      else if (iortho.eq.3) then
+         ! SIL-Liu
+         do i=1,ista-1
+            dp=dot_product(vec_conv(:,i),vecin)
+            vecin=vecin-dp*vec_conv(:,i)
+         enddo
       endif
 
 !-----------------------------------------------------------------------
@@ -1506,16 +1629,210 @@
 ! Q H Q |Psi>
 !-----------------------------------------------------------------------
       if (iortho.eq.2) then
+         ! SIL
          do i=1,ista-1
             dp=dot_product(vec_new(:,i),vecout)
             vecout=vecout-dp*vec_new(:,i)
+         enddo
+      else if (iortho.eq.3) then
+         ! SIL-liu
+         do i=1,ista-1
+            dp=dot_product(vec_conv(:,i),vecin)
+            vecin=vecin-dp*vec_conv(:,i)
          enddo
       endif
 
       return
       
     end subroutine hxkryvec
+
+!#######################################################################
+
+    subroutine get_lancvecs_current(ista,istep,matdim,noffd,qmat)
+
+      implicit none
+
+      integer, intent(in)                 :: matdim
+      integer*8, intent(in)               :: noffd
+      integer                             :: ista,istep,i,j,truedim,&
+                                             k1,k2,count
+      real(d), dimension(matdim,krydim+1) :: qmat
+      real(d)                             :: dp
+      real(d), dimension(:), allocatable  :: r,q,v,alpha,beta,&
+                                             eigval,work,a,tmparr
       
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(r(matdim))
+      allocate(q(matdim))
+      allocate(v(matdim))
+      allocate(alpha(krydim))
+      allocate(beta(krydim))
+      allocate(eigval(krydim))
+      allocate(tmparr(krydim))
+      allocate(a(krydim))
+      
+!-----------------------------------------------------------------------
+! Generate the Lanczos vectors
+!-----------------------------------------------------------------------
+      ! The first vector is |Psi_n(t)> orthogonalised against the
+      ! previously converged states and then renormalised
+      qmat(:,1)=vec_old(:,ista)
+      do i=1,ista-1
+         dp=dot_product(vec_conv(:,i),qmat(:,1))
+         qmat(:,1)=qmat(:,1)-dp*vec_conv(:,i)
+      enddo
+      dp=dot_product(qmat(:,1),qmat(:,1))
+      qmat(:,1)=qmat(:,1)/sqrt(dp)
+
+      q=qmat(:,1)
+      
+      ! alpha_1
+      call hxkryvec(ista,1,matdim,noffd,q,r)
+      alpha(1)=dot_product(q,r)
+
+      ! beta_1
+      r=r-alpha(1)*q
+      beta(1)=sqrt(dot_product(r,r))
+
+      truedim=1
+      
+      ! Remaining vectors
+      do j=2,krydim
+
+         truedim=truedim+1
+
+         ! Compute the next vector and pair of matrix elements
+         v=q
+         q=r/beta(j-1)
+         qmat(:,j)=q
+         call hxkryvec(ista,j,matdim,noffd,q,r)
+         r=r-beta(j-1)*v
+         alpha(j)=dot_product(q,r)
+         r=r-alpha(j)*q
+         beta(j)=sqrt(dot_product(r,r))
+         
+      enddo
+
+      ! Final Lanczos vector that is needed to compute the matrix
+      ! elements between this timestep's Lanczos vectors and those
+      ! of the previous timesteps
+      qmat(:,krydim+1)=q
+
+!-----------------------------------------------------------------------
+! Fill in the sub-block of the subspace Hamiltonian and overlap
+! matrices corresponding to the current timestep
+!-----------------------------------------------------------------------
+      k1=(istep-1)*krydim+1
+      k2=istep*krydim
+
+      ! Diagonal elements
+      count=0
+      do i=k1,k2
+         count=count+1
+         subhmat(i,i)=alpha(count)
+      enddo
+
+      ! Off-diagonal elements
+      count=0
+      do i=k1,k2-1
+         count=count+1
+         j=i+1
+         subhmat(i,j)=beta(count)
+         subhmat(j,i)=subhmat(i,j)         
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(r)
+      deallocate(q)
+      deallocate(v)
+      deallocate(alpha)
+      deallocate(beta)
+      deallocate(eigval)
+      deallocate(tmparr)
+      deallocate(a)
+
+      return
+      
+    end subroutine get_lancvecs_current
+
+!#######################################################################
+
+    subroutine matel_diffsteps(istep)
+
+      implicit none
+
+      integer :: istep,n,i,j
+
+!----------------------------------------------------------------------
+! Subspace Hamiltonian matrix
+!----------------------------------------------------------------------
+      ! Loop over previous timesteps
+      do n=1,istep-1
+
+         ! Loop over the Lanczos vectors of the nth timestep
+         do i=(n-1)*(krydim+1)+1,n*(krydim)
+
+            ! Loop over the Lanczos vectors of the current timestep
+            do j=(istep-1)*(krydim+1)+1,istep*krydim
+
+               ! Calculate the matix element H_ij
+               subhmat(i,j)=dot_product(lancvec(:,i),lancvec(:,j+1))
+               subhmat(j,i)=subhmat(i,j)
+               
+            enddo
+            
+         enddo
+            
+      enddo
+         
+!----------------------------------------------------------------------
+! Subspace overlap matrix
+!----------------------------------------------------------------------
+      ! Loop over previous timesteps
+      do n=1,istep-1
+
+         ! Loop over the Lanczos vectors of the nth timestep
+         do i=(n-1)*(krydim+1)+1,n*(krydim)
+
+            ! Loop over the Lanczos vectors of the current timestep
+            do j=(istep-1)*(krydim+1)+1,istep*krydim
+
+               ! Calculate the matix element H_ij
+               subhmat(i,j)=dot_product(lancvec(:,i),lancvec(:,j))
+               subhmat(j,i)=subhmat(i,j)
+               
+            enddo
+            
+         enddo
+            
+      enddo
+      
+      return
+      
+    end subroutine matel_diffsteps
+
+!#######################################################################
+
+    subroutine solve_subspace_tdse
+
+      implicit none
+
+!----------------------------------------------------------------------
+! Perform Lowdin's canonical orthogonalisation of the variational
+! subspace basis vectors
+!----------------------------------------------------------------------
+      print*,
+      print*,"WRITE THE CANONICAL ORTHOGONALISATION CODE!"
+      STOP
+      
+      return
+
+    end subroutine solve_subspace_tdse
+    
 !#######################################################################
 
     subroutine check_conv(matdim,noffd)
