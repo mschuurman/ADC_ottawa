@@ -208,9 +208,11 @@
 
       implicit none
 
-      integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
-      integer               :: s,n
+      integer, intent(in)                :: matdim
+      integer*8, intent(in)              :: noffd
+      integer                            :: s,n
+      real(d), dimension(:), allocatable :: vec0,vecprop
+      real(d)                            :: energy,residual
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -237,6 +239,14 @@
       ! elements)
       allocate(knorm(maxvec))
       
+      ! |Psi(0)>
+      allocate(vec0(matdim))
+      vec0=0.0d0
+
+      ! |Psi(dt)>
+      allocate(vecprop(matdim))
+      vecprop=0.0d0
+
       ! Converged states
       allocate(vec_conv(matdim,nblock))
       vec_conv=0.0d0
@@ -251,27 +261,36 @@
          subhmat=0.0d0
          subsmat=0.0d0
          kryvec=0.0d0
+         vec0=vec_old(:,s)
 
          ! Loop over timesteps
          do n=1,niter
          
             ! Generation of the Krylov vectors for the current
             ! timestep
-            call get_kryvecs_current(s,n,matdim,noffd)
+            call get_kryvecs_current(s,n,matdim,noffd,vec0)
             
             ! Calculation of the subspace Hamiltonian and overlap
             ! matrix elements
             call subspace_matrices(n)
 
             ! Calculate |Psi(t+dt)>
-            call solve_subspace_tdse(n)
+            call solve_subspace_tdse(n,vecprop,matdim)
             
-            STOP
+            ! Calculate the residual
+            call residual_1vec(vecprop,matdim,noffd,energy,residual)
+
+            ! Reset vec0
+            vec0=vecprop
+
+            ! Output info
+            print*,n,residual
             
          enddo
-            
-      enddo
 
+         STOP
+
+      enddo
 
 !-----------------------------------------------------------------------
 ! Finalisation
@@ -280,6 +299,7 @@
       deallocate(subsmat)
       deallocate(kryvec)
       deallocate(knorm)
+      deallocate(vecprop)
       deallocate(vec_conv)
       
       return
@@ -973,7 +993,7 @@
 !-----------------------------------------------------------------------
       if (.not.lincore) then
          
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))      
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
          if (hamflag.eq.'i') then
             filename='SCRATCH/hmlt.offi'
          else if (hamflag.eq.'f') then
@@ -1011,6 +1031,70 @@
       return
       
     end subroutine hxpsi_all
+
+!#######################################################################
+
+    subroutine hxpsi_1vec(matdim,noffd,vecin,vecout)
+      
+      use iomod, only: freeunit
+      use constants
+      use parameters
+      
+      implicit none
+
+      integer, intent(in)        :: matdim
+      integer*8, intent(in)      :: noffd
+      integer                    :: iham,nlim,i,j,k,l,m,n
+      real(d), dimension(matdim) :: vecin,vecout
+      character(len=70)          :: filename
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      vecout=0.0d0
+      do n=1,matdim
+         vecout(n)=hii(n)*vecin(n)
+      enddo
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      if (.not.lincore) then
+         
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+         if (hamflag.eq.'i') then
+            filename='SCRATCH/hmlt.offi'
+         else if (hamflag.eq.'f') then
+            filename='SCRATCH/hmlt.offc'
+         endif
+
+         open(iham,file=filename,status='old',access='sequential',&
+              form='unformatted')
+         
+         do k=1,nrec
+            read(iham) hij(:),indxi(:),indxj(:),nlim
+            do l=1,nlim
+               vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
+               vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
+            enddo
+         enddo
+         
+         close(iham)
+
+         deallocate(hij,indxi,indxj)
+
+      else
+
+         do l=1,noffd
+            vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
+            vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
+         enddo
+         
+      endif
+
+      return
+
+    end subroutine hxpsi_1vec
 
 !#######################################################################
 ! silstep: propagates the wavefunction vector vec0 forward by a
@@ -1649,47 +1733,49 @@
 
 !#######################################################################
 
-    subroutine get_kryvecs_current(ista,istep,matdim,noffd)
+    subroutine get_kryvecs_current(ista,istep,matdim,noffd,vec0)
 
       implicit none
 
       integer, intent(in)                 :: matdim
       integer*8, intent(in)               :: noffd
-      integer                             :: ista,istep,i,j,k1,k2
-      real(d)                             :: dp
-      !real(d), dimension(:), allocatable  :: r,q
+      integer                             :: ista,istep,i,j,i1,j1,k1
+      real(d)                             :: dp,norm
+      real(d), dimension(matdim)          :: vec0
+      real(d), dimension(:), allocatable  :: r,q
       
-      real(d), dimension(matdim) :: r,q
-
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      !allocate(r(matdim))
-      !allocate(q(matdim))
+      allocate(r(matdim))
+      allocate(q(matdim))
       
 !-----------------------------------------------------------------------
-! Generate the Krylov vectors
+! Index of the first Krylov vector
 !-----------------------------------------------------------------------
-      ! Index of the first Krylov vector
       k1=(istep-1)*(krydim+1)+1
 
-      ! The first vector is |Psi_n(t)> orthogonalised against the
-      ! previously converged states and then renormalised
-      kryvec(:,k1)=vec_old(:,ista)
+!-----------------------------------------------------------------------
+! The first vector is |Psi_n(t)> orthogonalised against the previously
+! converged states and then renormalised
+!----------------------------------------------------------------------- 
+      kryvec(:,k1)=vec0(:)
+
       do i=1,ista-1
          dp=dot_product(vec_conv(:,i),kryvec(:,k1))
          kryvec(:,k1)=kryvec(:,k1)-dp*vec_conv(:,i)
       enddo
-
       dp=dot_product(kryvec(:,k1),kryvec(:,k1))
       kryvec(:,k1)=kryvec(:,k1)/sqrt(dp)
       knorm(k1)=sqrt(dp)
       
-      q=kryvec(:,k1)      
-      
-      ! Remaining vectors
-      do j=k1+1,istep*(krydim+1)
+      q=kryvec(:,k1)
 
+!-----------------------------------------------------------------------      
+! Remaining vectors
+!-----------------------------------------------------------------------
+      do j=k1+1,istep*(krydim+1)
+         
          call hxkryvec(ista,j,matdim,noffd,q,r)
 
          dp=dot_product(r,r)
@@ -1706,8 +1792,8 @@
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      !deallocate(r)
-      !deallocate(q)
+      deallocate(r)
+      deallocate(q)
 
       return
       
@@ -1736,7 +1822,8 @@
             j1=j1+1
 
             ! H_ij
-            subhmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j+1))
+            subhmat(i1,j1)=&
+                 dot_product(kryvec(:,i),kryvec(:,j+1))*knorm(j+1)
             subhmat(j1,i1)=subhmat(i1,j1)
 
             ! S_ij
@@ -1765,7 +1852,8 @@
                j1=j1+1
 
                ! H_ij
-               subhmat(i1,j1)=dot_product(kryvec(:,i),kryvec(:,j+1))
+               subhmat(i1,j1)=&
+                    dot_product(kryvec(:,i),kryvec(:,j+1))*knorm(j+1)
                subhmat(j1,i1)=subhmat(i1,j1)
 
                ! S_ij
@@ -1784,34 +1872,43 @@
 
 !#######################################################################
 
-    subroutine solve_subspace_tdse(istep)
+    subroutine solve_subspace_tdse(istep,vecprop,matdim)
 
       implicit none
 
-
+      integer, intent(in)                  :: matdim
       integer                              :: istep,nvec,nlin,nnull,&
-                                              error,i
+                                              error,i,j,k,m,i1,j1
+      real(d), dimension(matdim)           :: vecprop
       real(d), dimension(:,:), allocatable :: transmat,mattrans,&
-                                              hmat1,eigvec
-      real(d), dimension(:), allocatable   :: eigval,work,vec0
+                                              hmat1,eigvec,umat
+      real(d), dimension(:), allocatable   :: eigval,work,coeff0,coeff,&
+                                              coeff1
+      real(d)                              :: dtau,norm
 
 !----------------------------------------------------------------------
 ! Perform Lowdin's canonical orthogonalisation of the variational
 ! subspace basis vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
       call canonical_ortho(nvec,nlin,nnull,istep,transmat,mattrans,&
-           hmat1,vec0)
+           hmat1,coeff0)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
       allocate(eigval(nlin))
       allocate(work(3*nlin))
+      allocate(coeff(nvec))
+      allocate(coeff1(nlin))
+      allocate(eigvec(nlin,nlin))
+      allocate(umat(nlin,nlin))
 
 !----------------------------------------------------------------------
 ! Diagonalise the transformed subspace Hamiltonian matrix, hmat1
 !----------------------------------------------------------------------
-      call dsyev('V','U',nlin,hmat1,nlin,eigval,work,3*nlin,error)
+      eigvec=hmat1
+
+      call dsyev('V','U',nlin,eigvec,nlin,eigval,work,3*nlin,error)
       if (error.ne.0) then
          errmsg='Diagonalisation of the transformed subspace &
               Hamiltonian failed in solve_subspace_tdse'
@@ -1821,8 +1918,56 @@
 !----------------------------------------------------------------------
 ! Propagate the wavefunction
 !----------------------------------------------------------------------
-      print*,"WRITE THE LIU PROPAGATION CODE"
-      STOP
+      dtau=step
+
+      ! Representation of the propagator in the transformed subspace
+      ! basis
+      umat=0.0d0
+      do j=1,nlin
+         do m=1,nlin
+            do k=1,nlin
+               umat(j,m)=umat(j,m)+&
+                    eigvec(j,k)*exp(-eigval(k)*dtau)*eigvec(m,k)
+            enddo
+         enddo
+      enddo
+
+      ! Expansion coefficients for |Psi(dt)> in the basis of the
+      ! transformed subspace states
+      coeff1=matmul(umat,coeff0)
+      norm=sqrt(dot_product(coeff1,coeff1))      
+      coeff1=coeff1/norm
+
+      ! Transformation to the original, untransformed subspace basis
+      coeff=matmul(transmat,coeff1)
+
+      ! Construction of |Psi(dt)>
+      !
+      ! Note that the kryvec array also contains the "(m+1)th" vectors
+      ! that are only used in the construction of the subspace
+      ! Hamiltonian but are not used in the expansion of |Psi(dt)>
+      vecprop=0.0d0
+      i=0
+      i1=0
+10    continue
+      i1=i1+1
+      if (mod(i1,krydim+1).ne.0) then
+         i=i+1
+         vecprop=vecprop+coeff(i)*kryvec(:,i1)
+      endif
+      if (i1.lt.istep*krydim+1) goto 10
+
+      ! NORM CHECK
+      norm=0.0d0
+      do i=1,nvec
+         do j=1,nvec
+            norm=norm+subsmat(i,j)*coeff(i)*coeff(j)
+         enddo
+      enddo
+      norm=sqrt(norm)
+      print*,
+      print*,"Norm:",norm
+      !STOP
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1831,8 +1976,11 @@
       deallocate(mattrans)
       deallocate(hmat1)
       deallocate(eigval)
-      deallocate(vec0)
+      deallocate(coeff0)
       deallocate(work)
+      deallocate(eigvec)
+      deallocate(coeff)      
+      deallocate(umat)
 
       return
 
@@ -1841,16 +1989,16 @@
 !#######################################################################
 
     subroutine canonical_ortho(nvec,nlin,nnull,istep,transmat,mattrans,&
-         hmat1,vec0)
+         hmat1,coeff0)
 
       implicit none
 
       integer                              :: nvec,nlin,nnull,istep,&
-                                              error,i,j
+                                              error,i,j,k
       real(d), dimension(:,:), allocatable :: smat,hmat,eigvec,&
                                               smat1,hmat1,transmat,&
                                               mattrans
-      real(d), dimension(:), allocatable   :: eigval,work,vec0
+      real(d), dimension(:), allocatable   :: eigval,work,coeff0
       real(d), parameter                   :: eps=1e-6
 
 !----------------------------------------------------------------------
@@ -1903,7 +2051,7 @@
       allocate(hmat1(nlin,nlin))
       allocate(transmat(nvec,nlin))
       allocate(mattrans(nlin,nvec))
-      allocate(vec0(nlin))
+      allocate(coeff0(nlin))
 
       ! Set up the transformation matrices
       transmat(1:nvec,1:nlin)=eigvec(1:nvec,nnull+1:nvec)
@@ -1925,9 +2073,10 @@
 ! Initial wavefunction in the basis of the transformed subspace vectors
 !
 ! Note that in the basis of the original, untransformed subspace 
-! vectors, |Psi(0)> = (1,0,...,0)^T
+! vectors, |Psi(0)> = (0,...,0,1,0,...,0)^T
 !----------------------------------------------------------------------
-      vec0(:)=mattrans(:,1)
+      k=(istep-1)*krydim+1
+      coeff0(:)=mattrans(:,k)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1942,6 +2091,48 @@
       return
 
     end subroutine canonical_ortho
+
+!#######################################################################
+
+    subroutine residual_1vec(vecprop,matdim,noffd,energy,residual)
+
+      implicit none
+
+      integer, intent(in)                :: matdim
+      integer*8, intent(in)              :: noffd
+      real(d), dimension(matdim)         :: vecprop
+      real(d), dimension(:), allocatable :: hpsi,resvec
+      real(d)                            :: energy,residual
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(hpsi(matdim))
+      allocate(resvec(matdim))
+
+!-----------------------------------------------------------------------
+! Calculate the residual r = || H |Psi> - E |Psi> ||
+!-----------------------------------------------------------------------
+      ! H |Psi>
+      call hxpsi_1vec(matdim,noffd,vecprop,hpsi)
+
+      ! Energy, <Psi| H |Psi>
+      energy=dot_product(vecprop,hpsi)
+
+      ! Residual
+      resvec=hpsi-energy*vecprop
+      residual=dot_product(resvec,resvec)
+      residual=sqrt(residual)
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      deallocate(hpsi)
+      deallocate(resvec)
+
+      return
+
+    end subroutine residual_1vec
     
 !#######################################################################
 

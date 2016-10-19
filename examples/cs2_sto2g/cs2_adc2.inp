@@ -22,8 +22,8 @@ diag_section
  nstates = 6
  block_size = 7
  tol = 1e-5
- timestep = 200
- krydim = 15
+ timestep = 10.0
+ krydim = 5
  maxit = 20
  siltol=1e-5
  guess = subdiag

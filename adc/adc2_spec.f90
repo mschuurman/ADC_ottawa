@@ -27,7 +27,7 @@
         real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
         real(d), dimension(:), allocatable   :: travec
         real(d)                              :: e_init,e0
-        real(d), dimension(:,:), allocatable :: rvec
+        real(d), dimension(:,:), allocatable :: rvec,travec2
         real(d), dimension(:), allocatable   :: vec_init
         real*8, dimension(:), allocatable    :: mtmf
         type(gam_structure)                  :: gam
@@ -76,8 +76,8 @@
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0) call initial_space_tdm(ener,rvec,ndim,&
-             mtm,tmvec,osc_str,kpq)
+        if (statenumber.gt.0.or.lrixs)&
+             call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
@@ -117,7 +117,7 @@
 ! Calculation of the final space states
 !-----------------------------------------------------------------------
         call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffdf)
+           vec_init,mtmf,noffdf,rvec,travec2)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the final states
@@ -131,8 +131,9 @@
 ! Calculate the transition moments and oscillator strengths between 
 ! the initial state and the final states
 !
-! Note that if we are NOT considering ionization, then we will also
-! output the final Davidson state energies and configurations here
+! Note that if we are NOT considering ionization or a RIXS
+! calculation, then we will also output the final Davidson state
+! energies and configurations here 
 !-----------------------------------------------------------------------
         call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
 
@@ -360,7 +361,7 @@
 !#######################################################################
 
       subroutine final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffdf)
+           vec_init,mtmf,noffdf,rvec,travec2)
 
         use constants
         use parameters
@@ -373,13 +374,15 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: travec2
 
         if (ldiagfinal) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
                 vec_init,mtmf,noffdf)
         else
            call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                vec_init,mtmf,noffdf)
+                vec_init,mtmf,noffdf,rvec,travec2)
         endif
 
         return
@@ -468,8 +471,8 @@
 
 !#######################################################################
 
-      subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffdf)
+      subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
+           travec,vec_init,mtmf,noffdf,rvec,travec2)
 
         use constants
         use parameters
@@ -485,6 +488,8 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: travec2
 
 !-----------------------------------------------------------------------        
 ! Acknowledging that we cannot use 2h2p unit vectors as initial
@@ -524,10 +529,10 @@
 ! and passed back in the travec array
 !-----------------------------------------------------------------------
         call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
-             travec,ndimf,kpq,kpqf,mtmf)
+             travec,ndimf,kpq,kpqf,mtmf,rvec,travec2)
 
 !-----------------------------------------------------------------------
-! Write the final space ADC(2)-s Hamiltonian matrix to file
+! Write the final space ADC(2) Hamiltonian matrix to file
 !-----------------------------------------------------------------------
         write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
         
@@ -559,7 +564,7 @@
 !#######################################################################
 
       subroutine lanczos_guess_vecs(vec_init,ndim,ndimsf,travec,ndimf,&
-           kpq,kpqf,mtmf)
+           kpq,kpqf,mtmf,rvec,travec2)
 
         use constants
         use parameters
@@ -571,22 +576,219 @@
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
         real(d), dimension(:), allocatable        :: mtmf
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: travec2
 
-!-----------------------------------------------------------------------
-! Ionisation from the ground state
-!-----------------------------------------------------------------------
-        if (statenumber.eq.0) call guess_vecs_gs2ex(ndimf,ndimsf,mtmf,&
-             kpqf)
-
-!-----------------------------------------------------------------------
-! Ionisation from an excited state
-!-----------------------------------------------------------------------
-        if (statenumber.gt.0) call guess_vecs_ex2ex(vec_init,ndim,&
-             ndimsf,travec,ndimf,kpq,kpqf)
+        if (lrixs) then
+           ! RIXS calculation
+           call guess_vecs_rixs(rvec,ndim,ndimf,ndimsf,kpq,kpqf,&
+                travec2)
+        else if (statenumber.eq.0) then
+           ! Ionisation from the ground state
+           call guess_vecs_gs2ex(ndimf,ndimsf,mtmf,kpqf)
+        else
+           ! Ionisation from an excited state
+           call guess_vecs_ex2ex(vec_init,ndim,ndimsf,travec,ndimf,&
+                kpq,kpqf)
+        endif
 
         return
 
       end subroutine lanczos_guess_vecs
+
+!#######################################################################
+
+      subroutine guess_vecs_rixs(rvec,ndim,ndimf,ndimsf,kpq,kpqf,travec2)
+        
+        use constants
+        use parameters
+        use misc
+        use get_matrix_dipole
+        use get_moment
+        use fspace
+        use guessvecs
+
+        implicit none
+        
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: i,k,ndim,ndimf,&
+                                                     ndimsf,iadc1,&
+                                                     itmp,k1,k2,&
+                                                     dim2,upper,&
+                                                     staindx
+        integer, dimension(:), allocatable        :: indx_tra,indx1,&
+                                                     indx2
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: travec2
+        real(d), dimension(:), allocatable        :: tmpvec
+        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
+
+
+!----------------------------------------------------------------------
+! Allocate the travec2 array
+!
+! The first column of this array holds the F-vector
+! F_J = < Psi_J | D | Psi_0 >, where the Psi_J
+! are the ISs spanning the final space
+!
+! The remaining columns hold the products of the IS representation of
+! the dipole operator and the initial space vectors
+!----------------------------------------------------------------------
+        allocate(travec2(ndimf,davstates+1))
+
+!-----------------------------------------------------------------------
+! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
+! are the ISs spanning the final space
+!-----------------------------------------------------------------------
+        call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,1),0)
+
+!-----------------------------------------------------------------------
+! Calculate the products of the IS representation of the dipole
+! operator and the initial space vectors
+!-----------------------------------------------------------------------
+        do i=1,davstates
+           write(ilog,'(90a)') ('-', k=1,90)
+           write(ilog,'(2x,a,1x,i2)') "State:",i
+           call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                rvec(:,i),travec2(:,i+1))
+        enddo
+
+!-----------------------------------------------------------------------
+! If requested, determine the block size based on the transition
+! matrix elements between the initial state and the intermediate
+! states (and possibly the ADC(1) eigenvectors)
+!
+! N.B., state numbers start from zero
+!-----------------------------------------------------------------------
+        if (ldynblock) call getblocksize(travec2(:,statenumber+1),&
+             ndimf,ndimsf)
+
+!-----------------------------------------------------------------------
+! From the values of the elements of travec2 corresponding to the
+! initial states (and/or the ADC(1) eigenvectors), determine which
+! vectors will form the initial Lanczos vectors
+!
+! Note that we can only have lancguess=3 or 4 for ADC(2)-s
+!-----------------------------------------------------------------------
+        allocate(tmpvec(ndimf))
+
+        staindx=statenumber+1
+
+        if (lancguess.eq.1) then
+           if (method_f.eq.2) then
+              upper=ndimsf
+           else if (method_f.eq.3) then
+              upper=ndimf
+           endif
+           tmpvec=travec2(1:upper,staindx)
+           call fill_stvc(upper,travec2(1:upper,staindx))
+           
+        else if (lancguess.eq.2) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the product of the 
+           ! 1h1p part of travec2
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec2(1:ndimsf,staindx))
+           enddo
+           call fill_stvc(ndimsf,travec2(1:ndimsf,staindx))
+
+        else if (lancguess.eq.3) then
+           ! 1h1p ISs
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,travec2(1:ndimsf,staindx)**2,indx1(:))
+
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec2(ndimsf+1:ndimf,staindx)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
+              ! resulting vector has the greates TDM with the initial
+              ! state)
+              if (travec2(k1,staindx).gt.0.and.travec2(k2,staindx).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the 1h1p IS
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        else if (lancguess.eq.4) then
+           ! Read the ADC(1) eigenvectors from file
+           call freeunit(iadc1)
+           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+                status='old')
+           read(iadc1) itmp,adc1vec           
+           close(iadc1)
+           ! Contract the ADC(1) eigenvectors with the 1h1p part of
+           ! the F-vector
+           do i=1,ndimsf
+              tmpvec(i)=dot_product(adc1vec(:,i),travec2(1:ndimsf,staindx))
+           enddo
+           
+           ! ADC(1) eigenvectors
+           allocate(indx1(ndimsf))           
+           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
+           
+           ! 2h2p ISs
+           dim2=ndimf-ndimsf
+           allocate(indx2(dim2))
+           call dsortindxa1('D',dim2,travec2(ndimsf+1:ndimf,staindx)**2,indx2(:))
+
+           ! Fill in the stvc_mxc array
+           allocate(stvc_mxc(3*lmain))
+
+           do i=1,lmain
+
+              k1=indx1(i)
+              k2=ndimsf+indx2(i)
+
+              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
+              ! the resulting vector has the greates TDM with the
+              ! initial state)
+              if (tmpvec(k1).gt.0.and.travec2(k2,staindx).gt.0) then
+                 stvc_mxc(i*3-2)=1
+              else
+                 stvc_mxc(i*3-2)=-1
+              endif
+
+              ! Index of the ADC(1) eigenvector
+              stvc_mxc(i*3-1)=k1
+
+              ! Index of the 2h2p IS
+              stvc_mxc(i*3)=k2
+              
+           enddo
+
+           deallocate(indx1,indx2)
+
+        endif
+
+        deallocate(tmpvec)
+
+        return
+
+      end subroutine guess_vecs_rixs
 
 !#######################################################################
 
@@ -778,7 +980,7 @@
 
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
-! operator and the initial state vector
+! operator and the initial state vector 
 !-----------------------------------------------------------------------        
         call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
              travec)
@@ -1042,15 +1244,34 @@
         real(d)                                   :: e_init
 
         if (ldiagfinal) then
+           ! Davidson states
            call tdm_davstates_final(ndimf,ndimsf,travec,e_init,&
                 mtmf,kpqf)
         else
-           call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
+           ! Lanczos pseudostates
+           if (lrixs) then
+              call tdm_rixs
+           else
+              call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
+           endif
         endif
 
         return
 
       end subroutine final_space_tdm
+
+!#######################################################################
+
+      subroutine tdm_rixs
+        
+        implicit none
+
+        print*,"WRITE THE TDM_RIXS ROUTINE!"
+        STOP
+
+        return
+
+      end subroutine tdm_rixs
 
 !#######################################################################
 

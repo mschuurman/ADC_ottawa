@@ -106,6 +106,9 @@
          else if (keyword(i).eq.'cvs') then
             iscvs=.true.
 
+         else if (keyword(i).eq.'rixs') then
+            lrixs=.true.
+
          else if (keyword(i).eq.'energy_only') then
             energyonly=.true.
 
@@ -319,6 +322,8 @@
            endif
         endif
 
+        if (lrixs) lcvsfinal=.true.
+
 !-----------------------------------------------------------------------
 ! If an energy-only calculation has been requested, reset method
 ! accordingly
@@ -489,7 +494,8 @@
       endif
 
 !-----------------------------------------------------------------------
-! Lanczos section: only required if we are considering ionization
+! Lanczos section: only required if we are considering ionization or
+! a RIXS calculation
 !-----------------------------------------------------------------------
       if (.not.energyonly.and..not.ldiagfinal.and..not.ldyson) then
 
@@ -507,6 +513,24 @@
             msg='The no. Lanczos iterations has not been given'
          endif
 
+      endif
+
+      if (lrixs) then
+
+         if (.not.llanc) then
+            msg='No Lanczos section has been found'
+            goto 999
+         endif
+
+         if (lmain.eq.0.and..not.ldynblock) then
+            msg='The Lanczos block size has not been given'
+            goto 999
+         endif
+
+         if (ncycles.eq.0) then
+            msg='The no. Lanczos iterations has not been given'
+         endif
+         
       endif
 
 !-----------------------------------------------------------------------
