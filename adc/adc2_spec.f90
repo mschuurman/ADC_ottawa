@@ -135,7 +135,8 @@
 ! calculation, then we will also output the final Davidson state
 ! energies and configurations here 
 !-----------------------------------------------------------------------
-        call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
+        call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
+             travec2,ndim)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -146,6 +147,7 @@
         if (allocated(travec)) deallocate(travec)
         if (allocated(dipmom)) deallocate(dipmom)
         if (allocated(dipmom_f)) deallocate(dipmom_f)
+        if (allocated(travec2)) deallocate(travec2)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -660,7 +662,13 @@
 !
 ! N.B., state numbers start from zero
 !-----------------------------------------------------------------------
-        if (ldynblock) call getblocksize(travec2(:,statenumber+1),&
+        !if (ldynblock) call getblocksize(travec2(:,statenumber+1),&
+        !     ndimf,ndimsf)
+
+        ! CHECK
+        print*,"SORT OUT THIS INDEXING ISSUE"
+        STOP
+        if (ldynblock) call getblocksize(travec2(:,1),&
              ndimf,ndimsf)
 
 !-----------------------------------------------------------------------
@@ -673,6 +681,11 @@
         allocate(tmpvec(ndimf))
 
         staindx=statenumber+1
+
+        ! CHECK
+        print*,"SORT OUT THIS INDEXING ISSUE"
+        STOP
+        staindx=1
 
         if (lancguess.eq.1) then
            if (method_f.eq.2) then
@@ -1231,7 +1244,8 @@
 
 !#######################################################################
 
-      subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf)
+      subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
+           travec2,ndim)
 
         use constants
         use parameters
@@ -1239,9 +1253,11 @@
         implicit none
  
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf
+        integer                                   :: ndimf,ndimsf,ndim
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d)                                   :: e_init
+        real(d), dimension(ndimf,davstates+1)     :: travec2
+
 
         if (ldiagfinal) then
            ! Davidson states
@@ -1250,7 +1266,7 @@
         else
            ! Lanczos pseudostates
            if (lrixs) then
-              call tdm_rixs
+              call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
            else
               call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
            endif
@@ -1262,12 +1278,111 @@
 
 !#######################################################################
 
-      subroutine tdm_rixs
+      subroutine tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         
+        use constants
+        use parameters
+        use iomod
+
         implicit none
 
-        print*,"WRITE THE TDM_RIXS ROUTINE!"
-        STOP
+        integer                                    :: ndim,ndimf,&
+                                                      ndimsf,i,j,k,&
+                                                      ilanc,irixs,idav
+        real(d)                                    :: e_init
+        real(d), dimension(ndimf,davstates+1)      :: travec2
+        real(d), dimension(davstates+1,lancstates) :: tdm
+        real(d), dimension(:), allocatable         :: vec
+        real(d), dimension(davstates)              :: ener
+        real(d), dimension(lancstates)             :: enerf
+
+!-----------------------------------------------------------------------
+! For all valence states |Psi_i> (including the ground state),
+! calculate the matrix elements <Psi_i | D | chi_j>, where the chi_j
+! are the Lanczos pseudo-states
+!-----------------------------------------------------------------------
+        ! Allocate arrays
+        allocate(vec(ndimf))
+
+        ! Open the Lanczos pseudospectrum file
+        call freeunit(ilanc)
+        open(ilanc,file=lancname,status='old',access='sequential',&
+             form='unformatted')
+
+        ! Loop over the Lanczos pseudo-states
+        do j=1,lancstates
+              
+           read(ilanc) k,enerf(j),vec
+
+           ! Loop over the valence states (ground + excited)
+           do i=1,davstates+1
+              tdm(i,j)=dot_product(travec2(:,i),vec)
+           enddo
+
+        enddo
+        
+        ! Close the Lanczos pseudospectrum file
+        close(ilanc)
+
+        ! Deallocate arrays
+        deallocate(vec)
+
+!-----------------------------------------------------------------------
+! Read the Davidson energies from file
+!-----------------------------------------------------------------------
+        ! Allocate arrays
+        allocate(vec(ndim))
+
+        ! Open the Davidson file
+        call freeunit(idav)
+        open(idav,file=davname,status='unknown',access='sequential',&
+             form='unformatted')
+
+        ! Read the energies
+        do i=1,davstates
+           read(idav) k,ener(i),vec
+        enddo
+
+        ! Close the Davidson file
+        close(idav)
+        
+        ! Deallocate arrays
+        deallocate(vec)
+
+!-----------------------------------------------------------------------
+! Write the RIXS data file
+!-----------------------------------------------------------------------
+        ! Open the RIXS data file
+        call freeunit(irixs)
+        open(irixs,file='rixs.dat',status='unknown',form='unformatted')
+
+        ! Dimensions
+        write(irixs) davstates+1
+        write(irixs) lancstates
+
+        ! Ground state energy
+        write(irixs) ehf+e_mp2
+        
+        ! Energies of the valence-excited states
+        do i=1,davstates
+           write(irixs) ehf+e_mp2+ener(i)
+        enddo
+
+        ! Energies of the Lanczos pseudo-states
+        do i=1,lancstates
+           write(irixs) ehf+e_mp2+enerf(i)
+        enddo
+
+        ! Transition dipole matrix elements <Psi_i | D | chi_j>
+        ! between the valence states and the Lanczos psuedo-states
+        do i=1,davstates+1
+           do j=1,lancstates              
+              write(irixs) tdm(i,j)
+           enddo
+        enddo
+
+        ! Close the RIXS data file
+        close(irixs)
 
         return
 

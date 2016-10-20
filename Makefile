@@ -255,6 +255,23 @@ NUMHESS_OBJ = constants.o \
 	calcmod.o \
 	numhess.o
 
+########################################################################
+# RIXS plotting code
+########################################################################
+RIXSPLT = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	rixsplt/rixsmod.o \
+	rixsplt/rixsplt.o
+
+RIXSPLT_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	rixsmod.o \
+	rixsplt.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -272,6 +289,10 @@ mcspline: $(MCSPLINE)
 
 numhess: $(NUMHESS)
 	$(F90) $(F90OPTS) $(NUMHESS_OBJ) $(LIBS) -o numhess.x
+	rm -f *.o *~ *.mod
+
+rixsplt: $(RIXSPLT)
+	$(F90) $(F90OPTS) $(RIXSPLT_OBJ) $(LIBS) -o rixsplt.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
