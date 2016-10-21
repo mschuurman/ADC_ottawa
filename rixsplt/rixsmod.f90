@@ -11,12 +11,14 @@
     real(d), dimension(2)                :: ener1,ener2
     real(d)                              :: de1,de2
     real(d)                              :: gammaint,gammaf
-    character(len=70)                    :: datfile
+    character(len=70), dimension(3)      :: datfile
 
     ! Transition matrix elements
-    integer                              :: istate,nlanc,nval
-    real(d), dimension(:), allocatable   :: enerval,enerlanc
-    real(d), dimension(:,:), allocatable :: tdm,transsq
+    integer                                :: istate,nval,maxlanc
+    integer, dimension(3)                  :: nlanc
+    real(d), dimension(:), allocatable     :: enerval
+    real(d), dimension(:,:), allocatable   :: enerlanc,transsq
+    real(d), dimension(:,:,:), allocatable :: tdm
 
   end module rixsmod
 

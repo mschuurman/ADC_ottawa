@@ -22,7 +22,7 @@
 
 !-----------------------------------------------------------------------
 ! Calculation of the transition matrix elements
-! <f| D (Ebar_i(E_incident) - H)^-1 D |i>
+! <f| D_a (Ebar_i(E_incident) - H)^-1 D_a |i>, a=x,y,z
 !-----------------------------------------------------------------------
     call calc_transmat
 
@@ -58,7 +58,9 @@
       ener2=0.0d0
       de1=0.0d0
       de2=0.0d0
-      datfile='rixs.dat'
+      datfile(1)='rixs_x.dat'
+      datfile(2)='rixs_y.dat'
+      datfile(3)='rixs_z.dat'
       istate=0
 
 !-----------------------------------------------------------------------
@@ -179,10 +181,18 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'datfile') then
+         else if (keyword(i).eq.'datfiles') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               datfile=keyword(i)
+               datfile(1)=keyword(i)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  datfile(2)=keyword(i)                  
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  datfile(3)=keyword(i)                  
+               endif
             else
                goto 100
             endif
@@ -270,8 +280,8 @@
       write(ilog,'(2x,a,9x,3(x,F8.4),/)') 'Emission energy grid (eV):',&
            ener2(1),ener2(2),de2
 
-      write(ilog,'(2x,a,21x,a,/)') 'RIXS data file:',&
-           trim(datfile)
+      write(ilog,'(2x,a,20x,3(a,2x),/)') 'RIXS data files:',&
+           (trim(datfile(i)),i=1,3)
 
       return
 
@@ -287,52 +297,91 @@
 
       implicit none
 
-      integer :: unit,i,j
+      integer               :: unit,i,j,c,n
+      integer, dimension(3) :: itmp
 
 !-----------------------------------------------------------------------
-! Read the RIXS data file
+! Determine the maximum number of Lanczos pseudo-states and also make
+! sure that the number of valence states is the same for all
+! components of the dipole operator
 !-----------------------------------------------------------------------
-      ! Open the RIXS data file
-      call freeunit(unit)
-      open(unit,file=datfile,status='old',form='unformatted')
+      maxlanc=0
 
-      ! Dimensions
-      read(unit) nval
-      read(unit) nlanc
+      do c=1,3
+         
+         ! Open the RIXS data file
+         call freeunit(unit)
+         open(unit,file=datfile(c),status='old',form='unformatted')
 
-      ! Allocate arrays
-      allocate(tdm(nval,nlanc))
+         ! Read the number of valence and Lanczos states
+         read(unit) itmp(c)
+         read(unit) n
+
+         if (n.gt.maxlanc) maxlanc=n
+
+         close(unit)
+
+      enddo
+
+      ! Check that the no. valence states is the same for each
+      ! component of the dipole operator
+      if (.not.all(itmp.eq.itmp(1))) then
+         errmsg='The number of valence states is not the same for &
+              all components of the dipole operator'
+         call error_control
+      endif
+
+      ! Set the number of valence states
+      nval=itmp(1)
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(tdm(3,nval,maxlanc))
+      tdm=0.0d0
+
       allocate(enerval(nval))
-      allocate(enerlanc(nlanc))
+      enerval=0.0d0
 
-      ! Valence state energies
-      do i=1,nval
-         read(unit) enerval(i)
-      enddo
-      
-      ! Lanczos pseudo-state energies
-      do i=1,nlanc
-         read(unit) enerlanc(i)
-      enddo
+      allocate(enerlanc(3,maxlanc))
+      enerlanc=0.0d0
 
-      ! Matrix elements <Psi_i | D | chi_j> between the valence
-      ! states |Psi_i> (ground + excited) and the Lanczos pseudo-states
-      ! |chi_j> from file
-      do i=1,nval
-         do j=1,nlanc
-            read(unit) tdm(i,j)
+!-----------------------------------------------------------------------
+! Read the RIXS data files
+!-----------------------------------------------------------------------
+      do c=1,3
+
+         ! Open the RIXS data file
+         call freeunit(unit)
+         open(unit,file=datfile(c),status='old',form='unformatted')
+
+         ! Dimensions
+         read(unit) nval
+         read(unit) nlanc(c)         
+
+         ! Valence state energies
+         do i=1,nval
+            read(unit) enerval(i)
          enddo
+      
+         ! Lanczos pseudo-state energies
+         do i=1,nlanc(c)
+            read(unit) enerlanc(c,i)
+         enddo
+
+         ! Matrix elements <Psi_i | D | chi_j> between the valence
+         ! states |Psi_i> (ground + excited) and the Lanczos pseudo-states
+         ! |chi_j> from file
+         do i=1,nval
+            do j=1,nlanc(c)
+               read(unit) tdm(c,i,j)
+            enddo
+         enddo
+         
+         ! Close the RIXS data file
+         close(unit)
+         
       enddo
-
-      ! Close the RIXS data file
-      close(unit)
-
-      !! TEST
-      !do i=1,nlanc
-      !   print*,(enerlanc(i)-enerval(1))*27.2113845d0,&
-      !        (2.0/3.0)*(enerlanc(i)-enerval(1))*tdm(1,i)**2
-      !enddo
-      !STOP
 
       return
 
@@ -348,22 +397,24 @@
 
       implicit none
 
-      integer                            :: i,j,k,f,e,l
-      real(d)                            :: einc,gamma
-      real(d), parameter                 :: eh2ev=27.2113845d0
-      complex*16, dimension(nval,nener1) :: trans
-      complex*16                         :: ctmp
+      integer                              :: i,j,k,f,e,l,c
+      real(d)                              :: einc,gamma,ef
+      real(d), parameter                   :: eh2ev=27.2113845d0
+      complex*16, dimension(3,nval,nener1) :: trans
+      complex*16                           :: ctmp
 
 !-----------------------------------------------------------------------
-! Allocate arrays
+! Allocate and initialise arrays
 !-----------------------------------------------------------------------
       allocate(transsq(nval,nener1))
-      trans=0.0d0
+      transsq=0.0d0
+      
+      trans=czero
 
 !-----------------------------------------------------------------------
 ! Calculate the terms
 !
-! |<f| D (Ebar_i(E_incident) - H)^-1 D |i>|^2
+! <f| D_a (Ebar_i(E_incident) - H)^-1 D_a |i>, a=x,y,z
 !
 ! for all final states |f> and all incident photon energies
 !
@@ -376,28 +427,51 @@
       do k=1,nener1
 
          ! Current incident photon energy (a.u.)
-         einc=(ener1(1)+(i-1)*de1)/eh2ev
+         einc=(ener1(1)+(k-1)*de1)/eh2ev
 
          ! Loop over final valence states (ground + excited)
          do f=1,nval
 
-            !
-            ! <f| D (Ebar_i(E_incident) - H)^-1 D |i>
-            !
+            ! Loop over the components of the dipole operator
+            do c=1,3
 
-            ! Loop over Lanczos pseudostates
-            do l=1,nlanc
-               ctmp=(tdm(f,l)*tdm(istate,l))
-               ctmp=ctmp/(enerval(istate) - enerlanc(l) + einc - ci*gamma/2)
-               trans(f,k)=trans(f,k)+ctmp
+               ! Calculate <f| D_a (Ebar_i(E_inc - H)^-1 D_a| i>
+               do l=1,nlanc(c)
+                  ctmp=tdm(c,f,l)*tdm(c,istate,l)
+                  ctmp=ctmp &
+                       / ( enerval(istate) - enerlanc(c,l) &
+                       + einc - ci*gamma/2 )
+                  trans(c,f,k)=trans(c,f,k)+ctmp
+               enddo
+
             enddo
 
-            !
+         enddo
+
+      enddo
+
+!-----------------------------------------------------------------------
+! Calculate the terms
+!
+! |<f| D (Ebar_i(E_incident) - H)^-1 D |i>|^2
+!-----------------------------------------------------------------------
+      ! Loop over incident photon energies
+      do k=1,nener1
+
+         ! Loop over final valence states (ground + excited)
+         do f=1,nval
+
+            ! Loop over the components of the dipole operator
+            ctmp=czero
+            do c=1,3
+               ctmp=ctmp+trans(c,f,k)
+            enddo
+
             ! |<f| D (Ebar_i(E_incident) - H)^-1 D |i>|^2
-            !
-            transsq(f,k)=real(trans(f,k)*conjg(trans(f,k)))
+            transsq(f,k)=real(ctmp*conjg(ctmp))
 
          enddo
+
       enddo
 
       return
@@ -444,6 +518,7 @@
             ! Loop over final states
             func=0.0d0
             do f=1,nval
+               
                ! Lineshape
                lineshape=lorentzian(enerval(istate)*eh2ev,&
                     enerval(f)*eh2ev,einc,eemit)
@@ -452,8 +527,6 @@
                func=func+transsq(f,i)*lineshape
                
             enddo
-
-            func=func*(eemit/einc)
 
             ! Write the current point to file
             write(unit,*) einc,eemit,func

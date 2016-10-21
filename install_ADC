@@ -70,7 +70,7 @@ echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 #-----------------------------------------------------------------------
 # Calls to make
 #-----------------------------------------------------------------------
-list=(clean_all adc stieltjes_ap mcspline numhess)
+list=(clean_all adc stieltjes_ap mcspline numhess rixsplt)
 
 if [ -z $target ]; then
     for T in "${list[@]}"; do
