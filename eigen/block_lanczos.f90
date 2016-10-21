@@ -109,7 +109,7 @@ module block_lanczos
       implicit none
       
       integer                              :: i,j,k
-      integer                              :: iadc1,idim
+      integer                              :: iadc1,idim,ivecs
       real(d), dimension(:,:), allocatable :: adc1vec
       real(d)                              :: fac
 
@@ -218,6 +218,14 @@ module block_lanczos
             endif
 
          enddo
+
+      else if (lancguess.eq.5) then
+         ! RIXS calculation: read the initial vectors from file
+         call freeunit(ivecs)
+         open(ivecs,file='SCRATCH/rixs_ivecs',form='unformatted',&
+              status='old')
+         read(ivecs) qmat2
+         close(ivecs)
          
       endif
       

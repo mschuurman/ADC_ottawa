@@ -609,22 +609,17 @@
         use get_moment
         use fspace
         use guessvecs
+        use iomod
 
         implicit none
         
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: i,k,ndim,ndimf,&
-                                                     ndimsf,iadc1,&
-                                                     itmp,k1,k2,&
-                                                     dim2,upper,&
-                                                     staindx
-        integer, dimension(:), allocatable        :: indx_tra,indx1,&
-                                                     indx2
+        integer                                   :: i,j,k,ndim,ndimf,&
+                                                     ndimsf,error,&
+                                                     ivecs
         real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2
-        real(d), dimension(:), allocatable        :: tmpvec
-        real(d), dimension(ndimsf,ndimsf)         :: adc1vec
-
+        real(d), dimension(:,:), allocatable      :: travec2,initvecs
+        real(d), dimension(:), allocatable        :: tmpvec,tau,work
 
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
@@ -656,148 +651,48 @@
         enddo
 
 !-----------------------------------------------------------------------
-! If requested, determine the block size based on the transition
-! matrix elements between the initial state and the intermediate
-! states (and possibly the ADC(1) eigenvectors)
+! The initial Lanczos vectors will be formed from the contractions of
+! the dipole matrix with the valence states (ground + excited),
+! i.e., the vectors held in the travec2 array
 !
-! N.B., state numbers start from zero
+! IN THE ORTHOGONALISATION STEP, WE ARE MIXING THE DIPOLE-STATE
+! PRODUCTS AMONGST THEMSELVES. IS THIS GOING TO PRODUCE VECTORS THAT
+! DO NOT GENERATE IRREPS OF THE MOLECULAR POINT GROUP?
 !-----------------------------------------------------------------------
-        !if (ldynblock) call getblocksize(travec2(:,statenumber+1),&
-        !     ndimf,ndimsf)
+        ! Set the block size
+        lmain=davstates+1
 
-        ! CHECK
-        print*,"SORT OUT THIS INDEXING ISSUE"
-        STOP
-        if (ldynblock) call getblocksize(travec2(:,1),&
-             ndimf,ndimsf)
-
-!-----------------------------------------------------------------------
-! From the values of the elements of travec2 corresponding to the
-! initial states (and/or the ADC(1) eigenvectors), determine which
-! vectors will form the initial Lanczos vectors
-!
-! Note that we can only have lancguess=3 or 4 for ADC(2)-s
-!-----------------------------------------------------------------------
-        allocate(tmpvec(ndimf))
-
-        staindx=statenumber+1
-
-        ! CHECK
-        print*,"SORT OUT THIS INDEXING ISSUE"
-        STOP
-        staindx=1
-
-        if (lancguess.eq.1) then
-           if (method_f.eq.2) then
-              upper=ndimsf
-           else if (method_f.eq.3) then
-              upper=ndimf
-           endif
-           tmpvec=travec2(1:upper,staindx)
-           call fill_stvc(upper,travec2(1:upper,staindx))
-           
-        else if (lancguess.eq.2) then
-           ! Read the ADC(1) eigenvectors from file
-           call freeunit(iadc1)
-           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
-                status='old')
-           read(iadc1) itmp,adc1vec           
-           close(iadc1)
-           ! Contract the ADC(1) eigenvectors with the product of the 
-           ! 1h1p part of travec2
-           do i=1,ndimsf
-              tmpvec(i)=dot_product(adc1vec(:,i),travec2(1:ndimsf,staindx))
-           enddo
-           call fill_stvc(ndimsf,travec2(1:ndimsf,staindx))
-
-        else if (lancguess.eq.3) then
-           ! 1h1p ISs
-           allocate(indx1(ndimsf))           
-           call dsortindxa1('D',ndimsf,travec2(1:ndimsf,staindx)**2,indx1(:))
-
-           ! 2h2p ISs
-           dim2=ndimf-ndimsf
-           allocate(indx2(dim2))
-           call dsortindxa1('D',dim2,travec2(ndimsf+1:ndimf,staindx)**2,indx2(:))
-
-           ! Fill in the stvc_mxc array
-           allocate(stvc_mxc(3*lmain))
-           do i=1,lmain
-
-              k1=indx1(i)
-              k2=ndimsf+indx2(i)
-
-              ! 1h1p IS plus or minus the 2h2p IS (chosen st the
-              ! resulting vector has the greates TDM with the initial
-              ! state)
-              if (travec2(k1,staindx).gt.0.and.travec2(k2,staindx).gt.0) then
-                 stvc_mxc(i*3-2)=1
-              else
-                 stvc_mxc(i*3-2)=-1
-              endif
-
-              ! Index of the 1h1p IS
-              stvc_mxc(i*3-1)=k1
-
-              ! Index of the 2h2p IS
-              stvc_mxc(i*3)=k2
-              
-           enddo
-
-           deallocate(indx1,indx2)
-
-        else if (lancguess.eq.4) then
-           ! Read the ADC(1) eigenvectors from file
-           call freeunit(iadc1)
-           open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
-                status='old')
-           read(iadc1) itmp,adc1vec           
-           close(iadc1)
-           ! Contract the ADC(1) eigenvectors with the 1h1p part of
-           ! the F-vector
-           do i=1,ndimsf
-              tmpvec(i)=dot_product(adc1vec(:,i),travec2(1:ndimsf,staindx))
-           enddo
-           
-           ! ADC(1) eigenvectors
-           allocate(indx1(ndimsf))           
-           call dsortindxa1('D',ndimsf,tmpvec(1:ndimsf)**2,indx1(:))
-           
-           ! 2h2p ISs
-           dim2=ndimf-ndimsf
-           allocate(indx2(dim2))
-           call dsortindxa1('D',dim2,travec2(ndimsf+1:ndimf,staindx)**2,indx2(:))
-
-           ! Fill in the stvc_mxc array
-           allocate(stvc_mxc(3*lmain))
-
-           do i=1,lmain
-
-              k1=indx1(i)
-              k2=ndimsf+indx2(i)
-
-              ! ADC(1) eigenvector plus or minus the 2h2p IS (chosen st
-              ! the resulting vector has the greates TDM with the
-              ! initial state)
-              if (tmpvec(k1).gt.0.and.travec2(k2,staindx).gt.0) then
-                 stvc_mxc(i*3-2)=1
-              else
-                 stvc_mxc(i*3-2)=-1
-              endif
-
-              ! Index of the ADC(1) eigenvector
-              stvc_mxc(i*3-1)=k1
-
-              ! Index of the 2h2p IS
-              stvc_mxc(i*3)=k2
-              
-           enddo
-
-           deallocate(indx1,indx2)
-
+        ! Copy the contents of the travec2 array
+        allocate(initvecs(ndimf,davstates+1))
+        initvecs=travec2
+        
+        ! Orthogonalisation of the dipole matrix-state vector
+        ! contractions via a QR factorisation
+        allocate(tau(davstates+1))
+        allocate(work(davstates+1))
+        call dgeqrf(ndimf,davstates+1,initvecs,ndimf,tau,work,&
+             davstates+1,error)
+        if (error.ne.0) then
+           errmsg='dqerf failed in subroutine guess_vecs_rixs'
+           call error_control
         endif
+        call dorgqr(ndimf,davstates+1,davstates+1,initvecs,ndimf,&
+             tau,work,davstates+1,error)
+        if (error.ne.0) then
+           errmsg='dorgqr failed in subroutine guess_vecs_rixs'
+           call error_control
+        endif
+        deallocate(tau)
+        deallocate(work)
 
-        deallocate(tmpvec)
+        ! Write the guess vectors to file
+        call freeunit(ivecs)
+        open(ivecs,file='SCRATCH/rixs_ivecs',form='unformatted',&
+             status='unknown')
+        write(ivecs) initvecs
+        close(ivecs)
+        
+        deallocate(initvecs)
 
         return
 
@@ -1295,7 +1190,8 @@
         real(d), dimension(:), allocatable         :: vec
         real(d), dimension(davstates)              :: ener
         real(d), dimension(lancstates)             :: enerf
-
+        character(len=20)                          :: filename
+        
 !-----------------------------------------------------------------------
 ! For all valence states |Psi_i> (including the ground state),
 ! calculate the matrix elements <Psi_i | D | chi_j>, where the chi_j
@@ -1354,7 +1250,8 @@
 !-----------------------------------------------------------------------
         ! Open the RIXS data file
         call freeunit(irixs)
-        open(irixs,file='rixs.dat',status='unknown',form='unformatted')
+        filename='rixs_'//trim(tranmom2)//'.dat'
+        open(irixs,file=filename,status='unknown',form='unformatted')
 
         ! Dimensions
         write(irixs) davstates+1
