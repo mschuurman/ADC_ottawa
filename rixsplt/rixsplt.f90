@@ -418,11 +418,13 @@
 
       implicit none
 
-      integer            :: i,j,f,unit,alpha,beta
-      real(d)            :: einc,eemit,lineshape,func,gamma
-      real(d), parameter :: eh2ev=27.2113845d0
-      complex*16         :: denom
-
+      integer                                 :: i,j,f,unit,alpha,beta
+      real(d)                                 :: einc,eemit,lineshape,&
+                                                 func,gamma
+      real(d), parameter                      :: eh2ev=27.2113845d0
+      complex*16                              :: denom
+      complex*16, dimension(:,:), allocatable :: tmp
+      
 !-----------------------------------------------------------------------
 ! Open the RIXS spectrum file
 !-----------------------------------------------------------------------
@@ -430,15 +432,47 @@
       open(unit,file='rixsspec.dat',form='formatted',status='unknown')      
 
 !-----------------------------------------------------------------------
-! Calculate and output the RIXS spectrum
-!
-! WE NEED TO CHANGE THIS SO THAT WE FIRST CONTRACT OVER THE LANCZOS
-! STATES TO FORM AN INTERMEDIATE CORRESPONDING TO THE FINAL STATE
-! INDEX, AND THEN CONTRACT THIS INTERMEDIATE WITH THE LINESHAPE
+! Form intermediate terms
 !-----------------------------------------------------------------------
+      ! Allocate arrays
+      allocate(tmp(nval,nener1))
+      tmp=czero
+      
       ! Intermediate state lifetime broadening in a.u.
       gamma=gammaint/eh2ev
 
+      ! Loop over incident photon energies
+      do i=1,nener1
+
+         print*,i
+         
+         ! Current incident photon energy in a.u.
+         einc=(ener1(1)+(i-1)*de1)/eh2ev
+
+         ! Loop over final states
+         do f=1,nval
+
+            ! Loop over pairs of Lanczos states
+            do alpha=1,nlanc
+               do beta=1,nlanc
+
+                  denom=enerval(istate) - enerlanc(alpha) &
+                       + einc - ci*gamma/2.0d0
+                     denom=denom * (enerval(istate) - enerlanc(beta) &
+                          + einc + ci*gamma/2.0d0)
+
+                     tmp(f,i)=tmp(f,i)+zeta(f,alpha,beta)/denom
+                     
+               enddo
+            enddo
+
+         enddo
+         
+      enddo
+      
+!-----------------------------------------------------------------------
+! Calculate and output the RIXS spectrum
+!-----------------------------------------------------------------------
       ! Loop over incident photon energies
       do i=1,nener1
          
@@ -461,23 +495,9 @@
                lineshape=lorentzian(enerval(istate)*eh2ev,&
                     enerval(f)*eh2ev,einc,eemit)
 
-               ! Loop over pairs of Lanczos states
-               do alpha=1,nlanc
-                  do beta=1,nlanc
-
-                     denom=enerval(istate) - enerlanc(alpha) &
-                          + einc/eh2ev - ci*gamma/2.0d0
-                     denom=denom * (enerval(istate) - enerlanc(beta) &
-                          + einc/eh2ev + ci*gamma/2.0d0)
-
-                     ! WHY IS THE DENOMONATOR COMPLEX?
-                     print*,imag(denom)
-                     
-                     func=func+lineshape*zeta(f,alpha,beta)/real(denom)
-                     
-                  enddo
-               enddo
-
+               ! Contribution to the function value
+               func=func+lineshape*real(tmp(f,i))
+               
             enddo
 
             ! Write the current point to file
