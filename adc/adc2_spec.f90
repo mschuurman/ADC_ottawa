@@ -654,7 +654,7 @@
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: i,j,k,c,ndim,ndimf,&
                                                      ndimsf,error,&
-                                                     ivecs
+                                                     ivecs,ilbl
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2,initvecs
         real(d), dimension(:), allocatable        :: tmpvec,tau,work
@@ -664,8 +664,8 @@
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
 !
-! The first column of this array holds the F-vector
-! F_J = < Psi_J | D | Psi_0 >, where the Psi_J
+! The first three columns of this array holds the F-vectors
+! F_Ja = < Psi_J | Da | Psi_0 >, a=x,y,z, where the Psi_J
 ! are the ISs spanning the final space
 !
 ! The remaining columns hold the products of the IS representation of
@@ -703,9 +703,6 @@
            ! Loop over the components of the dipole operator
            do c=1,3
 
-              ! Set the travec2 index
-              k=3+(i-1)*3+c
-
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
               
@@ -717,9 +714,13 @@
               write(msg(k+2:k+3),'(i2)') i
               write(ilog,'(/,2x,a)') trim(msg)
 
+              ! Set the travec2 index for the current
+              ! state and dipole component
+              ilbl=3+(i-1)*3+c
+
               ! Calculate the contraction D_c . Psi_i
               call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                   rvec(:,i),travec2(:,k))
+                   rvec(:,i),travec2(:,ilbl))
            enddo
 
         enddo
@@ -1349,7 +1350,7 @@
         ! a=x,y,z between the valence states and the
         ! Lanczos psuedo-states
         do i=1,3*(davstates+1)
-           do j=1,lancstates              
+           do j=1,lancstates
               write(irixs) tdm(i,j)
            enddo
         enddo
