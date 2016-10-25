@@ -38,6 +38,11 @@
 !        ! TEST
 
 !-----------------------------------------------------------------------
+! Make sure that everything is consistent
+!-----------------------------------------------------------------------
+        call check_calc
+        
+!-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
         call mp2_master(e0)
@@ -148,12 +153,34 @@
         if (allocated(dipmom)) deallocate(dipmom)
         if (allocated(dipmom_f)) deallocate(dipmom_f)
         if (allocated(travec2)) deallocate(travec2)
+        if (allocated(dpl_all)) deallocate(dpl_all)
         deallocate(kpq,kpqf,kpqd)
 
         return
         
       end subroutine adc2_spec
 
+!#######################################################################
+
+      subroutine check_calc
+
+        use parameters
+        use iomod
+        
+        implicit none
+
+!-----------------------------------------------------------------------
+! If we are performing a RIXS calculation, then symmetry is NOT
+! supported
+!-----------------------------------------------------------------------
+        if (lrixs.and.pntgroup.ne.'C1') then
+           errmsg='Symmetry is NOT supported in a RIXS calculation'
+        endif
+        
+        return
+        
+      end subroutine check_calc
+      
 !#######################################################################
 
       subroutine get_subspaces(kpq,kpqf,kpqd,ndim,ndimf,ndimd,nout,&
@@ -253,6 +280,17 @@
 !-----------------------------------------------------------------------
         CHECK_dip = nirrep2
 
+!-----------------------------------------------------------------------
+! If we are performing a RIXS calculation, then set up the total dipole
+! matrix array
+!-----------------------------------------------------------------------
+        if (lrixs) then
+           allocate(dpl_all(3,nbas,nbas))
+           dpl_all(1,:,:)=x_dipole(:,:)
+           dpl_all(2,:,:)=y_dipole(:,:)
+           dpl_all(3,:,:)=z_dipole(:,:)
+        endif
+        
         return
 
       end subroutine set_dpl
@@ -614,13 +652,15 @@
         implicit none
         
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: i,j,k,ndim,ndimf,&
+        integer                                   :: i,j,k,c,ndim,ndimf,&
                                                      ndimsf,error,&
                                                      ivecs
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2,initvecs
         real(d), dimension(:), allocatable        :: tmpvec,tau,work
-
+        character(len=1), dimension(3)            :: acomp
+        character(len=70)                         :: msg
+        
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
 !
@@ -631,23 +671,57 @@
 ! The remaining columns hold the products of the IS representation of
 ! the dipole operator and the initial space vectors
 !----------------------------------------------------------------------
-        allocate(travec2(ndimf,davstates+1))
+        allocate(travec2(ndimf,3*(davstates+1)))
 
 !-----------------------------------------------------------------------
-! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
-! are the ISs spanning the final space
+! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
+! are the ISs spanning the final space and a=x,y,z
 !-----------------------------------------------------------------------
-        call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,1),0)
+        acomp=(/ 'x','y','z' /)
+
+        ! Loop over the components of the dipole operator
+        do c=1,3
+
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the vector F_Jc
+           msg='Calculating the '//acomp(c)//&
+                '-component of the F-vector'
+           write(ilog,'(/,2x,a)') trim(msg)
+           call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,c),0)
+           
+        enddo
 
 !-----------------------------------------------------------------------
 ! Calculate the products of the IS representation of the dipole
 ! operator and the initial space vectors
 !-----------------------------------------------------------------------
+        ! Loop over the valence excited states
         do i=1,davstates
-           write(ilog,'(90a)') ('-', k=1,90)
-           write(ilog,'(2x,a,1x,i2)') "State:",i
-           call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                rvec(:,i),travec2(:,i+1))
+
+           ! Loop over the components of the dipole operator
+           do c=1,3
+
+              ! Set the travec2 index
+              k=3+(i-1)*3+c
+
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              
+              ! Output where we are at
+              write(ilog,'(90a)') ('-', k=1,90)
+              msg='Calculating the '//acomp(c)//&
+                '-component of the contraction D.Psi_i for state'
+              k=len_trim(msg)
+              write(msg(k+2:k+3),'(i2)') i
+              write(ilog,'(/,2x,a)') trim(msg)
+
+              ! Calculate the contraction D_c . Psi_i
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                   rvec(:,i),travec2(:,k))
+           enddo
+
         enddo
 
 !-----------------------------------------------------------------------
@@ -660,24 +734,22 @@
 ! DO NOT GENERATE IRREPS OF THE MOLECULAR POINT GROUP?
 !-----------------------------------------------------------------------
         ! Set the block size
-        lmain=davstates+1
+        lmain=3*(davstates+1)
 
         ! Copy the contents of the travec2 array
-        allocate(initvecs(ndimf,davstates+1))
+        allocate(initvecs(ndimf,lmain))
         initvecs=travec2
         
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
-        allocate(tau(davstates+1))
-        allocate(work(davstates+1))
-        call dgeqrf(ndimf,davstates+1,initvecs,ndimf,tau,work,&
-             davstates+1,error)
+        allocate(tau(lmain))
+        allocate(work(lmain))
+        call dgeqrf(ndimf,lmain,initvecs,ndimf,tau,work,lmain,error)
         if (error.ne.0) then
            errmsg='dqerf failed in subroutine guess_vecs_rixs'
            call error_control
         endif
-        call dorgqr(ndimf,davstates+1,davstates+1,initvecs,ndimf,&
-             tau,work,davstates+1,error)
+        call dorgqr(ndimf,lmain,lmain,initvecs,ndimf,tau,work,lmain,error)
         if (error.ne.0) then
            errmsg='dorgqr failed in subroutine guess_vecs_rixs'
            call error_control
@@ -1181,21 +1253,22 @@
 
         implicit none
 
-        integer                                    :: ndim,ndimf,&
-                                                      ndimsf,i,j,k,&
-                                                      ilanc,irixs,idav
-        real(d)                                    :: e_init
-        real(d), dimension(ndimf,davstates+1)      :: travec2
-        real(d), dimension(davstates+1,lancstates) :: tdm
-        real(d), dimension(:), allocatable         :: vec
-        real(d), dimension(davstates)              :: ener
-        real(d), dimension(lancstates)             :: enerf
-        character(len=20)                          :: filename
-        
+        integer                                        :: ndim,ndimf,&
+                                                          ndimsf,i,j,k,&
+                                                          ilanc,irixs,&
+                                                          idav
+        real(d)                                        :: e_init
+        real(d), dimension(ndimf,3*(davstates+1))      :: travec2
+        real(d), dimension(3*(davstates+1),lancstates) :: tdm
+        real(d), dimension(:), allocatable             :: vec
+        real(d), dimension(davstates)                  :: ener
+        real(d), dimension(lancstates)                 :: enerf
+        character(len=20)                              :: filename
+
 !-----------------------------------------------------------------------
 ! For all valence states |Psi_i> (including the ground state),
-! calculate the matrix elements <Psi_i | D | chi_j>, where the chi_j
-! are the Lanczos pseudo-states
+! calculate the matrix elements <Psi_i | Da | chi_j>, where the chi_j
+! are the Lanczos pseudo-states and a=x,y,z
 !-----------------------------------------------------------------------
         ! Allocate arrays
         allocate(vec(ndimf))
@@ -1207,11 +1280,13 @@
 
         ! Loop over the Lanczos pseudo-states
         do j=1,lancstates
-              
+
+           ! Read the jth Lanczos eigenpair
            read(ilanc) k,enerf(j),vec
 
-           ! Loop over the valence states (ground + excited)
-           do i=1,davstates+1
+           ! Loop over the x, y, and z components of D for each
+           ! of the valence states (ground + excited)
+           do i=1,3*(davstates+1)
               tdm(i,j)=dot_product(travec2(:,i),vec)
            enddo
 
@@ -1250,7 +1325,7 @@
 !-----------------------------------------------------------------------
         ! Open the RIXS data file
         call freeunit(irixs)
-        filename='rixs_'//trim(tranmom2)//'.dat'
+        filename='rixs.dat'
         open(irixs,file=filename,status='unknown',form='unformatted')
 
         ! Dimensions
@@ -1270,9 +1345,10 @@
            write(irixs) ehf+e_mp2+enerf(i)
         enddo
 
-        ! Transition dipole matrix elements <Psi_i | D | chi_j>
-        ! between the valence states and the Lanczos psuedo-states
-        do i=1,davstates+1
+        ! Transition dipole matrix elements <Psi_i | Da | chi_j>,
+        ! a=x,y,z between the valence states and the
+        ! Lanczos psuedo-states
+        do i=1,3*(davstates+1)
            do j=1,lancstates              
               write(irixs) tdm(i,j)
            enddo

@@ -13,9 +13,6 @@ module dipole_ph
   
   implicit none
 
-!  real(d) :: vpqrs
-!  external vpqrs
-  
 contains
 
 !!$*******************************************************************************

@@ -21,16 +21,15 @@
     call rddatfile
 
 !-----------------------------------------------------------------------
-! Calculation of the transition matrix elements
-! <f| D_a (Ebar_i(E_incident) - H)^-1 D_a |i>, a=x,y,z
+! Calculate the zeta tensor
 !-----------------------------------------------------------------------
-    call calc_transmat
-
+    call calc_zeta
+    
 !-----------------------------------------------------------------------
 ! Calculate the RIXS spectrum
 !-----------------------------------------------------------------------
     call calc_rixs
-
+    
   contains
 
 !#######################################################################
@@ -58,10 +57,9 @@
       ener2=0.0d0
       de1=0.0d0
       de2=0.0d0
-      datfile(1)='rixs_x.dat'
-      datfile(2)='rixs_y.dat'
-      datfile(3)='rixs_z.dat'
+      datfile='rixs.dat'
       istate=0
+      theta=-999.0d0
 
 !-----------------------------------------------------------------------
 ! Read the name of the input file from the command line
@@ -181,18 +179,10 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'datfiles') then
+         else if (keyword(i).eq.'datfile') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               datfile(1)=keyword(i)
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  datfile(2)=keyword(i)                  
-               endif
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  datfile(3)=keyword(i)                  
-               endif
+               datfile=keyword(i)
             else
                goto 100
             endif
@@ -205,6 +195,16 @@
                ! file, state indices start from 0 but in the
                ! code, they start from 1
                istate=istate+1
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'theta') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) theta
+               ! Convert to radians
+               theta=theta*pi/180.0d0
             else
                goto 100
             endif
@@ -265,6 +265,11 @@
          call error_control
       endif
 
+      if (theta.eq.-999.0d0) then
+         errmsg='The detection angle has not been given'
+         call error_control
+      endif
+      
 !-----------------------------------------------------------------------
 ! Write the spectrum parameters to the log file
 !-----------------------------------------------------------------------
@@ -280,8 +285,9 @@
       write(ilog,'(2x,a,9x,3(x,F8.4),/)') 'Emission energy grid (eV):',&
            ener2(1),ener2(2),de2
 
-      write(ilog,'(2x,a,20x,3(a,2x),/)') 'RIXS data files:',&
-           (trim(datfile(i)),i=1,3)
+      write(ilog,'(2x,a,13x,F6.2,/)') 'Detection angle (deg):',theta/pi*180.0d0
+      
+      write(ilog,'(2x,a,21x,a,/)') 'RIXS data file:',trim(datfile)
 
       return
 
@@ -291,193 +297,117 @@
 
     subroutine rddatfile
 
+      use channels
       use constants
       use iomod
       use rixsmod
 
       implicit none
 
-      integer               :: unit,i,j,c,n
-      integer, dimension(3) :: itmp
+      integer :: unit,i,j,c
 
 !-----------------------------------------------------------------------
-! Determine the maximum number of Lanczos pseudo-states and also make
-! sure that the number of valence states is the same for all
-! components of the dipole operator
+! Read the RIXS data file
 !-----------------------------------------------------------------------
-      maxlanc=0
+      ! Open the RIXS data file
+      call freeunit(unit)
+      open(unit,file=datfile,status='old',form='unformatted')
+      
+      ! Dimensions
+      read(unit) nval
+      read(unit) nlanc
 
-      do c=1,3
-         
-         ! Open the RIXS data file
-         call freeunit(unit)
-         open(unit,file=datfile(c),status='old',form='unformatted')
-
-         ! Read the number of valence and Lanczos states
-         read(unit) itmp(c)
-         read(unit) n
-
-         if (n.gt.maxlanc) maxlanc=n
-
-         close(unit)
-
-      enddo
-
-      ! Check that the no. valence states is the same for each
-      ! component of the dipole operator
-      if (.not.all(itmp.eq.itmp(1))) then
-         errmsg='The number of valence states is not the same for &
-              all components of the dipole operator'
-         call error_control
-      endif
-
-      ! Set the number of valence states
-      nval=itmp(1)
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-      allocate(tdm(3,nval,maxlanc))
+      ! Allocate arrays
+      allocate(tdm(3,nval,nlanc))
       tdm=0.0d0
-
       allocate(enerval(nval))
       enerval=0.0d0
-
-      allocate(enerlanc(3,maxlanc))
+      allocate(enerlanc(nlanc))
       enerlanc=0.0d0
-
-!-----------------------------------------------------------------------
-! Read the RIXS data files
-!-----------------------------------------------------------------------
-      do c=1,3
-
-         ! Open the RIXS data file
-         call freeunit(unit)
-         open(unit,file=datfile(c),status='old',form='unformatted')
-
-         ! Dimensions
-         read(unit) nval
-         read(unit) nlanc(c)         
-
-         ! Valence state energies
-         do i=1,nval
-            read(unit) enerval(i)
-         enddo
       
-         ! Lanczos pseudo-state energies
-         do i=1,nlanc(c)
-            read(unit) enerlanc(c,i)
-         enddo
+      ! Valence state energies
+      do i=1,nval
+         read(unit) enerval(i)
+      enddo
+      
+      ! Lanczos pseudo-state energies
+      do i=1,nlanc
+         read(unit) enerlanc(i)
+      enddo
 
-         ! Matrix elements <Psi_i | D | chi_j> between the valence
-         ! states |Psi_i> (ground + excited) and the Lanczos pseudo-states
-         ! |chi_j> from file
-         do i=1,nval
-            do j=1,nlanc(c)
+      ! Matrix elements <Psi_i | D | chi_j> between the valence
+      ! states |Psi_i> (ground + excited) and the Lanczos pseudo-states
+      ! |chi_j> from file
+      do i=1,nval
+         do c=1,3
+            do j=1,nlanc
                read(unit) tdm(c,i,j)
             enddo
          enddo
-         
-         ! Close the RIXS data file
-         close(unit)
-         
       enddo
+         
+      ! Close the RIXS data file
+      close(unit)
 
+      ! Write the number of states to the log file
+      write(ilog,'(/,2x,a,x,i2)') 'Number of valence states:',nval
+      write(ilog,'(/,2x,a,x,i5)') 'Number of Lanczos states:',nlanc
+      
       return
 
     end subroutine rddatfile
 
 !#######################################################################
 
-     subroutine calc_transmat
+    subroutine calc_zeta
 
       use constants
-      use iomod
       use rixsmod
 
       implicit none
 
-      integer                              :: i,j,k,f,e,l,c
-      real(d)                              :: einc,gamma,ef
-      real(d), parameter                   :: eh2ev=27.2113845d0
-      complex*16, dimension(3,nval,nener1) :: trans
-      complex*16                           :: ctmp
-
-!-----------------------------------------------------------------------
-! Allocate and initialise arrays
-!-----------------------------------------------------------------------
-      allocate(transsq(nval,nener1))
-      transsq=0.0d0
+      integer :: alpha,beta,f
+      real(d) :: term1,term2
       
-      trans=czero
-
 !-----------------------------------------------------------------------
-! Calculate the terms
-!
-! <f| D_a (Ebar_i(E_incident) - H)^-1 D_a |i>, a=x,y,z
-!
-! for all final states |f> and all incident photon energies
-!
-! N.B. All quantities here are in a.u.
+! Calculation of the zeta tensor defined in Equation 13 of
+! Phys. Rev. A, 49, 4378 (1994)      
 !-----------------------------------------------------------------------
-      ! Intermediate state broadening in a.u.
-      gamma=gammaint/eh2ev
+      ! Allocate arrays
+      allocate(zeta(nval,nlanc,nlanc))
+      zeta=0.0d0
 
-      ! Loop over incident photon energies
-      do k=1,nener1
+      ! Loop over valence states
+      do f=1,nval
 
-         ! Current incident photon energy (a.u.)
-         einc=(ener1(1)+(k-1)*de1)/eh2ev
+         ! Loop over pairs of Lanczos states
+         do alpha=1,nlanc
+            do beta=1,nlanc
 
-         ! Loop over final valence states (ground + excited)
-         do f=1,nval
+               term1 = dot_product(tdm(:,istate,alpha),tdm(:,istate,beta)) &
+                    * dot_product(tdm(:,f,alpha),tdm(:,f,beta)) &
+                    * (2.0d0 - cos(theta)**2)
 
-            ! Loop over the components of the dipole operator
-            do c=1,3
+               term2 = dot_product(tdm(:,istate,alpha),tdm(:,f,alpha)) &
+                    * dot_product(tdm(:,istate,beta),tdm(:,f,beta))
+               term2 = term2 + dot_product(tdm(:,istate,alpha),tdm(:,f,beta)) &
+                    * dot_product(tdm(:,istate,beta),tdm(:,f,alpha))
+               term2 = term2 * (3.0d0*cos(theta)**2 -1)/2.0d0
 
-               ! Calculate <f| D_a (Ebar_i(E_inc - H)^-1 D_a| i>
-               do l=1,nlanc(c)
-                  ctmp=tdm(c,f,l)*tdm(c,istate,l)
-                  ctmp=ctmp &
-                       / ( enerval(istate) - enerlanc(c,l) &
-                       + einc - ci*gamma/2 )
-                  trans(c,f,k)=trans(c,f,k)+ctmp
-               enddo
-
+               zeta(f,alpha,beta) = term1 + term2
+               
             enddo
-
          enddo
 
       enddo
 
-!-----------------------------------------------------------------------
-! Calculate the terms
-!
-! |<f| D (Ebar_i(E_incident) - H)^-1 D |i>|^2
-!-----------------------------------------------------------------------
-      ! Loop over incident photon energies
-      do k=1,nener1
-
-         ! Loop over final valence states (ground + excited)
-         do f=1,nval
-
-            ! Loop over the components of the dipole operator
-            ctmp=czero
-            do c=1,3
-               ctmp=ctmp+trans(c,f,k)
-            enddo
-
-            ! |<f| D (Ebar_i(E_incident) - H)^-1 D |i>|^2
-            transsq(f,k)=real(ctmp*conjg(ctmp))
-
-         enddo
-
-      enddo
-
+      ! Prefactor
+      zeta=zeta/15.0d0
+      
       return
-
-    end subroutine calc_transmat
-
+      
+    end subroutine calc_zeta
+    
 !#######################################################################
 
     subroutine calc_rixs
@@ -488,9 +418,10 @@
 
       implicit none
 
-      integer            :: i,j,f,unit
-      real(d)            :: einc,eemit,lineshape,func
+      integer            :: i,j,f,unit,alpha,beta
+      real(d)            :: einc,eemit,lineshape,func,gamma
       real(d), parameter :: eh2ev=27.2113845d0
+      complex*16         :: denom
 
 !-----------------------------------------------------------------------
 ! Open the RIXS spectrum file
@@ -500,7 +431,14 @@
 
 !-----------------------------------------------------------------------
 ! Calculate and output the RIXS spectrum
+!
+! WE NEED TO CHANGE THIS SO THAT WE FIRST CONTRACT OVER THE LANCZOS
+! STATES TO FORM AN INTERMEDIATE CORRESPONDING TO THE FINAL STATE
+! INDEX, AND THEN CONTRACT THIS INTERMEDIATE WITH THE LINESHAPE
 !-----------------------------------------------------------------------
+      ! Intermediate state lifetime broadening in a.u.
+      gamma=gammaint/eh2ev
+
       ! Loop over incident photon energies
       do i=1,nener1
          
@@ -522,10 +460,24 @@
                ! Lineshape
                lineshape=lorentzian(enerval(istate)*eh2ev,&
                     enerval(f)*eh2ev,einc,eemit)
-               
-               ! Contribution to the function value
-               func=func+transsq(f,i)*lineshape
-               
+
+               ! Loop over pairs of Lanczos states
+               do alpha=1,nlanc
+                  do beta=1,nlanc
+
+                     denom=enerval(istate) - enerlanc(alpha) &
+                          + einc/eh2ev - ci*gamma/2.0d0
+                     denom=denom * (enerval(istate) - enerlanc(beta) &
+                          + einc/eh2ev + ci*gamma/2.0d0)
+
+                     ! WHY IS THE DENOMONATOR COMPLEX?
+                     print*,imag(denom)
+                     
+                     func=func+lineshape*zeta(f,alpha,beta)/real(denom)
+                     
+                  enddo
+               enddo
+
             enddo
 
             ! Write the current point to file
