@@ -495,15 +495,15 @@
 
 !-----------------------------------------------------------------------
 ! Lanczos section: only required if we are considering ionization or
-! a RIXS calculation
+! a block-Lanczos-RIXS calculation
 !-----------------------------------------------------------------------
+      ! Photoionisation cross-section calculation
       if (.not.energyonly.and..not.ldiagfinal.and..not.ldyson.and..not.lrixs) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
             goto 999
          endif
-
          
          if (lmain.eq.0.and..not.ldynblock) then
             msg='The Lanczos block size has not been given'
@@ -516,17 +516,18 @@
 
       endif
 
-      if (lrixs) then
+      ! Block Lanczos-RIXS calculation
+      if (lrixs.and..not.ldiagfinal) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
             goto 999
          endif
-
+      
          if (ncycles.eq.0) then
             msg='The no. Lanczos iterations has not been given'
          endif
-
+      
          ! Set lancguess=5: this is required so that the appropriate
          ! initial vectors are read from fie
          lancguess=5

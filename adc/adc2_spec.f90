@@ -419,7 +419,7 @@
 
         if (ldiagfinal) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                vec_init,mtmf,noffdf)
+                vec_init,mtmf,noffdf,rvec,travec2)
         else
            call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
                 vec_init,mtmf,noffdf,rvec,travec2)
@@ -432,7 +432,7 @@
 !#######################################################################
 
       subroutine davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
-           travec,vec_init,mtmf,noffdf)
+           travec,vec_init,mtmf,noffdf,rvec,travec2)
 
         use constants
         use parameters
@@ -448,17 +448,25 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: travec2
 
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
 ! representation of the dipole operator with the initial state vector
 !-----------------------------------------------------------------------
-        if (statenumber.eq.0) then
-           allocate(mtmf(ndimf))
+        if (lrixs) then
+           ! Davidson-RIXS calculation
+           allocate(travec2(ndimf,3*(davstates+1)))
         else
-           allocate(travec(ndimf))
+           ! Absorption spectrum calculation
+           if (statenumber.eq.0) then
+              allocate(mtmf(ndimf))
+           else
+              allocate(travec(ndimf))
+           endif
         endif
-
+           
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
 ! operator and the initial state vector
@@ -466,13 +474,18 @@
 ! This will be used later in the calculation of transition dipole
 ! matrix elements between the initial and final states.
 !-----------------------------------------------------------------------
-        if (statenumber.eq.0) then
-           call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+        if (lrixs) then
+           ! Davidson-RIXS calculation
+           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
         else
-           call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
-                travec)
+           ! Absorption spectrum calculation
+           if (statenumber.eq.0) then
+              call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+           else
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
+                   travec)
+           endif
         endif
-
 !-----------------------------------------------------------------------        
 ! If requested, determine the Davidson guess vectors by diagonalising 
 ! the ADC(1) Hamiltonian matrix
@@ -504,13 +517,93 @@
 ! Diagonalisation in the final space
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
-
+        
         return
 
       end subroutine davidson_final_space_diag
 
 !#######################################################################
 
+      subroutine dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
+           kpq,kpqf)
+
+        use constants
+        use parameters
+        use misc
+        use get_matrix_dipole
+        use get_moment
+        use fspace
+        use guessvecs
+        use iomod
+        
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,c,i,&
+                                                     k,ilbl
+        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
+        character(len=1), dimension(3)            :: acomp
+        character(len=70)                         :: msg
+        
+!-----------------------------------------------------------------------
+! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
+! are the ISs spanning the final space and a=x,y,z
+!-----------------------------------------------------------------------
+        acomp=(/ 'x','y','z' /)
+
+        ! Loop over the components of the dipole operator
+        do c=1,3
+
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the vector F_Jc
+           msg='Calculating the '//acomp(c)//&
+                '-component of the F-vector'
+           write(ilog,'(/,2x,a)') trim(msg)
+           call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,c),0)
+           
+        enddo
+
+!-----------------------------------------------------------------------
+! Calculate the products of the IS representation of the dipole
+! operator and the initial space vectors
+!-----------------------------------------------------------------------
+        ! Loop over the valence excited states
+        do i=1,davstates
+
+           ! Loop over the components of the dipole operator
+           do c=1,3
+
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              
+              ! Output where we are at
+              write(ilog,'(90a)') ('-', k=1,90)
+              msg='Calculating the '//acomp(c)//&
+                '-component of the contraction D.Psi_i for state'
+              k=len_trim(msg)
+              write(msg(k+2:k+3),'(i2)') i
+              write(ilog,'(/,2x,a)') trim(msg)
+
+              ! Set the travec2 index for the current
+              ! state and dipole component
+              ilbl=3+(i-1)*3+c
+
+              ! Calculate the contraction D_c . Psi_i
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                   rvec(:,i),travec2(:,ilbl))
+           enddo
+
+        enddo
+        
+        return
+        
+      end subroutine dipole_ispace_contraction_all
+        
+!#######################################################################
+      
       subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
            travec,vec_init,mtmf,noffdf,rvec,travec2)
 
@@ -658,8 +751,6 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2,initvecs
         real(d), dimension(:), allocatable        :: tmpvec,tau,work
-        character(len=1), dimension(3)            :: acomp
-        character(len=70)                         :: msg
         
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
@@ -674,57 +765,12 @@
         allocate(travec2(ndimf,3*(davstates+1)))
 
 !-----------------------------------------------------------------------
-! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
-! are the ISs spanning the final space and a=x,y,z
+! Calculate the contractions of the IS dipole matrix and the valence
+! space vectors
 !-----------------------------------------------------------------------
-        acomp=(/ 'x','y','z' /)
-
-        ! Loop over the components of the dipole operator
-        do c=1,3
-
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
-
-           ! Calculate the vector F_Jc
-           msg='Calculating the '//acomp(c)//&
-                '-component of the F-vector'
-           write(ilog,'(/,2x,a)') trim(msg)
-           call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,c),0)
-           
-        enddo
-
-!-----------------------------------------------------------------------
-! Calculate the products of the IS representation of the dipole
-! operator and the initial space vectors
-!-----------------------------------------------------------------------
-        ! Loop over the valence excited states
-        do i=1,davstates
-
-           ! Loop over the components of the dipole operator
-           do c=1,3
-
-              ! Set the dipole component
-              dpl(:,:)=dpl_all(c,:,:)
-              
-              ! Output where we are at
-              write(ilog,'(90a)') ('-', k=1,90)
-              msg='Calculating the '//acomp(c)//&
-                '-component of the contraction D.Psi_i for state'
-              k=len_trim(msg)
-              write(msg(k+2:k+3),'(i2)') i
-              write(ilog,'(/,2x,a)') trim(msg)
-
-              ! Set the travec2 index for the current
-              ! state and dipole component
-              ilbl=3+(i-1)*3+c
-
-              ! Calculate the contraction D_c . Psi_i
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                   rvec(:,i),travec2(:,ilbl))
-           enddo
-
-        enddo
-
+        call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
+             kpq,kpqf)
+        
 !-----------------------------------------------------------------------
 ! The initial Lanczos vectors will be formed from the contractions of
 ! the dipole matrix with the valence states (ground + excited),
@@ -1226,20 +1272,18 @@
         real(d)                                   :: e_init
         real(d), dimension(ndimf,davstates+1)     :: travec2
 
-
-        if (ldiagfinal) then
-           ! Davidson states
-           call tdm_davstates_final(ndimf,ndimsf,travec,e_init,&
-                mtmf,kpqf)
+        if (lrixs) then
+           call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         else
-           ! Lanczos pseudostates
-           if (lrixs) then
-              call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
+           if (ldiagfinal) then
+              ! Davidson states
+              call tdm_davstates_final(ndimf,ndimsf,travec,e_init,&
+                   mtmf,kpqf)
            else
               call tdm_lancstates(ndimf,ndimsf,travec,e_init,mtmf)
            endif
         endif
-
+           
         return
 
       end subroutine final_space_tdm
@@ -1254,36 +1298,51 @@
 
         implicit none
 
-        integer                                        :: ndim,ndimf,&
-                                                          ndimsf,i,j,k,&
-                                                          ilanc,irixs,&
-                                                          idav
-        real(d)                                        :: e_init
-        real(d), dimension(ndimf,3*(davstates+1))      :: travec2
-        real(d), dimension(3*(davstates+1),lancstates) :: tdm
-        real(d), dimension(:), allocatable             :: vec
-        real(d), dimension(davstates)                  :: ener
-        real(d), dimension(lancstates)                 :: enerf
-        character(len=20)                              :: filename
+        integer                                   :: ndim,ndimf,&
+                                                     ndimsf,i,j,k,&
+                                                     ivecf,irixs,&
+                                                     idav,nfinal
+        real(d)                                   :: e_init
+        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
+        real(d), dimension(:,:), allocatable      :: tdm
+        real(d), dimension(:), allocatable        :: vec
+        real(d), dimension(:), allocatable        :: enerf
+        real(d), dimension(davstates)             :: ener
+        character(len=70)                         :: filename
 
+!-----------------------------------------------------------------------
+! Set dimensions and filenames
+!-----------------------------------------------------------------------
+        if (ldiagfinal) then
+           ! Davidson-RIXS
+           nfinal=davstates_f
+           filename=davname_f
+        else
+           ! Block Lanczos-RIXS
+           nfinal=lancstates
+           filename=lancname
+        endif
+        
 !-----------------------------------------------------------------------
 ! For all valence states |Psi_i> (including the ground state),
 ! calculate the matrix elements <Psi_i | Da | chi_j>, where the chi_j
-! are the Lanczos pseudo-states and a=x,y,z
+! are the final space states and a=x,y,z
 !-----------------------------------------------------------------------
-        ! Allocate arrays
+        ! Allocate arrays        
         allocate(vec(ndimf))
-
-        ! Open the Lanczos pseudospectrum file
-        call freeunit(ilanc)
-        open(ilanc,file=lancname,status='old',access='sequential',&
+        allocate(tdm(3*(davstates+1),nfinal))
+        allocate(enerf(nfinal))
+        
+        ! Open the final space vector file
+        call freeunit(ivecf)
+        open(ivecf,file=filename,status='old',access='sequential',&
              form='unformatted')
 
-        ! Loop over the Lanczos pseudo-states
-        do j=1,lancstates
+        ! Loop over the final space states
+        do j=1,nfinal
 
-           ! Read the jth Lanczos eigenpair
-           read(ilanc) k,enerf(j),vec
+           ! Read the jth final space eigenpair
+           read(ivecf) k,enerf(j),vec
 
            ! Loop over the x, y, and z components of D for each
            ! of the valence states (ground + excited)
@@ -1293,14 +1352,14 @@
 
         enddo
         
-        ! Close the Lanczos pseudospectrum file
-        close(ilanc)
+        ! Close the final space vector file
+        close(ivecf)
 
         ! Deallocate arrays
         deallocate(vec)
 
 !-----------------------------------------------------------------------
-! Read the Davidson energies from file
+! Read the initial space energies from file
 !-----------------------------------------------------------------------
         ! Allocate arrays
         allocate(vec(ndim))
@@ -1331,7 +1390,7 @@
 
         ! Dimensions
         write(irixs) davstates+1
-        write(irixs) lancstates
+        write(irixs) nfinal
 
         ! Ground state energy
         write(irixs) ehf+e_mp2
@@ -1341,16 +1400,16 @@
            write(irixs) ehf+e_mp2+ener(i)
         enddo
 
-        ! Energies of the Lanczos pseudo-states
-        do i=1,lancstates
+        ! Energies of the final space states
+        do i=1,nfinal
            write(irixs) ehf+e_mp2+enerf(i)
         enddo
 
         ! Transition dipole matrix elements <Psi_i | Da | chi_j>,
         ! a=x,y,z between the valence states and the
-        ! Lanczos psuedo-states
+        ! final space states
         do i=1,3*(davstates+1)
-           do j=1,lancstates
+           do j=1,nfinal
               write(irixs) tdm(i,j)
            enddo
         enddo
