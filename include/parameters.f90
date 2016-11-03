@@ -4,7 +4,7 @@ module parameters
   use integrals_mo2e
 
 !!$*************************************
-!!$*******MOLCAS provided variables*****
+!!$*******Hartree-Fock MO arrays********
 !!$************************************* 
 !!$int*4 nIrr - number of irreps
 !!$int*4 nBas - number of basis functions
