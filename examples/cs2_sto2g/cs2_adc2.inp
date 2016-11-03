@@ -13,9 +13,24 @@ dipole_component = x
 
 frozen_core=initial,final
 
-#cvs
+cvs
+
+#rixs
 
 mem=1500
+
+# Relaxation
+#diag_section
+# method=relaxation_liu
+# nstates = 6
+# block_size = 7
+# tol = 1e-5
+# timestep = 10.0
+# krydim = 5
+# maxit = 100
+# siltol=1e-5
+# guess = subdiag
+#end-diag_section
 
 diag_section
  method=relaxation_liu
@@ -32,18 +47,17 @@ end-diag_section
 diag_final_section
  method=davidson
  preconditioner = olsen
- maxvec = 20
- nstates = 6
- block_size = 10
+ maxvec = 60
+ nstates = 10
+ block_size = 20
  tol = 1e-6
  maxit = 500
-# guess = adc1
+ guess = adc1
 end-diag_final_section
 
 #lanczos_section
-# block_size = 20
-# iter=50
-# guess=adc1
+# iter=10
+# block_size=10
 #end-lanczos_section
 
 end-input
