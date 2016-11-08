@@ -109,6 +109,9 @@
          else if (keyword(i).eq.'rixs') then
             lrixs=.true.
 
+         else if (keyword(i).eq.'tpxas') then
+            ltpxas=.true.
+
          else if (keyword(i).eq.'energy_only') then
             energyonly=.true.
 
@@ -324,6 +327,8 @@
 
         if (lrixs) lcvsfinal=.true.
 
+        if (ltpxas) lcvsfinal=.true.
+
 !-----------------------------------------------------------------------
 ! If an energy-only calculation has been requested, reset method
 ! accordingly
@@ -494,11 +499,12 @@
       endif
 
 !-----------------------------------------------------------------------
-! Lanczos section: only required if we are considering ionization or
-! a block-Lanczos-RIXS calculation
+! Lanczos section: only required if we are considering ionization,
+! a block-Lanczos-RIXS or block-Lanczos-TPXAS calculation
 !-----------------------------------------------------------------------
       ! Photoionisation cross-section calculation
-      if (.not.energyonly.and..not.ldiagfinal.and..not.ldyson.and..not.lrixs) then
+      if (.not.energyonly.and..not.ldiagfinal&
+           .and..not.ldyson.and..not.lrixs.and..not.ltpxas) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -532,6 +538,24 @@
          ! initial vectors are read from fie
          lancguess=5
          
+      endif
+
+      ! Block Lanczos-TPXAS calculation
+      if (ltpxas) then
+
+         if (.not.llanc) then
+            msg='No Lanczos section has been found'
+            goto 999
+         endif
+
+         if (ncycles.eq.0) then
+            msg='The no. Lanczos iterations has not been given'
+         endif
+
+         ! Set lancguess=6: this is required so that the appropriate
+         ! initial vectors are read from fie
+         lancguess=6
+
       endif
 
 !-----------------------------------------------------------------------
