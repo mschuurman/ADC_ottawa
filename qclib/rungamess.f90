@@ -293,14 +293,18 @@
       do i=1,5
          do j=1,ndiff(i)
             if (difftype.eq.1) then               
-               ! KBJ-type diffuse functions
-               diffexp(i,j)=kbjexp(i,minexp(i))
+               ! KBJ exponential-type diffuse functions
+               diffexp(i,j)=kbjexp_cont(i,minexp(i))
                minexp(i)=diffexp(i,j)
             else if (difftype.eq.2) then
                ! Even-tempered diffuse functions
                write(6,'(a)') 'You need to write the even-tempered basis &
                     function code...'
                STOP
+            else if (difftype.eq.3) then
+               ! KBJ Rydberg-type diffuse functions
+               diffexp(i,j)=kbjexp_ryd(i,minexp(i))
+               minexp(i)=diffexp(i,j)
             endif
          enddo
       enddo
@@ -420,17 +424,17 @@
 
 !#######################################################################
 
-    function kbjexp(i,thrsh)
+    function kbjexp_cont(i,thrsh) result(kbjexp)
 
       implicit none
 
       integer :: i,l,k
       real*8  :: kbjexp,thrsh,al,bl
 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 ! Set the coefficients a_l and b_l according to the principal quantum
 ! number
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
       l=i-1
 
       select case(l)
@@ -467,7 +471,59 @@
 
       return
 
-    end function kbjexp
+    end function kbjexp_cont
+
+!#######################################################################
+
+    function kbjexp_ryd(i,thrsh) result(kbjexp)
+
+      implicit none
+
+      integer :: i,l,k
+      real*8  :: kbjexp,thrsh,al,bl,n
+
+!-----------------------------------------------------------------------
+! Set the coefficients a_l and b_l according to the principal quantum
+! number
+!-----------------------------------------------------------------------
+      l=i-1
+
+      select case(l)
+
+      case(0) ! s-functions
+         al=0.584342d0
+         bl=0.424483d0
+         
+      case(1) ! p-functions
+         al=0.452615d0
+         bl=0.309805d0
+
+      case(2) ! d-functions
+         al=0.382362d0
+         bl=0.251333d0
+
+      case(3) ! f-functions
+         al=0.337027d0
+         bl=0.215013d0
+
+      case(4) ! g-functions
+         al=0.304679d0
+         bl=0.189944d0
+
+      end select
+
+!----------------------------------------------------------------------- 
+! Calculate the next KBJ exponent
+!-----------------------------------------------------------------------       
+      do k=0,400
+         n=1.0d0+real(k)*0.5d0
+         kbjexp=((1.0d0/(2.0d0*n))**2)/((al*n+bl)**2)
+         if (kbjexp.lt.thrsh) exit
+      enddo
+
+      return
+
+    end function kbjexp_ryd
 
 !#######################################################################
 
@@ -611,7 +667,7 @@
 
 !#######################################################################
 
-       function uppercase(string1) result(string2)
+    function uppercase(string1) result(string2)
 
       implicit none
 
