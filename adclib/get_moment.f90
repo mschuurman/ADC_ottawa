@@ -67,7 +67,7 @@
           mtm(i)=dpl(ih,ap)+F0_ph(ap,ih)
        enddo
     
-       mtm(:)=-sqrt(2._d)*mtm(:)
+       mtm(:)=-sqrt(2.0d0)*mtm(:)
 
        return
 

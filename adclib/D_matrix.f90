@@ -40,14 +40,14 @@ contains
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eaprkpr=e(apr)-e(kpr)
                 ebckprj=e(b)+e(c)-e(kpr)-e(j)
                 DA=eaprkpr*ebckprj
 
-                term=term+vpqrs(b,apr,c,j)*(+2.0*vpqrs(kpr,b,j,c)-1.0*vpqrs(kpr,c,j,b))
-                term=term+vpqrs(b,j,c,apr)*(-1.0*vpqrs(kpr,b,j,c)+2.0*vpqrs(kpr,c,j,b))
+                term=term+vpqrs(b,apr,c,j)*(+2.0d0*vpqrs(kpr,b,j,c)-1.0d0*vpqrs(kpr,c,j,b))
+                term=term+vpqrs(b,j,c,apr)*(-1.0d0*vpqrs(kpr,b,j,c)+2.0d0*vpqrs(kpr,c,j,b))
                 term=term/DA
 
                 t2_1h1p=t2_1h1p+term
@@ -73,14 +73,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eaprkpr=e(apr)-e(kpr)
                 eaprbij=e(apr)+e(b)-e(i)-e(j)
                 DB=eaprkpr*eaprbij
 
-                term=term+vpqrs(kpr,i,b,j)*(+2.0*vpqrs(i,apr,j,b)-1.0*vpqrs(i,b,j,apr))
-                term=term+vpqrs(kpr,j,b,i)*(-1.0*vpqrs(i,apr,j,b)+2.0*vpqrs(i,b,j,apr))
+                term=term+vpqrs(kpr,i,b,j)*(+2.0d0*vpqrs(i,apr,j,b)-1.0d0*vpqrs(i,b,j,apr))
+                term=term+vpqrs(kpr,j,b,i)*(-1.0d0*vpqrs(i,apr,j,b)+2.0d0*vpqrs(i,b,j,apr))
                 term=term/DB
 
                 t2_1h1p=t2_1h1p-term  ! this part has minus sign
@@ -91,7 +91,7 @@ do b1=nOcc+1,nBas
     end do
 
 
-   t2_1h1p = 0.5*t2_1h1p  ! EXPRESSION FACTOR IN THE DENSITY
+   t2_1h1p = 0.5d0*t2_1h1p  ! EXPRESSION FACTOR IN THE DENSITY
 
 
   end function t2_1h1p
@@ -130,14 +130,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eaprkpr=e(apr)-e(kpr)
                 ebckprj=e(b)+e(c)-e(kpr)-e(j)
                 DA=eaprkpr*ebckprj
 
-                term=term+vpqrs(apr,b,j,c)*(+2.0*vpqrs(b,kpr,c,j)-1.0*vpqrs(c,kpr,b,j))
-                term=term+vpqrs(j,b,apr,c)*(-1.0*vpqrs(b,kpr,c,j)+2.0*vpqrs(c,kpr,b,j))
+                term=term+vpqrs(apr,b,j,c)*(+2.0d0*vpqrs(b,kpr,c,j)-1.0d0*vpqrs(c,kpr,b,j))
+                term=term+vpqrs(j,b,apr,c)*(-1.0d0*vpqrs(b,kpr,c,j)+2.0d0*vpqrs(c,kpr,b,j))
                 term=term/DA
 
                 t2_1h1p_hc=t2_1h1p_hc+term
@@ -163,14 +163,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eaprkpr=e(apr)-e(kpr)
                 eaprbij=e(apr)+e(b)-e(i)-e(j)
                 DB=eaprkpr*eaprbij
 
-                term=term+vpqrs(i,kpr,j,b)*(+2.0*vpqrs(apr,i,b,j)-1.0*vpqrs(b,i,apr,j))
-                term=term+vpqrs(j,kpr,i,b)*(-1.0*vpqrs(apr,i,b,j)+2.0*vpqrs(b,i,apr,j))
+                term=term+vpqrs(i,kpr,j,b)*(+2.0d0*vpqrs(apr,i,b,j)-1.0d0*vpqrs(b,i,apr,j))
+                term=term+vpqrs(j,kpr,i,b)*(-1.0d0*vpqrs(apr,i,b,j)+2.0d0*vpqrs(b,i,apr,j))
                 term=term/DB
 
                 t2_1h1p_hc=t2_1h1p_hc-term  ! this part has minus sign
@@ -181,7 +181,7 @@ do b1=nOcc+1,nBas
     end do
 
 
-   t2_1h1p_hc = 0.5*t2_1h1p_hc  ! EXPRESSION FACTOR IN THE DENSITY
+   t2_1h1p_hc = 0.5d0*t2_1h1p_hc  ! EXPRESSION FACTOR IN THE DENSITY
 
 
   end function t2_1h1p_hc
@@ -227,14 +227,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(mpr)-e(apr)-e(cpr)
                 DA=eklab*eikac
 
-                term=term+vpqrs(apr,kpr,cpr,mpr)*(+2.0*vpqrs(bpr,lpr,mpr,cpr)-1.0*vpqrs(bpr,cpr,mpr,lpr))
-                term=term+vpqrs(apr,mpr,cpr,kpr)*(-1.0*vpqrs(bpr,lpr,mpr,cpr)+2.0*vpqrs(bpr,cpr,mpr,lpr))
+                term=term+vpqrs(apr,kpr,cpr,mpr)*(+2.0d0*vpqrs(bpr,lpr,mpr,cpr)-1.0d0*vpqrs(bpr,cpr,mpr,lpr))
+                term=term+vpqrs(apr,mpr,cpr,kpr)*(-1.0d0*vpqrs(bpr,lpr,mpr,cpr)+2.0d0*vpqrs(bpr,cpr,mpr,lpr))
                 term=term/DA
 
                 t2_2h2p=t2_2h2p+term
@@ -249,14 +249,14 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(lpr)+e(mpr)-e(apr)-e(cpr)
                 DA=eklab*eikac
 
-                term=term+vpqrs(apr,lpr,cpr,mpr)*(+2.0*vpqrs(bpr,kpr,mpr,cpr)-1.0*vpqrs(bpr,cpr,mpr,kpr))
-                term=term+vpqrs(apr,mpr,cpr,lpr)*(-1.0*vpqrs(bpr,kpr,mpr,cpr)+2.0*vpqrs(bpr,cpr,mpr,kpr))
+                term=term+vpqrs(apr,lpr,cpr,mpr)*(+2.0d0*vpqrs(bpr,kpr,mpr,cpr)-1.0d0*vpqrs(bpr,cpr,mpr,kpr))
+                term=term+vpqrs(apr,mpr,cpr,lpr)*(-1.0d0*vpqrs(bpr,kpr,mpr,cpr)+2.0d0*vpqrs(bpr,cpr,mpr,kpr))
                 term=term/DA
 
                 t2_2h2p=t2_2h2p-term
@@ -270,14 +270,14 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(mpr)-e(bpr)-e(cpr)
                 DA=eklab*eikac
 
-                term=term+vpqrs(bpr,kpr,cpr,mpr)*(+2.0*vpqrs(apr,lpr,mpr,cpr)-1.0*vpqrs(apr,cpr,mpr,lpr))
-                term=term+vpqrs(bpr,mpr,cpr,kpr)*(-1.0*vpqrs(apr,lpr,mpr,cpr)+2.0*vpqrs(apr,cpr,mpr,lpr))
+                term=term+vpqrs(bpr,kpr,cpr,mpr)*(+2.0d0*vpqrs(apr,lpr,mpr,cpr)-1.0d0*vpqrs(apr,cpr,mpr,lpr))
+                term=term+vpqrs(bpr,mpr,cpr,kpr)*(-1.0d0*vpqrs(apr,lpr,mpr,cpr)+2.0d0*vpqrs(apr,cpr,mpr,lpr))
                 term=term/DA
 
                 t2_2h2p=t2_2h2p-term
@@ -292,14 +292,14 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(lpr)+e(mpr)-e(bpr)-e(cpr)
                 DA=eklab*eikac
 
-                term=term+vpqrs(bpr,lpr,cpr,mpr)*(+2.0*vpqrs(apr,kpr,mpr,cpr)-1.0*vpqrs(apr,cpr,mpr,kpr))
-                term=term+vpqrs(bpr,mpr,cpr,lpr)*(-1.0*vpqrs(apr,kpr,mpr,cpr)+2.0*vpqrs(apr,cpr,mpr,kpr))
+                term=term+vpqrs(bpr,lpr,cpr,mpr)*(+2.0d0*vpqrs(apr,kpr,mpr,cpr)-1.0d0*vpqrs(apr,cpr,mpr,kpr))
+                term=term+vpqrs(bpr,mpr,cpr,lpr)*(-1.0d0*vpqrs(apr,kpr,mpr,cpr)+2.0d0*vpqrs(apr,cpr,mpr,kpr))
                 term=term/DA
 
                 t2_2h2p=t2_2h2p+term
@@ -324,17 +324,17 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(mpr)+e(npr)-e(apr)-e(bpr)
                 DB=eklab*eikac
 
-                term=term+vpqrs(apr,mpr,bpr,npr)*(+2.0*vpqrs(mpr,kpr,npr,lpr)-1.0*vpqrs(mpr,lpr,npr,kpr))
-                term=term+vpqrs(apr,npr,bpr,mpr)*(-1.0*vpqrs(mpr,kpr,npr,lpr)+2.0*vpqrs(mpr,lpr,npr,kpr))
+                term=term+vpqrs(apr,mpr,bpr,npr)*(+2.0d0*vpqrs(mpr,kpr,npr,lpr)-1.0d0*vpqrs(mpr,lpr,npr,kpr))
+                term=term+vpqrs(apr,npr,bpr,mpr)*(-1.0d0*vpqrs(mpr,kpr,npr,lpr)+2.0d0*vpqrs(mpr,lpr,npr,kpr))
                 term=term/DB
 
-                t2_2h2p=t2_2h2p+term*(0.5) 
+                t2_2h2p=t2_2h2p+term*0.5d0
 
              end if
           end do
@@ -354,17 +354,17 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(lpr)-e(cpr)-e(dpr)
                 DA=eklab*eikac
 
-                term=term+vpqrs(cpr,kpr,dpr,lpr)*(+2.0*vpqrs(apr,cpr,bpr,dpr)-1.0*vpqrs(apr,dpr,bpr,cpr))
-                term=term+vpqrs(cpr,lpr,dpr,kpr)*(-1.0*vpqrs(apr,cpr,bpr,dpr)+2.0*vpqrs(apr,dpr,bpr,cpr))
+                term=term+vpqrs(cpr,kpr,dpr,lpr)*(+2.0d0*vpqrs(apr,cpr,bpr,dpr)-1.0d0*vpqrs(apr,dpr,bpr,cpr))
+                term=term+vpqrs(cpr,lpr,dpr,kpr)*(-1.0d0*vpqrs(apr,cpr,bpr,dpr)+2.0d0*vpqrs(apr,dpr,bpr,cpr))
                 term=term/DA
 
-                t2_2h2p=t2_2h2p+term*0.5
+                t2_2h2p=t2_2h2p+term*0.5d0
 
              end if
           end do
@@ -407,7 +407,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(mpr)-e(apr)-e(cpr)
@@ -415,13 +415,13 @@ do b1=nOcc+1,nBas
 
               if (P .eq. 1) then 
 ! from (apr a , bpr lpr)  and  (k kpr, brp lpr)
-                term=term+vpqrs(kpr,apr,mpr,cpr)*(+4.0*vpqrs(lpr,bpr,cpr,mpr)-2.0*vpqrs(cpr,bpr,lpr,mpr))
-                term=term+vpqrs(mpr,apr,kpr,cpr)*(-2.0*vpqrs(lpr,bpr,cpr,mpr)+1.0*vpqrs(cpr,bpr,lpr,mpr))
+                term=term+vpqrs(kpr,apr,mpr,cpr)*(+4.0d0*vpqrs(lpr,bpr,cpr,mpr)-2.0d0*vpqrs(cpr,bpr,lpr,mpr))
+                term=term+vpqrs(mpr,apr,kpr,cpr)*(-2.0d0*vpqrs(lpr,bpr,cpr,mpr)+1.0d0*vpqrs(cpr,bpr,lpr,mpr))
                 term=term/DA
               else 
 ! from (apr lpr, bpr a) and   (k lpr, bpr kpr)
-                term=term+vpqrs(kpr,apr,mpr,cpr)*(+2.0*vpqrs(lpr,bpr,cpr,mpr)-1.0*vpqrs(cpr,bpr,lpr,mpr))
-                term=term+vpqrs(mpr,apr,kpr,cpr)*(-1.0*vpqrs(lpr,bpr,cpr,mpr)+2.0*vpqrs(cpr,bpr,lpr,mpr))
+                term=term+vpqrs(kpr,apr,mpr,cpr)*(+2.0d0*vpqrs(lpr,bpr,cpr,mpr)-1.0d0*vpqrs(cpr,bpr,lpr,mpr))
+                term=term+vpqrs(mpr,apr,kpr,cpr)*(-1.0d0*vpqrs(lpr,bpr,cpr,mpr)+2.0d0*vpqrs(cpr,bpr,lpr,mpr))
                 term=term/DA
               end if
 
@@ -437,7 +437,7 @@ do b1=nOcc+1,nBas
              
          if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(lpr)+e(mpr)-e(apr)-e(cpr)
@@ -445,13 +445,13 @@ do b1=nOcc+1,nBas
 
                 if (P .eq. 1) then 
 ! from  (apr a , bpr lpr)  and (k kpr , bpr lpr)
-                term=term+vpqrs(lpr,apr,mpr,cpr)*(+2.0*vpqrs(kpr,bpr,cpr,mpr)-1.0*vpqrs(cpr,bpr,kpr,mpr))
-                term=term+vpqrs(mpr,apr,lpr,cpr)*(-1.0*vpqrs(kpr,bpr,cpr,mpr)+2.0*vpqrs(cpr,bpr,kpr,mpr))
+                term=term+vpqrs(lpr,apr,mpr,cpr)*(+2.0d0*vpqrs(kpr,bpr,cpr,mpr)-1.0d0*vpqrs(cpr,bpr,kpr,mpr))
+                term=term+vpqrs(mpr,apr,lpr,cpr)*(-1.0d0*vpqrs(kpr,bpr,cpr,mpr)+2.0d0*vpqrs(cpr,bpr,kpr,mpr))
                 term=term/DA
                 else
 ! from  (apr lpr , bpr a)  and (k lpr , bpr kpr)
-                term=term+vpqrs(lpr,apr,mpr,cpr)*(+4.0*vpqrs(kpr,bpr,cpr,mpr)-2.0*vpqrs(cpr,bpr,kpr,mpr))
-                term=term+vpqrs(mpr,apr,lpr,cpr)*(-2.0*vpqrs(kpr,bpr,cpr,mpr)+1.0*vpqrs(cpr,bpr,kpr,mpr))
+                term=term+vpqrs(lpr,apr,mpr,cpr)*(+4.0d0*vpqrs(kpr,bpr,cpr,mpr)-2.0d0*vpqrs(cpr,bpr,kpr,mpr))
+                term=term+vpqrs(mpr,apr,lpr,cpr)*(-2.0d0*vpqrs(kpr,bpr,cpr,mpr)+1.0d0*vpqrs(cpr,bpr,kpr,mpr))
                 term=term/DA
                 end if 
 
@@ -467,7 +467,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(mpr)-e(bpr)-e(cpr)
@@ -475,13 +475,13 @@ do b1=nOcc+1,nBas
 
                 if ( P .eq. 1) then 
 ! from  (apr a , bpr lpr)  and (k kpr , bpr lpr)
-                term=term+vpqrs(kpr,bpr,mpr,cpr)*(+2.0*vpqrs(lpr,apr,cpr,mpr)-1.0*vpqrs(cpr,apr,lpr,mpr))
-                term=term+vpqrs(mpr,bpr,kpr,cpr)*(-1.0*vpqrs(lpr,apr,cpr,mpr)+2.0*vpqrs(cpr,apr,lpr,mpr))
+                term=term+vpqrs(kpr,bpr,mpr,cpr)*(+2.0d0*vpqrs(lpr,apr,cpr,mpr)-1.0d0*vpqrs(cpr,apr,lpr,mpr))
+                term=term+vpqrs(mpr,bpr,kpr,cpr)*(-1.0d0*vpqrs(lpr,apr,cpr,mpr)+2.0d0*vpqrs(cpr,apr,lpr,mpr))
                 term=term/DA
                 else 
 ! from  (apr lpr , bpr a)  and (k lpr , bpr kpr)
-                term=term+vpqrs(kpr,bpr,mpr,cpr)*(+4.0*vpqrs(lpr,apr,cpr,mpr)-2.0*vpqrs(cpr,apr,lpr,mpr))
-                term=term+vpqrs(mpr,bpr,kpr,cpr)*(-2.0*vpqrs(lpr,apr,cpr,mpr)+1.0*vpqrs(cpr,apr,lpr,mpr))
+                term=term+vpqrs(kpr,bpr,mpr,cpr)*(+4.0d0*vpqrs(lpr,apr,cpr,mpr)-2.0d0*vpqrs(cpr,apr,lpr,mpr))
+                term=term+vpqrs(mpr,bpr,kpr,cpr)*(-2.0d0*vpqrs(lpr,apr,cpr,mpr)+1.0d0*vpqrs(cpr,apr,lpr,mpr))
                 term=term/DA
                 end if
 
@@ -497,7 +497,7 @@ do b1=nOcc+1,nBas
              
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(lpr)+e(mpr)-e(bpr)-e(cpr)
@@ -505,13 +505,13 @@ do b1=nOcc+1,nBas
 
                 if ( P .eq. 1) then
 ! from  (apr a , bpr lpr)  and (k kpr , bpr lpr)
-                term=term+vpqrs(lpr,bpr,mpr,cpr)*(+4.0*vpqrs(kpr,apr,cpr,mpr)-2.0*vpqrs(cpr,apr,kpr,mpr))
-                term=term+vpqrs(mpr,bpr,lpr,cpr)*(-2.0*vpqrs(kpr,apr,cpr,mpr)+1.0*vpqrs(cpr,apr,kpr,mpr))
+                term=term+vpqrs(lpr,bpr,mpr,cpr)*(+4.0d0*vpqrs(kpr,apr,cpr,mpr)-2.0d0*vpqrs(cpr,apr,kpr,mpr))
+                term=term+vpqrs(mpr,bpr,lpr,cpr)*(-2.0d0*vpqrs(kpr,apr,cpr,mpr)+1.0d0*vpqrs(cpr,apr,kpr,mpr))
                 term=term/DA
                 else 
 ! from  (apr lpr , bpr a)  and (k lpr , bpr kpr)
-                term=term+vpqrs(lpr,bpr,mpr,cpr)*(+2.0*vpqrs(kpr,apr,cpr,mpr)-1.0*vpqrs(cpr,apr,kpr,mpr))
-                term=term+vpqrs(mpr,bpr,lpr,cpr)*(-1.0*vpqrs(kpr,apr,cpr,mpr)+2.0*vpqrs(cpr,apr,kpr,mpr))
+                term=term+vpqrs(lpr,bpr,mpr,cpr)*(+2.0d0*vpqrs(kpr,apr,cpr,mpr)-1.0d0*vpqrs(cpr,apr,kpr,mpr))
+                term=term+vpqrs(mpr,bpr,lpr,cpr)*(-1.0d0*vpqrs(kpr,apr,cpr,mpr)+2.0d0*vpqrs(cpr,apr,kpr,mpr))
                 term=term/DA
                 end if 
 
@@ -536,7 +536,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(mpr)+e(npr)-e(apr)-e(bpr)
@@ -544,17 +544,17 @@ do b1=nOcc+1,nBas
 
                 if ( P .eq. 1 ) then
  ! from  (apr a , bpr lpr)  and (k kpr , bpr lpr)
-                term=term+vpqrs(mpr,apr,npr,bpr)*(+2.0*vpqrs(kpr,mpr,lpr,npr)-1.0*vpqrs(lpr,mpr,kpr,npr))
-                term=term+vpqrs(npr,apr,mpr,bpr)*(-1.0*vpqrs(kpr,mpr,lpr,npr)+2.0*vpqrs(lpr,mpr,kpr,npr))
+                term=term+vpqrs(mpr,apr,npr,bpr)*(+2.0d0*vpqrs(kpr,mpr,lpr,npr)-1.0d0*vpqrs(lpr,mpr,kpr,npr))
+                term=term+vpqrs(npr,apr,mpr,bpr)*(-1.0d0*vpqrs(kpr,mpr,lpr,npr)+2.0d0*vpqrs(lpr,mpr,kpr,npr))
                 term=term/DB
                 else
 ! from  (apr lpr , bpr a)  and (k lpr , bpr kpr)
-                term=term+vpqrs(mpr,apr,npr,bpr)*(+1.0*vpqrs(kpr,mpr,lpr,npr)-2.0*vpqrs(lpr,mpr,kpr,npr))
-                term=term+vpqrs(npr,apr,mpr,bpr)*(-2.0*vpqrs(kpr,mpr,lpr,npr)+1.0*vpqrs(lpr,mpr,kpr,npr))
+                term=term+vpqrs(mpr,apr,npr,bpr)*(+1.0d0*vpqrs(kpr,mpr,lpr,npr)-2.0d0*vpqrs(lpr,mpr,kpr,npr))
+                term=term+vpqrs(npr,apr,mpr,bpr)*(-2.0d0*vpqrs(kpr,mpr,lpr,npr)+1.0d0*vpqrs(lpr,mpr,kpr,npr))
                 term=term/DB
                 end if 
 
-                t2_2h2p_hc=t2_2h2p_hc+term*(0.5) 
+                t2_2h2p_hc=t2_2h2p_hc+term*0.5d0 
 
              end if
           end do
@@ -573,7 +573,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
                 
                 eklab=e(kpr)+e(lpr)-e(apr)-e(bpr)
                 eikac=e(kpr)+e(lpr)-e(cpr)-e(dpr)
@@ -581,17 +581,17 @@ do b1=nOcc+1,nBas
 
                 if ( P .eq. 1 ) then
  ! from  (apr a , bpr lpr)  and (k kpr , bpr lpr)
-                term=term+vpqrs(kpr,cpr,lpr,dpr)*(+2.0*vpqrs(cpr,apr,dpr,bpr)-1.0*vpqrs(dpr,apr,cpr,bpr))
-                term=term+vpqrs(lpr,cpr,kpr,dpr)*(-1.0*vpqrs(cpr,apr,dpr,bpr)+2.0*vpqrs(dpr,apr,cpr,bpr))
+                term=term+vpqrs(kpr,cpr,lpr,dpr)*(+2.0d0*vpqrs(cpr,apr,dpr,bpr)-1.0d0*vpqrs(dpr,apr,cpr,bpr))
+                term=term+vpqrs(lpr,cpr,kpr,dpr)*(-1.0d0*vpqrs(cpr,apr,dpr,bpr)+2.0d0*vpqrs(dpr,apr,cpr,bpr))
                 term=term/DA
                 else
 ! from  (apr lpr , bpr a)  and (k lpr , bpr kpr)
-                term=term+vpqrs(kpr,cpr,lpr,dpr)*(+1.0*vpqrs(cpr,apr,dpr,bpr)-2.0*vpqrs(dpr,apr,cpr,bpr))
-                term=term+vpqrs(lpr,cpr,kpr,dpr)*(-2.0*vpqrs(cpr,apr,dpr,bpr)+1.0*vpqrs(dpr,apr,cpr,bpr))
+                term=term+vpqrs(kpr,cpr,lpr,dpr)*(+1.0d0*vpqrs(cpr,apr,dpr,bpr)-2.0d0*vpqrs(dpr,apr,cpr,bpr))
+                term=term+vpqrs(lpr,cpr,kpr,dpr)*(-2.0d0*vpqrs(cpr,apr,dpr,bpr)+1.0d0*vpqrs(dpr,apr,cpr,bpr))
                 term=term/DA
                 end if
 
-                t2_2h2p_hc=t2_2h2p_hc+term*0.5
+                t2_2h2p_hc=t2_2h2p_hc+term*0.5d0
 
              end if
           end do
@@ -631,7 +631,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(f)-e(apr)-e(bpr)
@@ -639,13 +639,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)    bpr=lpr  cpr=mpr  apr=alpha  kpr=alpha
-                term=term+vpqrs(cpr,lpr,f,mpr)*(+2.0*vpqrs(apr,kpr,bpr,f)-1.0*vpqrs(apr,f,bpr,kpr))
-                term=term+vpqrs(cpr,mpr,f,lpr)*(-4.0*vpqrs(apr,kpr,bpr,f)+2.0*vpqrs(apr,f,bpr,kpr))
+                term=term+vpqrs(cpr,lpr,f,mpr)*(+2.0d0*vpqrs(apr,kpr,bpr,f)-1.0d0*vpqrs(apr,f,bpr,kpr))
+                term=term+vpqrs(cpr,mpr,f,lpr)*(-4.0d0*vpqrs(apr,kpr,bpr,f)+2.0d0*vpqrs(apr,f,bpr,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)    bpr=mpr  cpr=lpr  apr=alpha  kpr=alpha
-                term=term+vpqrs(cpr,lpr,f,mpr)*(+4.0*vpqrs(apr,kpr,bpr,f)-2.0*vpqrs(apr,f,bpr,kpr))
-                term=term+vpqrs(cpr,mpr,f,lpr)*(-2.0*vpqrs(apr,kpr,bpr,f)+1.0*vpqrs(apr,f,bpr,kpr))
+                term=term+vpqrs(cpr,lpr,f,mpr)*(+4.0d0*vpqrs(apr,kpr,bpr,f)-2.0d0*vpqrs(apr,f,bpr,kpr))
+                term=term+vpqrs(cpr,mpr,f,lpr)*(-2.0d0*vpqrs(apr,kpr,bpr,f)+1.0d0*vpqrs(apr,f,bpr,kpr))
                 term=term/DA
               end if
 
@@ -661,7 +661,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(f)-e(apr)-e(cpr)
@@ -669,13 +669,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(bpr,lpr,f,mpr)*(+4.0*vpqrs(apr,kpr,cpr,f)-2.0*vpqrs(apr,f,cpr,kpr))
-                term=term+vpqrs(bpr,mpr,f,lpr)*(-2.0*vpqrs(apr,kpr,cpr,f)+1.0*vpqrs(apr,f,cpr,kpr))
+                term=term+vpqrs(bpr,lpr,f,mpr)*(+4.0d0*vpqrs(apr,kpr,cpr,f)-2.0d0*vpqrs(apr,f,cpr,kpr))
+                term=term+vpqrs(bpr,mpr,f,lpr)*(-2.0d0*vpqrs(apr,kpr,cpr,f)+1.0d0*vpqrs(apr,f,cpr,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(bpr,lpr,f,mpr)*(+2.0*vpqrs(apr,kpr,cpr,f)-1.0*vpqrs(apr,f,cpr,kpr))
-                term=term+vpqrs(bpr,mpr,f,lpr)*(-4.0*vpqrs(apr,kpr,cpr,f)+2.0*vpqrs(apr,f,cpr,kpr))
+                term=term+vpqrs(bpr,lpr,f,mpr)*(+2.0d0*vpqrs(apr,kpr,cpr,f)-1.0d0*vpqrs(apr,f,cpr,kpr))
+                term=term+vpqrs(bpr,mpr,f,lpr)*(-4.0d0*vpqrs(apr,kpr,cpr,f)+2.0d0*vpqrs(apr,f,cpr,kpr))
                 term=term/DA
               end if
 
@@ -691,7 +691,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(f)-e(bpr)-e(cpr)
@@ -699,13 +699,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,lpr,f,mpr)*(+2.0*vpqrs(bpr,kpr,cpr,f)-1.0*vpqrs(bpr,f,cpr,kpr))
-                term=term+vpqrs(apr,mpr,f,lpr)*(-1.0*vpqrs(bpr,kpr,cpr,f)+2.0*vpqrs(bpr,f,cpr,kpr))
+                term=term+vpqrs(apr,lpr,f,mpr)*(+2.0d0*vpqrs(bpr,kpr,cpr,f)-1.0d0*vpqrs(bpr,f,cpr,kpr))
+                term=term+vpqrs(apr,mpr,f,lpr)*(-1.0d0*vpqrs(bpr,kpr,cpr,f)+2.0d0*vpqrs(bpr,f,cpr,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,lpr,f,mpr)*(+1.0*vpqrs(bpr,kpr,cpr,f)-2.0*vpqrs(bpr,f,cpr,kpr))
-                term=term+vpqrs(apr,mpr,f,lpr)*(-2.0*vpqrs(bpr,kpr,cpr,f)+1.0*vpqrs(bpr,f,cpr,kpr))
+                term=term+vpqrs(apr,lpr,f,mpr)*(+1.0d0*vpqrs(bpr,kpr,cpr,f)-2.0d0*vpqrs(bpr,f,cpr,kpr))
+                term=term+vpqrs(apr,mpr,f,lpr)*(-2.0d0*vpqrs(bpr,kpr,cpr,f)+1.0d0*vpqrs(bpr,f,cpr,kpr))
                 term=term/DA
               end if
 
@@ -721,7 +721,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(f)-e(apr)-e(bpr)
@@ -729,13 +729,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(cpr,kpr,f,mpr)*(+1.0*vpqrs(apr,lpr,bpr,f)-2.0*vpqrs(apr,f,bpr,lpr))
-                term=term+vpqrs(cpr,mpr,f,kpr)*(-2.0*vpqrs(apr,lpr,bpr,f)+4.0*vpqrs(apr,f,bpr,lpr))
+                term=term+vpqrs(cpr,kpr,f,mpr)*(+1.0d0*vpqrs(apr,lpr,bpr,f)-2.0d0*vpqrs(apr,f,bpr,lpr))
+                term=term+vpqrs(cpr,mpr,f,kpr)*(-2.0d0*vpqrs(apr,lpr,bpr,f)+4.0d0*vpqrs(apr,f,bpr,lpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(cpr,kpr,f,mpr)*(+2.0*vpqrs(apr,lpr,bpr,f)-1.0*vpqrs(apr,f,bpr,lpr))
-                term=term+vpqrs(cpr,mpr,f,kpr)*(-1.0*vpqrs(apr,lpr,bpr,f)+2.0*vpqrs(apr,f,bpr,lpr))
+                term=term+vpqrs(cpr,kpr,f,mpr)*(+2.0d0*vpqrs(apr,lpr,bpr,f)-1.0d0*vpqrs(apr,f,bpr,lpr))
+                term=term+vpqrs(cpr,mpr,f,kpr)*(-1.0d0*vpqrs(apr,lpr,bpr,f)+2.0d0*vpqrs(apr,f,bpr,lpr))
                 term=term/DA
               end if
 
@@ -751,7 +751,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(f)-e(apr)-e(cpr)
@@ -759,13 +759,13 @@ do b1=nOcc+1,nBas
 
                if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(bpr,kpr,f,mpr)*(+2.0*vpqrs(apr,lpr,cpr,f)-1.0*vpqrs(apr,f,cpr,lpr))
-                term=term+vpqrs(bpr,mpr,f,kpr)*(-1.0*vpqrs(apr,lpr,cpr,f)+2.0*vpqrs(apr,f,cpr,lpr))
+                term=term+vpqrs(bpr,kpr,f,mpr)*(+2.0d0*vpqrs(apr,lpr,cpr,f)-1.0d0*vpqrs(apr,f,cpr,lpr))
+                term=term+vpqrs(bpr,mpr,f,kpr)*(-1.0d0*vpqrs(apr,lpr,cpr,f)+2.0d0*vpqrs(apr,f,cpr,lpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(bpr,kpr,f,mpr)*(+1.0*vpqrs(apr,lpr,cpr,f)-2.0*vpqrs(apr,f,cpr,lpr))
-                term=term+vpqrs(bpr,mpr,f,kpr)*(-2.0*vpqrs(apr,lpr,cpr,f)+4.0*vpqrs(apr,f,cpr,lpr))
+                term=term+vpqrs(bpr,kpr,f,mpr)*(+1.0d0*vpqrs(apr,lpr,cpr,f)-2.0d0*vpqrs(apr,f,cpr,lpr))
+                term=term+vpqrs(bpr,mpr,f,kpr)*(-2.0d0*vpqrs(apr,lpr,cpr,f)+4.0d0*vpqrs(apr,f,cpr,lpr))
                 term=term/DA
                
              end if
@@ -782,7 +782,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(f)-e(bpr)-e(cpr)
@@ -790,13 +790,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,kpr,f,mpr)*(+4.0*vpqrs(bpr,lpr,cpr,f)-2.0*vpqrs(bpr,f,cpr,lpr))
-                term=term+vpqrs(apr,mpr,f,kpr)*(-2.0*vpqrs(bpr,lpr,cpr,f)+1.0*vpqrs(bpr,f,cpr,lpr))
+                term=term+vpqrs(apr,kpr,f,mpr)*(+4.0d0*vpqrs(bpr,lpr,cpr,f)-2.0d0*vpqrs(bpr,f,cpr,lpr))
+                term=term+vpqrs(apr,mpr,f,kpr)*(-2.0d0*vpqrs(bpr,lpr,cpr,f)+1.0d0*vpqrs(bpr,f,cpr,lpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,kpr,f,mpr)*(+2.0*vpqrs(bpr,lpr,cpr,f)-4.0*vpqrs(bpr,f,cpr,lpr))
-                term=term+vpqrs(apr,mpr,f,kpr)*(-1.0*vpqrs(bpr,lpr,cpr,f)+2.0*vpqrs(bpr,f,cpr,lpr))
+                term=term+vpqrs(apr,kpr,f,mpr)*(+2.0d0*vpqrs(bpr,lpr,cpr,f)-4.0d0*vpqrs(bpr,f,cpr,lpr))
+                term=term+vpqrs(apr,mpr,f,kpr)*(-1.0d0*vpqrs(bpr,lpr,cpr,f)+2.0d0*vpqrs(bpr,f,cpr,lpr))
                 term=term/DA
 
               end if
@@ -813,7 +813,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(mpr)+e(f)-e(apr)-e(bpr)
@@ -821,13 +821,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(cpr,kpr,f,lpr)*(+2.0*vpqrs(apr,mpr,bpr,f)-1.0*vpqrs(apr,f,bpr,mpr))
-                term=term+vpqrs(cpr,lpr,f,kpr)*(-1.0*vpqrs(apr,mpr,bpr,f)+2.0*vpqrs(apr,f,bpr,mpr))
+                term=term+vpqrs(cpr,kpr,f,lpr)*(+2.0d0*vpqrs(apr,mpr,bpr,f)-1.0d0*vpqrs(apr,f,bpr,mpr))
+                term=term+vpqrs(cpr,lpr,f,kpr)*(-1.0d0*vpqrs(apr,mpr,bpr,f)+2.0d0*vpqrs(apr,f,bpr,mpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(cpr,kpr,f,lpr)*(+1.0*vpqrs(apr,mpr,bpr,f)-2.0*vpqrs(apr,f,bpr,mpr))
-                term=term+vpqrs(cpr,lpr,f,kpr)*(-2.0*vpqrs(apr,mpr,bpr,f)+4.0*vpqrs(apr,f,bpr,mpr))
+                term=term+vpqrs(cpr,kpr,f,lpr)*(+1.0d0*vpqrs(apr,mpr,bpr,f)-2.0d0*vpqrs(apr,f,bpr,mpr))
+                term=term+vpqrs(cpr,lpr,f,kpr)*(-2.0d0*vpqrs(apr,mpr,bpr,f)+4.0d0*vpqrs(apr,f,bpr,mpr))
                 term=term/DA
               end if
 
@@ -844,7 +844,7 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(mpr)+e(f)-e(apr)-e(cpr)
@@ -852,13 +852,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(bpr,kpr,f,lpr)*(+1.0*vpqrs(apr,mpr,cpr,f)-2.0*vpqrs(apr,f,cpr,mpr))
-                term=term+vpqrs(bpr,lpr,f,kpr)*(-2.0*vpqrs(apr,mpr,cpr,f)+4.0*vpqrs(apr,f,cpr,mpr))
+                term=term+vpqrs(bpr,kpr,f,lpr)*(+1.0d0*vpqrs(apr,mpr,cpr,f)-2.0d0*vpqrs(apr,f,cpr,mpr))
+                term=term+vpqrs(bpr,lpr,f,kpr)*(-2.0d0*vpqrs(apr,mpr,cpr,f)+4.0d0*vpqrs(apr,f,cpr,mpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(bpr,kpr,f,lpr)*(+2.0*vpqrs(apr,mpr,cpr,f)-1.0*vpqrs(apr,f,cpr,mpr))
-                term=term+vpqrs(bpr,lpr,f,kpr)*(-1.0*vpqrs(apr,mpr,cpr,f)+2.0*vpqrs(apr,f,cpr,mpr))
+                term=term+vpqrs(bpr,kpr,f,lpr)*(+2.0d0*vpqrs(apr,mpr,cpr,f)-1.0d0*vpqrs(apr,f,cpr,mpr))
+                term=term+vpqrs(bpr,lpr,f,kpr)*(-1.0d0*vpqrs(apr,mpr,cpr,f)+2.0d0*vpqrs(apr,f,cpr,mpr))
                 term=term/DA
               end if
 
@@ -874,7 +874,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(mpr)+e(f)-e(bpr)-e(cpr)
@@ -882,13 +882,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,kpr,f,lpr)*(+2.0*vpqrs(bpr,mpr,cpr,f)-4.0*vpqrs(bpr,f,cpr,mpr))
-                term=term+vpqrs(apr,lpr,f,kpr)*(-1.0*vpqrs(bpr,mpr,cpr,f)+2.0*vpqrs(bpr,f,cpr,mpr))
+                term=term+vpqrs(apr,kpr,f,lpr)*(+2.0d0*vpqrs(bpr,mpr,cpr,f)-4.0d0*vpqrs(bpr,f,cpr,mpr))
+                term=term+vpqrs(apr,lpr,f,kpr)*(-1.0d0*vpqrs(bpr,mpr,cpr,f)+2.0d0*vpqrs(bpr,f,cpr,mpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,kpr,f,lpr)*(+4.0*vpqrs(bpr,mpr,cpr,f)-2.0*vpqrs(bpr,f,cpr,mpr))
-                term=term+vpqrs(apr,lpr,f,kpr)*(-2.0*vpqrs(bpr,mpr,cpr,f)+1.0*vpqrs(bpr,f,cpr,mpr))
+                term=term+vpqrs(apr,kpr,f,lpr)*(+4.0d0*vpqrs(bpr,mpr,cpr,f)-2.0d0*vpqrs(bpr,f,cpr,mpr))
+                term=term+vpqrs(apr,lpr,f,kpr)*(-2.0d0*vpqrs(bpr,mpr,cpr,f)+1.0d0*vpqrs(bpr,f,cpr,mpr))
                 term=term/DA
               end if
 
@@ -912,7 +912,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(lpr)-e(apr)-e(d)
@@ -920,13 +920,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)     bpr=lpr  cpr=mpr  apr=alpha  kpr=alpha
-                term=term+vpqrs(bpr,d,cpr,mpr)*(+4.0*vpqrs(apr,kpr,d,lpr)-2.0*vpqrs(apr,lpr,d,kpr))
-                term=term+vpqrs(bpr,mpr,cpr,d)*(-2.0*vpqrs(apr,kpr,d,lpr)+1.0*vpqrs(apr,lpr,d,kpr))
+                term=term+vpqrs(bpr,d,cpr,mpr)*(+4.0d0*vpqrs(apr,kpr,d,lpr)-2.0d0*vpqrs(apr,lpr,d,kpr))
+                term=term+vpqrs(bpr,mpr,cpr,d)*(-2.0d0*vpqrs(apr,kpr,d,lpr)+1.0d0*vpqrs(apr,lpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)     bpr=mpr  cpr=lpr  apr=alpha  kpr=alpha
-                term=term+vpqrs(bpr,d,cpr,mpr)*(+2.0*vpqrs(apr,kpr,d,lpr)-1.0*vpqrs(apr,lpr,d,kpr))
-                term=term+vpqrs(bpr,mpr,cpr,d)*(-4.0*vpqrs(apr,kpr,d,lpr)+2.0*vpqrs(apr,lpr,d,kpr))
+                term=term+vpqrs(bpr,d,cpr,mpr)*(+2.0d0*vpqrs(apr,kpr,d,lpr)-1.0d0*vpqrs(apr,lpr,d,kpr))
+                term=term+vpqrs(bpr,mpr,cpr,d)*(-4.0d0*vpqrs(apr,kpr,d,lpr)+2.0d0*vpqrs(apr,lpr,d,kpr))
                 term=term/DA
               end if
 
@@ -942,7 +942,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(mpr)-e(apr)-e(d)
@@ -950,13 +950,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(bpr,d,cpr,lpr)*(+2.0*vpqrs(apr,kpr,d,mpr)-1.0*vpqrs(apr,mpr,d,kpr))
-                term=term+vpqrs(bpr,lpr,cpr,d)*(-4.0*vpqrs(apr,kpr,d,mpr)+2.0*vpqrs(apr,mpr,d,kpr))
+                term=term+vpqrs(bpr,d,cpr,lpr)*(+2.0d0*vpqrs(apr,kpr,d,mpr)-1.0d0*vpqrs(apr,mpr,d,kpr))
+                term=term+vpqrs(bpr,lpr,cpr,d)*(-4.0d0*vpqrs(apr,kpr,d,mpr)+2.0d0*vpqrs(apr,mpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(bpr,d,cpr,lpr)*(+4.0*vpqrs(apr,kpr,d,mpr)-2.0*vpqrs(apr,mpr,d,kpr))
-                term=term+vpqrs(bpr,lpr,cpr,d)*(-2.0*vpqrs(apr,kpr,d,mpr)+1.0*vpqrs(apr,mpr,d,kpr))
+                term=term+vpqrs(bpr,d,cpr,lpr)*(+4.0d0*vpqrs(apr,kpr,d,mpr)-2.0d0*vpqrs(apr,mpr,d,kpr))
+                term=term+vpqrs(bpr,lpr,cpr,d)*(-2.0d0*vpqrs(apr,kpr,d,mpr)+1.0d0*vpqrs(apr,mpr,d,kpr))
                 term=term/DA
               end if
 
@@ -972,7 +972,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(mpr)-e(apr)-e(d)
@@ -980,13 +980,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(bpr,d,cpr,kpr)*(+1.0*vpqrs(apr,lpr,d,mpr)-2.0*vpqrs(apr,mpr,d,lpr))
-                term=term+vpqrs(bpr,kpr,cpr,d)*(-2.0*vpqrs(apr,lpr,d,mpr)+1.0*vpqrs(apr,mpr,d,lpr))
+                term=term+vpqrs(bpr,d,cpr,kpr)*(+1.0d0*vpqrs(apr,lpr,d,mpr)-2.0d0*vpqrs(apr,mpr,d,lpr))
+                term=term+vpqrs(bpr,kpr,cpr,d)*(-2.0d0*vpqrs(apr,lpr,d,mpr)+1.0d0*vpqrs(apr,mpr,d,lpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(bpr,d,cpr,kpr)*(+2.0*vpqrs(apr,lpr,d,mpr)-1.0*vpqrs(apr,mpr,d,lpr))
-                term=term+vpqrs(bpr,kpr,cpr,d)*(-1.0*vpqrs(apr,lpr,d,mpr)+2.0*vpqrs(apr,mpr,d,lpr))
+                term=term+vpqrs(bpr,d,cpr,kpr)*(+2.0d0*vpqrs(apr,lpr,d,mpr)-1.0d0*vpqrs(apr,mpr,d,lpr))
+                term=term+vpqrs(bpr,kpr,cpr,d)*(-1.0d0*vpqrs(apr,lpr,d,mpr)+2.0d0*vpqrs(apr,mpr,d,lpr))
                 term=term/DA
               end if
 
@@ -1002,7 +1002,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(lpr)-e(bpr)-e(d)
@@ -1010,13 +1010,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,cpr,mpr)*(+2.0*vpqrs(bpr,kpr,d,lpr)-4.0*vpqrs(bpr,lpr,d,kpr))
-                term=term+vpqrs(apr,mpr,cpr,d)*(-1.0*vpqrs(bpr,kpr,d,lpr)+2.0*vpqrs(bpr,lpr,d,kpr))
+                term=term+vpqrs(apr,d,cpr,mpr)*(+2.0d0*vpqrs(bpr,kpr,d,lpr)-4.0d0*vpqrs(bpr,lpr,d,kpr))
+                term=term+vpqrs(apr,mpr,cpr,d)*(-1.0d0*vpqrs(bpr,kpr,d,lpr)+2.0d0*vpqrs(bpr,lpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,cpr,mpr)*(+1.0*vpqrs(bpr,kpr,d,lpr)-2.0*vpqrs(bpr,lpr,d,kpr))
-                term=term+vpqrs(apr,mpr,cpr,d)*(-2.0*vpqrs(bpr,kpr,d,lpr)+1.0*vpqrs(bpr,lpr,d,kpr))
+                term=term+vpqrs(apr,d,cpr,mpr)*(+1.0d0*vpqrs(bpr,kpr,d,lpr)-2.0d0*vpqrs(bpr,lpr,d,kpr))
+                term=term+vpqrs(apr,mpr,cpr,d)*(-2.0d0*vpqrs(bpr,kpr,d,lpr)+1.0d0*vpqrs(bpr,lpr,d,kpr))
                 term=term/DA
               end if
 
@@ -1032,7 +1032,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(mpr)-e(bpr)-e(d)
@@ -1040,13 +1040,13 @@ do b1=nOcc+1,nBas
 
              if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,cpr,lpr)*(+1.0*vpqrs(bpr,kpr,d,mpr)-2.0*vpqrs(bpr,mpr,d,kpr))
-                term=term+vpqrs(apr,lpr,cpr,d)*(-2.0*vpqrs(bpr,kpr,d,mpr)+1.0*vpqrs(bpr,mpr,d,kpr))
+                term=term+vpqrs(apr,d,cpr,lpr)*(+1.0d0*vpqrs(bpr,kpr,d,mpr)-2.0d0*vpqrs(bpr,mpr,d,kpr))
+                term=term+vpqrs(apr,lpr,cpr,d)*(-2.0d0*vpqrs(bpr,kpr,d,mpr)+1.0d0*vpqrs(bpr,mpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,cpr,lpr)*(+2.0*vpqrs(bpr,kpr,d,mpr)-4.0*vpqrs(bpr,mpr,d,kpr))
-                term=term+vpqrs(apr,lpr,cpr,d)*(-1.0*vpqrs(bpr,kpr,d,mpr)+2.0*vpqrs(bpr,mpr,d,kpr))
+                term=term+vpqrs(apr,d,cpr,lpr)*(+2.0d0*vpqrs(bpr,kpr,d,mpr)-4.0d0*vpqrs(bpr,mpr,d,kpr))
+                term=term+vpqrs(apr,lpr,cpr,d)*(-1.0d0*vpqrs(bpr,kpr,d,mpr)+2.0d0*vpqrs(bpr,mpr,d,kpr))
                 term=term/DA
               end if
 
@@ -1063,7 +1063,7 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(mpr)-e(bpr)-e(d)
@@ -1071,13 +1071,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,cpr,kpr)*(+2.0*vpqrs(bpr,lpr,d,mpr)-1.0*vpqrs(bpr,mpr,d,lpr))
-                term=term+vpqrs(apr,kpr,cpr,d)*(-4.0*vpqrs(bpr,lpr,d,mpr)+2.0*vpqrs(bpr,mpr,d,lpr))
+                term=term+vpqrs(apr,d,cpr,kpr)*(+2.0d0*vpqrs(bpr,lpr,d,mpr)-1.0d0*vpqrs(bpr,mpr,d,lpr))
+                term=term+vpqrs(apr,kpr,cpr,d)*(-4.0d0*vpqrs(bpr,lpr,d,mpr)+2.0d0*vpqrs(bpr,mpr,d,lpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,cpr,kpr)*(+1.0*vpqrs(bpr,lpr,d,mpr)-2.0*vpqrs(bpr,mpr,d,lpr))
-                term=term+vpqrs(apr,kpr,cpr,d)*(-2.0*vpqrs(bpr,lpr,d,mpr)+4.0*vpqrs(bpr,mpr,d,lpr))
+                term=term+vpqrs(apr,d,cpr,kpr)*(+1.0d0*vpqrs(bpr,lpr,d,mpr)-2.0d0*vpqrs(bpr,mpr,d,lpr))
+                term=term+vpqrs(apr,kpr,cpr,d)*(-2.0d0*vpqrs(bpr,lpr,d,mpr)+4.0d0*vpqrs(bpr,mpr,d,lpr))
                 term=term/DA
               end if
 
@@ -1093,7 +1093,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(lpr)-e(cpr)-e(d)
@@ -1101,13 +1101,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,bpr,mpr)*(+1.0*vpqrs(cpr,kpr,d,lpr)-2.0*vpqrs(cpr,lpr,d,kpr))
-                term=term+vpqrs(apr,mpr,bpr,d)*(-2.0*vpqrs(cpr,kpr,d,lpr)+1.0*vpqrs(cpr,lpr,d,kpr))
+                term=term+vpqrs(apr,d,bpr,mpr)*(+1.0d0*vpqrs(cpr,kpr,d,lpr)-2.0d0*vpqrs(cpr,lpr,d,kpr))
+                term=term+vpqrs(apr,mpr,bpr,d)*(-2.0d0*vpqrs(cpr,kpr,d,lpr)+1.0d0*vpqrs(cpr,lpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,bpr,mpr)*(+2.0*vpqrs(cpr,kpr,d,lpr)-4.0*vpqrs(cpr,lpr,d,kpr))
-                term=term+vpqrs(apr,mpr,bpr,d)*(-1.0*vpqrs(cpr,kpr,d,lpr)+2.0*vpqrs(cpr,lpr,d,kpr))
+                term=term+vpqrs(apr,d,bpr,mpr)*(+2.0d0*vpqrs(cpr,kpr,d,lpr)-4.0d0*vpqrs(cpr,lpr,d,kpr))
+                term=term+vpqrs(apr,mpr,bpr,d)*(-1.0d0*vpqrs(cpr,kpr,d,lpr)+2.0d0*vpqrs(cpr,lpr,d,kpr))
                 term=term/DA
                end if
 
@@ -1123,7 +1123,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(kpr)+e(mpr)-e(cpr)-e(d)
@@ -1131,13 +1131,13 @@ do b1=nOcc+1,nBas
 
               if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,bpr,lpr)*(+2.0*vpqrs(cpr,kpr,d,mpr)-4.0*vpqrs(cpr,mpr,d,kpr))
-                term=term+vpqrs(apr,lpr,bpr,d)*(-1.0*vpqrs(cpr,kpr,d,mpr)+2.0*vpqrs(cpr,mpr,d,kpr))
+                term=term+vpqrs(apr,d,bpr,lpr)*(+2.0d0*vpqrs(cpr,kpr,d,mpr)-4.0d0*vpqrs(cpr,mpr,d,kpr))
+                term=term+vpqrs(apr,lpr,bpr,d)*(-1.0d0*vpqrs(cpr,kpr,d,mpr)+2.0d0*vpqrs(cpr,mpr,d,kpr))
                 term=term/DA
               else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,bpr,lpr)*(+1.0*vpqrs(cpr,kpr,d,mpr)-2.0*vpqrs(cpr,mpr,d,kpr))
-                term=term+vpqrs(apr,lpr,bpr,d)*(-2.0*vpqrs(cpr,kpr,d,mpr)+1.0*vpqrs(cpr,mpr,d,kpr))
+                term=term+vpqrs(apr,d,bpr,lpr)*(+1.0d0*vpqrs(cpr,kpr,d,mpr)-2.0d0*vpqrs(cpr,mpr,d,kpr))
+                term=term+vpqrs(apr,lpr,bpr,d)*(-2.0d0*vpqrs(cpr,kpr,d,mpr)+1.0d0*vpqrs(cpr,mpr,d,kpr))
                 term=term/DA
               end if
 
@@ -1153,7 +1153,7 @@ do b1=nOcc+1,nBas
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym3,nsym4) .eq. 1)) then
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eabcklm = -e(apr)-e(bpr)-e(cpr)+e(kpr)+e(lpr)+e(mpr)
                 eterm = e(lpr)+e(mpr)-e(cpr)-e(d)
@@ -1161,13 +1161,13 @@ do b1=nOcc+1,nBas
 
                if (I .eq. 1) then
 !!! from ( bpr lpr, cpr mpr)
-                term=term+vpqrs(apr,d,bpr,kpr)*(+1.0*vpqrs(cpr,lpr,d,mpr)-2.0*vpqrs(cpr,mpr,d,lpr))
-                term=term+vpqrs(apr,kpr,bpr,d)*(-2.0*vpqrs(cpr,lpr,d,mpr)+4.0*vpqrs(cpr,mpr,d,lpr))
+                term=term+vpqrs(apr,d,bpr,kpr)*(+1.0d0*vpqrs(cpr,lpr,d,mpr)-2.0d0*vpqrs(cpr,mpr,d,lpr))
+                term=term+vpqrs(apr,kpr,bpr,d)*(-2.0d0*vpqrs(cpr,lpr,d,mpr)+4.0d0*vpqrs(cpr,mpr,d,lpr))
                 term=term/DA
                else
 !!! from ( bpr mpr, cpr lpr)
-                term=term+vpqrs(apr,d,bpr,kpr)*(+2.0*vpqrs(cpr,lpr,d,mpr)-1.0*vpqrs(cpr,mpr,d,lpr))
-                term=term+vpqrs(apr,kpr,bpr,d)*(-4.0*vpqrs(cpr,lpr,d,mpr)+2.0*vpqrs(cpr,mpr,d,lpr))
+                term=term+vpqrs(apr,d,bpr,kpr)*(+2.0d0*vpqrs(cpr,lpr,d,mpr)-1.0d0*vpqrs(cpr,mpr,d,lpr))
+                term=term+vpqrs(apr,kpr,bpr,d)*(-4.0d0*vpqrs(cpr,lpr,d,mpr)+2.0d0*vpqrs(cpr,mpr,d,lpr))
                 term=term/DA
                end if
                t2_3h3p_hc=t2_3h3p_hc+term  
@@ -1225,14 +1225,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 ebckj=e(b)+e(c)-e(k)-e(j)
                 DA=eak*ebckj
 
-                term=term+vpqrs(b,a,c,j)*(+2.0*vpqrs(k,b,j,c)-1.0*vpqrs(k,c,j,b))
-                term=term+vpqrs(b,j,c,a)*(-1.0*vpqrs(k,b,j,c)+2.0*vpqrs(k,c,j,b))
+                term=term+vpqrs(b,a,c,j)*(+2.0d0*vpqrs(k,b,j,c)-1.0d0*vpqrs(k,c,j,b))
+                term=term+vpqrs(b,j,c,a)*(-1.0d0*vpqrs(k,b,j,c)+2.0d0*vpqrs(k,c,j,b))
                 term=term/DA
                 
                 func = func + term
@@ -1256,14 +1256,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 eabij=e(a)+e(b)-e(i)-e(j)
                 DB=eak*eabij
 
-                term=term+vpqrs(k,i,b,j)*(+2.0*vpqrs(i,a,j,b)-1.0*vpqrs(i,b,j,a))
-                term=term+vpqrs(k,j,b,i)*(-1.0*vpqrs(i,a,j,b)+2.0*vpqrs(i,b,j,a))
+                term=term+vpqrs(k,i,b,j)*(+2.0d0*vpqrs(i,a,j,b)-1.0d0*vpqrs(i,b,j,a))
+                term=term+vpqrs(k,j,b,i)*(-1.0d0*vpqrs(i,a,j,b)+2.0d0*vpqrs(i,b,j,a))
                 term=term/DB
 
                 func = func - term  ! this part has minus sign
@@ -1292,11 +1292,11 @@ do b1=nOcc+1,nBas
       if(MT(nsym1,nsym2) .eq. 1)  then
 
          cnt=cnt+1
-         term=0.0
+         term=0.0d0
 
          ekkpraapr=e(k)+e(kpr)-e(a)-e(apr)
 
-         term=term+(+2.0*vpqrs(k,a,kpr,apr)-1.0*vpqrs(k,apr,kpr,a))*t2_1h1p(apr,kpr)
+         term=term+(+2.0d0*vpqrs(k,a,kpr,apr)-1.0d0*vpqrs(k,apr,kpr,a))*t2_1h1p(apr,kpr)
          term=term/ekkpraapr 
 
          func=func+term
@@ -1320,11 +1320,11 @@ do b1=nOcc+1,nBas
       if(MT(nsym1,nsym2) .eq. 1)  then
 
          cnt=cnt+1
-         term=0.0
+         term=0.0d0
 
          eka=e(k)-e(a)
 
-         term=term+(+2.0*vpqrs(k,a,apr,kpr)-1.0*vpqrs(k,kpr,apr,a))*t2_1h1p_hc(apr,kpr)
+         term=term+(+2.0d0*vpqrs(k,a,apr,kpr)-1.0d0*vpqrs(k,kpr,apr,a))*t2_1h1p_hc(apr,kpr)
          term=term/eka 
 
          func=func+term
@@ -1349,15 +1349,15 @@ do b1=nOcc+1,nBas
       if(MT(nsym1,nsym2) .eq. 1)  then
 
          cnt=cnt+1
-         term=0.0
+         term=0.0d0
 
          eka=e(k)-e(a)
 
-         term=term+(+1.0*vpqrs(apr,a,bpr,lpr))*t2_2h2p_hc(apr,bpr,k,lpr,1)
-         term=term+(-1.0*vpqrs(apr,lpr,bpr,a))*t2_2h2p_hc(apr,bpr,k,lpr,2)
+         term=term+(+1.0d0*vpqrs(apr,a,bpr,lpr))*t2_2h2p_hc(apr,bpr,k,lpr,1)
+         term=term+(-1.0d0*vpqrs(apr,lpr,bpr,a))*t2_2h2p_hc(apr,bpr,k,lpr,2)
          term=term/eka 
 
-         func=func+term*(0.5)   !!! PLUS PART
+         func=func+term*0.5d0   !!! PLUS PART
 
          end if
       end do
@@ -1378,15 +1378,15 @@ do b1=nOcc+1,nBas
       if(MT(nsym1,nsym2) .eq. 1)  then
 
          cnt=cnt+1
-         term=0.0
+         term=0.0d0
 
          eka=e(k)-e(a)
 
-         term=term+(+1.0*vpqrs(k,kpr,bpr,lpr))*t2_2h2p_hc(a,bpr,kpr,lpr,1)
-         term=term+(-1.0*vpqrs(k,lpr,bpr,kpr))*t2_2h2p_hc(a,bpr,kpr,lpr,2)
+         term=term+(+1.0d0*vpqrs(k,kpr,bpr,lpr))*t2_2h2p_hc(a,bpr,kpr,lpr,1)
+         term=term+(-1.0d0*vpqrs(k,lpr,bpr,kpr))*t2_2h2p_hc(a,bpr,kpr,lpr,2)
          term=term/eka 
 
-         func=func-term*(0.5)  !!! MINUS PART
+         func=func-term*0.5d0  !!! MINUS PART
 
          end if
        end do
@@ -1411,19 +1411,19 @@ do b1=nOcc+1,nBas
       if(MT(nsym1,nsym2) .eq. 1)  then
 
          cnt=cnt+1
-         term=0.0
-         term1=0.0
-         term2=0.0
+         term=0.0d0
+         term1=0.0d0
+         term2=0.0d0
 
          eka=e(k)-e(a)
          ebprcprlprmpr=e(bpr)+e(cpr)-e(lpr)-e(mpr)
 
-         term=term+(+1.0*vpqrs(bpr,lpr,cpr,mpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,1)
-         term=term+(-1.0*vpqrs(bpr,mpr,cpr,lpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,2)
+         term=term+(+1.0d0*vpqrs(bpr,lpr,cpr,mpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,1)
+         term=term+(-1.0d0*vpqrs(bpr,mpr,cpr,lpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,2)
          term1=term/eka 
          term2=term/ebprcprlprmpr
 
-         func=func+(term1+term2)*(0.25)
+         func=func+(term1+term2)*0.25d0
 
          end if
        end do
@@ -1457,7 +1457,7 @@ do b1=nOcc+1,nBas
 !!!!!!!!!!!!!!!!!!!!!!!!!! ZEROTH ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! IT DOES NOT GIVE ANY CONTRIBUTION TO THE HOLE-PARTICLE PART !!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!! SECOND ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    densityhc=0.0
+    densityhc=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -1473,14 +1473,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 ebckj=e(b)+e(c)-e(k)-e(j)
                 DA=eak*ebckj
 
-                term=term+vpqrs(a,b,j,c)*(+2.0*vpqrs(b,k,c,j)-1.0*vpqrs(c,k,b,j))
-                term=term+vpqrs(j,b,a,c)*(-1.0*vpqrs(b,k,c,j)+2.0*vpqrs(c,k,b,j))
+                term=term+vpqrs(a,b,j,c)*(+2.0d0*vpqrs(b,k,c,j)-1.0d0*vpqrs(c,k,b,j))
+                term=term+vpqrs(j,b,a,c)*(-1.0d0*vpqrs(b,k,c,j)+2.0d0*vpqrs(c,k,b,j))
                 term=term/DA
                 
                 densityhc=densityhc+term
@@ -1504,14 +1504,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 eabij=e(a)+e(b)-e(i)-e(j)
                 DB=eak*eabij
 
-                term=term+vpqrs(i,k,j,b)*(+2.0*vpqrs(a,i,b,j)-1.0*vpqrs(b,i,a,j))
-                term=term+vpqrs(j,k,i,b)*(-1.0*vpqrs(a,i,b,j)+2.0*vpqrs(b,i,a,j))
+                term=term+vpqrs(i,k,j,b)*(+2.0d0*vpqrs(a,i,b,j)-1.0d0*vpqrs(b,i,a,j))
+                term=term+vpqrs(j,k,i,b)*(-1.0d0*vpqrs(a,i,b,j)+2.0d0*vpqrs(b,i,a,j))
                 term=term/DB
 
                 densityhc=densityhc-term  ! this part has minus sign
@@ -1521,7 +1521,7 @@ do b1=nOcc+1,nBas
        end do
     end do
 
-   densityhc = 0.5*densityhc  ! EXPRESSION FACTOR IN THE DENSITY
+   densityhc = 0.5d0*densityhc  ! EXPRESSION FACTOR IN THE DENSITY
 
  end function densityhc
 
@@ -1544,7 +1544,7 @@ do b1=nOcc+1,nBas
 !!!!!!!!!!!!!!!!!!!!!!!!!! ZEROTH ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! IT DOES NOT GIVE ANY CONTRIBUTION TO THE HOLE-PARTICLE PART !!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!! SECOND ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    proper_density=0.0
+    proper_density=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -1560,14 +1560,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 ebckj=e(b)+e(c)-e(k)-e(j)
                 DA=eak*ebckj
 
-                term=term+vpqrs(a,b,j,c)*(+2.0*vpqrs(b,k,c,j)-1.0*vpqrs(c,k,b,j))
-                term=term+vpqrs(j,b,a,c)*(-1.0*vpqrs(b,k,c,j)+2.0*vpqrs(c,k,b,j))
+                term=term+vpqrs(a,b,j,c)*(+2.0d0*vpqrs(b,k,c,j)-1.0d0*vpqrs(c,k,b,j))
+                term=term+vpqrs(j,b,a,c)*(-1.0d0*vpqrs(b,k,c,j)+2.0d0*vpqrs(c,k,b,j))
                 term=term/DA
                 
                 proper_density = proper_density + term
@@ -1591,14 +1591,14 @@ do b1=nOcc+1,nBas
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
 
                 cnt=cnt+1
-                term=0.0
+                term=0.0d0
 
                 eak=e(a)-e(k)
                 eabij=e(a)+e(b)-e(i)-e(j)
                 DB=eak*eabij
 
-                term=term+vpqrs(i,k,j,b)*(+2.0*vpqrs(a,i,b,j)-1.0*vpqrs(b,i,a,j))
-                term=term+vpqrs(j,k,i,b)*(-1.0*vpqrs(a,i,b,j)+2.0*vpqrs(b,i,a,j))
+                term=term+vpqrs(i,k,j,b)*(+2.0d0*vpqrs(a,i,b,j)-1.0d0*vpqrs(b,i,a,j))
+                term=term+vpqrs(j,k,i,b)*(-1.0d0*vpqrs(a,i,b,j)+2.0d0*vpqrs(b,i,a,j))
                 term=term/DB
 
                 proper_density = proper_density - term  ! this part has minus sign
@@ -1608,7 +1608,7 @@ do b1=nOcc+1,nBas
        end do
     end do
 
-   proper_density = 0.5*proper_density  ! EXPRESSION FACTOR IN THE DENSITY
+   proper_density = 0.5d0*proper_density  ! EXPRESSION FACTOR IN THE DENSITY
 
  end function proper_density
 
@@ -1640,11 +1640,11 @@ do b1=nOcc+1,nBas
     
     integer, intent(in) :: a,apr
 
-    D0_1_ph_ph = 0.0
+    D0_1_ph_ph = 0.0d0
  
-    D0_1_ph_ph = D0_1_ph_ph + 2._d*dpl(a,apr)
+    D0_1_ph_ph = D0_1_ph_ph + 2.0d0*dpl(a,apr)
     
-    D0_1_ph_ph = D0_1_ph_ph/2._d
+    D0_1_ph_ph = D0_1_ph_ph/2.d0
 
   end function D0_1_ph_ph
 
@@ -1656,11 +1656,11 @@ do b1=nOcc+1,nBas
 
     integer, intent(in) :: k,kpr
 
-    D0_2_ph_ph = 0.0
+    D0_2_ph_ph = 0.0d0
  
-    D0_2_ph_ph = D0_2_ph_ph + 2._d*dpl(kpr,k)
+    D0_2_ph_ph = D0_2_ph_ph + 2.d0*dpl(kpr,k)
 
-    D0_2_ph_ph = D0_2_ph_ph/2._d
+    D0_2_ph_ph = D0_2_ph_ph/2.d0
 
     D0_2_ph_ph = -D0_2_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
 
@@ -1704,13 +1704,13 @@ do b1=nOcc+1,nBas
        sym=MT(orbSym(a),orbSym(l))
        if (sym .eq. CHECK_dip) then
           
-          D2_1_ph_ph = D2_1_ph_ph  + 2.0*density(l,apr)*dpl(a,l)
+          D2_1_ph_ph = D2_1_ph_ph  + 2.0d0*density(l,apr)*dpl(a,l)
           
        end if
        
     end do
     
-    D2_1_ph_ph = D2_1_ph_ph/2.0   !!! NORMALIZATION FACTOR
+    D2_1_ph_ph = D2_1_ph_ph/2.0d0   !!! NORMALIZATION FACTOR
     D2_1_ph_ph = -D2_1_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
     
   end function D2_1_ph_ph
@@ -1724,7 +1724,7 @@ do b1=nOcc+1,nBas
     integer, intent(in) :: a,apr
 
 
-    D2_2_ph_ph = 0.0
+    D2_2_ph_ph = 0.0d0
  
 
    do l1=1,nOcc
@@ -1733,7 +1733,7 @@ do b1=nOcc+1,nBas
      sym=MT(orbSym(apr),orbSym(l))
      if (sym .eq. CHECK_dip) then
 
-     D2_2_ph_ph = D2_2_ph_ph + 2.0*density(l,a)*dpl(apr,l)
+     D2_2_ph_ph = D2_2_ph_ph + 2.0d0*density(l,a)*dpl(apr,l)
 !     D2_2_ph_ph=+2.0*density_matrix(l,a)*dpl(apr,l)
 
 !     write(ilog,*) 'd2',l,a,densityhc(l,a)
@@ -1741,7 +1741,7 @@ do b1=nOcc+1,nBas
 
    end do
 
-    D2_2_ph_ph = D2_2_ph_ph/2.0   !!! NORMALIZATION FACTOR
+    D2_2_ph_ph = D2_2_ph_ph/2.0d0   !!! NORMALIZATION FACTOR
     D2_2_ph_ph = -D2_2_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
 
   end function D2_2_ph_ph
@@ -1756,7 +1756,7 @@ do b1=nOcc+1,nBas
     integer, intent(in) :: k,kpr
 
 
-    D2_3_ph_ph = 0.0
+    D2_3_ph_ph = 0.0d0
  
    do b1=nOcc+1,nBas
        b=roccnum(b1)
@@ -1765,7 +1765,7 @@ do b1=nOcc+1,nBas
      if (sym .eq. CHECK_dip) then
 
 !     D2_3_ph_ph=+2.0*density_matrix(kpr,b)*dpl(b,k)
-     D2_3_ph_ph = D2_3_ph_ph + 2.0*density(kpr,b)*dpl(b,k)
+     D2_3_ph_ph = D2_3_ph_ph + 2.0d0*density(kpr,b)*dpl(b,k)
 
 
 !     write(ilog,*) 'd3',kpr,b,density(kpr,b)
@@ -1774,7 +1774,7 @@ do b1=nOcc+1,nBas
 
    end do
 
-    D2_3_ph_ph= D2_3_ph_ph/2.0   !!! NORMALIZATION FACTOR
+    D2_3_ph_ph= D2_3_ph_ph/2.0d0   !!! NORMALIZATION FACTOR
     D2_3_ph_ph= -D2_3_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
 
   end function D2_3_ph_ph
@@ -1788,7 +1788,7 @@ do b1=nOcc+1,nBas
     integer :: b1,b,sym
     integer, intent(in) :: k,kpr
 
-    D2_4_ph_ph = 0.0
+    D2_4_ph_ph = 0.0d0
 
    do b1=nOcc+1,nBas
        b=roccnum(b1)
@@ -1796,7 +1796,7 @@ do b1=nOcc+1,nBas
      sym=MT(orbSym(b),orbSym(kpr))
      if (sym .eq. CHECK_dip) then
 
-     D2_4_ph_ph = D2_4_ph_ph + 2.0*density(k,b)*dpl(b,kpr)
+     D2_4_ph_ph = D2_4_ph_ph + 2.0d0*density(k,b)*dpl(b,kpr)
 !     D2_4_ph_ph=+2.0*density_matrix(k,b)*dpl(b,kpr)
 
 !     write(ilog,*) 'd4',k,b,densityhc(k,b)
@@ -1805,7 +1805,7 @@ do b1=nOcc+1,nBas
 
    end do
 
-    D2_4_ph_ph = D2_4_ph_ph/2.0   !!! NORMALIZATION FACTOR
+    D2_4_ph_ph = D2_4_ph_ph/2.0d0   !!! NORMALIZATION FACTOR
     D2_4_ph_ph = -D2_4_ph_ph   ! EXPRESSION FACTOR IN THE PAPER
 
   end function D2_4_ph_ph
@@ -1833,7 +1833,7 @@ do b1=nOcc+1,nBas
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_2_1_ph_ph = 0.0
+    D2_2_1_ph_ph = 0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -1855,14 +1855,14 @@ do b1=nOcc+1,nBas
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(a)+e(c)-e(i)-e(j)
                 ebcij=e(b)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
 
-                term = term + vpqrs(i,b,j,c)*(+4.0*vpqrs(a,i,c,j)-2.0*vpqrs(a,j,c,i))
-                term = term + vpqrs(i,c,j,b)*(-2.0*vpqrs(a,i,c,j)+4.0*vpqrs(a,j,c,i))
+                term = term + vpqrs(i,b,j,c)*(+4.0d0*vpqrs(a,i,c,j)-2.0d0*vpqrs(a,j,c,i))
+                term = term + vpqrs(i,c,j,b)*(-2.0d0*vpqrs(a,i,c,j)+4.0d0*vpqrs(a,j,c,i))
                 term = term*dpl(b,apr)
                 term = term/DA
                 
@@ -1875,8 +1875,8 @@ do b1=nOcc+1,nBas
    end if
    end do
  
-    D2_2_1_ph_ph = + 0.5*D2_2_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
-    D2_2_1_ph_ph = -0.25*D2_2_1_ph_ph  ! EXPRESSION FACTOR
+    D2_2_1_ph_ph = + 0.5d0*D2_2_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
+    D2_2_1_ph_ph = -0.25d0*D2_2_1_ph_ph  ! EXPRESSION FACTOR
 
 
   end function D2_2_1_ph_ph
@@ -1893,7 +1893,7 @@ do b1=nOcc+1,nBas
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_2_2_ph_ph = 0.0
+    D2_2_2_ph_ph = 0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -1917,14 +1917,14 @@ do b1=nOcc+1,nBas
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(apr)+e(c)-e(i)-e(j)
                 ebcij=e(b)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(b,i,c,j)*(+4.0*vpqrs(i,apr,j,c)-2.0*vpqrs(i,c,j,apr))
-                term=term+vpqrs(b,j,c,i)*(-2.0*vpqrs(i,apr,j,c)+4.0*vpqrs(i,c,j,apr))
+                term=term+vpqrs(b,i,c,j)*(+4.0d0*vpqrs(i,apr,j,c)-2.0d0*vpqrs(i,c,j,apr))
+                term=term+vpqrs(b,j,c,i)*(-2.0d0*vpqrs(i,apr,j,c)+4.0d0*vpqrs(i,c,j,apr))
                 term=term*dpl(b,a)
                 term=term/DA
                 
@@ -1937,8 +1937,8 @@ do b1=nOcc+1,nBas
     end if
   end do
     
-    D2_2_2_ph_ph=+0.5*D2_2_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
-    D2_2_2_ph_ph=-0.25*D2_2_2_ph_ph  ! EXPRESSION FACTOR
+    D2_2_2_ph_ph=+0.5d0*D2_2_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
+    D2_2_2_ph_ph=-0.25d0*D2_2_2_ph_ph  ! EXPRESSION FACTOR
 
 
   end function D2_2_2_ph_ph
@@ -1954,7 +1954,7 @@ do b1=nOcc+1,nBas
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_3_1_ph_ph=0.0
+    D2_3_1_ph_ph=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -1978,14 +1978,14 @@ do b1=nOcc+1,nBas
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(apr)+e(b)-e(i)-e(j)
                 ebcij=e(a)+e(c)-e(i)-e(j)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(i,apr,j,b)*(+4.0*vpqrs(a,i,c,j)-2.0*vpqrs(a,j,c,i))
-                term=term+vpqrs(i,b,j,apr)*(-2.0*vpqrs(a,i,c,j)+4.0*vpqrs(a,j,c,i))
+                term=term+vpqrs(i,apr,j,b)*(+4.0d0*vpqrs(a,i,c,j)-2.0d0*vpqrs(a,j,c,i))
+                term=term+vpqrs(i,b,j,apr)*(-2.0d0*vpqrs(a,i,c,j)+4.0d0*vpqrs(a,j,c,i))
                 term=term*dpl(b,c)
                 term=term/DA
                 
@@ -1998,8 +1998,8 @@ do b1=nOcc+1,nBas
    end do 
   end do  
 
-    D2_3_1_ph_ph=+0.5*D2_3_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
-    D2_3_1_ph_ph=-0.5*D2_3_1_ph_ph  ! EXPRESSION FACTOR
+    D2_3_1_ph_ph=+0.5d0*D2_3_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
+    D2_3_1_ph_ph=-0.5d0*D2_3_1_ph_ph  ! EXPRESSION FACTOR
 
 
   end function D2_3_1_ph_ph
@@ -2016,7 +2016,7 @@ do b1=nOcc+1,nBas
     integer :: b,i,j,l,sym,nsym1,nsym2,nsym3,nsym4,b1,i1,j1,l1,cnt
     real*8   :: DA,eacij,ebcij,term
 
-    D2_3_2_ph_ph=0.0
+    D2_3_2_ph_ph=0.0d0
     cnt=0
  do l1=1,nOcc
       l=roccnum(l1)
@@ -2038,14 +2038,14 @@ do b1=nOcc+1,nBas
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(apr)+e(b)-e(i)-e(j)
                 ebcij=e(a)+e(b)-e(l)-e(j)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(i,apr,j,b)*(+4.0*vpqrs(a,l,b,j)-2.0*vpqrs(a,j,b,l))
-                term=term+vpqrs(i,b,j,apr)*(-2.0*vpqrs(a,l,b,j)+4.0*vpqrs(a,j,b,l))
+                term=term+vpqrs(i,apr,j,b)*(+4.0d0*vpqrs(a,l,b,j)-2.0d0*vpqrs(a,j,b,l))
+                term=term+vpqrs(i,b,j,apr)*(-2.0d0*vpqrs(a,l,b,j)+4.0d0*vpqrs(a,j,b,l))
                 term=term*dpl(l,i)
                 term=term/DA
                 
@@ -2058,7 +2058,7 @@ do b1=nOcc+1,nBas
     end do 
  end do
   
-    D2_3_2_ph_ph=+0.5*D2_3_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
+    D2_3_2_ph_ph=+0.5d0*D2_3_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
              
 ! EXPRESSION FACTOR +1
 
@@ -2075,7 +2075,7 @@ do b1=nOcc+1,nBas
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_4_1_ph_ph=0.0
+    D2_4_1_ph_ph=0.0d0
     cnt=0
 do j1=1,nOcc
    j=roccnum(j1)
@@ -2096,14 +2096,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(b)+e(c)-e(j)-e(i)
                 ebcij=e(b)+e(c)-e(k)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(j,b,i,c)*(+4.0*vpqrs(b,k,c,i)-2.0*vpqrs(b,i,c,k))
-                term=term+vpqrs(j,c,i,b)*(-2.0*vpqrs(b,k,c,i)+4.0*vpqrs(b,i,c,k))
+                term=term+vpqrs(j,b,i,c)*(+4.0d0*vpqrs(b,k,c,i)-2.0d0*vpqrs(b,i,c,k))
+                term=term+vpqrs(j,c,i,b)*(-2.0d0*vpqrs(b,k,c,i)+4.0d0*vpqrs(b,i,c,k))
                 term=term*dpl(kpr,j)
                 term=term/DA
                 
@@ -2117,8 +2117,8 @@ do j1=1,nOcc
   end if
 end do
   
-    D2_4_1_ph_ph=+0.5*D2_4_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION  
-    D2_4_1_ph_ph=+0.25*D2_4_1_ph_ph  ! EXPRESSION FACTOR            
+    D2_4_1_ph_ph=+0.5d0*D2_4_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION  
+    D2_4_1_ph_ph=+0.25d0*D2_4_1_ph_ph  ! EXPRESSION FACTOR            
 
 
   end function D2_4_1_ph_ph
@@ -2134,7 +2134,7 @@ end do
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_4_2_ph_ph=0.0
+    D2_4_2_ph_ph=0.0d0
     cnt=0
 do j1=1,nOcc
    j=roccnum(j1)
@@ -2155,14 +2155,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(b)+e(c)-e(j)-e(i)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(b,j,c,i)*(+4.0*vpqrs(kpr,b,i,c)-2.0*vpqrs(kpr,c,i,b))
-                term=term+vpqrs(b,i,c,j)*(-2.0*vpqrs(kpr,b,i,c)+4.0*vpqrs(kpr,c,i,b))
+                term=term+vpqrs(b,j,c,i)*(+4.0d0*vpqrs(kpr,b,i,c)-2.0d0*vpqrs(kpr,c,i,b))
+                term=term+vpqrs(b,i,c,j)*(-2.0d0*vpqrs(kpr,b,i,c)+4.0d0*vpqrs(kpr,c,i,b))
                 term=term*dpl(k,j)
                 term=term/DA
                 
@@ -2176,8 +2176,8 @@ do j1=1,nOcc
   end if
 end do
  
-    D2_4_2_ph_ph=+0.5*D2_4_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION  
-    D2_4_2_ph_ph=+0.25*D2_4_2_ph_ph  ! EXPRESSION FACTOR            
+    D2_4_2_ph_ph=+0.5d0*D2_4_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION  
+    D2_4_2_ph_ph=+0.25d0*D2_4_2_ph_ph  ! EXPRESSION FACTOR            
 
 
   end function D2_4_2_ph_ph
@@ -2193,7 +2193,7 @@ end do
     integer :: b,c,d,i,sym,nsym1,nsym2,nsym3,nsym4,b1,c1,d1,i1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_5_1_ph_ph=0.0
+    D2_5_1_ph_ph=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -2216,14 +2216,14 @@ end do
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(b)+e(d)-e(k)-e(i)
                 ebcij=e(c)+e(d)-e(kpr)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(kpr,c,i,d)*(+4.0*vpqrs(b,k,d,i)-2.0*vpqrs(b,i,d,k))
-                term=term+vpqrs(kpr,d,i,c)*(-2.0*vpqrs(b,k,d,i)+4.0*vpqrs(b,i,d,k))
+                term=term+vpqrs(kpr,c,i,d)*(+4.0d0*vpqrs(b,k,d,i)-2.0d0*vpqrs(b,i,d,k))
+                term=term+vpqrs(kpr,d,i,c)*(-2.0d0*vpqrs(b,k,d,i)+4.0d0*vpqrs(b,i,d,k))
                 term=term*dpl(c,b)
                 term=term/DA
                 
@@ -2236,8 +2236,8 @@ end do
    end do 
   end do
     
-    D2_5_1_ph_ph=+0.5*D2_5_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
-    D2_5_1_ph_ph=-1.0*D2_5_1_ph_ph    ! EXPRESSION FACTOR            
+    D2_5_1_ph_ph=+0.5d0*D2_5_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
+    D2_5_1_ph_ph=-1.0d0*D2_5_1_ph_ph    ! EXPRESSION FACTOR            
 
 
   end function D2_5_1_ph_ph
@@ -2253,7 +2253,7 @@ end do
     integer :: b,c,i,j,sym,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_5_2_ph_ph=0.0
+    D2_5_2_ph_ph=0.0d0
     cnt=0
 do i1=1,nOcc
    i=roccnum(i1)
@@ -2274,14 +2274,14 @@ do i1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(b)+e(c)-e(k)-e(j)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(kpr,b,i,c)*(+4.0*vpqrs(b,k,c,j)-2.0*vpqrs(b,j,c,k))
-                term=term+vpqrs(kpr,c,i,b)*(-2.0*vpqrs(b,k,c,j)+4.0*vpqrs(b,j,c,k))
+                term=term+vpqrs(kpr,b,i,c)*(+4.0d0*vpqrs(b,k,c,j)-2.0d0*vpqrs(b,j,c,k))
+                term=term+vpqrs(kpr,c,i,b)*(-2.0d0*vpqrs(b,k,c,j)+4.0d0*vpqrs(b,j,c,k))
                 term=term*dpl(j,i)
                 term=term/DA
                 
@@ -2295,8 +2295,8 @@ do i1=1,nOcc
     end do 
   end do
  
-    D2_5_2_ph_ph=+0.5*D2_5_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
-    D2_5_2_ph_ph=+0.5*D2_5_2_ph_ph    ! EXPRESSION FACTOR            
+    D2_5_2_ph_ph=+0.5d0*D2_5_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION
+    D2_5_2_ph_ph=+0.5d0*D2_5_2_ph_ph    ! EXPRESSION FACTOR            
 
 
   end function D2_5_2_ph_ph
@@ -2310,7 +2310,7 @@ do i1=1,nOcc
     integer :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,b1,c1,i1,cnt
     real*8 :: DA,eacij,ebcij,term,ftmp
 
-    D2_6_1_ph_ph=0.0
+    D2_6_1_ph_ph=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -2331,14 +2331,14 @@ do i1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(a)+e(c)-e(k)-e(i)
                 ebcij=e(b)+e(c)-e(kpr)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(kpr,b,i,c)*(+8.0*vpqrs(a,k,c,i)-4.0*vpqrs(a,i,c,k))
-                term=term+vpqrs(kpr,c,i,b)*(-4.0*vpqrs(a,k,c,i)+2.0*vpqrs(a,i,c,k))
+                term=term+vpqrs(kpr,b,i,c)*(+8.0d0*vpqrs(a,k,c,i)-4.0d0*vpqrs(a,i,c,k))
+                term=term+vpqrs(kpr,c,i,b)*(-4.0d0*vpqrs(a,k,c,i)+2.0d0*vpqrs(a,i,c,k))
                 term=term*dpl(b,apr)
                 term=term/DA
                 
@@ -2350,8 +2350,8 @@ do i1=1,nOcc
         end if
     end do 
 
-    D2_6_1_ph_ph=+0.5*D2_6_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
-    D2_6_1_ph_ph=+0.5*D2_6_1_ph_ph   ! EXPRESSION FACTOR
+    D2_6_1_ph_ph=+0.5d0*D2_6_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
+    D2_6_1_ph_ph=+0.5d0*D2_6_1_ph_ph   ! EXPRESSION FACTOR
 
   end function D2_6_1_ph_ph
 
@@ -2365,7 +2365,7 @@ do i1=1,nOcc
     integer :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,b1,c1,i1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_6_2_ph_ph=0.0
+    D2_6_2_ph_ph=0.0d0
     cnt=0
     do b1=nOcc+1,nBas
        b=roccnum(b1)
@@ -2386,14 +2386,14 @@ do i1=1,nOcc
                    
                    cnt=cnt+1
                    
-                   term=0.0
+                   term=0.0d0
 
                    eacij=e(b)+e(c)-e(k)-e(i)
                    ebcij=e(apr)+e(c)-e(kpr)-e(i)
                    DA=eacij*ebcij
 
-                   term=term+vpqrs(b,k,c,i)*(+8.0*vpqrs(kpr,apr,i,c)-4.0*vpqrs(kpr,c,i,apr))
-                   term=term+vpqrs(b,i,c,k)*(-4.0*vpqrs(kpr,apr,i,c)+2.0*vpqrs(kpr,c,i,apr))
+                   term=term+vpqrs(b,k,c,i)*(+8.0d0*vpqrs(kpr,apr,i,c)-4.0d0*vpqrs(kpr,c,i,apr))
+                   term=term+vpqrs(b,i,c,k)*(-4.0d0*vpqrs(kpr,apr,i,c)+2.0d0*vpqrs(kpr,c,i,apr))
                    term=term*dpl(b,a)
                    term=term/DA
                    
@@ -2405,8 +2405,8 @@ do i1=1,nOcc
        end if
     end do
     
-    D2_6_2_ph_ph=+0.5*D2_6_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
-    D2_6_2_ph_ph=+0.5*D2_6_2_ph_ph   ! EXPRESSION FACTOR
+    D2_6_2_ph_ph=+0.5d0*D2_6_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION             
+    D2_6_2_ph_ph=+0.5d0*D2_6_2_ph_ph   ! EXPRESSION FACTOR
     
 
   end function D2_6_2_ph_ph
@@ -2421,7 +2421,7 @@ do i1=1,nOcc
     integer :: b,i,j,sym,nsym1,nsym2,nsym3,nsym4,b1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_6_3_ph_ph=0.0
+    D2_6_3_ph_ph=0.0d0
     cnt=0
 do j1=1,nOcc
    j=roccnum(j1)
@@ -2441,14 +2441,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(apr)+e(b)-e(j)-e(i)
                 ebcij=e(a)+e(b)-e(k)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(j,apr,i,b)*(+8.0*vpqrs(a,k,b,i)-4.0*vpqrs(a,i,b,k))
-                term=term+vpqrs(j,b,i,apr)*(-4.0*vpqrs(a,k,b,i)+2.0*vpqrs(a,i,b,k))
+                term=term+vpqrs(j,apr,i,b)*(+8.0d0*vpqrs(a,k,b,i)-4.0d0*vpqrs(a,i,b,k))
+                term=term+vpqrs(j,b,i,apr)*(-4.0d0*vpqrs(a,k,b,i)+2.0d0*vpqrs(a,i,b,k))
                 term=term*dpl(kpr,j)
                 term=term/DA
                 
@@ -2461,8 +2461,8 @@ do j1=1,nOcc
      end if
     end do 
  
-    D2_6_3_ph_ph=+0.5*D2_6_3_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
-    D2_6_3_ph_ph=-0.5*D2_6_3_ph_ph   ! EXPRESSION FACTOR            
+    D2_6_3_ph_ph=+0.5d0*D2_6_3_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
+    D2_6_3_ph_ph=-0.5d0*D2_6_3_ph_ph   ! EXPRESSION FACTOR            
 
 
   end function D2_6_3_ph_ph
@@ -2477,7 +2477,7 @@ do j1=1,nOcc
     integer :: b,i,j,sym,nsym1,nsym2,nsym3,nsym4,b1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_6_4_ph_ph=0.0
+    D2_6_4_ph_ph=0.0d0
     cnt=0
 do j1=1,nOcc
    j=roccnum(j1)
@@ -2498,14 +2498,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(apr)+e(b)-e(kpr)-e(i)
                 ebcij=e(a)+e(b)-e(j)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(a,j,b,i)*(+8.0*vpqrs(kpr,apr,i,b)-4.0*vpqrs(kpr,b,i,apr))
-                term=term+vpqrs(a,i,b,j)*(-4.0*vpqrs(kpr,apr,i,b)+2.0*vpqrs(kpr,b,i,apr))
+                term=term+vpqrs(a,j,b,i)*(+8.0d0*vpqrs(kpr,apr,i,b)-4.0d0*vpqrs(kpr,b,i,apr))
+                term=term+vpqrs(a,i,b,j)*(-4.0d0*vpqrs(kpr,apr,i,b)+2.0d0*vpqrs(kpr,b,i,apr))
                 term=term*dpl(k,j)
                 term=term/DA
                 
@@ -2518,8 +2518,8 @@ do j1=1,nOcc
      end if
     end do 
  
-    D2_6_4_ph_ph=+0.5*D2_6_4_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
-    D2_6_4_ph_ph=-0.5*D2_6_4_ph_ph   ! EXPRESSION FACTOR            
+    D2_6_4_ph_ph=+0.5d0*D2_6_4_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
+    D2_6_4_ph_ph=-0.5d0*D2_6_4_ph_ph   ! EXPRESSION FACTOR            
 
 
   end function D2_6_4_ph_ph
@@ -2534,7 +2534,7 @@ do j1=1,nOcc
     integer :: b,i,j,sym,nsym1,nsym2,nsym3,nsym4,b1,i1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_7_1_ph_ph=0.0
+    D2_7_1_ph_ph=0.0d0
     cnt=0
   do i1=1,nOcc
      i=roccnum(i1)
@@ -2555,14 +2555,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(a)+e(b)-e(k)-e(j)
                 ebcij=e(apr)+e(b)-e(kpr)-e(i)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(kpr,apr,i,b)*(+8.0*vpqrs(a,k,b,j)-4.0*vpqrs(a,j,b,k))
-                term=term+vpqrs(kpr,b,i,apr)*(-4.0*vpqrs(a,k,b,j)+2.0*vpqrs(a,j,b,k))
+                term=term+vpqrs(kpr,apr,i,b)*(+8.0d0*vpqrs(a,k,b,j)-4.0d0*vpqrs(a,j,b,k))
+                term=term+vpqrs(kpr,b,i,apr)*(-4.0d0*vpqrs(a,k,b,j)+2.0d0*vpqrs(a,j,b,k))
                 term=term*dpl(j,i)
                 term=term/DA
                 
@@ -2574,8 +2574,8 @@ do j1=1,nOcc
        end do
     end do 
  
-    D2_7_1_ph_ph=+0.5*D2_7_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
-    D2_7_1_ph_ph=-1.0*D2_7_1_ph_ph    ! EXPRESSION FACTOR            
+    D2_7_1_ph_ph=+0.5d0*D2_7_1_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
+    D2_7_1_ph_ph=-1.0d0*D2_7_1_ph_ph    ! EXPRESSION FACTOR            
 
 
   end function D2_7_1_ph_ph
@@ -2589,7 +2589,7 @@ do j1=1,nOcc
     integer :: b,c,j,sym,nsym1,nsym2,nsym3,nsym4,b1,c1,j1,cnt
     real*8 :: DA,eacij,ebcij,term
 
-    D2_7_2_ph_ph=0.0
+    D2_7_2_ph_ph=0.0d0
     cnt=0
   do b1=nOcc+1,nBas
      b=roccnum(b1)
@@ -2610,14 +2610,14 @@ do j1=1,nOcc
                 
                 cnt=cnt+1
 
-                term=0.0
+                term=0.0d0
 
                 eacij=e(a)+e(c)-e(k)-e(j)
                 ebcij=e(apr)+e(b)-e(kpr)-e(j)
                 DA=eacij*ebcij
 
-                term=term+vpqrs(kpr,apr,j,b)*(+8.0*vpqrs(a,k,c,j)-4.0*vpqrs(a,j,c,k))
-                term=term+vpqrs(kpr,b,j,apr)*(-4.0*vpqrs(a,k,c,j)+2.0*vpqrs(a,j,c,k))
+                term=term+vpqrs(kpr,apr,j,b)*(+8.0d0*vpqrs(a,k,c,j)-4.0d0*vpqrs(a,j,c,k))
+                term=term+vpqrs(kpr,b,j,apr)*(-4.0d0*vpqrs(a,k,c,j)+2.0d0*vpqrs(a,j,c,k))
                 term=term*dpl(b,c)
                 term=term/DA
                 
@@ -2629,8 +2629,8 @@ do j1=1,nOcc
        end do
  end do 
     
-    D2_7_2_ph_ph=+0.5*D2_7_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
-    D2_7_2_ph_ph=+1.0*D2_7_2_ph_ph    ! EXPRESSION FACTOR            
+    D2_7_2_ph_ph=+0.5d0*D2_7_2_ph_ph   ! NORMALIZATION OF WAVE FUNCTION 
+    D2_7_2_ph_ph=+1.0d0*D2_7_2_ph_ph    ! EXPRESSION FACTOR            
 
 
   end function D2_7_2_ph_ph
@@ -2653,7 +2653,7 @@ do j1=1,nOcc
 
     integer, intent(in) :: a,k,bpr,lpr
 
-    D5_1_ph_2p2h=0.0
+    D5_1_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
 !      D5_1_ph_2p2h=dpl(lpr,bpr)
@@ -2668,12 +2668,12 @@ do j1=1,nOcc
 
     integer, intent(in) :: a,k,bpr,kpr
 
-    D5_2_ph_2p2h=0.0
+    D5_2_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D5_2_ph_2p2h=-1.0*dpl(kpr,bpr)
-    D5_2_ph_2p2h=D5_2_ph_2p2h/sqrt(2.0)
+    D5_2_ph_2p2h=-1.0d0*dpl(kpr,bpr)
+    D5_2_ph_2p2h=D5_2_ph_2p2h/sqrt(2.0d0)
  
 
 !    end if
@@ -2686,12 +2686,12 @@ do j1=1,nOcc
 
     integer, intent(in) :: a,k,apr,lpr
 
-    D5_3_ph_2p2h=0.0
+    D5_3_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-    D5_3_ph_2p2h=-1.0*dpl(lpr,apr)
-    D5_3_ph_2p2h=D5_3_ph_2p2h/sqrt(2.0)
+    D5_3_ph_2p2h=-1.0d0*dpl(lpr,apr)
+    D5_3_ph_2p2h=D5_3_ph_2p2h/sqrt(2.0d0)
 
 
 !    end if
@@ -2703,7 +2703,7 @@ do j1=1,nOcc
 
     integer, intent(in) :: a,k,apr,kpr
 
-    D5_4_ph_2p2h=0.0
+    D5_4_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
@@ -2728,7 +2728,7 @@ do j1=1,nOcc
     
     real*8 :: E
 
-    D5_5_ph_2p2h=0.0
+    D5_5_ph_2p2h=0.0d0
     
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
   
@@ -2762,7 +2762,7 @@ do j1=1,nOcc
 
     real*8 :: En
 
-    D5_6_ph_2p2h=0.0
+    D5_6_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -2775,7 +2775,7 @@ do j1=1,nOcc
  
     En=e(bpr)+e(d)-e(kpr)-e(j)
 
-    D5_6_ph_2p2h=D5_6_ph_2p2h+(-2.0*vpqrs(kpr,bpr,j,d)+1.0*vpqrs(kpr,d,j,bpr))
+    D5_6_ph_2p2h=D5_6_ph_2p2h+(-2.0d0*vpqrs(kpr,bpr,j,d)+1.0d0*vpqrs(kpr,d,j,bpr))
     D5_6_ph_2p2h=D5_6_ph_2p2h/En
     D5_6_ph_2p2h=D5_6_ph_2p2h*dpl(d,j)  
      
@@ -2783,7 +2783,7 @@ do j1=1,nOcc
       end do
    end do
 
-    D5_6_ph_2p2h=D5_6_ph_2p2h/sqrt(2.0)
+    D5_6_ph_2p2h=D5_6_ph_2p2h/sqrt(2.0d0)
 
     D5_6_ph_2p2h=-D5_6_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
  
@@ -2800,7 +2800,7 @@ do j1=1,nOcc
  
     real*8 :: En
 
-    D5_7_ph_2p2h=0.0
+    D5_7_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
    
@@ -2813,7 +2813,7 @@ do j1=1,nOcc
  
     En=e(apr)+e(d)-e(lpr)-e(j)
  
-    D5_7_ph_2p2h=D5_7_ph_2p2h+(-2.0*vpqrs(lpr,apr,j,d)+1.0*vpqrs(lpr,d,j,apr))
+    D5_7_ph_2p2h=D5_7_ph_2p2h+(-2.0d0*vpqrs(lpr,apr,j,d)+1.0d0*vpqrs(lpr,d,j,apr))
     D5_7_ph_2p2h=D5_7_ph_2p2h/En
     D5_7_ph_2p2h=D5_7_ph_2p2h*dpl(d,j)  
      
@@ -2821,7 +2821,7 @@ do j1=1,nOcc
       end do
    end do
 
-    D5_7_ph_2p2h=D5_7_ph_2p2h/sqrt(2.0)
+    D5_7_ph_2p2h=D5_7_ph_2p2h/sqrt(2.0d0)
 
     D5_7_ph_2p2h=-D5_7_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
  
@@ -2838,7 +2838,7 @@ do j1=1,nOcc
  
     real*8 :: En
 
-    D5_8_ph_2p2h=0.0
+    D5_8_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -2874,7 +2874,7 @@ do j1=1,nOcc
  
      real*8 :: En
     
-    D5_9_ph_2p2h=0.0
+    D5_9_ph_2p2h=0.0d0
 
 !    if(kdelta(a,apr) .eq. 1)
 
@@ -2886,7 +2886,7 @@ do j1=1,nOcc
  
     En=e(c)+e(bpr)-e(kpr)-e(lpr)
 
-    D5_9_ph_2p2h=D5_9_ph_2p2h+(0.0*vpqrs(kpr,c,lpr,bpr)+1.0*vpqrs(kpr,bpr,lpr,c))
+    D5_9_ph_2p2h=D5_9_ph_2p2h+(0.0d0*vpqrs(kpr,c,lpr,bpr)+1.0d0*vpqrs(kpr,bpr,lpr,c))
     D5_9_ph_2p2h=D5_9_ph_2p2h/En
     D5_9_ph_2p2h=D5_9_ph_2p2h*dpl(c,k)  
 
@@ -2894,7 +2894,7 @@ do j1=1,nOcc
       end do
 !   end do
 
-    D5_9_ph_2p2h=D5_9_ph_2p2h/sqrt(2.0)
+    D5_9_ph_2p2h=D5_9_ph_2p2h/sqrt(2.0d0)
 
     D5_9_ph_2p2h=-D5_9_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -2911,7 +2911,7 @@ do j1=1,nOcc
      real*8 :: En
      integer :: sym
 
-    D5_10_ph_2p2h=0.0
+    D5_10_ph_2p2h=0.0d0
 
 !    if(kdelta(a,bpr) .eq. 1)
 
@@ -2923,7 +2923,7 @@ do j1=1,nOcc
 
     En=e(c)+e(apr)-e(kpr)-e(lpr)
 
-    D5_10_ph_2p2h=D5_10_ph_2p2h+(-1.0*vpqrs(kpr,c,lpr,apr)-0.0*vpqrs(kpr,apr,lpr,c))
+    D5_10_ph_2p2h=D5_10_ph_2p2h+(-1.0d0*vpqrs(kpr,c,lpr,apr)-0.0d0*vpqrs(kpr,apr,lpr,c))
     D5_10_ph_2p2h=D5_10_ph_2p2h/En
     D5_10_ph_2p2h=D5_10_ph_2p2h*dpl(c,k)  
 
@@ -2931,7 +2931,7 @@ do j1=1,nOcc
       end do
 !   end do
 
-    D5_10_ph_2p2h=D5_10_ph_2p2h/sqrt(2.0)
+    D5_10_ph_2p2h=D5_10_ph_2p2h/sqrt(2.0d0)
 
 
 
@@ -2947,7 +2947,7 @@ do j1=1,nOcc
      real*8 :: En
      integer :: sym
 
-    D5_11_ph_2p2h=0.0
+    D5_11_ph_2p2h=0.0d0
 
 !    if(kdelta(k,kpr) .eq. 1)
 
@@ -2958,7 +2958,7 @@ do j1=1,nOcc
  
     En=e(apr)+e(bpr)-e(j)-e(lpr)
 
-    D5_11_ph_2p2h=D5_11_ph_2p2h+(0.0*vpqrs(j,apr,lpr,bpr)+1.0*vpqrs(j,bpr,lpr,apr))
+    D5_11_ph_2p2h=D5_11_ph_2p2h+(0.0d0*vpqrs(j,apr,lpr,bpr)+1.0d0*vpqrs(j,bpr,lpr,apr))
     D5_11_ph_2p2h=D5_11_ph_2p2h/En
     D5_11_ph_2p2h=D5_11_ph_2p2h*dpl(a,j)  
     
@@ -2966,7 +2966,7 @@ do j1=1,nOcc
       end do
 !   end do
 
-    D5_11_ph_2p2h=D5_11_ph_2p2h/sqrt(2.0)
+    D5_11_ph_2p2h=D5_11_ph_2p2h/sqrt(2.0d0)
 
     D5_11_ph_2p2h=-D5_11_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
  
@@ -2982,7 +2982,7 @@ do j1=1,nOcc
      real*8 :: En
      integer :: sym
 
-    D5_12_ph_2p2h=0.0
+    D5_12_ph_2p2h=0.0d0
 
 !    if(kdelta(k,lpr) .eq. 1)
 
@@ -2994,7 +2994,7 @@ do j1=1,nOcc
  
     En=e(apr)+e(bpr)-e(j)-e(kpr)
 
-    D5_12_ph_2p2h=D5_12_ph_2p2h+(-1.0*vpqrs(j,apr,kpr,bpr)-0.0*vpqrs(j,bpr,kpr,apr))
+    D5_12_ph_2p2h=D5_12_ph_2p2h+(-1.0d0*vpqrs(j,apr,kpr,bpr)-0.0d0*vpqrs(j,bpr,kpr,apr))
     D5_12_ph_2p2h=D5_12_ph_2p2h/En
     D5_12_ph_2p2h=D5_12_ph_2p2h*dpl(a,j)  
 
@@ -3002,7 +3002,7 @@ do j1=1,nOcc
       end do
 !   end do
 
-    D5_12_ph_2p2h=D5_12_ph_2p2h/sqrt(2.0)
+    D5_12_ph_2p2h=D5_12_ph_2p2h/sqrt(2.0d0)
 
 
   end function D5_12_ph_2p2h
@@ -3015,14 +3015,14 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
-    D4_1_ph_2p2h=0.0
+    D4_1_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-      D4_1_ph_2p2h=1.0*dpl(lpr,bpr)
+      D4_1_ph_2p2h=1.0d0*dpl(lpr,bpr)
 
-      D4_1_ph_2p2h=D4_1_ph_2p2h/sqrt(2.0)
-      D4_1_ph_2p2h=D4_1_ph_2p2h/sqrt(2.0)
+      D4_1_ph_2p2h=D4_1_ph_2p2h/sqrt(2.0d0)
+      D4_1_ph_2p2h=D4_1_ph_2p2h/sqrt(2.0d0)
 
       D4_1_ph_2p2h=-D4_1_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3037,14 +3037,14 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
-    D4_2_ph_2p2h=0.0
+    D4_2_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D4_2_ph_2p2h=-1.0*dpl(kpr,bpr)
+    D4_2_ph_2p2h=-1.0d0*dpl(kpr,bpr)
 
-    D4_2_ph_2p2h=D4_2_ph_2p2h/sqrt(2.0)
-    D4_2_ph_2p2h=D4_2_ph_2p2h/sqrt(2.0)
+    D4_2_ph_2p2h=D4_2_ph_2p2h/sqrt(2.0d0)
+    D4_2_ph_2p2h=D4_2_ph_2p2h/sqrt(2.0d0)
 
 
   end function D4_2_ph_2p2h
@@ -3055,14 +3055,14 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
-    D4_3_ph_2p2h=0.0
+    D4_3_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-    D4_3_ph_2p2h=-1.0*dpl(lpr,apr)
+    D4_3_ph_2p2h=-1.0d0*dpl(lpr,apr)
 
-    D4_3_ph_2p2h=D4_3_ph_2p2h/sqrt(2.0)
-    D4_3_ph_2p2h=D4_3_ph_2p2h/sqrt(2.0)
+    D4_3_ph_2p2h=D4_3_ph_2p2h/sqrt(2.0d0)
+    D4_3_ph_2p2h=D4_3_ph_2p2h/sqrt(2.0d0)
 
 
    end function D4_3_ph_2p2h
@@ -3072,14 +3072,14 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
-    D4_4_ph_2p2h=0.0
+    D4_4_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D4_4_ph_2p2h=1.0*dpl(kpr,apr)
+    D4_4_ph_2p2h=1.0d0*dpl(kpr,apr)
 
-    D4_4_ph_2p2h=D4_4_ph_2p2h/sqrt(2.0)
-    D4_4_ph_2p2h=D4_4_ph_2p2h/sqrt(2.0)
+    D4_4_ph_2p2h=D4_4_ph_2p2h/sqrt(2.0d0)
+    D4_4_ph_2p2h=D4_4_ph_2p2h/sqrt(2.0d0)
  
     D4_4_ph_2p2h=-D4_4_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3094,10 +3094,10 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
     integer, intent(in) :: a,k,bpr,lpr
     
     integer :: j,d,j1,d1
-     real*8 :: En
-      integer :: sym
+    real*8 :: En
+    integer :: sym
 
-    D4_5_ph_2p2h=0.0
+    D4_5_ph_2p2h=0.0d0
     
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
   
@@ -3110,7 +3110,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(lpr)-e(j)
 
-    D4_5_ph_2p2h=D4_5_ph_2p2h+(+2.0*vpqrs(lpr,bpr,j,d)-1.0*vpqrs(lpr,d,j,bpr))
+    D4_5_ph_2p2h=D4_5_ph_2p2h+(+2.0d0*vpqrs(lpr,bpr,j,d)-1.0d0*vpqrs(lpr,d,j,bpr))
     D4_5_ph_2p2h=D4_5_ph_2p2h/En    
     D4_5_ph_2p2h=D4_5_ph_2p2h*dpl(d,j) 
     
@@ -3118,8 +3118,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
     
-    D4_5_ph_2p2h=D4_5_ph_2p2h/sqrt(2.0)
-    D4_5_ph_2p2h=D4_5_ph_2p2h/sqrt(2.0)
+    D4_5_ph_2p2h=D4_5_ph_2p2h/sqrt(2.0d0)
+    D4_5_ph_2p2h=D4_5_ph_2p2h/sqrt(2.0d0)
 
 
   end function D4_5_ph_2p2h
@@ -3133,7 +3133,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_6_ph_2p2h=0.0
+    D4_6_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3146,7 +3146,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(kpr)-e(j)
 
-    D4_6_ph_2p2h=D4_6_ph_2p2h+(-2.0*vpqrs(kpr,bpr,j,d)+1.0*vpqrs(kpr,d,j,bpr))
+    D4_6_ph_2p2h=D4_6_ph_2p2h+(-2.0d0*vpqrs(kpr,bpr,j,d)+1.0d0*vpqrs(kpr,d,j,bpr))
     D4_6_ph_2p2h=D4_6_ph_2p2h/En
     D4_6_ph_2p2h=D4_6_ph_2p2h*dpl(d,j)  
 
@@ -3154,8 +3154,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D4_6_ph_2p2h=D4_6_ph_2p2h/sqrt(2.0)
-    D4_6_ph_2p2h=D4_6_ph_2p2h/sqrt(2.0)
+    D4_6_ph_2p2h=D4_6_ph_2p2h/sqrt(2.0d0)
+    D4_6_ph_2p2h=D4_6_ph_2p2h/sqrt(2.0d0)
 
     D4_6_ph_2p2h=-D4_6_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3171,7 +3171,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_7_ph_2p2h=0.0
+    D4_7_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
    
@@ -3184,7 +3184,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(lpr)-e(j)
  
-    D4_7_ph_2p2h=D4_7_ph_2p2h+(-2.0*vpqrs(lpr,apr,j,d)+1.0*vpqrs(lpr,d,j,apr))
+    D4_7_ph_2p2h=D4_7_ph_2p2h+(-2.0d0*vpqrs(lpr,apr,j,d)+1.0d0*vpqrs(lpr,d,j,apr))
     D4_7_ph_2p2h=D4_7_ph_2p2h/En
     D4_7_ph_2p2h=D4_7_ph_2p2h*dpl(d,j)  
 
@@ -3192,8 +3192,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D4_7_ph_2p2h=D4_7_ph_2p2h/sqrt(2.0)
-    D4_7_ph_2p2h=D4_7_ph_2p2h/sqrt(2.0)
+    D4_7_ph_2p2h=D4_7_ph_2p2h/sqrt(2.0d0)
+    D4_7_ph_2p2h=D4_7_ph_2p2h/sqrt(2.0d0)
 
     D4_7_ph_2p2h=-D4_7_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3208,7 +3208,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_8_ph_2p2h=0.0
+    D4_8_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3221,7 +3221,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(kpr)-e(j)
 
-    D4_8_ph_2p2h=D4_8_ph_2p2h+(+2.0*vpqrs(kpr,apr,j,d)-1.0*vpqrs(kpr,d,j,apr))
+    D4_8_ph_2p2h=D4_8_ph_2p2h+(+2.0d0*vpqrs(kpr,apr,j,d)-1.0d0*vpqrs(kpr,d,j,apr))
     D4_8_ph_2p2h=D4_8_ph_2p2h/En
     D4_8_ph_2p2h=D4_8_ph_2p2h*dpl(d,j)  
 
@@ -3229,8 +3229,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D4_8_ph_2p2h=D4_8_ph_2p2h/sqrt(2.0)
-    D4_8_ph_2p2h=D4_8_ph_2p2h/sqrt(2.0)
+    D4_8_ph_2p2h=D4_8_ph_2p2h/sqrt(2.0d0)
+    D4_8_ph_2p2h=D4_8_ph_2p2h/sqrt(2.0d0)
 
 
   end function D4_8_ph_2p2h
@@ -3244,7 +3244,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_9_ph_2p2h=0.0
+    D4_9_ph_2p2h=0.0d0
 
 !    if(kdelta(a,apr) .eq. 1)
 
@@ -3256,7 +3256,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     En=e(c)+e(bpr)-e(kpr)-e(lpr)
 
-    D4_9_ph_2p2h=D4_9_ph_2p2h+(1.0*vpqrs(kpr,c,lpr,bpr)+1.0*vpqrs(kpr,bpr,lpr,c))
+    D4_9_ph_2p2h=D4_9_ph_2p2h+(1.0d0*vpqrs(kpr,c,lpr,bpr)+1.0d0*vpqrs(kpr,bpr,lpr,c))
     D4_9_ph_2p2h=D4_9_ph_2p2h/En
     D4_9_ph_2p2h=D4_9_ph_2p2h*dpl(c,k)  
 
@@ -3264,8 +3264,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D4_9_ph_2p2h=D4_9_ph_2p2h/sqrt(2.0)
-    D4_9_ph_2p2h=D4_9_ph_2p2h/sqrt(2.0)
+    D4_9_ph_2p2h=D4_9_ph_2p2h/sqrt(2.0d0)
+    D4_9_ph_2p2h=D4_9_ph_2p2h/sqrt(2.0d0)
 
     D4_9_ph_2p2h=-D4_9_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -3280,7 +3280,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_10_ph_2p2h=0.0
+    D4_10_ph_2p2h=0.0d0
 
 !    if(kdelta(a,bpr) .eq. 1)
 
@@ -3292,7 +3292,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     En=e(c)+e(apr)-e(kpr)-e(lpr)
 
-    D4_10_ph_2p2h=D4_10_ph_2p2h+(-1.0*vpqrs(kpr,c,lpr,apr)-1.0*vpqrs(kpr,apr,lpr,c))
+    D4_10_ph_2p2h=D4_10_ph_2p2h+(-1.0d0*vpqrs(kpr,c,lpr,apr)-1.0d0*vpqrs(kpr,apr,lpr,c))
     D4_10_ph_2p2h=D4_10_ph_2p2h/En
     D4_10_ph_2p2h=D4_10_ph_2p2h*dpl(c,k)  
 
@@ -3300,8 +3300,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D4_10_ph_2p2h=D4_10_ph_2p2h/sqrt(2.0)
-    D4_10_ph_2p2h=D4_10_ph_2p2h/sqrt(2.0)
+    D4_10_ph_2p2h=D4_10_ph_2p2h/sqrt(2.0d0)
+    D4_10_ph_2p2h=D4_10_ph_2p2h/sqrt(2.0d0)
 
 
   end function D4_10_ph_2p2h
@@ -3315,7 +3315,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D4_11_ph_2p2h=0.0
+    D4_11_ph_2p2h=0.0d0
 
 !    if(kdelta(k,kpr) .eq. 1)
 
@@ -3326,7 +3326,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(lpr)
 
-    D4_11_ph_2p2h=D4_11_ph_2p2h+(1.0*vpqrs(j,apr,lpr,bpr)+1.0*vpqrs(j,bpr,lpr,apr))
+    D4_11_ph_2p2h=D4_11_ph_2p2h+(1.0d0*vpqrs(j,apr,lpr,bpr)+1.0d0*vpqrs(j,bpr,lpr,apr))
     D4_11_ph_2p2h=D4_11_ph_2p2h/En
     D4_11_ph_2p2h=D4_11_ph_2p2h*dpl(a,j)  
 
@@ -3334,8 +3334,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D4_11_ph_2p2h=D4_11_ph_2p2h/sqrt(2.0)
-    D4_11_ph_2p2h=D4_11_ph_2p2h/sqrt(2.0)
+    D4_11_ph_2p2h=D4_11_ph_2p2h/sqrt(2.0d0)
+    D4_11_ph_2p2h=D4_11_ph_2p2h/sqrt(2.0d0)
 
     D4_11_ph_2p2h=-D4_11_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -3350,7 +3350,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
  
-    D4_12_ph_2p2h=0.0
+    D4_12_ph_2p2h=0.0d0
 
 !    if(kdelta(k,lpr) .eq. 1)
 
@@ -3362,7 +3362,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(kpr)
 
-    D4_12_ph_2p2h=D4_12_ph_2p2h+(-1.0*vpqrs(j,apr,kpr,bpr)-1.0*vpqrs(j,bpr,kpr,apr))
+    D4_12_ph_2p2h=D4_12_ph_2p2h+(-1.0d0*vpqrs(j,apr,kpr,bpr)-1.0d0*vpqrs(j,bpr,kpr,apr))
     D4_12_ph_2p2h=D4_12_ph_2p2h/En
     D4_12_ph_2p2h=D4_12_ph_2p2h*dpl(a,j)  
 
@@ -3370,8 +3370,8 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D4_12_ph_2p2h=D4_12_ph_2p2h/sqrt(2.0)
-    D4_12_ph_2p2h=D4_12_ph_2p2h/sqrt(2.0)
+    D4_12_ph_2p2h=D4_12_ph_2p2h/sqrt(2.0d0)
+    D4_12_ph_2p2h=D4_12_ph_2p2h/sqrt(2.0d0)
 
 
   end function D4_12_ph_2p2h
@@ -3383,14 +3383,14 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
-    D3_1_ph_2p2h=0.0
+    D3_1_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-      D3_1_ph_2p2h=-1.0*dpl(lpr,bpr)
+      D3_1_ph_2p2h=-1.0d0*dpl(lpr,bpr)
 
-      D3_1_ph_2p2h=D3_1_ph_2p2h/sqrt(2.0)
-      D3_1_ph_2p2h=D3_1_ph_2p2h/sqrt(2.0)
+      D3_1_ph_2p2h=D3_1_ph_2p2h/sqrt(2.0d0)
+      D3_1_ph_2p2h=D3_1_ph_2p2h/sqrt(2.0d0)
 
       D3_1_ph_2p2h=-D3_1_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3404,14 +3404,14 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
-    D3_2_ph_2p2h=0.0
+    D3_2_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D3_2_ph_2p2h=+1.0*dpl(kpr,bpr)
+    D3_2_ph_2p2h=+1.0d0*dpl(kpr,bpr)
 
-    D3_2_ph_2p2h=D3_2_ph_2p2h/sqrt(2.0)
-    D3_2_ph_2p2h=D3_2_ph_2p2h/sqrt(2.0)
+    D3_2_ph_2p2h=D3_2_ph_2p2h/sqrt(2.0d0)
+    D3_2_ph_2p2h=D3_2_ph_2p2h/sqrt(2.0d0)
 
 
   end function D3_2_ph_2p2h
@@ -3422,14 +3422,14 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
-    D3_3_ph_2p2h=0.0
+    D3_3_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-    D3_3_ph_2p2h=+1.0*dpl(lpr,apr)
+    D3_3_ph_2p2h=+1.0d0*dpl(lpr,apr)
 
-    D3_3_ph_2p2h=D3_3_ph_2p2h/sqrt(2.0)
-    D3_3_ph_2p2h=D3_3_ph_2p2h/sqrt(2.0)
+    D3_3_ph_2p2h=D3_3_ph_2p2h/sqrt(2.0d0)
+    D3_3_ph_2p2h=D3_3_ph_2p2h/sqrt(2.0d0)
 
 
    end function D3_3_ph_2p2h
@@ -3439,14 +3439,14 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
-    D3_4_ph_2p2h=0.0
+    D3_4_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D3_4_ph_2p2h=-1.0*dpl(kpr,apr)
+    D3_4_ph_2p2h=-1.0d0*dpl(kpr,apr)
 
-    D3_4_ph_2p2h=D3_4_ph_2p2h/sqrt(2.0)
-    D3_4_ph_2p2h=D3_4_ph_2p2h/sqrt(2.0)
+    D3_4_ph_2p2h=D3_4_ph_2p2h/sqrt(2.0d0)
+    D3_4_ph_2p2h=D3_4_ph_2p2h/sqrt(2.0d0)
 
     D3_4_ph_2p2h=-D3_4_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3463,7 +3463,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
       integer :: sym
 
-    D3_5_ph_2p2h=0.0
+    D3_5_ph_2p2h=0.0d0
     
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
   
@@ -3476,7 +3476,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(lpr)-e(j)
 
-    D3_5_ph_2p2h=D3_5_ph_2p2h+(-2.0*vpqrs(lpr,bpr,j,d)+1.0*vpqrs(lpr,d,j,bpr))
+    D3_5_ph_2p2h=D3_5_ph_2p2h+(-2.0d0*vpqrs(lpr,bpr,j,d)+1.0d0*vpqrs(lpr,d,j,bpr))
     D3_5_ph_2p2h=D3_5_ph_2p2h/En     
     D3_5_ph_2p2h=D3_5_ph_2p2h*dpl(d,j) 
      
@@ -3484,8 +3484,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
     
-    D3_5_ph_2p2h=D3_5_ph_2p2h/sqrt(2.0)
-    D3_5_ph_2p2h=D3_5_ph_2p2h/sqrt(2.0)
+    D3_5_ph_2p2h=D3_5_ph_2p2h/sqrt(2.0d0)
+    D3_5_ph_2p2h=D3_5_ph_2p2h/sqrt(2.0d0)
  
   end function D3_5_ph_2p2h
 
@@ -3498,7 +3498,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_6_ph_2p2h=0.0
+    D3_6_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3511,7 +3511,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(kpr)-e(j)
 
-    D3_6_ph_2p2h=D3_6_ph_2p2h+(+2.0*vpqrs(kpr,bpr,j,d)-1.0*vpqrs(kpr,d,j,bpr))
+    D3_6_ph_2p2h=D3_6_ph_2p2h+(+2.0d0*vpqrs(kpr,bpr,j,d)-1.0d0*vpqrs(kpr,d,j,bpr))
     D3_6_ph_2p2h=D3_6_ph_2p2h/En
     D3_6_ph_2p2h=D3_6_ph_2p2h*dpl(d,j)  
 
@@ -3519,8 +3519,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D3_6_ph_2p2h=D3_6_ph_2p2h/sqrt(2.0)
-    D3_6_ph_2p2h=D3_6_ph_2p2h/sqrt(2.0)
+    D3_6_ph_2p2h=D3_6_ph_2p2h/sqrt(2.0d0)
+    D3_6_ph_2p2h=D3_6_ph_2p2h/sqrt(2.0d0)
 
     D3_6_ph_2p2h=-D3_6_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3535,7 +3535,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_7_ph_2p2h=0.0
+    D3_7_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
    
@@ -3548,7 +3548,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(lpr)-e(j)
  
-    D3_7_ph_2p2h=D3_7_ph_2p2h+(+2.0*vpqrs(lpr,apr,j,d)-1.0*vpqrs(lpr,d,j,apr))
+    D3_7_ph_2p2h=D3_7_ph_2p2h+(+2.0d0*vpqrs(lpr,apr,j,d)-1.0d0*vpqrs(lpr,d,j,apr))
     D3_7_ph_2p2h=D3_7_ph_2p2h/En
     D3_7_ph_2p2h=D3_7_ph_2p2h*dpl(d,j)  
 
@@ -3556,8 +3556,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D3_7_ph_2p2h=D3_7_ph_2p2h/sqrt(2.0)
-    D3_7_ph_2p2h=D3_7_ph_2p2h/sqrt(2.0)
+    D3_7_ph_2p2h=D3_7_ph_2p2h/sqrt(2.0d0)
+    D3_7_ph_2p2h=D3_7_ph_2p2h/sqrt(2.0d0)
 
     D3_7_ph_2p2h=-D3_7_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3572,7 +3572,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_8_ph_2p2h=0.0
+    D3_8_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3585,7 +3585,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(kpr)-e(j)
 
-    D3_8_ph_2p2h=D3_8_ph_2p2h+(-2.0*vpqrs(kpr,apr,j,d)+1.0*vpqrs(kpr,d,j,apr))
+    D3_8_ph_2p2h=D3_8_ph_2p2h+(-2.0d0*vpqrs(kpr,apr,j,d)+1.0d0*vpqrs(kpr,d,j,apr))
     D3_8_ph_2p2h=D3_8_ph_2p2h/En
     D3_8_ph_2p2h=D3_8_ph_2p2h*dpl(d,j)  
  
@@ -3593,8 +3593,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D3_8_ph_2p2h=D3_8_ph_2p2h/sqrt(2.0)
-    D3_8_ph_2p2h=D3_8_ph_2p2h/sqrt(2.0)
+    D3_8_ph_2p2h=D3_8_ph_2p2h/sqrt(2.0d0)
+    D3_8_ph_2p2h=D3_8_ph_2p2h/sqrt(2.0d0)
 
 
   end function D3_8_ph_2p2h
@@ -3608,7 +3608,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_9_ph_2p2h=0.0
+    D3_9_ph_2p2h=0.0d0
 
 !    if(kdelta(a,apr) .eq. 1)
 
@@ -3619,7 +3619,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(c)+e(bpr)-e(kpr)-e(lpr)
 
-    D3_9_ph_2p2h=D3_9_ph_2p2h+(-1.0*vpqrs(kpr,c,lpr,bpr)-1.0*vpqrs(kpr,bpr,lpr,c))
+    D3_9_ph_2p2h=D3_9_ph_2p2h+(-1.0d0*vpqrs(kpr,c,lpr,bpr)-1.0d0*vpqrs(kpr,bpr,lpr,c))
     D3_9_ph_2p2h=D3_9_ph_2p2h/En
     D3_9_ph_2p2h=D3_9_ph_2p2h*dpl(c,k)  
        end if
@@ -3627,8 +3627,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D3_9_ph_2p2h=D3_9_ph_2p2h/sqrt(2.0)
-    D3_9_ph_2p2h=D3_9_ph_2p2h/sqrt(2.0)
+    D3_9_ph_2p2h=D3_9_ph_2p2h/sqrt(2.0d0)
+    D3_9_ph_2p2h=D3_9_ph_2p2h/sqrt(2.0d0)
 
     D3_9_ph_2p2h=-D3_9_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -3643,7 +3643,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_10_ph_2p2h=0.0
+    D3_10_ph_2p2h=0.0d0
 
 !    if(kdelta(a,bpr) .eq. 1)
 
@@ -3654,7 +3654,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     En=e(c)+e(apr)-e(kpr)-e(lpr)
 
-    D3_10_ph_2p2h=D3_10_ph_2p2h+(+1.0*vpqrs(kpr,c,lpr,apr)+1.0*vpqrs(kpr,apr,lpr,c))
+    D3_10_ph_2p2h=D3_10_ph_2p2h+(+1.0d0*vpqrs(kpr,c,lpr,apr)+1.0d0*vpqrs(kpr,apr,lpr,c))
     D3_10_ph_2p2h=D3_10_ph_2p2h/En
     D3_10_ph_2p2h=D3_10_ph_2p2h*dpl(c,k)  
        end if
@@ -3662,8 +3662,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D3_10_ph_2p2h=D3_10_ph_2p2h/sqrt(2.0)
-    D3_10_ph_2p2h=D3_10_ph_2p2h/sqrt(2.0)
+    D3_10_ph_2p2h=D3_10_ph_2p2h/sqrt(2.0d0)
+    D3_10_ph_2p2h=D3_10_ph_2p2h/sqrt(2.0d0)
 
   end function D3_10_ph_2p2h
 
@@ -3676,7 +3676,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_11_ph_2p2h=0.0
+    D3_11_ph_2p2h=0.0d0
 
 !    if(kdelta(k,kpr) .eq. 1)
 
@@ -3687,7 +3687,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(lpr)
 
-    D3_11_ph_2p2h=D3_11_ph_2p2h+(-1.0*vpqrs(j,apr,lpr,bpr)-1.0*vpqrs(j,bpr,lpr,apr))
+    D3_11_ph_2p2h=D3_11_ph_2p2h+(-1.0d0*vpqrs(j,apr,lpr,bpr)-1.0d0*vpqrs(j,bpr,lpr,apr))
     D3_11_ph_2p2h=D3_11_ph_2p2h/En
     D3_11_ph_2p2h=D3_11_ph_2p2h*dpl(a,j)  
        end if
@@ -3695,8 +3695,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D3_11_ph_2p2h=D3_11_ph_2p2h/sqrt(2.0)
-    D3_11_ph_2p2h=D3_11_ph_2p2h/sqrt(2.0)
+    D3_11_ph_2p2h=D3_11_ph_2p2h/sqrt(2.0d0)
+    D3_11_ph_2p2h=D3_11_ph_2p2h/sqrt(2.0d0)
 
     D3_11_ph_2p2h=-D3_11_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -3711,7 +3711,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D3_12_ph_2p2h=0.0
+    D3_12_ph_2p2h=0.0d0
 
 !    if(kdelta(k,lpr) .eq. 1)
 
@@ -3723,7 +3723,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(kpr)
 
-    D3_12_ph_2p2h=D3_12_ph_2p2h+(+1.0*vpqrs(j,apr,kpr,bpr)+1.0*vpqrs(j,bpr,kpr,apr))
+    D3_12_ph_2p2h=D3_12_ph_2p2h+(+1.0d0*vpqrs(j,apr,kpr,bpr)+1.0d0*vpqrs(j,bpr,kpr,apr))
     D3_12_ph_2p2h=D3_12_ph_2p2h/En
     D3_12_ph_2p2h=D3_12_ph_2p2h*dpl(a,j)  
        end if
@@ -3731,8 +3731,8 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D3_12_ph_2p2h=D3_12_ph_2p2h/sqrt(2.0)
-    D3_12_ph_2p2h=D3_12_ph_2p2h/sqrt(2.0)
+    D3_12_ph_2p2h=D3_12_ph_2p2h/sqrt(2.0d0)
+    D3_12_ph_2p2h=D3_12_ph_2p2h/sqrt(2.0d0)
 
 
   end function D3_12_ph_2p2h
@@ -3745,14 +3745,14 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
-    D2_1_ph_2p2h=0.0
+    D2_1_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-      D2_1_ph_2p2h=-6.0*dpl(lpr,bpr)
+      D2_1_ph_2p2h=-6.0d0*dpl(lpr,bpr)
 
-      D2_1_ph_2p2h=D2_1_ph_2p2h/sqrt(2.0)
-      D2_1_ph_2p2h=D2_1_ph_2p2h/sqrt(12.0)
+      D2_1_ph_2p2h=D2_1_ph_2p2h/sqrt(2.0d0)
+      D2_1_ph_2p2h=D2_1_ph_2p2h/sqrt(12.0d0)
 
       D2_1_ph_2p2h=-D2_1_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3765,14 +3765,14 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
-    D2_2_ph_2p2h=0.0
+    D2_2_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D2_2_ph_2p2h=-6.0*dpl(kpr,bpr)
+    D2_2_ph_2p2h=-6.0d0*dpl(kpr,bpr)
 
-    D2_2_ph_2p2h=D2_2_ph_2p2h/sqrt(2.0)
-    D2_2_ph_2p2h=D2_2_ph_2p2h/sqrt(12.0)
+    D2_2_ph_2p2h=D2_2_ph_2p2h/sqrt(2.0d0)
+    D2_2_ph_2p2h=D2_2_ph_2p2h/sqrt(12.0d0)
 
 
   end function D2_2_ph_2p2h
@@ -3782,14 +3782,14 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
-    D2_3_ph_2p2h=0.0
+    D2_3_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-    D2_3_ph_2p2h=-6.0*dpl(lpr,apr)
+    D2_3_ph_2p2h=-6.0d0*dpl(lpr,apr)
 
-    D2_3_ph_2p2h=D2_3_ph_2p2h/sqrt(2.0)
-    D2_3_ph_2p2h=D2_3_ph_2p2h/sqrt(12.0)
+    D2_3_ph_2p2h=D2_3_ph_2p2h/sqrt(2.0d0)
+    D2_3_ph_2p2h=D2_3_ph_2p2h/sqrt(12.0d0)
 
 
    end function D2_3_ph_2p2h
@@ -3799,14 +3799,14 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
-    D2_4_ph_2p2h=0.0
+    D2_4_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D2_4_ph_2p2h=-6.0*dpl(kpr,apr)
+    D2_4_ph_2p2h=-6.0d0*dpl(kpr,apr)
 
-    D2_4_ph_2p2h=D2_4_ph_2p2h/sqrt(2.0)
-    D2_4_ph_2p2h=D2_4_ph_2p2h/sqrt(12.0)
+    D2_4_ph_2p2h=D2_4_ph_2p2h/sqrt(2.0d0)
+    D2_4_ph_2p2h=D2_4_ph_2p2h/sqrt(12.0d0)
 
     D2_4_ph_2p2h=-D2_4_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -3823,7 +3823,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
       integer :: sym
 
-    D2_5_ph_2p2h=0.0
+    D2_5_ph_2p2h=0.0d0
     
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
   
@@ -3836,7 +3836,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(lpr)-e(j)
 
-    D2_5_ph_2p2h=D2_5_ph_2p2h+(-12.0*vpqrs(lpr,bpr,j,d)+6.0*vpqrs(lpr,d,j,bpr))
+    D2_5_ph_2p2h=D2_5_ph_2p2h+(-12.0d0*vpqrs(lpr,bpr,j,d)+6.0d0*vpqrs(lpr,d,j,bpr))
     D2_5_ph_2p2h=D2_5_ph_2p2h/En      
     D2_5_ph_2p2h=D2_5_ph_2p2h*dpl(d,j) 
         end if
@@ -3844,8 +3844,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
     
-    D2_5_ph_2p2h=D2_5_ph_2p2h/sqrt(2.0)
-    D2_5_ph_2p2h=D2_5_ph_2p2h/sqrt(12.0)
+    D2_5_ph_2p2h=D2_5_ph_2p2h/sqrt(2.0d0)
+    D2_5_ph_2p2h=D2_5_ph_2p2h/sqrt(12.0d0)
 
 
   end function D2_5_ph_2p2h
@@ -3859,7 +3859,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_6_ph_2p2h=0.0
+    D2_6_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3872,7 +3872,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(kpr)-e(j)
 
-    D2_6_ph_2p2h=D2_6_ph_2p2h+(-12.0*vpqrs(kpr,bpr,j,d)+6.0*vpqrs(kpr,d,j,bpr))
+    D2_6_ph_2p2h=D2_6_ph_2p2h+(-12.0d0*vpqrs(kpr,bpr,j,d)+6.0d0*vpqrs(kpr,d,j,bpr))
     D2_6_ph_2p2h=D2_6_ph_2p2h/En
     D2_6_ph_2p2h=D2_6_ph_2p2h*dpl(d,j)  
        end if
@@ -3880,8 +3880,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D2_6_ph_2p2h=D2_6_ph_2p2h/sqrt(2.0)
-    D2_6_ph_2p2h=D2_6_ph_2p2h/sqrt(12.0)
+    D2_6_ph_2p2h=D2_6_ph_2p2h/sqrt(2.0d0)
+    D2_6_ph_2p2h=D2_6_ph_2p2h/sqrt(12.0d0)
 
     D2_6_ph_2p2h=-D2_6_ph_2p2h  !!! FACTOR FROM EXPRESSION IN THE PAPER
 
@@ -3896,7 +3896,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_7_ph_2p2h=0.0
+    D2_7_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
    
@@ -3909,7 +3909,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(lpr)-e(j)
  
-    D2_7_ph_2p2h=D2_7_ph_2p2h+(-12.0*vpqrs(lpr,apr,j,d)+6.0*vpqrs(lpr,d,j,apr))
+    D2_7_ph_2p2h=D2_7_ph_2p2h+(-12.0d0*vpqrs(lpr,apr,j,d)+6.0d0*vpqrs(lpr,d,j,apr))
     D2_7_ph_2p2h=D2_7_ph_2p2h/En
     D2_7_ph_2p2h=D2_7_ph_2p2h*dpl(d,j)  
        end if
@@ -3917,8 +3917,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D2_7_ph_2p2h=D2_7_ph_2p2h/sqrt(2.0)
-    D2_7_ph_2p2h=D2_7_ph_2p2h/sqrt(12.0)
+    D2_7_ph_2p2h=D2_7_ph_2p2h/sqrt(2.0d0)
+    D2_7_ph_2p2h=D2_7_ph_2p2h/sqrt(12.0d0)
 
     D2_7_ph_2p2h=-D2_7_ph_2p2h  !!! FACTOR FROM EXPRESSION IN THE PAPER
 
@@ -3933,7 +3933,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_8_ph_2p2h=0.0
+    D2_8_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -3946,7 +3946,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(kpr)-e(j)
 
-    D2_8_ph_2p2h=D2_8_ph_2p2h+(-12.0*vpqrs(kpr,apr,j,d)+6.0*vpqrs(kpr,d,j,apr))
+    D2_8_ph_2p2h=D2_8_ph_2p2h+(-12.0d0*vpqrs(kpr,apr,j,d)+6.0d0*vpqrs(kpr,d,j,apr))
     D2_8_ph_2p2h=D2_8_ph_2p2h/En
     D2_8_ph_2p2h=D2_8_ph_2p2h*dpl(d,j)  
        end if
@@ -3954,8 +3954,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D2_8_ph_2p2h=D2_8_ph_2p2h/sqrt(2.0)
-    D2_8_ph_2p2h=D2_8_ph_2p2h/sqrt(12.0)
+    D2_8_ph_2p2h=D2_8_ph_2p2h/sqrt(2.0d0)
+    D2_8_ph_2p2h=D2_8_ph_2p2h/sqrt(12.0d0)
 
   end function D2_8_ph_2p2h
 
@@ -3968,7 +3968,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_9_ph_2p2h=0.0
+    D2_9_ph_2p2h=0.0d0
 
 !    if(kdelta(a,apr) .eq. 1)
 
@@ -3979,7 +3979,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(c)+e(bpr)-e(kpr)-e(lpr)
 
-    D2_9_ph_2p2h=D2_9_ph_2p2h+(-6.0*vpqrs(kpr,c,lpr,bpr)+6.0*vpqrs(kpr,bpr,lpr,c))
+    D2_9_ph_2p2h=D2_9_ph_2p2h+(-6.0d0*vpqrs(kpr,c,lpr,bpr)+6.0d0*vpqrs(kpr,bpr,lpr,c))
     D2_9_ph_2p2h=D2_9_ph_2p2h/En
     D2_9_ph_2p2h=D2_9_ph_2p2h*dpl(c,k)  
        end if
@@ -3987,8 +3987,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D2_9_ph_2p2h=D2_9_ph_2p2h/sqrt(2.0)
-    D2_9_ph_2p2h=D2_9_ph_2p2h/sqrt(12.0)
+    D2_9_ph_2p2h=D2_9_ph_2p2h/sqrt(2.0d0)
+    D2_9_ph_2p2h=D2_9_ph_2p2h/sqrt(12.0d0)
 
     D2_9_ph_2p2h=-D2_9_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -4003,7 +4003,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_10_ph_2p2h=0.0
+    D2_10_ph_2p2h=0.0d0
 
 !    if(kdelta(a,bpr) .eq. 1)
 
@@ -4015,7 +4015,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     En=e(c)+e(apr)-e(kpr)-e(lpr)
 
-    D2_10_ph_2p2h=D2_10_ph_2p2h+(-6.0*vpqrs(kpr,c,lpr,apr)+6.0*vpqrs(kpr,apr,lpr,c))
+    D2_10_ph_2p2h=D2_10_ph_2p2h+(-6.0d0*vpqrs(kpr,c,lpr,apr)+6.0d0*vpqrs(kpr,apr,lpr,c))
     D2_10_ph_2p2h=D2_10_ph_2p2h/En
     D2_10_ph_2p2h=D2_10_ph_2p2h*dpl(c,k)  
        end if
@@ -4023,8 +4023,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D2_10_ph_2p2h=D2_10_ph_2p2h/sqrt(2.0)
-    D2_10_ph_2p2h=D2_10_ph_2p2h/sqrt(12.0)
+    D2_10_ph_2p2h=D2_10_ph_2p2h/sqrt(2.0d0)
+    D2_10_ph_2p2h=D2_10_ph_2p2h/sqrt(12.0d0)
 
 
   end function D2_10_ph_2p2h
@@ -4038,7 +4038,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_11_ph_2p2h=0.0
+    D2_11_ph_2p2h=0.0d0
 
 !    if(kdelta(k,kpr) .eq. 1)
 
@@ -4049,7 +4049,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(lpr)
 
-    D2_11_ph_2p2h=D2_11_ph_2p2h+(-6.0*vpqrs(j,apr,lpr,bpr)+6.0*vpqrs(j,bpr,lpr,apr))
+    D2_11_ph_2p2h=D2_11_ph_2p2h+(-6.0d0*vpqrs(j,apr,lpr,bpr)+6.0d0*vpqrs(j,bpr,lpr,apr))
     D2_11_ph_2p2h=D2_11_ph_2p2h/En
     D2_11_ph_2p2h=D2_11_ph_2p2h*dpl(a,j)  
        end if
@@ -4057,8 +4057,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D2_11_ph_2p2h=D2_11_ph_2p2h/sqrt(2.0)
-    D2_11_ph_2p2h=D2_11_ph_2p2h/sqrt(12.0)
+    D2_11_ph_2p2h=D2_11_ph_2p2h/sqrt(2.0d0)
+    D2_11_ph_2p2h=D2_11_ph_2p2h/sqrt(12.0d0)
 
     D2_11_ph_2p2h=-D2_11_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -4074,7 +4074,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D2_12_ph_2p2h=0.0
+    D2_12_ph_2p2h=0.0d0
 
 !    if(kdelta(k,lpr) .eq. 1)
 
@@ -4085,7 +4085,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(kpr)
 
-    D2_12_ph_2p2h=D2_12_ph_2p2h+(-6.0*vpqrs(j,apr,kpr,bpr)+6.0*vpqrs(j,bpr,kpr,apr))
+    D2_12_ph_2p2h=D2_12_ph_2p2h+(-6.0d0*vpqrs(j,apr,kpr,bpr)+6.0d0*vpqrs(j,bpr,kpr,apr))
     D2_12_ph_2p2h=D2_12_ph_2p2h/En
     D2_12_ph_2p2h=D2_12_ph_2p2h*dpl(a,j)  
        end if
@@ -4093,8 +4093,8 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D2_12_ph_2p2h=D2_12_ph_2p2h/sqrt(2.0)
-    D2_12_ph_2p2h=D2_12_ph_2p2h/sqrt(12.0)
+    D2_12_ph_2p2h=D2_12_ph_2p2h/sqrt(2.0d0)
+    D2_12_ph_2p2h=D2_12_ph_2p2h/sqrt(12.0d0)
 
   end function D2_12_ph_2p2h
 
@@ -4106,14 +4106,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
-    D1_1_ph_2p2h=0.0
+    D1_1_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-      D1_1_ph_2p2h=-2.0*dpl(lpr,bpr)
+      D1_1_ph_2p2h=-2.0d0*dpl(lpr,bpr)
 
-      D1_1_ph_2p2h=D1_1_ph_2p2h/sqrt(2.0)
-      D1_1_ph_2p2h=D1_1_ph_2p2h/2.0
+      D1_1_ph_2p2h=D1_1_ph_2p2h/sqrt(2.0d0)
+      D1_1_ph_2p2h=D1_1_ph_2p2h/2.0d0
 
       D1_1_ph_2p2h=-D1_1_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -4126,14 +4126,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
-    D1_2_ph_2p2h=0.0
+    D1_2_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D1_2_ph_2p2h=+2.0*dpl(kpr,bpr)
+    D1_2_ph_2p2h=+2.0d0*dpl(kpr,bpr)
 
-    D1_2_ph_2p2h=D1_2_ph_2p2h/sqrt(2.0)
-    D1_2_ph_2p2h=D1_2_ph_2p2h/2.0
+    D1_2_ph_2p2h=D1_2_ph_2p2h/sqrt(2.0d0)
+    D1_2_ph_2p2h=D1_2_ph_2p2h/2.0d0
 
   end function D1_2_ph_2p2h
 
@@ -4142,14 +4142,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
-    D1_3_ph_2p2h=0.0
+    D1_3_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
     
-    D1_3_ph_2p2h=+2.0*dpl(lpr,apr)
+    D1_3_ph_2p2h=+2.0d0*dpl(lpr,apr)
 
-    D1_3_ph_2p2h=D1_3_ph_2p2h/sqrt(2.0)
-    D1_3_ph_2p2h=D1_3_ph_2p2h/2.0
+    D1_3_ph_2p2h=D1_3_ph_2p2h/sqrt(2.0d0)
+    D1_3_ph_2p2h=D1_3_ph_2p2h/2.0d0
 
    end function D1_3_ph_2p2h
 
@@ -4158,14 +4158,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
-    D1_4_ph_2p2h=0.0
+    D1_4_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
-    D1_4_ph_2p2h=-2.0*dpl(kpr,apr)
+    D1_4_ph_2p2h=-2.0d0*dpl(kpr,apr)
 
-    D1_4_ph_2p2h=D1_4_ph_2p2h/sqrt(2.0)
-    D1_4_ph_2p2h=D1_4_ph_2p2h/2.0
+    D1_4_ph_2p2h=D1_4_ph_2p2h/sqrt(2.0d0)
+    D1_4_ph_2p2h=D1_4_ph_2p2h/2.0d0
 
     D1_4_ph_2p2h=-D1_4_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -4182,7 +4182,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_5_ph_2p2h=0.0
+    D1_5_ph_2p2h=0.0d0
     
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
   
@@ -4195,7 +4195,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(lpr)-e(j)
 
-    D1_5_ph_2p2h=D1_5_ph_2p2h+(-4.0*vpqrs(lpr,bpr,j,d)+2.0*vpqrs(lpr,d,j,bpr))
+    D1_5_ph_2p2h=D1_5_ph_2p2h+(-4.0d0*vpqrs(lpr,bpr,j,d)+2.0d0*vpqrs(lpr,d,j,bpr))
     D1_5_ph_2p2h=D1_5_ph_2p2h/En      
     D1_5_ph_2p2h=D1_5_ph_2p2h*dpl(d,j) 
         end if
@@ -4203,8 +4203,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
     
-    D1_5_ph_2p2h=D1_5_ph_2p2h/sqrt(2.0)
-    D1_5_ph_2p2h=D1_5_ph_2p2h/2.0
+    D1_5_ph_2p2h=D1_5_ph_2p2h/sqrt(2.0d0)
+    D1_5_ph_2p2h=D1_5_ph_2p2h/2.0d0
 
 
   end function D1_5_ph_2p2h
@@ -4218,7 +4218,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_6_ph_2p2h=0.0
+    D1_6_ph_2p2h=0.0d0
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -4231,7 +4231,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(bpr)+e(d)-e(kpr)-e(j)
 
-    D1_6_ph_2p2h=D1_6_ph_2p2h+(+4.0*vpqrs(kpr,bpr,j,d)-2.0*vpqrs(kpr,d,j,bpr))
+    D1_6_ph_2p2h=D1_6_ph_2p2h+(+4.0d0*vpqrs(kpr,bpr,j,d)-2.0d0*vpqrs(kpr,d,j,bpr))
     D1_6_ph_2p2h=D1_6_ph_2p2h/En
     D1_6_ph_2p2h=D1_6_ph_2p2h*dpl(d,j)  
        end if
@@ -4239,8 +4239,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D1_6_ph_2p2h=D1_6_ph_2p2h/sqrt(2.0)
-    D1_6_ph_2p2h=D1_6_ph_2p2h/2.0
+    D1_6_ph_2p2h=D1_6_ph_2p2h/sqrt(2.0d0)
+    D1_6_ph_2p2h=D1_6_ph_2p2h/2.0d0
 
     D1_6_ph_2p2h=-D1_6_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -4255,7 +4255,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_7_ph_2p2h=0.0
+    D1_7_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
    
@@ -4268,7 +4268,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(lpr)-e(j)
  
-    D1_7_ph_2p2h=D1_7_ph_2p2h+(+4.0*vpqrs(lpr,apr,j,d)-2.0*vpqrs(lpr,d,j,apr))
+    D1_7_ph_2p2h=D1_7_ph_2p2h+(+4.0d0*vpqrs(lpr,apr,j,d)-2.0d0*vpqrs(lpr,d,j,apr))
     D1_7_ph_2p2h=D1_7_ph_2p2h/En
     D1_7_ph_2p2h=D1_7_ph_2p2h*dpl(d,j)  
        end if
@@ -4276,8 +4276,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D1_7_ph_2p2h=D1_7_ph_2p2h/sqrt(2.0)
-    D1_7_ph_2p2h=D1_7_ph_2p2h/2.0
+    D1_7_ph_2p2h=D1_7_ph_2p2h/sqrt(2.0d0)
+    D1_7_ph_2p2h=D1_7_ph_2p2h/2.0d0
 
     D1_7_ph_2p2h=-D1_7_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -4292,7 +4292,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_8_ph_2p2h=0.0
+    D1_8_ph_2p2h=0.0d0
 
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
    
@@ -4305,7 +4305,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(d)-e(kpr)-e(j)
 
-    D1_8_ph_2p2h=D1_8_ph_2p2h+(-4.0*vpqrs(kpr,apr,j,d)+2.0*vpqrs(kpr,d,j,apr))
+    D1_8_ph_2p2h=D1_8_ph_2p2h+(-4.0d0*vpqrs(kpr,apr,j,d)+2.0d0*vpqrs(kpr,d,j,apr))
     D1_8_ph_2p2h=D1_8_ph_2p2h/En
     D1_8_ph_2p2h=D1_8_ph_2p2h*dpl(d,j)  
        end if
@@ -4313,8 +4313,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
    end do
 
-    D1_8_ph_2p2h=D1_8_ph_2p2h/sqrt(2.0)
-    D1_8_ph_2p2h=D1_8_ph_2p2h/2.0
+    D1_8_ph_2p2h=D1_8_ph_2p2h/sqrt(2.0d0)
+    D1_8_ph_2p2h=D1_8_ph_2p2h/2.0d0
 
   end function D1_8_ph_2p2h
 
@@ -4327,7 +4327,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_9_ph_2p2h=0.0
+    D1_9_ph_2p2h=0.0d0
 
 !    if(kdelta(a,apr) .eq. 1)
 
@@ -4338,15 +4338,15 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(c)+e(bpr)-e(kpr)-e(lpr)
 
-    D1_9_ph_2p2h=D1_9_ph_2p2h+(-2.0*vpqrs(kpr,c,lpr,bpr)-2.0*vpqrs(kpr,bpr,lpr,c))
+    D1_9_ph_2p2h=D1_9_ph_2p2h+(-2.0d0*vpqrs(kpr,c,lpr,bpr)-2.0d0*vpqrs(kpr,bpr,lpr,c))
     D1_9_ph_2p2h=D1_9_ph_2p2h/En
     D1_9_ph_2p2h=D1_9_ph_2p2h*dpl(c,k)  
        end if
  
       end do
 
-    D1_9_ph_2p2h=D1_9_ph_2p2h/sqrt(2.0)
-    D1_9_ph_2p2h=D1_9_ph_2p2h/2.0
+    D1_9_ph_2p2h=D1_9_ph_2p2h/sqrt(2.0d0)
+    D1_9_ph_2p2h=D1_9_ph_2p2h/2.0d0
 
     D1_9_ph_2p2h=-D1_9_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -4361,7 +4361,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
 
-    D1_10_ph_2p2h=0.0
+    D1_10_ph_2p2h=0.0d0
 
 !    if(kdelta(a,bpr) .eq. 1)
 
@@ -4372,7 +4372,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(c)+e(apr)-e(kpr)-e(lpr)
 
-    D1_10_ph_2p2h=D1_10_ph_2p2h+(+2.0*vpqrs(kpr,c,lpr,apr)+2.0*vpqrs(kpr,apr,lpr,c))
+    D1_10_ph_2p2h=D1_10_ph_2p2h+(+2.0d0*vpqrs(kpr,c,lpr,apr)+2.0d0*vpqrs(kpr,apr,lpr,c))
     D1_10_ph_2p2h=D1_10_ph_2p2h/En
     D1_10_ph_2p2h=D1_10_ph_2p2h*dpl(c,k)  
        end if
@@ -4380,8 +4380,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D1_10_ph_2p2h=D1_10_ph_2p2h/sqrt(2.0)
-    D1_10_ph_2p2h=D1_10_ph_2p2h/2.0
+    D1_10_ph_2p2h=D1_10_ph_2p2h/sqrt(2.0d0)
+    D1_10_ph_2p2h=D1_10_ph_2p2h/2.0d0
 
   end function D1_10_ph_2p2h
 
@@ -4394,7 +4394,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
  
-    D1_11_ph_2p2h=0._d
+    D1_11_ph_2p2h=0.0d0
 
 !    if(kdelta(k,kpr) .eq. 1)
 
@@ -4405,7 +4405,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(lpr)
 
-    D1_11_ph_2p2h=D1_11_ph_2p2h+(-2.0*vpqrs(j,apr,lpr,bpr)-2.0*vpqrs(j,bpr,lpr,apr))
+    D1_11_ph_2p2h=D1_11_ph_2p2h+(-2.0d0*vpqrs(j,apr,lpr,bpr)-2.0d0*vpqrs(j,bpr,lpr,apr))
     D1_11_ph_2p2h=D1_11_ph_2p2h/En
     D1_11_ph_2p2h=D1_11_ph_2p2h*dpl(a,j)  
        end if
@@ -4413,8 +4413,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D1_11_ph_2p2h=D1_11_ph_2p2h/sqrt(2.0)
-    D1_11_ph_2p2h=D1_11_ph_2p2h/2.0
+    D1_11_ph_2p2h=D1_11_ph_2p2h/sqrt(2.0d0)
+    D1_11_ph_2p2h=D1_11_ph_2p2h/2.0d0
 
     D1_11_ph_2p2h=-D1_11_ph_2p2h   !!! EXPRESSION FACTOR FROM THE PAPER
 
@@ -4429,7 +4429,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
      real*8 :: En
      integer :: sym
  
-    D1_12_ph_2p2h=0._d
+    D1_12_ph_2p2h=0.0d0
 
 !    if(kdelta(k,lpr) .eq. 1)
 
@@ -4440,7 +4440,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
     En=e(apr)+e(bpr)-e(j)-e(kpr)
 
-    D1_12_ph_2p2h=D1_12_ph_2p2h+(+2.0*vpqrs(j,apr,kpr,bpr)+2.0*vpqrs(j,bpr,kpr,apr))
+    D1_12_ph_2p2h=D1_12_ph_2p2h+(+2.0d0*vpqrs(j,apr,kpr,bpr)+2.0d0*vpqrs(j,bpr,kpr,apr))
     D1_12_ph_2p2h=D1_12_ph_2p2h/En
     D1_12_ph_2p2h=D1_12_ph_2p2h*dpl(a,j)  
 
@@ -4448,8 +4448,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
       end do
 !   end do
 
-    D1_12_ph_2p2h=D1_12_ph_2p2h/sqrt(2.0)
-    D1_12_ph_2p2h=D1_12_ph_2p2h/2.0
+    D1_12_ph_2p2h=D1_12_ph_2p2h/sqrt(2.0d0)
+    D1_12_ph_2p2h=D1_12_ph_2p2h/2.0d0
 
   end function D1_12_ph_2p2h
 
@@ -4485,25 +4485,25 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
     
     integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
     
-    D_1_1_2p2h_2p2h=0.0
+    D_1_1_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr).eq.1).and.(kdelta(l,lpr).eq.1)) then
 
     if(kdelta(b,bpr) .eq. 1) &   
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 1.0*dpl(a,apr)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 1.0d0*dpl(a,apr)
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&   
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&   
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0*dpl(b,bpr)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0d0*dpl(b,bpr)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
    end  if
@@ -4514,22 +4514,22 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0*dpl(kpr,k)*(-1.0)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0*dpl(lpr,k)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0d0*dpl(lpr,k)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0*dpl(lpr,l)*(-1.0)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0*dpl(kpr,l)
+    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0d0*dpl(kpr,l)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
@@ -4550,27 +4550,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
      integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_2_1_2p2h_2p2h=0.0
+    D_2_1_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr).eq.1).and.(kdelta(l,lpr).eq.1)) then
 
 
 
     if(kdelta(b,bpr) .eq. 1) &  
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h + 1.0*dpl(a,apr)
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h + 1.0d0*dpl(a,apr)
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)& 
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 1.0*dpl(a,bpr)*(-1.0)
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 1.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0*dpl(b,bpr)!*0.25
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 1.0*dpl(b,apr)*(-1.0)
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 1.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4582,27 +4582,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0*dpl(kpr,k)*(-1.0)
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 0.0*dpl(lpr,k)!*0.25
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 0.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0*dpl(lpr,l)*(-1.0)
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 0.0*dpl(kpr,l)!*0.25
+    D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 0.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
-    D_2_1_2p2h_2p2h= D_2_1_2p2h_2p2h*(1/sqrt(2.0))    
+    D_2_1_2p2h_2p2h= D_2_1_2p2h_2p2h*(1.0d0/sqrt(2.0d0))    
  
   end function D_2_1_2p2h_2p2h
 
@@ -4612,27 +4612,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
       integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_3_1_2p2h_2p2h=0.0
+    D_3_1_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr).eq.1).and.(kdelta(l,lpr).eq.1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h - 1.0*dpl(a,apr)!*0.25
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h - 1.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 1.0*dpl(b,bpr)!*0.25
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 1.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4644,28 +4644,28 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  -  1.0*dpl(kpr,k)*(-1.0)
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  -  1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  + 1.0*dpl(lpr,k)!*0.25
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  + 1.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 1.0*dpl(lpr,l)*(-1.0)
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  + 1.0*dpl(kpr,l)!*0.25
+    D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  + 1.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
-    D_3_1_2p2h_2p2h= D_3_1_2p2h_2p2h*(1/sqrt(2.0))    
+    D_3_1_2p2h_2p2h= D_3_1_2p2h_2p2h*(1.0d0/sqrt(2.0d0))    
  
   end function D_3_1_2p2h_2p2h
 
@@ -4675,27 +4675,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_4i_1_2p2h_2p2h=0.0
+    D_4i_1_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h - 1.0*dpl(a,apr)!*0.25
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h - 1.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)& 
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0*dpl(a,bpr)*(-1.0)
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0*dpl(b,bpr)!*0.25
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0*dpl(b,apr)*(-1.0)
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4706,28 +4706,28 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0*dpl(kpr,k)*(-1.0)
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0*dpl(lpr,k)!*0.25
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0*dpl(lpr,l)*(-1.0)
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&   
-    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0*dpl(kpr,l)!*0.25
+    D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
-    D_4i_1_2p2h_2p2h= D_4i_1_2p2h_2p2h*0.5    
+    D_4i_1_2p2h_2p2h= D_4i_1_2p2h_2p2h*0.5d0
  
   end function D_4i_1_2p2h_2p2h
 
@@ -4737,27 +4737,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_4ii_1_2p2h_2p2h=0.0
+    D_4ii_1_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) &  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h + 1.0*dpl(a,apr)!*0.25
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h + 1.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(a,bpr)*(-1.0)
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(b,bpr)!*0.25
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(b,apr)*(-1.0)
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4768,29 +4768,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(kpr,k)*(-1.0)
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(lpr,k)!*0.25
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(lpr,l)*(-1.0)
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0*dpl(kpr,l)!*0.25
+    D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
      end if
 
 
 
-    D_4ii_1_2p2h_2p2h= D_4ii_1_2p2h_2p2h*(1/sqrt(12.0))    
+    D_4ii_1_2p2h_2p2h= D_4ii_1_2p2h_2p2h*(1.0d0/sqrt(12.0d0))    
  
   end function D_4ii_1_2p2h_2p2h
 
@@ -4800,27 +4800,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_2_2_2p2h_2p2h=0.0
+    D_2_2_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0*dpl(a,apr)!*0.25
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 2.0*dpl(a,bpr)*(-1.0)
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 2.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0*dpl(b,bpr)!*0.25
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)& 
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 2.0*dpl(b,apr)*(-1.0)
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 2.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4831,29 +4831,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0*dpl(kpr,k)*(-1.0)
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 0.0*dpl(lpr,k)!*0.25
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 0.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0*dpl(lpr,l)*(-1.0)
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 0.0*dpl(kpr,l)!*0.25
+    D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 0.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_2_2_2p2h_2p2h= D_2_2_2p2h_2p2h*0.5    
+    D_2_2_2p2h_2p2h= D_2_2_2p2h_2p2h*0.5d0    
  
   end function D_2_2_2p2h_2p2h
 
@@ -4863,27 +4863,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
      integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_3_2_2p2h_2p2h=0.0
+    D_3_2_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0*dpl(a,apr)!*0.25
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0*dpl(a,bpr)*(-1.0)
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)& 
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0*dpl(b,bpr)!*0.25
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0*dpl(b,apr)*(-1.0)
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4894,29 +4894,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0*dpl(kpr,k)*(-1.0)
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0*dpl(lpr,k)!*0.25
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0*dpl(lpr,l)*(-1.0)
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0*dpl(kpr,l)!*0.25
+    D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_3_2_2p2h_2p2h= D_3_2_2p2h_2p2h*0.5    
+    D_3_2_2p2h_2p2h= D_3_2_2p2h_2p2h*0.5d0    
  
   end function D_3_2_2p2h_2p2h
 
@@ -4926,27 +4926,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
       integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-    D_4i_2_2p2h_2p2h=0.0
+    D_4i_2_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h - 2.0*dpl(a,apr)!*0.25
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h - 2.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0*dpl(a,bpr)*(-1.0)
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0*dpl(b,bpr)!*0.25
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0*dpl(b,apr)*(-1.0)
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -4957,29 +4957,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0*dpl(kpr,k)*(-1.0)
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0*dpl(lpr,k)!*0.25
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0*dpl(lpr,l)*(-1.0)
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0*dpl(kpr,l)!*0.25
+    D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
-    D_4i_2_2p2h_2p2h= D_4i_2_2p2h_2p2h*0.5    
-    D_4i_2_2p2h_2p2h= D_4i_2_2p2h_2p2h*(1/sqrt(2.0))    
+    D_4i_2_2p2h_2p2h= D_4i_2_2p2h_2p2h*0.5d0    
+    D_4i_2_2p2h_2p2h= D_4i_2_2p2h_2p2h*(1.0d0/sqrt(2.0d0))
  
 
   end function D_4i_2_2p2h_2p2h
@@ -4990,27 +4990,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-     D_4ii_2_2p2h_2p2h=0.0
+     D_4ii_2_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h + 0.0*dpl(a,apr)
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h + 0.0d0*dpl(a,apr)
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)& 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0*dpl(b,bpr)!*0.25
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)& 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5021,30 +5021,30 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0*dpl(kpr,k)*(-1.0)
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0*dpl(lpr,k)!*0.25
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0*dpl(lpr,l)*(-1.0)
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0*dpl(kpr,l)!*0.25
+    D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
      end if
 
 
 
-    D_4ii_2_2p2h_2p2h= D_4ii_2_2p2h_2p2h*(1/sqrt(2.0))    
-    D_4ii_2_2p2h_2p2h= D_4ii_2_2p2h_2p2h*(1/sqrt(12.0))    
+    D_4ii_2_2p2h_2p2h= D_4ii_2_2p2h_2p2h*(1.0d0/sqrt(2.0d0))
+    D_4ii_2_2p2h_2p2h= D_4ii_2_2p2h_2p2h*(1.0d0/sqrt(12.0d0))
  
 
   end function D_4ii_2_2p2h_2p2h
@@ -5053,30 +5053,30 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
   real(d) function D_3_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
-        integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
+    integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
 
-    D_3_3_2p2h_2p2h=0.0
+    D_3_3_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1)) then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h + 2.0*dpl(a,apr)!*0.25
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h + 2.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)& 
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0*dpl(b,bpr)!*0.25
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
-    if(kdelta(a,bpr) .eq. 1)&  
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    if(kdelta(a,bpr) .eq. 1)&
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5087,29 +5087,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0*dpl(kpr,k)*(-1.0)
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 2.0*dpl(lpr,k)!*0.25
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 2.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0*dpl(lpr,l)*(-1.0)
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
-    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 2.0*dpl(kpr,l)!*0.25
+    D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 2.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_3_3_2p2h_2p2h= D_3_3_2p2h_2p2h*0.5    
+    D_3_3_2p2h_2p2h= D_3_3_2p2h_2p2h*0.5d0    
  
   end function D_3_3_2p2h_2p2h
 
@@ -5119,27 +5119,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-     D_4i_3_2p2h_2p2h=0.0
+     D_4i_3_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0*dpl(a,apr)!*0.25
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0*dpl(a,bpr)*(-1.0)
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0*dpl(b,bpr)!*0.25
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)& 
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0*dpl(b,apr)*(-1.0)
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5150,22 +5150,22 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0*dpl(kpr,k)*(-1.0)
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0*dpl(lpr,k)!*0.25
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0*dpl(lpr,l)*(-1.0)
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0*dpl(kpr,l)!*0.25
+    D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
@@ -5173,8 +5173,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
 
-    D_4i_3_2p2h_2p2h= D_4i_3_2p2h_2p2h*0.5    
-    D_4i_3_2p2h_2p2h= D_4i_3_2p2h_2p2h*(1/sqrt(2.0))    
+    D_4i_3_2p2h_2p2h= D_4i_3_2p2h_2p2h*0.5d0    
+    D_4i_3_2p2h_2p2h= D_4i_3_2p2h_2p2h*(1.0d0/sqrt(2.0d0))
  
 
   end function D_4i_3_2p2h_2p2h
@@ -5185,27 +5185,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
-     D_4ii_3_2p2h_2p2h=0.0
+     D_4ii_3_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) &  
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0*dpl(a,apr)!*0.25
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)& 
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)& 
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0*dpl(b,bpr)!*0.25
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5216,30 +5216,30 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0*dpl(kpr,k)*(-1.0)
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0*dpl(lpr,k)!*0.25
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0*dpl(lpr,l)*(-1.0)
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0*dpl(kpr,l)!*0.25
+    D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_4ii_3_2p2h_2p2h= D_4ii_3_2p2h_2p2h*(1/sqrt(12.0))
-    D_4ii_3_2p2h_2p2h= D_4ii_3_2p2h_2p2h*(1/sqrt(2.0))    
+    D_4ii_3_2p2h_2p2h= D_4ii_3_2p2h_2p2h*(1.0d0/sqrt(12.0d0))
+    D_4ii_3_2p2h_2p2h= D_4ii_3_2p2h_2p2h*(1.0d0/sqrt(2.0d0))
  
  end function D_4ii_3_2p2h_2p2h
 
@@ -5250,27 +5250,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
 
-     D_4i_4i_2p2h_2p2h=0.0
+     D_4i_4i_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1)) then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0*dpl(a,apr)!*0.25
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0*dpl(a,bpr)*(-1.0)
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0*dpl(b,bpr)!*0.25
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0*dpl(b,apr)*(-1.0)
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5281,29 +5281,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0*dpl(kpr,k)*(-1.0)
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0*dpl(lpr,k)!*0.25
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0*dpl(lpr,l)*(-1.0)
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0*dpl(kpr,l)!*0.25
+    D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_4i_4i_2p2h_2p2h= D_4i_4i_2p2h_2p2h*0.25    
+    D_4i_4i_2p2h_2p2h= D_4i_4i_2p2h_2p2h*0.25d0    
  
  end function D_4i_4i_2p2h_2p2h
 
@@ -5316,27 +5316,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
 
 
-     D_4ii_4i_2p2h_2p2h=0.0
+     D_4ii_4i_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0*dpl(a,apr)!*0.25
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0*dpl(a,bpr)*(-1.0)
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)& 
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0*dpl(b,bpr)!*0.25
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)& 
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0*dpl(b,apr)*(-1.0)
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5347,30 +5347,30 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)& 
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0*dpl(kpr,k)*(-1.0)
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0*dpl(lpr,k)!*0.25
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)& 
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0*dpl(lpr,l)*(-1.0)
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0*dpl(kpr,l)!*0.25
+    D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
     end if
 
 
 
-    D_4ii_4i_2p2h_2p2h= D_4ii_4i_2p2h_2p2h*(1/sqrt(12.0))    
-    D_4ii_4i_2p2h_2p2h= D_4ii_4i_2p2h_2p2h*0.5    
+    D_4ii_4i_2p2h_2p2h= D_4ii_4i_2p2h_2p2h*(1.0d0/sqrt(12.0d0))
+    D_4ii_4i_2p2h_2p2h= D_4ii_4i_2p2h_2p2h*0.5d0
  
 
   end function D_4ii_4i_2p2h_2p2h
@@ -5384,27 +5384,27 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
 
 
-     D_4ii_4ii_2p2h_2p2h=0.0
+     D_4ii_4ii_2p2h_2p2h=0.0d0
 
     if((kdelta(k,kpr) .eq. 1).and.(kdelta(l,lpr) .eq. 1))  then
 
 
 
     if(kdelta(b,bpr) .eq. 1) & 
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(a,apr)!*0.25
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(a,apr)!*0.25
 !    D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h + 0.25*D_1_1_2p2h_2p2h    
  
     if(kdelta(b,apr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(a,bpr)*(-1.0)
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(a,bpr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h    
   
     if(kdelta(a,apr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(b,bpr)!*0.25
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(b,bpr)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h
  
 
     if(kdelta(a,bpr) .eq. 1)&
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(b,apr)*(-1.0)
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(b,apr)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
  
     end if
@@ -5415,29 +5415,29 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 
        if(kdelta(l,lpr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(kpr,k)*(-1.0)
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(kpr,k)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(lpr,k)!*0.25
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(lpr,k)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
 
 
        if(kdelta(k,kpr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(lpr,l)*(-1.0)
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(lpr,l)*(-1.0d0)
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
-    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0*dpl(kpr,l)!*0.25
+    D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(kpr,l)!*0.25
 !    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h    
   
      end if    
 
 
 
-    D_4ii_4ii_2p2h_2p2h= D_4ii_4ii_2p2h_2p2h*(1/12)    
+    D_4ii_4ii_2p2h_2p2h= D_4ii_4ii_2p2h_2p2h*(1.0d0/12.0d0)    
  
   end function D_4ii_4ii_2p2h_2p2h
 
@@ -6719,14 +6719,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                 
              cnt=cnt+1
                    
-             term=0.0
+             term=0.0d0
 
              eacij=e(a)+e(c)-e(k)-e(i)
              ebcij=e(b)+e(c)-e(kpr)-e(i)
              DA=eacij*ebcij
                    
-             term=term+vpqrs(kpr,b,i,c)*(+8.0*vpqrs(a,k,c,i)-4.0*vpqrs(a,i,c,k))
-             term=term+vpqrs(kpr,c,i,b)*(-4.0*vpqrs(a,k,c,i)+2.0*vpqrs(a,i,c,k))
+             term=term+vpqrs(kpr,b,i,c)*(+8.0d0*vpqrs(a,k,c,i)-4.0d0*vpqrs(a,i,c,k))
+             term=term+vpqrs(kpr,c,i,b)*(-4.0d0*vpqrs(a,k,c,i)+2.0d0*vpqrs(a,i,c,k))
              term=term/DA
 
              func=func+term
@@ -6768,14 +6768,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                    
                  cnt=cnt+1
                    
-                 term=0.0
+                 term=0.0d0
 
                  eacij=e(b)+e(c)-e(k)-e(i)
                  ebcij=e(apr)+e(c)-e(kpr)-e(i)
                  DA=eacij*ebcij
 
-                 term=term+vpqrs(b,k,c,i)*(+8.0*vpqrs(kpr,apr,i,c)-4.0*vpqrs(kpr,c,i,apr))
-                 term=term+vpqrs(b,i,c,k)*(-4.0*vpqrs(kpr,apr,i,c)+2.0*vpqrs(kpr,c,i,apr))
+                 term=term+vpqrs(b,k,c,i)*(+8.0d0*vpqrs(kpr,apr,i,c)-4.0d0*vpqrs(kpr,c,i,apr))
+                 term=term+vpqrs(b,i,c,k)*(-4.0d0*vpqrs(kpr,apr,i,c)+2.0d0*vpqrs(kpr,c,i,apr))
                  term=term/DA
                  
                  func=func+term
@@ -6818,14 +6818,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                 
                  cnt=cnt+1
 
-                 term=0.0
+                 term=0.0d0
 
                  eacij=e(apr)+e(b)-e(j)-e(i)
                  ebcij=e(a)+e(b)-e(k)-e(i)
                  DA=eacij*ebcij
 
-                 term=term+vpqrs(j,apr,i,b)*(+8.0*vpqrs(a,k,b,i)-4.0*vpqrs(a,i,b,k))
-                 term=term+vpqrs(j,b,i,apr)*(-4.0*vpqrs(a,k,b,i)+2.0*vpqrs(a,i,b,k))
+                 term=term+vpqrs(j,apr,i,b)*(+8.0d0*vpqrs(a,k,b,i)-4.0d0*vpqrs(a,i,b,k))
+                 term=term+vpqrs(j,b,i,apr)*(-4.0d0*vpqrs(a,k,b,i)+2.0d0*vpqrs(a,i,b,k))
                  term=term/DA
                 
                  func=func+term
@@ -6870,14 +6870,14 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                 
                  cnt=cnt+1
 
-                 term=0.0
+                 term=0.0d0
 
                  eacij=e(apr)+e(b)-e(kpr)-e(i)
                  ebcij=e(a)+e(b)-e(j)-e(i)
                  DA=eacij*ebcij
 
-                 term=term+vpqrs(a,j,b,i)*(+8.0*vpqrs(kpr,apr,i,b)-4.0*vpqrs(kpr,b,i,apr))
-                 term=term+vpqrs(a,i,b,j)*(-4.0*vpqrs(kpr,apr,i,b)+2.0*vpqrs(kpr,b,i,apr))
+                 term=term+vpqrs(a,j,b,i)*(+8.0d0*vpqrs(kpr,apr,i,b)-4.0d0*vpqrs(kpr,b,i,apr))
+                 term=term+vpqrs(a,i,b,j)*(-4.0d0*vpqrs(kpr,apr,i,b)+2.0d0*vpqrs(kpr,b,i,apr))
                  term=term/DA
                 
                  func=func+term
@@ -6928,10 +6928,10 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                    ebcij=e(b)+e(c)-e(i)-e(j)
                    DA=eacij*ebcij
 
-                   term = term + vpqrs(i,b,j,c)*(+4.0*vpqrs(a,i,c,j)&
-                        -2.0*vpqrs(a,j,c,i))
-                   term = term + vpqrs(i,c,j,b)*(-2.0*vpqrs(a,i,c,j)&
-                        +4.0*vpqrs(a,j,c,i))
+                   term = term + vpqrs(i,b,j,c)*(+4.0d0*vpqrs(a,i,c,j)&
+                        -2.0d0*vpqrs(a,j,c,i))
+                   term = term + vpqrs(i,c,j,b)*(-2.0d0*vpqrs(a,i,c,j)&
+                        +4.0d0*vpqrs(a,j,c,i))
                    term = term/DA
                 
                    func = func + term
@@ -6981,10 +6981,10 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                    ebcij=e(b)+e(c)-e(i)-e(j)
                    DA=eacij*ebcij
 
-                   term=term+vpqrs(b,i,c,j)*(+4.0*vpqrs(i,apr,j,c)&
-                        -2.0*vpqrs(i,c,j,apr))
-                   term=term+vpqrs(b,j,c,i)*(-2.0*vpqrs(i,apr,j,c)&
-                        +4.0*vpqrs(i,c,j,apr))
+                   term=term+vpqrs(b,i,c,j)*(+4.0d0*vpqrs(i,apr,j,c)&
+                        -2.0d0*vpqrs(i,c,j,apr))
+                   term=term+vpqrs(b,j,c,i)*(-2.0d0*vpqrs(i,apr,j,c)&
+                        +4.0d0*vpqrs(i,c,j,apr))
                    term=term/DA
                 
                    func=func+term
@@ -7035,8 +7035,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                    ebcij=e(b)+e(c)-e(k)-e(i)
                    DA=eacij*ebcij
 
-                   term=term+vpqrs(j,b,i,c)*(+4.0*vpqrs(b,k,c,i)-2.0*vpqrs(b,i,c,k))
-                   term=term+vpqrs(j,c,i,b)*(-2.0*vpqrs(b,k,c,i)+4.0*vpqrs(b,i,c,k))
+                   term=term+vpqrs(j,b,i,c)*(+4.0d0*vpqrs(b,k,c,i)-2.0d0*vpqrs(b,i,c,k))
+                   term=term+vpqrs(j,c,i,b)*(-2.0d0*vpqrs(b,k,c,i)+4.0d0*vpqrs(b,i,c,k))
                    term=term/DA
 
                    func=func+term
@@ -7088,8 +7088,8 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
                    ebcij=e(b)+e(c)-e(kpr)-e(i)
                    DA=eacij*ebcij
 
-                   term=term+vpqrs(b,j,c,i)*(+4.0*vpqrs(kpr,b,i,c)-2.0*vpqrs(kpr,c,i,b))
-                   term=term+vpqrs(b,i,c,j)*(-2.0*vpqrs(kpr,b,i,c)+4.0*vpqrs(kpr,c,i,b))
+                   term=term+vpqrs(b,j,c,i)*(+4.0d0*vpqrs(kpr,b,i,c)-2.0d0*vpqrs(kpr,c,i,b))
+                   term=term+vpqrs(b,i,c,j)*(-2.0d0*vpqrs(kpr,b,i,c)+4.0d0*vpqrs(kpr,c,i,b))
                    term=term/DA
                 
                    func=func+term

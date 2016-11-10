@@ -154,6 +154,8 @@
         if (allocated(dipmom_f)) deallocate(dipmom_f)
         if (allocated(travec2)) deallocate(travec2)
         if (allocated(dpl_all)) deallocate(dpl_all)
+        if (allocated(travecfc)) deallocate(travecfc)
+        if (allocated(traveccvs)) deallocate(traveccvs)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -173,8 +175,11 @@
 ! If we are performing a RIXS calculation, then symmetry is NOT
 ! supported
 !-----------------------------------------------------------------------
-        if (lrixs.and.pntgroup.ne.'C1') then
-           errmsg='Symmetry is NOT supported in a RIXS calculation'
+        if (lrixs.or.ltpxas) then
+           if (pntgroup.ne.'C1') then
+              errmsg='Symmetry is NOT supported in RIXS and TPXAS &
+                   calculations'
+           endif
         endif
         
         return
@@ -284,7 +289,7 @@
 ! If we are performing a RIXS calculation, then set up the total dipole
 ! matrix array
 !-----------------------------------------------------------------------
-        if (lrixs) then
+        if (lrixs.or.ltpxas) then
            allocate(dpl_all(3,nbas,nbas))
            dpl_all(1,:,:)=x_dipole(:,:)
            dpl_all(2,:,:)=y_dipole(:,:)
@@ -417,14 +422,21 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2
 
-        if (ldiagfinal) then
+        if (ltpxas) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
                 vec_init,mtmf,noffdf,rvec,travec2)
+           print*,"WRITE THE LANCZOS-TPXAS CODE!"
+           STOP
         else
-           call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                vec_init,mtmf,noffdf,rvec,travec2)
+           if (ldiagfinal) then
+              call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+                   vec_init,mtmf,noffdf,rvec,travec2)
+           else
+              call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
+                   vec_init,mtmf,noffdf,rvec,travec2)
+           endif
         endif
-
+        
         return
 
       end subroutine final_space_diag
@@ -477,6 +489,9 @@
         if (lrixs) then
            ! Davidson-RIXS calculation
            call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
+        else if (ltpxas) then
+           ! TPXAS calculation
+           call dipole_ispace_contraction_tpxas(rvec,ndim,ndimf,kpq,kpqf)
         else
            ! Absorption spectrum calculation
            if (statenumber.eq.0) then
@@ -601,7 +616,90 @@
         return
         
       end subroutine dipole_ispace_contraction_all
+
+!#######################################################################
+
+      subroutine dipole_ispace_contraction_tpxas(rvec,ndim,ndimf,kpq,&
+           kpqf)
+
+        use constants
+        use parameters
+        use misc
+        use get_matrix_dipole
+        use get_moment
+        use fspace
+        use guessvecs
+        use iomod
         
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,c,k
+        real(d), dimension(ndim,davstates)        :: rvec
+        character(len=1), dimension(3)            :: acomp
+        character(len=70)                         :: msg
+        
+!-----------------------------------------------------------------------
+! Allocate the arrays that will hold the contractions of the dipole
+! matrix with the initial state
+!-----------------------------------------------------------------------
+        allocate(travecfc(ndim,3))
+        allocate(traveccvs(ndimf,3))
+
+!-----------------------------------------------------------------------
+! Calculate P_FC D_a Psi_i, a=x,y,z
+!-----------------------------------------------------------------------
+        acomp=(/ 'x','y','z' /)
+
+        ! Loop over the components of the dipole operator
+        do c=1,3
+
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the contaction of the dipole operator and
+           ! the inital state projected onto the valence-excited
+           ! manifold
+           write(ilog,'(90a)') ('-', k=1,90)
+           msg='Calculating the '//acomp(c)//&
+                '-component of P_FC D Psi_i'
+           write(ilog,'(/,2x,a)') trim(msg)
+           if (statenumber.eq.0) then
+              call get_modifiedtm_adc2(ndimf,kpq(:,:),travecfc(:,c),0)
+           else
+              call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
+                   rvec(:,statenumber),travecfc(:,c))
+           endif
+        enddo
+        
+!-----------------------------------------------------------------------
+! Calculate P_CVS D_a Psi_i, a=x,y,z
+!-----------------------------------------------------------------------
+        ! Loop over the components of the dipole operator
+        do c=1,3
+
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the contaction of the dipole operator and
+           ! the inital state projected onto the core-excited
+           ! manifold
+           write(ilog,'(90a)') ('-', k=1,90)
+           msg='Calculating the '//acomp(c)//&
+                '-component of P_CVS D Psi_i'
+           write(ilog,'(/,2x,a)') trim(msg)
+           if (statenumber.eq.0) then
+              call get_modifiedtm_adc2(ndimf,kpqf(:,:),travecfc(:,c),0)
+           else
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                   rvec(:,statenumber),travecfc(:,c))
+           endif
+        enddo
+
+        return
+        
+      end subroutine dipole_ispace_contraction_tpxas
+      
 !#######################################################################
       
       subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
@@ -636,7 +734,7 @@
            ! Number of Lanczos vectors requested
            n=lmain*ncycles
            ! Reset lmain
-           lmain=ndimsf   
+           lmain=ndimsf
            ! Change ncycles s.t. the number of Lanczos vectors 
            ! generated does not change
            ncycles=n/lmain
@@ -1270,8 +1368,8 @@
         integer                                   :: ndimf,ndimsf,ndim
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d)                                   :: e_init
-        real(d), dimension(ndimf,davstates+1)     :: travec2
-
+        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
+        
         if (lrixs) then
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         else

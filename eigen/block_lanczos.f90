@@ -129,6 +129,9 @@ module block_lanczos
 !             4 <-> Construction of the initial vectors from linear
 !                   combinations of the most important ADC(1)
 !                   eigenvectors and 2h2p IS unit vectors
+!
+!             5 <-> RIXS calculation - read the initial vectors from
+!                   file
 !-----------------------------------------------------------------------
 
       if (lancguess.eq.1) then
