@@ -377,6 +377,10 @@
       allocate(zeta(nval,nlanc,nlanc))
       zeta=0.0d0
 
+      !$omp parallel do &
+      !$omp& private(f,alpha,beta,term1,term2) &
+      !$omp& shared(tdm,zeta)
+      !
       ! Loop over valence states
       do f=1,nval
 
@@ -400,6 +404,7 @@
          enddo
 
       enddo
+      !$omp end parallel do
 
       ! Prefactor
       zeta=zeta/15.0d0
@@ -441,6 +446,10 @@
       ! Intermediate state lifetime broadening in a.u.
       gamma=gammaint/eh2ev
 
+      !$omp parallel do &
+      !$omp& private(i,f,alpha,beta,einc,denom) &
+      !$omp& shared(ener1,enerval,enerlanc,zeta,tmp)
+      !
       ! Loop over incident photon energies
       do i=1,nener1
 
@@ -469,7 +478,8 @@
          enddo
          
       enddo
-      
+      !$omp end parallel do
+
 !-----------------------------------------------------------------------
 ! Calculate and output the RIXS spectrum
 !-----------------------------------------------------------------------

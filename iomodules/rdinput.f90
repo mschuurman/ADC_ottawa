@@ -209,8 +209,10 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                ! Diffuse function type
-               if (keyword(i).eq.'kbj') then
+               if (keyword(i).eq.'kbj'.or.keyword(i).eq.'kbj_cont') then
                   difftype=1
+               else if (keyword(i).eq.'kbj_ryd') then
+                  difftype=3
                else
                   goto 100
                endif

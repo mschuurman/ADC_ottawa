@@ -533,6 +533,8 @@
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
         
+        STOP
+
         return
 
       end subroutine davidson_final_space_diag
@@ -1369,7 +1371,7 @@
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d)                                   :: e_init
         real(d), dimension(ndimf,3*(davstates+1)) :: travec2
-        
+
         if (lrixs) then
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         else

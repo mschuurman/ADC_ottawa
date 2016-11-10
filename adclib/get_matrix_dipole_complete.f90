@@ -2238,25 +2238,33 @@
     integer :: k,a
     real(d) :: tw1,tw2,tc1,tc2
 
-    call times(tw1,tc1)
+!-----------------------------------------------------------------------
+! Calculate occ-virt part of the ground state density matrix iff this
+! not yet been done
+!-----------------------------------------------------------------------
+    if (.not.allocated(density)) then
+     
+       call times(tw1,tc1)
 
-    write(ilog,'(/,2x,a)') 'Calculating the occupied-unoccupied part of &
-         the density matrix...'
+       write(ilog,'(/,2x,a)') 'Calculating the occupied-unoccupied part of &
+            the density matrix...'
 
-    if (.not.allocated(density)) allocate(density(nbas,nbas))
-    density=0.0d0
+       allocate(density(nbas,nbas))
+       density=0.0d0
 
-    !$omp parallel do private(k,a) shared(density)
-    do k=1,nocc
-       do a=nocc+1,nbas
-         density(k,a)=calc_density(k,a)
+       !$omp parallel do private(k,a) shared(density)
+       do k=1,nocc
+          do a=nocc+1,nbas
+             density(k,a)=calc_density(k,a)
+          enddo
        enddo
-    enddo
-    !$omp end parallel do
+       !$omp end parallel do
 
-    call times(tw2,tc2)
+       call times(tw2,tc2)
     
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+       write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+    endif
 
     return
 
