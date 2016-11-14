@@ -1,4 +1,4 @@
-  module get_matrix_DIPOLE
+  module get_matrix_dipole
   
     use constants
     use parameters
@@ -28,7 +28,7 @@
     subroutine get_dipole_initial_product(ndim,ndimf,kpq,kpqf,autvec,&
          travec)
 
-      use timingmod      
+      use timingmod
 
       implicit none
       
@@ -102,13 +102,13 @@
       ! Initial space 2h2p i=j, a|=b configs
       call dmatrix_f1h1p_i2h2p2(ndim,ndimf,kpq,kpqf,travec,autvec)
    
-      ! Initial space i|=j,a=b configs
+      ! Initial space 2h2p i|=j, a=b configs
       call dmatrix_f1h1p_i2h2p3(ndim,ndimf,kpq,kpqf,travec,autvec)
       
-      ! Initial space i|=j,a|=b I configs
+      ! Initial space 2h2p i|=j, a|=b I configs
       call dmatrix_f1h1p_i2h2p4I(ndim,ndimf,kpq,kpqf,travec,autvec)
       
-      ! Initial space i|=j,a|=b II configs
+      ! Initial space 2h2p i|=j, a|=b II configs
       call dmatrix_f1h1p_i2h2p4II(ndim,ndimf,kpq,kpqf,travec,autvec)
       
 !-----------------------------------------------------------------------
@@ -2280,7 +2280,7 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
     integer                                             :: nvirt
-    real(d)                                             :: vectol,mem4indx
+    real(d)                                             :: mem4indx
     real(d), dimension(ndim), intent(in)                :: autvec
 
 !-----------------------------------------------------------------------
@@ -2304,12 +2304,12 @@
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
+    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
+    call dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
 
     return
 
@@ -2317,7 +2317,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
+  subroutine dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2332,11 +2332,10 @@
                                               k1,kpr,j1
     integer, dimension(:,:), allocatable   :: iszeroa,iszerok
     real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), intent(in)                    :: vectol
 
-    real(d), dimension(:,:), allocatable :: tau_2_2_1,tau_2_2_2,&
-                                            tau_4_2_1,tau_4_2_2
-    real(d)                              :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
+    real(d), dimension(:,:), allocatable   :: tau_2_2_1,tau_2_2_2,&
+                                              tau_4_2_1,tau_4_2_2
+    real(d)                                :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
 
     call times(tw1,tc1)
 
@@ -2490,7 +2489,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf,vectol)
+  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2502,7 +2501,6 @@
                                                 kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
     real(d), dimension(ndim), intent(in)     :: autvec
-    real(d), intent(in)                      :: vectol
     real(d)                                  :: tw1,tw2,tc1,tc2
     character(len=60)                        :: filename
 
@@ -2654,6 +2652,306 @@
     return
 
   end subroutine contract_4indx_dpl
+
+!#######################################################################
+
+  subroutine dmatrix_precalc_noscreen(ndim,kpq,kpqf)
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+    integer, intent(in)                                 :: ndim
+    integer                                             :: nvirt
+    real(d)                                             :: mem4indx
+
+!-----------------------------------------------------------------------
+! Allocate and initialise arrays
+!-----------------------------------------------------------------------
+    nvirt=nbas-nocc
+    allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
+    pre_vv=0.0d0
+    pre_oo=0.0d0
+
+    allocate(D261(nvirt,nocc,nocc,nvirt))
+    allocate(D262(nvirt,nocc,nocc,nvirt))
+    allocate(D263(nvirt,nvirt,nocc,nocc))
+    allocate(D264(nvirt,nvirt,nocc,nocc))
+    D261=0.0d0
+    D262=0.0d0
+    D263=0.0d0
+    D264=0.0d0
+
+!-----------------------------------------------------------------------
+! Calculation of intermediate four-index terms, which may need to be 
+! saved to file
+!-----------------------------------------------------------------------
+    call dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+
+!-----------------------------------------------------------------------    
+! Calculation of two-index terms, which can always be held in memory
+!----------------------------------------------------------------------- 
+    call dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+
+    return
+
+  end subroutine dmatrix_precalc_noscreen
+
+!#######################################################################
+
+    subroutine dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+
+    use timingmod
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
+
+    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+                                              itmp1,inda,indb,indk,indl,&
+                                              spin,indapr,indbpr,indkpr,&
+                                              indlpr,spinpr,b,b1,itmp2,k,&
+                                              k1,kpr,j1
+    integer, dimension(:,:), allocatable   :: iszeroa,iszerok
+
+    real(d), dimension(:,:), allocatable   :: tau_2_2_1,tau_2_2_2,&
+                                              tau_4_2_1,tau_4_2_2
+    real(d)                                :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
+
+    call times(tw1,tc1)
+
+    write(ilog,'(/,2x,a)') 'Precomputing two-index terms...'
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(iszeroa(nvirt,nvirt))
+    allocate(iszerok(nocc,nocc))
+    allocate(tau_2_2_1(2*nvirt,2*nvirt))
+    allocate(tau_2_2_2(2*nvirt,2*nvirt))
+    allocate(tau_4_2_1(2*nocc,2*nocc))
+    allocate(tau_4_2_2(2*nocc,2*nocc))
+
+!-----------------------------------------------------------------------
+! Here we do not use any pre-screening, as the dipole matrix is to be
+!  contracted with more than one state vector
+!-----------------------------------------------------------------------
+    iszeroa=0
+    iszerok=0
+    !$omp parallel do &
+    !$omp& private(i,j,inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr,itmp,itmp1) &
+    !$omp& shared(kpq,kpqf,iszeroa,iszerok)
+    do i=1,kpqf(1,0)
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       do j=1,kpq(1,0)
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+          itmp=inda-nocc
+          itmp1=indapr-nocc
+          iszeroa(itmp,itmp1)=1
+          iszerok(indk,indkpr)=1
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Unoccupied-unoccupied terms
+!-----------------------------------------------------------------------
+    !$omp parallel do &
+    !$omp& private(a,itmp,b,itmp1) &
+    !$omp& shared(tau_2_2_1,tau_2_2_2)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do b=nocc+1,nbas
+          itmp1=b-nocc
+          tau_2_2_1(itmp,itmp1)=tau_D2_2_1(a,b)
+          tau_2_2_2(itmp,itmp1)=tau_D2_2_2(a,b) 
+      enddo
+    enddo
+    !$omp end parallel do
+
+    pre_vv=0.0d0
+    !$omp parallel do &
+    !$omp& private(a,itmp,apr,itmp1,ftmp1,ftmp2,b1,b,itmp2) &
+    !$omp& shared(iszeroa,pre_vv,roccnum,tau_2_2_1,tau_2_2_2,dpl)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do apr=nocc+1,nbas
+          itmp1=apr-nocc
+
+          if (iszeroa(itmp,itmp1).eq.0) cycle
+
+          ! Contributions from D0_1_ph_ph, D2_1_ph_ph, D2_2_ph_ph,
+          ! D2_3_1_ph_ph and D2_3_2_ph_ph
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D0_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_2_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_3_1_ph_ph(a,apr)
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+D2_3_2_ph_ph(a,apr)
+
+          ! Contributions from D2_2_1_ph_ph and D2_2_2_ph_ph
+          ftmp1=0.0d0
+          ftmp2=0.0d0
+          do b1=nocc+1,nbas
+             b=roccnum(b1)
+             itmp2=b1-nocc
+             ftmp1=ftmp1+tau_2_2_1(itmp,itmp2)*dpl(b,apr)
+             ftmp2=ftmp2+tau_2_2_2(itmp1,itmp2)*dpl(b,a)
+          enddo
+          ftmp1=-0.125d0*ftmp1
+          ftmp2=-0.125d0*ftmp2
+          pre_vv(itmp,itmp1)=pre_vv(itmp,itmp1)+ftmp1+ftmp2
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Occupied-occupied terms
+!-----------------------------------------------------------------------    
+    !$omp parallel do private(j,k) shared(tau_4_2_1,tau_4_2_2)
+    do j=1,nocc
+       do k=1,nocc
+          tau_4_2_1(j,k)=tau_D2_4_1(j,k)
+          tau_4_2_2(j,k)=tau_D2_4_2(j,k)
+       enddo
+    enddo
+    !$omp end parallel do
+
+    pre_oo=0.0d0
+    !$omp parallel do &
+    !$omp& private(k,kpr,ftmp1,ftmp2,j1,j) &
+    !$omp& shared(iszerok,pre_oo,roccnum,tau_4_2_1,tau_4_2_2,dpl)
+    do k=1,nocc
+       do kpr=1,nocc
+
+          if (iszerok(k,kpr).eq.0) cycle
+
+          ! Contributions from D0_2_ph_ph, D2_3_ph_ph, D2_4_ph_ph,
+          ! D2_5_1_ph_ph and D2_5_2_ph_ph
+          pre_oo(k,kpr)=pre_oo(k,kpr)+D0_2_ph_ph(k,kpr)
+          pre_oo(k,kpr)=pre_oo(k,kpr)+D2_3_ph_ph(k,kpr)
+          pre_oo(k,kpr)=pre_oo(k,kpr)+D2_4_ph_ph(k,kpr)
+          pre_oo(k,kpr)=pre_oo(k,kpr)+D2_5_1_ph_ph(k,kpr)
+          pre_oo(k,kpr)=pre_oo(k,kpr)+D2_5_2_ph_ph(k,kpr)
+          ! Contributions from D2_4_1_ph_ph and D2_4_2_ph_ph
+          ftmp1=0.0d0
+          ftmp2=0.0d0
+          do j1=1,nocc
+             j=roccnum(j1)
+             ftmp1=ftmp1+tau_4_2_1(j,k)*dpl(kpr,j)
+             ftmp2=ftmp2+tau_4_2_2(j,kpr)*dpl(k,j)
+          enddo
+          ftmp1=0.125d0*ftmp1
+          ftmp2=0.125d0*ftmp2
+          pre_oo(k,kpr)=pre_oo(k,kpr)+ftmp1+ftmp2
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(iszeroa)
+    deallocate(iszerok)
+    deallocate(tau_2_2_1)
+    deallocate(tau_2_2_2)
+    deallocate(tau_4_2_1)
+    deallocate(tau_4_2_2)
+
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+    return
+
+  end subroutine dmatrix_precalc_2indx_noscreen
+
+!#######################################################################
+
+  subroutine dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+
+    use timingmod
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
+
+    integer                                  :: nvirt,ndim,a,apr,k,&
+                                                kpr,b,j
+    integer, dimension(:,:), allocatable     :: iszero
+    real(d)                                  :: tw1,tw2,tc1,tc2
+    character(len=60)                        :: filename
+
+    call times(tw1,tc1)
+
+    write(ilog,'(/,2x,a)') 'Precomputing four-index terms...'
+
+!-----------------------------------------------------------------------
+! (1) D2.6.1.akkprb
+!-----------------------------------------------------------------------
+    !$omp parallel do private(a,k,kpr,b) shared(D261)
+    do a=nocc+1,nbas
+       do k=1,nocc
+          do kpr=1,nocc
+             do b=nocc+1,nbas
+                D261(a-nocc,k,kpr,b-nocc)=tau_D2_6_1(a,k,kpr,b)
+             enddo
+          enddo
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! (2) D2.6.2.aprkkprb
+!-----------------------------------------------------------------------
+    !$omp parallel do private(apr,k,kpr,b) shared(D262)
+    do apr=nocc+1,nbas
+       do k=1,nocc
+          do kpr=1,nocc
+             do b=nocc+1,nbas
+                D262(apr-nocc,k,kpr,b-nocc)=tau_D2_6_2(apr,k,kpr,b)
+             enddo
+          enddo
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! (3) D2.6.3.aprkkprb
+!-----------------------------------------------------------------------
+    !$omp parallel do private(a,apr,k,j) shared(D263)
+    do a=nocc+1,nbas
+       do apr=nocc+1,nbas
+          do k=1,nocc
+             do j=1,nocc
+                D263(a-nocc,apr-nocc,k,j)=tau_D2_6_3(a,apr,k,j)
+             enddo
+          enddo
+       enddo
+    enddo
+    !$omp end parallel do
+    
+!-----------------------------------------------------------------------
+! (4) D2.6.4.aaprkprj
+!-----------------------------------------------------------------------
+    !$omp parallel do private(a,apr,kpr,j) shared(D264)
+    do a=nocc+1,nbas
+       do apr=nocc+1,nbas
+          do kpr=1,nocc
+             do j=1,nocc
+                D264(a-nocc,apr-nocc,kpr,j)=tau_D2_6_4(a,apr,kpr,j)
+             enddo
+          enddo
+       enddo
+    enddo
+    !$omp end parallel do
+
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+    return
+
+  end subroutine dmatrix_precalc_4indx_noscreen
 
 !#######################################################################
 
@@ -5245,6 +5543,7 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
 
  
   subroutine get_offdiag_adc2_DIPOLE_SAVE_OK(ndimf,ndim,kpqf,kpq,nbuf,count, UNIT_DIP )
+  use timingmod
 
   integer, intent(in) :: ndimf
   integer, intent(in) :: ndim
@@ -5264,6 +5563,10 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer :: rec_count
   integer, dimension(buf_size) :: oi,oj
   real(d), dimension(buf_size) :: file_offdiagd
+
+  real(d) :: tw1,tw2,tc1,tc2
+
+  call times(tw1,tc1)
 
   count=0
   rec_count=0
@@ -6462,6 +6765,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
 
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' DIPOLE_off-diagonal elements saved in file ', UNIT_DIP
+
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
 
   contains
@@ -10815,13 +11121,3297 @@ ar_offdiag_ij = 0.
  
   end subroutine get_diag_adc2_DIPOLE_save
 
-!!$------------------------------------------------------------------------------
-!!$------------------------------------------------------------------------------
+!#######################################################################
+! Improved routines for the calculation and out-of-core storage of
+! the IS representation of the dipole operator
+!#######################################################################
 
-!!$------------------------------------------------------------------------------
-!!$------------------------------------------------------------------------------
+  subroutine get_adc2_dipole_improved(ndimf,ndim,kpqf,kpq,&
+       nbuf,count,filename)
 
+    use timingmod
 
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)          :: ndimf,ndim
+    integer*8, intent(out)       :: count
+    integer, intent(out)         :: nbuf
+    integer                      :: inda,indb,indk,indl,spin,indapr,&
+                                    indbpr,indkpr,indlpr,spinpr   
+    integer                      :: i,j,nlim,dim_count,dim_countf,&
+                                    ndim1,ndim1f
+    integer                      :: lim1i,lim2i,lim1j,lim2j
+    integer                      :: rec_count
+    integer, dimension(buf_size) :: oi,oj
+    real(d)                      :: ar_offdiag_ij
+    real(d), dimension(buf_size) :: file_offdiag
+    character(len=60)            :: filename
+
+    ! NEW
+    integer                      :: idpl
+    integer                      :: nvirt,itmp,itmp1,dim
+    real(d)                      :: func,mem4indx
+    real(d)                      :: tw1,tw2,tc1,tc2
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+    call times(tw1,tc1)
+
+    count=0
+    rec_count=0
+    nbuf=0
+    oi(:)=0
+    oj(:)=0
+    file_offdiag(:)=0.d0
+
+    nvirt=nbas-nocc
+
+!-----------------------------------------------------------------------
+! Open the dipole matrix file
+!-----------------------------------------------------------------------
+    call freeunit(idpl)
+    open(idpl,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Calculate the density matrix
+! Note that we only need to calculate the occupied-unoccupied part
+!-----------------------------------------------------------------------
+    call density_matrix_ov_block
+
+!-----------------------------------------------------------------------
+! Precalculation of function values
+!-----------------------------------------------------------------------
+    call dmatrix_precalc_noscreen(ndim,kpq,kpqf)
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 1h1p block
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
+
+    ndim1=kpq(1,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+            
+          call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
+               indkpr)
+            
+          ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
+
+          if(indk.eq.indkpr) then
+             itmp=inda-nocc
+             itmp1=indapr-nocc
+             ar_offdiag_ij=ar_offdiag_ij+pre_vv(itmp,itmp1)
+          endif
+       
+          if(inda.eq.indapr) then
+             ar_offdiag_ij=ar_offdiag_ij+pre_oo(indk,indkpr)
+          endif
+          
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+       
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
+       
+          ar_offdiag_ij = 0.d0
+       
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+               +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+   
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+       
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+            
+          ar_offdiag_ij=0.d0
+            
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+            
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+            
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+       
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+            
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+       
+          ar_offdiag_ij=0.d0
+            
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+            
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+           
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a|=b I, block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+    
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+               ar_offdiag_ij=ar_offdiag_ij+&
+               D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+          if(inda.eq.indbpr)&
+               ar_offdiag_ij=ar_offdiag_ij+&
+               D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+          if(indk.eq.indkpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+          if(indk.eq.indlpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a|=b II, block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    ndim1f=kpqf(1,0)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
  
-end module get_matrix_DIPOLE    
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+       
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+          if(indk.eq.indkpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+          if(indk.eq.indlpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+
+! PRIMED AND UNPRIMED INDICES SWITCH FROM HEREON IN...
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=1,ndim1
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+          
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+               +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr) .and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+              
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+       
+          ar_offdiag_ij=&
+               D_1_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=1,ndim1
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+       
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+    
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=dim_count+1,dim_count+kpq(2,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+          ar_offdiag_ij=&
+               D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_2_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(5,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+      
+          ar_offdiag_ij=&
+               D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=1,ndim1
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+          
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+         
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+ 
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+         if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+      enddo
+   enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+   dim_count=kpq(1,0)
+   dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+   do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+
+          ar_offdiag_ij=&
+               D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_3_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+              
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+      
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+                    
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+          
+          ar_offdiag_ij=&
+               D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+          if(inda.eq.indapr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+          ar_offdiag_ij=&
+               D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+          ar_offdiag_ij=&
+               D_4ii_4ii_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          if (abs(ar_offdiag_ij).gt.minc) call register1()
+
+       enddo
+    enddo
+
+!-----------------------------------------------------------------------
+! Write the remaining non-zero elements to disk
+!-----------------------------------------------------------------------
+    call register2()
+    
+!-----------------------------------------------------------------------
+! Close the dipole matrix file
+!-----------------------------------------------------------------------
+    close(idpl)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    if (allocated(pre_vv)) deallocate(pre_vv)
+    if (allocated(pre_oo)) deallocate(pre_oo)
+    if (allocated(D261)) deallocate(D261)
+    if (allocated(D262)) deallocate(D262)
+    if (allocated(D263)) deallocate(D263)
+    if (allocated(D264)) deallocate(D264)
+
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+    return
+
+  contains
+
+    subroutine register1()
+      count=count+1
+      ! buf_size*int(rec_count,8) can exceed the int*4 limit
+      file_offdiag(count-buf_size*int(rec_count,8))=ar_offdiag_ij
+      oi(count-buf_size*int(rec_count,8))=i
+      oj(count-buf_size*int(rec_count,8))=j
+      ! Checking if the buffer is full 
+      if (mod(count,buf_size) .eq. 0) then
+         rec_count=rec_count+1
+         nlim=buf_size
+         ! Saving off-diag part in file
+         call wrtoffdg(idpl,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+      endif
+    end subroutine register1
+
+    subroutine register2()
+      ! Saving the rest in file
+      nlim=count-buf_size*int(rec_count,8)
+      call wrtoffdg(idpl,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+      rec_count=rec_count+1
+      nbuf=rec_count
+    end subroutine register2
+
+  end subroutine get_adc2_dipole_improved
+
+!#######################################################################
+  
+  subroutine get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
+       nbuf,count,filename)
+
+    use timingmod
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)          :: ndimf,ndim
+    integer*8, intent(out)       :: count
+    integer, intent(out)         :: nbuf
+    integer                      :: inda,indb,indk,indl,spin,indapr,&
+                                    indbpr,indkpr,indlpr,spinpr   
+    integer                      :: i,j,k,nlim,dim_count,dim_countf,&
+                                    ndim1,ndim1f
+    integer                      :: lim1i,lim2i,lim1j,lim2j
+    integer                      :: rec_count
+    integer, dimension(buf_size) :: oi,oj
+    real(d)                      :: ar_offdiag_ij
+    real(d), dimension(buf_size) :: file_offdiag
+    character(len=60)            :: filename
+
+    ! NEW
+    integer                                       :: idpl
+    integer                                       :: nvirt,itmp,itmp1,dim
+    real(d)                                       :: func,mem4indx
+    real(d)                                       :: tw1,tw2,tc1,tc2
+
+    integer                                       :: nthreads,tid
+    integer, dimension(:), allocatable            :: dplunit    
+    integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
+    integer*8, dimension(:), allocatable          :: count_omp
+    integer, dimension(:), allocatable            :: rec_count_omp
+    integer, dimension(:), allocatable            :: nlim_omp
+    integer*8                                     :: nonzero
+    integer                                       :: n,nprev
+    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    character(len=120), dimension(:), allocatable :: dplfile
+
+    integer                                       :: buf_size2
+    real(d)                                       :: minc2
+    integer, dimension(:), allocatable            :: nsaved
+
+    buf_size2=buf_size
+    minc2=minc
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
+    write(ilog,*) "nthreads:",nthreads
+
+!-----------------------------------------------------------------------
+! Allocation and initialisation
+!-----------------------------------------------------------------------
+    call times(tw1,tc1)
+
+    count=0
+    rec_count=0
+    nbuf=0
+    oi(:)=0
+    oj(:)=0
+    file_offdiag(:)=0.0d0
+    nvirt=nbas-nocc
+
+    allocate(dplunit(nthreads))
+    allocate(dplfile(nthreads))
+    allocate(oi_omp(nthreads,buf_size))
+    allocate(oj_omp(nthreads,buf_size))
+    allocate(file_offdiag_omp(nthreads,buf_size))
+    allocate(count_omp(nthreads))
+    allocate(rec_count_omp(nthreads))
+    allocate(nlim_omp(nthreads))
+    allocate(nsaved(nthreads))
+
+!-----------------------------------------------------------------------
+! Open the working dipole files
+!-----------------------------------------------------------------------
+    do i=1,nthreads
+       call freeunit(dplunit(i))
+       dplfile(i)=trim(filename)//'.'
+       k=len_trim(dplfile(i))+1
+       if (i.lt.10) then
+          write(dplfile(i)(k:k),'(i1)') i
+       else
+          write(dplfile(i)(k:k+1),'(i2)') i
+       endif
+       open(unit=dplunit(i),file=dplfile(i),status='unknown',&
+            access='sequential',form='unformatted')
+    enddo
+
+!-----------------------------------------------------------------------
+! Open the dipole matrix file
+!-----------------------------------------------------------------------
+    call freeunit(idpl)
+    open(idpl,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Calculate the density matrix
+! Note that we only need to calculate the occupied-unoccupied part
+!-----------------------------------------------------------------------
+    call density_matrix_ov_block
+
+!-----------------------------------------------------------------------
+! Precalculation of function values
+!-----------------------------------------------------------------------
+    call dmatrix_precalc_noscreen(ndim,kpq,kpqf)
+
+!-----------------------------------------------------------------------
+! Initialise counters
+!-----------------------------------------------------------------------
+    count=0
+    rec_count=0
+
+    count_omp=0
+    rec_count_omp=0
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 1h1p block
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
+
+    ndim1=kpq(1,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+            
+          call contract_4indx_dpl(ar_offdiag_ij,inda,indapr,indk,&
+               indkpr)
+            
+          ar_offdiag_ij=ar_offdiag_ij+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
+          ar_offdiag_ij=ar_offdiag_ij+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
+
+          if(indk.eq.indkpr) then
+             itmp=inda-nocc
+             itmp1=indapr-nocc
+             ar_offdiag_ij=ar_offdiag_ij+pre_vv(itmp,itmp1)
+          endif
+       
+          if(inda.eq.indapr) then
+             ar_offdiag_ij=ar_offdiag_ij+pre_oo(indk,indkpr)
+          endif
+          
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+       
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)    
+       
+          ar_offdiag_ij = 0.d0
+       
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+               +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+   
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+       
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+            
+          ar_offdiag_ij=0.d0
+            
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+            
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+            
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+       
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+            
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+       
+          ar_offdiag_ij=0.d0
+            
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+            
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+            
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+           
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a|=b I, block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+    
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+               ar_offdiag_ij=ar_offdiag_ij+&
+               D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+          if(inda.eq.indbpr)&
+               ar_offdiag_ij=ar_offdiag_ij+&
+               D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+          if(indk.eq.indkpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+          if(indk.eq.indlpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 2h2p i|=j, a|=b II, block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+ 
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+       
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+       
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+          if(indk.eq.indkpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+       
+          if(indk.eq.indlpr)&
+               ar_offdiag_ij=ar_offdiag_ij&
+               +D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+! PRIMED AND UNPRIMED INDICES SWITCH FROM HEREON IN...
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=1,ndim1
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)
+          
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=D5_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D5_5_ph_2p2h(inda,indk,indbpr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D5_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_3_ph_2p2h(inda,indk,indapr,indlpr)& 
+               +D5_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr) .and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D5_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D5_8_ph_2p2h(inda,indk,indapr,indkpr)
+       
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D5_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D5_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+              
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+       
+          ar_offdiag_ij=&
+               D_1_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+    
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(2,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=1,ndim1
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+       
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D4_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D4_6_ph_2p2h(inda,indk,indbpr,indkpr)
+
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D4_7_ph_2p2h(inda,indk,indapr,indlpr)
+
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D4_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D4_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D4_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D4_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=dim_count+1,dim_count+kpq(2,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+          ar_offdiag_ij=&
+               D_2_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+       
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_2_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+    
+!-----------------------------------------------------------------------
+! Final space 2h2p, i=j, a|=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(3,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(5,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+      
+          ar_offdiag_ij=&
+               D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=1,ndim1
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+          
+          ar_offdiag_ij=0.d0
+          
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D3_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D3_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D3_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D3_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D3_8_ph_2p2h(inda,indk,indapr,indkpr)
+         
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D3_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+       
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+       
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+ 
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D3_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+         
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+          
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+       
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+
+          ar_offdiag_ij=&
+               D_3_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(3,0)
+          
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_3_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_3_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+              
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a=b, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(4,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+       
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+      
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D1_5_ph_2p2h(inda,indk,indbpr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D1_6_ph_2p2h(inda,indk,indbpr,indkpr)
+         
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D1_7_ph_2p2h(inda,indk,indapr,indlpr)
+         
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D1_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D1_8_ph_2p2h(inda,indk,indapr,indkpr)
+
+          if(inda.eq.indapr)&
+              ar_offdiag_ij=ar_offdiag_ij+D1_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+         
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+         
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+         
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D1_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+                    
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+          
+          ar_offdiag_ij=&
+               D_4i_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+       
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4i_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+
+          ar_offdiag_ij=&
+               D_4i_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b I, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+    
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 1h1p block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)             
+       
+          ar_offdiag_ij=0.d0
+
+          if((indk.eq.indkpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_1_ph_2p2h(inda,indk,indbpr,indlpr)&
+               +D2_5_ph_2p2h(inda,indk,indbpr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indapr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_2_ph_2p2h(inda,indk,indbpr,indkpr)&
+               +D2_6_ph_2p2h(inda,indk,indbpr,indkpr)
+          
+          if((indk.eq.indkpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_3_ph_2p2h(inda,indk,indapr,indlpr)&
+               +D2_7_ph_2p2h(inda,indk,indapr,indlpr)
+          
+          if((indk.eq.indlpr).and.(inda.eq.indbpr))&
+               ar_offdiag_ij=ar_offdiag_ij+D2_4_ph_2p2h(inda,indk,indapr,indkpr)&
+               +D2_8_ph_2p2h(inda,indk,indapr,indkpr)
+          
+          if(inda.eq.indapr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_9_ph_2p2h(inda,indk,indbpr,indkpr,indlpr)
+          
+          if(inda.eq.indbpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_10_ph_2p2h(inda,indk,indapr,indkpr,indlpr)
+          
+          if(indk.eq.indkpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_11_ph_2p2h(inda,indk,indapr,indbpr,indlpr)
+          
+          if(indk.eq.indlpr)&
+             ar_offdiag_ij=ar_offdiag_ij+D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
+          
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(2,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)    
+ 
+          ar_offdiag_ij=&
+               D_4ii_1_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i=j, a|=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+    
+       do j=dim_count+1,dim_count+kpq(3,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_2_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a=b block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(4,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+          
+          ar_offdiag_ij=&
+               D_4ii_3_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a|=b I block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+       
+          ar_offdiag_ij=&
+               D_4ii_4i_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+ 
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Final space 2h2p, i|=j, a|=b II, initial space 2h2p i|=j, a|=b II block
+!-----------------------------------------------------------------------
+    dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
+    dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
+    !$omp parallel do &
+    !$omp& private(tid,i,j,ar_offdiag_ij, &
+    !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
+    !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
+    !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
+    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    do i=dim_countf+1,dim_countf+kpqf(5,0)
+
+       call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
+
+       do j=dim_count+1,dim_count+kpq(5,0)
+
+          call get_indices(kpq(:,j),inda,indb,indk,indl,spin)  
+ 
+          ar_offdiag_ij=&
+               D_4ii_4ii_2p2h_2p2h(inda,indb,indk,indl,indapr,indbpr,indkpr,indlpr)
+
+          tid=1+omp_get_thread_num()
+
+          if (abs(ar_offdiag_ij).gt.minc) then
+             count_omp(tid)=count_omp(tid)+1
+             file_offdiag_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=ar_offdiag_ij
+             oi_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=i
+             oj_omp(tid,count_omp(tid)-buf_size*int(rec_count_omp(tid),8))=j
+             ! Checking if the buffer is full 
+             if (mod(count_omp(tid),buf_size).eq.0) then
+                rec_count_omp(tid)=rec_count_omp(tid)+1
+                nlim_omp(tid)=buf_size
+                ! Saving off-diag part in file
+                call wrtoffdg(dplunit(tid),buf_size,&
+                     file_offdiag_omp(tid,:),oi_omp(tid,:),&
+                     oj_omp(tid,:),nlim_omp(tid))
+             endif
+          endif
+
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Assemble the complete dipole matrix file
+!-----------------------------------------------------------------------
+    write(ilog,*) "Dipole matrix assembly..."
+    
+    ! Total no. non-zero elements
+    count=0
+    do i=1,nthreads
+       count=count+count_omp(i)
+    enddo
+
+    ! Complete records
+    write(ilog,*) "       complete records..."
+    do i=1,nthreads
+       rewind(dplunit(i))
+       do j=1,rec_count_omp(i)
+          rec_count=rec_count+1
+          read(dplunit(i)) file_offdiag(:),oi(:),oj(:),nlim
+          call wrtoffdg(idpl,buf_size,file_offdiag(:),oi(:),oj(:),&
+               buf_size)
+       enddo
+       close(dplunit(i))
+    enddo
+
+    ! Incomplete records
+    write(ilog,*) "       incomplete records..."
+    do i=1,nthreads
+       nsaved(i)=mod(count_omp(i),buf_size)
+    enddo
+    n=nsaved(1)    
+    file_offdiag(1:n)=file_offdiag_omp(1,1:n)
+    oi(1:n)=oi_omp(1,1:n)
+    oj(1:n)=oj_omp(1,1:n)
+    nprev=n
+    do i=2,nthreads
+
+       n=n+nsaved(i)
+              
+       if (n.gt.buf_size) then
+          ! The buffer is full. Write the buffer to disk and
+          ! then save the remaining elements for thread i to the
+          ! buffer
+          !
+          ! (i) Elements for thread i that can fit into the buffer
+          itmp=buf_size-nprev
+          file_offdiag(nprev+1:buf_size)=file_offdiag_omp(i,1:itmp)
+          oi(nprev+1:buf_size)=oi_omp(i,1:itmp)
+          oj(nprev+1:buf_size)=oj_omp(i,1:itmp)
+          rec_count=rec_count+1
+          call wrtoffdg(idpl,buf_size,file_offdiag(:),oi(:),oj(:),&
+               buf_size)
+          !
+          ! (ii) Elements for thread i that couldn't fit into the buffer
+          n=nsaved(i)-itmp
+          file_offdiag(1:n)=file_offdiag_omp(i,itmp+1:nsaved(i))
+          oi(1:n)=oi_omp(i,itmp+1:nsaved(i))
+          oj(1:n)=oj_omp(i,itmp+1:nsaved(i))
+       else
+          ! The buffer is not yet full. Add all elements for thread i
+          ! to the buffer
+          file_offdiag(nprev+1:n)=file_offdiag_omp(i,1:nsaved(i))          
+          oi(nprev+1:n)=oi_omp(i,1:nsaved(i))          
+          oj(nprev+1:n)=oj_omp(i,1:nsaved(i))          
+       endif
+
+       nprev=n
+
+    enddo
+
+    ! Last, potentially incomplete buffer
+    nlim=count-buf_size*int(rec_count,8)
+    call wrtoffdg(idpl,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
+    rec_count=rec_count+1
+    nbuf=rec_count
+        
+    ! Close the complete dipole matrix file
+    close(idpl)
+    
+    ! Delete the working files
+    !do i=1,nthreads
+    !   call system('rm -rf '//trim(hamfile(i)))
+    !enddo
+
+    write(ilog,*) 'rec_counts',nbuf
+    write(ilog,*) count,' off-diagonal elements saved in file ',filename
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    if (allocated(pre_vv)) deallocate(pre_vv)
+    if (allocated(pre_oo)) deallocate(pre_oo)
+    if (allocated(D261)) deallocate(D261)
+    if (allocated(D262)) deallocate(D262)
+    if (allocated(D263)) deallocate(D263)
+    if (allocated(D264)) deallocate(D264)
+    deallocate(dplunit)
+    deallocate(dplfile)
+    deallocate(oi_omp)
+    deallocate(oj_omp)
+    deallocate(file_offdiag_omp)
+    deallocate(count_omp)
+    deallocate(rec_count_omp)
+    deallocate(nlim_omp)
+    deallocate(nsaved)
+
+!-----------------------------------------------------------------------
+! Output the timing information
+!-----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+    return
+
+  end subroutine get_adc2_dipole_improved_omp
+
+!#######################################################################
+ 
+end module get_matrix_dipole
 

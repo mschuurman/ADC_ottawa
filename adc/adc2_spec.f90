@@ -425,7 +425,7 @@
         if (ltpxas) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
                 vec_init,mtmf,noffdf,rvec,travec2)
-           print*,"WRITE THE LANCZOS-TPXAS CODE!"
+           print*,"WRITE THE REST OF THE TPXAS CODE!"
            STOP
         else
            if (ldiagfinal) then
@@ -637,66 +637,125 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,c,k
+        integer*8                                 :: nel_cv,nel_cc,&
+                                                     nel_vv
+        integer                                   :: nbuf_cv,nbuf_cc,&
+                                                     nbuf_vv
         real(d), dimension(ndim,davstates)        :: rvec
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
+        character(len=60)                         :: filename
         
-!-----------------------------------------------------------------------
-! Allocate the arrays that will hold the contractions of the dipole
-! matrix with the initial state
-!-----------------------------------------------------------------------
-        allocate(travecfc(ndim,3))
-        allocate(traveccvs(ndimf,3))
-
-!-----------------------------------------------------------------------
-! Calculate P_FC D_a Psi_i, a=x,y,z
-!-----------------------------------------------------------------------
         acomp=(/ 'x','y','z' /)
 
+!-----------------------------------------------------------------------
+! (1) Core, valence
+!-----------------------------------------------------------------------
         ! Loop over the components of the dipole operator
         do c=1,3
-
+           
            ! Set the dipole component
            dpl(:,:)=dpl_all(c,:,:)
 
-           ! Calculate the contaction of the dipole operator and
-           ! the inital state projected onto the valence-excited
-           ! manifold
-           write(ilog,'(90a)') ('-', k=1,90)
-           msg='Calculating the '//acomp(c)//&
-                '-component of P_FC D Psi_i'
-           write(ilog,'(/,2x,a)') trim(msg)
-           if (statenumber.eq.0) then
-              call get_modifiedtm_adc2(ndimf,kpq(:,:),travecfc(:,c),0)
-           else
-              call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
-                   rvec(:,statenumber),travecfc(:,c))
-           endif
+           ! Calculate the IS representation of the dipole operator
+           filename='SCRATCH/dipole_cv_'//acomp(c)           
+           call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
+                nbuf_cv,nel_cv,filename)
+
         enddo
+
+!-----------------------------------------------------------------------
+! (2) Core, core
+!-----------------------------------------------------------------------        
+        ! Loop over the components of the dipole operator
+        do c=1,3
+           
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the IS representation of the dipole operator
+           filename='SCRATCH/dipole_cc_'//acomp(c)           
+           call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+                nbuf_cc,nel_cc,filename)
+
+        enddo
+
+!-----------------------------------------------------------------------
+! (3) Valence, valence
+!-----------------------------------------------------------------------
+        ! Loop over the components of the dipole operator
+        do c=1,3
+           
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Calculate the IS representation of the dipole operator
+           filename='SCRATCH/dipole_vv_'//acomp(c)           
+           call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
+                nbuf_vv,nel_vv,filename)
+
+        enddo
+
+
+        STOP
+
         
-!-----------------------------------------------------------------------
-! Calculate P_CVS D_a Psi_i, a=x,y,z
-!-----------------------------------------------------------------------
-        ! Loop over the components of the dipole operator
-        do c=1,3
-
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
-
-           ! Calculate the contaction of the dipole operator and
-           ! the inital state projected onto the core-excited
-           ! manifold
-           write(ilog,'(90a)') ('-', k=1,90)
-           msg='Calculating the '//acomp(c)//&
-                '-component of P_CVS D Psi_i'
-           write(ilog,'(/,2x,a)') trim(msg)
-           if (statenumber.eq.0) then
-              call get_modifiedtm_adc2(ndimf,kpqf(:,:),travecfc(:,c),0)
-           else
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                   rvec(:,statenumber),travecfc(:,c))
-           endif
-        enddo
+!!-----------------------------------------------------------------------
+!! Allocate the arrays that will hold the contractions of the dipole
+!! matrix with the initial state
+!!-----------------------------------------------------------------------
+!        allocate(travecfc(ndim,3))
+!        allocate(traveccvs(ndimf,3))
+!
+!!-----------------------------------------------------------------------
+!! Calculate P_FC D_a Psi_i, a=x,y,z
+!!-----------------------------------------------------------------------
+!!        acomp=(/ 'x','y','z' /)
+!!
+!!        ! Loop over the components of the dipole operator
+!!        do c=1,3
+!!
+!!           ! Set the dipole component
+!!           dpl(:,:)=dpl_all(c,:,:)
+!!
+!!           ! Calculate the contaction of the dipole operator and
+!!           ! the inital state projected onto the valence-excited
+!!           ! manifold
+!!           write(ilog,'(90a)') ('-', k=1,90)
+!!           msg='Calculating the '//acomp(c)//&
+!!                '-component of P_FC D Psi_i'
+!!           write(ilog,'(/,2x,a)') trim(msg)
+!!           if (statenumber.eq.0) then
+!!              call get_modifiedtm_adc2(ndimf,kpq(:,:),travecfc(:,c),0)
+!!           else
+!!              call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
+!!                   rvec(:,statenumber),travecfc(:,c))
+!!           endif
+!!        enddo
+!!        
+!!-----------------------------------------------------------------------
+!! Calculate P_CVS D_a Psi_i, a=x,y,z
+!!-----------------------------------------------------------------------
+!        ! Loop over the components of the dipole operator
+!        do c=1,3
+!
+!           ! Set the dipole component
+!           dpl(:,:)=dpl_all(c,:,:)
+!
+!           ! Calculate the contaction of the dipole operator and
+!           ! the inital state projected onto the core-excited
+!           ! manifold
+!           write(ilog,'(90a)') ('-', k=1,90)
+!           msg='Calculating the '//acomp(c)//&
+!                '-component of P_CVS D Psi_i'
+!           write(ilog,'(/,2x,a)') trim(msg)
+!           if (statenumber.eq.0) then
+!              call get_modifiedtm_adc2(ndimf,kpqf(:,:),travecfc(:,c),0)
+!           else
+!              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+!                   rvec(:,statenumber),travecfc(:,c))
+!           endif
+!        enddo
 
         return
         
@@ -851,7 +910,7 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2,initvecs
         real(d), dimension(:), allocatable        :: tmpvec,tau,work
-        
+
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
 !
