@@ -747,7 +747,7 @@
 
            do c=1,3
               filename='SCRATCH/dipole_cv_'//acomp(c)
-              call contract_dipole_state(filename,ndim,ndimf,&
+              call contract_dipole_state(filename,ndimf,ndim,&
                    vecf(:,f),travec_fv(:,c,f),nbuf_cc(c),nel_cc(c))
            enddo
 
@@ -782,8 +782,8 @@
                                               nlim,k,n,buffsize
         integer*8                          :: nel
         integer, dimension(:), allocatable :: indxi,indxj
-        real(d), dimension(dim2)           :: vec
-        real(d), dimension(dim1)           :: tvec
+        real(d), dimension(dim1)           :: vec
+        real(d), dimension(dim2)           :: tvec
         real(d), dimension(:), allocatable :: dij
         character(len=60)                  :: filename
 
