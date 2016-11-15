@@ -305,7 +305,7 @@
        do cnt=nlim1,nlim2
           k=kpq(3,cnt)
           a=kpq(5,cnt)
-          mtm(cnt)=FI_2p2h(a,k)          
+          mtm(cnt)=FI_2p2h(a,k)
        enddo
        !$omp end parallel do
  

@@ -154,8 +154,10 @@
         if (allocated(dipmom_f)) deallocate(dipmom_f)
         if (allocated(travec2)) deallocate(travec2)
         if (allocated(dpl_all)) deallocate(dpl_all)
-        if (allocated(travecfc)) deallocate(travecfc)
-        if (allocated(traveccvs)) deallocate(traveccvs)
+        if (allocated(travec_ic)) deallocate(travec_ic)
+        if (allocated(travec_iv)) deallocate(travec_iv)
+        if (allocated(travec_fc)) deallocate(travec_fc)
+        if (allocated(travec_fv)) deallocate(travec_fv)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -423,17 +425,17 @@
         real(d), dimension(:,:), allocatable      :: travec2
 
         if (ltpxas) then
-           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                vec_init,mtmf,noffdf,rvec,travec2)
+           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
+                travec,vec_init,mtmf,noffdf,rvec,travec2)
            print*,"WRITE THE REST OF THE TPXAS CODE!"
            STOP
         else
            if (ldiagfinal) then
-              call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                   vec_init,mtmf,noffdf,rvec,travec2)
+              call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
+                   kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
            else
-              call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-                   vec_init,mtmf,noffdf,rvec,travec2)
+              call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&
+                   kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
            endif
         endif
         
@@ -463,44 +465,6 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2
 
-!-----------------------------------------------------------------------
-! Allocate the travec array that will hold the contraction of the IS
-! representation of the dipole operator with the initial state vector
-!-----------------------------------------------------------------------
-        if (lrixs) then
-           ! Davidson-RIXS calculation
-           allocate(travec2(ndimf,3*(davstates+1)))
-        else
-           ! Absorption spectrum calculation
-           if (statenumber.eq.0) then
-              allocate(mtmf(ndimf))
-           else
-              allocate(travec(ndimf))
-           endif
-        endif
-           
-!-----------------------------------------------------------------------
-! Calculate travec: the product of the IS representation of the dipole
-! operator and the initial state vector
-!
-! This will be used later in the calculation of transition dipole
-! matrix elements between the initial and final states.
-!-----------------------------------------------------------------------
-        if (lrixs) then
-           ! Davidson-RIXS calculation
-           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
-        else if (ltpxas) then
-           ! TPXAS calculation
-           call dipole_ispace_contraction_tpxas(rvec,ndim,ndimf,kpq,kpqf)
-        else
-           ! Absorption spectrum calculation
-           if (statenumber.eq.0) then
-              call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
-           else
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
-                   travec)
-           endif
-        endif
 !-----------------------------------------------------------------------        
 ! If requested, determine the Davidson guess vectors by diagonalising 
 ! the ADC(1) Hamiltonian matrix
@@ -532,8 +496,45 @@
 ! Diagonalisation in the final space
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
-        
-        STOP
+
+!-----------------------------------------------------------------------
+! Allocate the travec array that will hold the contraction of the IS
+! representation of the dipole operator with the initial state vector
+!-----------------------------------------------------------------------
+        if (lrixs) then
+           ! Davidson-RIXS calculation
+           allocate(travec2(ndimf,3*(davstates+1)))
+        else
+           ! Absorption spectrum calculation
+           if (statenumber.eq.0) then
+              allocate(mtmf(ndimf))
+           else
+              allocate(travec(ndimf))
+           endif
+        endif
+
+!-----------------------------------------------------------------------
+! Calculate travec: the product of the IS representation of the dipole
+! operator and the initial state vector
+!
+! This will be used later in the calculation of transition dipole
+! matrix elements between the initial and final states.
+!-----------------------------------------------------------------------
+        if (lrixs) then
+           ! Davidson-RIXS calculation
+           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
+        else if (ltpxas) then
+           ! TPXAS calculation
+           call dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
+        else
+           ! Absorption spectrum calculation
+           if (statenumber.eq.0) then
+              call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+           else
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
+                   travec)
+           endif
+        endif
 
         return
 
@@ -621,8 +622,7 @@
 
 !#######################################################################
 
-      subroutine dipole_ispace_contraction_tpxas(rvec,ndim,ndimf,kpq,&
-           kpqf)
+      subroutine dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
 
         use constants
         use parameters
@@ -632,16 +632,19 @@
         use fspace
         use guessvecs
         use iomod
+        use diagmod
         
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: ndim,ndimf,c,k
-        integer*8                                 :: nel_cv,nel_cc,&
+        integer                                   :: ndim,ndimf,c,k,&
+                                                     f
+        integer*8, dimension(3)                   :: nel_cv,nel_cc,&
                                                      nel_vv
-        integer                                   :: nbuf_cv,nbuf_cc,&
+        integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
                                                      nbuf_vv
-        real(d), dimension(ndim,davstates)        :: rvec
+        real(d), dimension(:,:), allocatable      :: veci,vecf
+        real(d), dimension(:), allocatable        :: ei,ef
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
         character(len=60)                         :: filename
@@ -649,117 +652,190 @@
         acomp=(/ 'x','y','z' /)
 
 !-----------------------------------------------------------------------
-! (1) Core, valence
+! Allocate arrays
 !-----------------------------------------------------------------------
+        allocate(travec_ic(ndimf,3))
+        allocate(travec_iv(ndim,3))
+        allocate(travec_fc(ndimf,3,davstates_f))
+        allocate(travec_fv(ndim,3,davstates_f))
+        allocate(vecf(ndimf,davstates_f))
+        allocate(ef(davstates_f))
+        if (statenumber.gt.0) then
+           allocate(veci(ndim,davstates))
+           allocate(ei(davstates))
+        endif
+
+!-----------------------------------------------------------------------
+! Transition matrix elements: final states
+!-----------------------------------------------------------------------
+        ! (i) Core, valence
+        !
         ! Loop over the components of the dipole operator
         do c=1,3
-           
            ! Set the dipole component
            dpl(:,:)=dpl_all(c,:,:)
-
            ! Calculate the IS representation of the dipole operator
-           filename='SCRATCH/dipole_cv_'//acomp(c)           
+           filename='SCRATCH/dipole_cv_'//acomp(c)
            call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
-                nbuf_cv,nel_cv,filename)
-
+                nbuf_cv(c),nel_cv(c),filename)
         enddo
-
-!-----------------------------------------------------------------------
-! (2) Core, core
-!-----------------------------------------------------------------------        
+        ! (ii) Core, core
+        !
         ! Loop over the components of the dipole operator
-        do c=1,3
-           
+        do c=1,3         
            ! Set the dipole component
            dpl(:,:)=dpl_all(c,:,:)
-
            ! Calculate the IS representation of the dipole operator
            filename='SCRATCH/dipole_cc_'//acomp(c)           
            call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-                nbuf_cc,nel_cc,filename)
-
+                nbuf_cc(c),nel_cc(c),filename)
         enddo
 
 !-----------------------------------------------------------------------
-! (3) Valence, valence
-!-----------------------------------------------------------------------
-        ! Loop over the components of the dipole operator
-        do c=1,3
-           
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
+! Transition matrix elements: initial state
+!-----------------------------------------------------------------------        
+        if (statenumber.eq.0) then
+           ! (i) Valence-excited
+           !
+           ! Loop over the components of the dipole operator
+           do c=1,3
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),0)
+           enddo
+           ! (ii) Core-excited
+           !
+           ! Loop over the components of the dipole operator
+           do c=1,3
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec_ic(:,c),0)
+           enddo
+        else
+           ! Valence, valence
+           !
+           ! Loop over the components of the dipole operator
+           do c=1,3
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              ! Calculate the IS representation of the dipole operator
+              filename='SCRATCH/dipole_vv_'//acomp(c)           
+              call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
+                   nbuf_vv(c),nel_vv(c),filename)
+           enddo
+        endif
 
-           ! Calculate the IS representation of the dipole operator
-           filename='SCRATCH/dipole_vv_'//acomp(c)           
-           call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
-                nbuf_vv,nel_vv,filename)
+!-----------------------------------------------------------------------
+! Read the Davidson vectors from file
+!-----------------------------------------------------------------------
+        ! Final sttaes
+        call readdavvc(davstates_f,ef,vecf,'f',ndimf)
+        
+        ! Initial states
+        if (statenumber.gt.0) call readdavvc(davstates,ei,veci,'i',ndim)
+
+!-----------------------------------------------------------------------
+! Perform the contractions of the dipole matrices with the Davidson
+! states
+!-----------------------------------------------------------------------
+        ! Final states
+        do f=1,davstates_f
+           
+           ! (i) Core, valence
+
+           do c=1,3
+              filename='SCRATCH/dipole_cv_'//acomp(c)
+              call contract_dipole_state(filename,ndim,ndimf,&
+                   vecf(:,f),travec_fv(:,c,f),nbuf_cc(c),nel_cc(c))
+           enddo
 
         enddo
 
 
         STOP
 
-        
-!!-----------------------------------------------------------------------
-!! Allocate the arrays that will hold the contractions of the dipole
-!! matrix with the initial state
-!!-----------------------------------------------------------------------
-!        allocate(travecfc(ndim,3))
-!        allocate(traveccvs(ndimf,3))
-!
-!!-----------------------------------------------------------------------
-!! Calculate P_FC D_a Psi_i, a=x,y,z
-!!-----------------------------------------------------------------------
-!!        acomp=(/ 'x','y','z' /)
-!!
-!!        ! Loop over the components of the dipole operator
-!!        do c=1,3
-!!
-!!           ! Set the dipole component
-!!           dpl(:,:)=dpl_all(c,:,:)
-!!
-!!           ! Calculate the contaction of the dipole operator and
-!!           ! the inital state projected onto the valence-excited
-!!           ! manifold
-!!           write(ilog,'(90a)') ('-', k=1,90)
-!!           msg='Calculating the '//acomp(c)//&
-!!                '-component of P_FC D Psi_i'
-!!           write(ilog,'(/,2x,a)') trim(msg)
-!!           if (statenumber.eq.0) then
-!!              call get_modifiedtm_adc2(ndimf,kpq(:,:),travecfc(:,c),0)
-!!           else
-!!              call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
-!!                   rvec(:,statenumber),travecfc(:,c))
-!!           endif
-!!        enddo
-!!        
-!!-----------------------------------------------------------------------
-!! Calculate P_CVS D_a Psi_i, a=x,y,z
-!!-----------------------------------------------------------------------
-!        ! Loop over the components of the dipole operator
-!        do c=1,3
-!
-!           ! Set the dipole component
-!           dpl(:,:)=dpl_all(c,:,:)
-!
-!           ! Calculate the contaction of the dipole operator and
-!           ! the inital state projected onto the core-excited
-!           ! manifold
-!           write(ilog,'(90a)') ('-', k=1,90)
-!           msg='Calculating the '//acomp(c)//&
-!                '-component of P_CVS D Psi_i'
-!           write(ilog,'(/,2x,a)') trim(msg)
-!           if (statenumber.eq.0) then
-!              call get_modifiedtm_adc2(ndimf,kpqf(:,:),travecfc(:,c),0)
-!           else
-!              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-!                   rvec(:,statenumber),travecfc(:,c))
-!           endif
-!        enddo
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(vecf)
+        deallocate(ef)
+        if (allocated(veci)) deallocate(veci)
+        if (allocated(ei)) deallocate(ei)
 
         return
         
       end subroutine dipole_ispace_contraction_tpxas
+
+!#######################################################################
+
+      subroutine contract_dipole_state(filename,dim1,dim2,vec,tvec,&
+           nbuf,nel)
+
+        use constants
+        use iomod
+
+        implicit none
+
+        integer                            :: dim1,dim2,idpl,nbuf,&
+                                              nlim,k,n,buffsize
+        integer*8                          :: nel
+        integer, dimension(:), allocatable :: indxi,indxj
+        real(d), dimension(dim2)           :: vec
+        real(d), dimension(dim1)           :: tvec
+        real(d), dimension(:), allocatable :: dij
+        character(len=60)                  :: filename
+
+!-----------------------------------------------------------------------
+! Open the dipole matrix file
+!-----------------------------------------------------------------------
+        call freeunit(idpl)
+        open(idpl,file=filename,status='unknown',access='sequential',&
+             form='unformatted')
+
+!-----------------------------------------------------------------------
+! Read the buffer size
+!-----------------------------------------------------------------------
+        read(idpl) buffsize
+        print*,
+        print*,"Buffer size:",buffsize
+        print*,
+        STOP
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+        allocate(dij(buffsize))
+        allocate(indxi(buffsize))
+        allocate(indxj(buffsize))
+
+!-----------------------------------------------------------------------
+! Perform the contraction of the dipole matrix with the state vector
+!-----------------------------------------------------------------------
+        !do k=1,nbuf
+        !   read(idpl) dij(:),indxi(:),indxj(:),nlim
+        !   do n=1,nlim
+        !      ! IS THIS CORRECT?
+        !      tvec(indxi(n))=tvec(indxi(n))+dij(n)*vec(indxj(n))
+        !   enddo
+        !enddo
+
+!-----------------------------------------------------------------------
+! Close the dipole matrix file
+!-----------------------------------------------------------------------
+        close(idpl)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(dij)
+        deallocate(indxi)
+        deallocate(indxj)
+
+        return
+
+      end subroutine contract_dipole_state
       
 !#######################################################################
       

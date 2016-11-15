@@ -11178,6 +11178,11 @@ ar_offdiag_ij = 0.
          form='unformatted')
 
 !-----------------------------------------------------------------------
+! Write the buffer size to file
+!-----------------------------------------------------------------------
+    write(idpl) buf_size
+
+!-----------------------------------------------------------------------
 ! Calculate the density matrix
 ! Note that we only need to calculate the occupied-unoccupied part
 !-----------------------------------------------------------------------
@@ -12397,6 +12402,11 @@ ar_offdiag_ij = 0.
     call freeunit(idpl)
     open(idpl,file=filename,status='unknown',access='sequential',&
          form='unformatted')
+
+!-----------------------------------------------------------------------
+! Write the buffer size to file
+!-----------------------------------------------------------------------
+    write(idpl) buf_size
 
 !-----------------------------------------------------------------------
 ! Calculate the density matrix

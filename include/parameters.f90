@@ -289,9 +289,11 @@ real(d), dimension(:,:,:), allocatable :: dpl_all
 !!$************************************************
 !!$**********TPXAS Calculations********************
 !!$************************************************
-logical                              :: ltpxas
-real(d), dimension(:,:), allocatable :: travecfc,&
-                                        traveccvs
+logical                                :: ltpxas
+real(d), dimension(:,:), allocatable   :: travec_ic,&
+                                          travec_iv
+real(d), dimension(:,:,:), allocatable :: travec_fc,&
+                                          travec_fv
 
 !!$************************************************
 !!$**********Other Parameters**********************
