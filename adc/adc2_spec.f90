@@ -427,7 +427,7 @@
         if (ltpxas) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
                 travec,vec_init,mtmf,noffdf,rvec,travec2)
-           print*,"WRITE THE REST OF THE TPXAS CODE!"
+           print*,"WRITE THE REST OF THE LANCZOS-TPXAS CODE!"
            STOP
         else
            if (ldiagfinal) then
@@ -496,7 +496,7 @@
 ! Diagonalisation in the final space
 !-----------------------------------------------------------------------
         call master_eig(ndimf,noffdf,'f')
-
+        
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
 ! representation of the dipole operator with the initial state vector
@@ -515,10 +515,12 @@
 
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the dipole
-! operator and the initial state vector
+! operator and the initial state vector.
 !
 ! This will be used later in the calculation of transition dipole
 ! matrix elements between the initial and final states.
+!
+! Really this should be done elsewhere...
 !-----------------------------------------------------------------------
         if (lrixs) then
            ! Davidson-RIXS calculation
@@ -664,7 +666,7 @@
            allocate(veci(ndim,davstates))
            allocate(ei(davstates))
         endif
-
+        
 !-----------------------------------------------------------------------
 ! Transition matrix elements: final states
 !-----------------------------------------------------------------------
@@ -738,23 +740,41 @@
 
 !-----------------------------------------------------------------------
 ! Perform the contractions of the dipole matrices with the Davidson
-! states
+! state vectors (final and initial spaces)
 !-----------------------------------------------------------------------
         ! Final states
-        do f=1,davstates_f
-           
-           ! (i) Core, valence
-
+        do f=1,davstates_f           
+           ! (i) Final | D | valence ISs
            do c=1,3
               filename='SCRATCH/dipole_cv_'//acomp(c)
               call contract_dipole_state(filename,ndimf,ndim,&
-                   vecf(:,f),travec_fv(:,c,f),nbuf_cc(c),nel_cc(c))
+                   vecf(:,f),travec_fv(:,c,f),nbuf_cv(c),nel_cv(c),'l')
            enddo
-
+           ! (ii) Final | D | core ISs
+           do c=1,3
+              filename='SCRATCH/dipole_cc_'//acomp(c)
+              call contract_dipole_state(filename,ndimf,ndimf,&
+                   vecf(:,f),travec_fc(:,c,f),nbuf_cc(c),nel_cc(c),'l')
+           enddo
         enddo
 
-
-        STOP
+        ! Initial state
+        if (statenumber.gt.0) then
+           ! (i) Initial | D | valence ISs
+           do c=1,3
+              filename='SCRATCH/dipole_vv_'//acomp(c)
+              call contract_dipole_state(filename,ndim,ndim,&
+                   veci(:,statenumber),travec_iv(:,c),nbuf_vv(c),&
+                   nel_vv(c),'r')
+           enddo
+           ! (ii) Initial | D | core ISs
+           do c=1,3
+              filename='SCRATCH/dipole_cv_'//acomp(c)
+              call contract_dipole_state(filename,ndim,ndimf,&
+                   veci(:,statenumber),travec_ic(:,c),nbuf_cv(c),&
+                   nel_cv(c),'r')
+           enddo
+        endif
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -771,7 +791,7 @@
 !#######################################################################
 
       subroutine contract_dipole_state(filename,dim1,dim2,vec,tvec,&
-           nbuf,nel)
+           nbuf,nel,cntrdir)
 
         use constants
         use iomod
@@ -786,7 +806,8 @@
         real(d), dimension(dim2)           :: tvec
         real(d), dimension(:), allocatable :: dij
         character(len=60)                  :: filename
-
+        character(len=1)                   :: cntrdir
+        
 !-----------------------------------------------------------------------
 ! Open the dipole matrix file
 !-----------------------------------------------------------------------
@@ -798,10 +819,6 @@
 ! Read the buffer size
 !-----------------------------------------------------------------------
         read(idpl) buffsize
-        print*,
-        print*,"Buffer size:",buffsize
-        print*,
-        STOP
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -812,14 +829,33 @@
 
 !-----------------------------------------------------------------------
 ! Perform the contraction of the dipole matrix with the state vector
+!
+! Note that the cntrdir flag controls whether we operate with the
+! dipole operator from the right or the left of the state vector
 !-----------------------------------------------------------------------
-        !do k=1,nbuf
-        !   read(idpl) dij(:),indxi(:),indxj(:),nlim
-        !   do n=1,nlim
-        !      ! IS THIS CORRECT?
-        !      tvec(indxi(n))=tvec(indxi(n))+dij(n)*vec(indxj(n))
-        !   enddo
-        !enddo
+        if (cntrdir.eq.'r') then
+           do k=1,nbuf
+              read(idpl) dij(:),indxi(:),indxj(:),nlim
+              !$omp parallel do &
+              !$omp& private(n) &
+              !$omp& shared(tvec,dij,vec,indxi,indxj)
+              do n=1,nlim
+                 tvec(indxi(n))=tvec(indxi(n))+dij(n)*vec(indxj(n))
+              enddo
+              !$omp end parallel do
+           enddo
+        else if (cntrdir.eq.'l') then
+           do k=1,nbuf
+              read(idpl) dij(:),indxi(:),indxj(:),nlim
+              !$omp parallel do &
+              !$omp& private(n) &
+              !$omp& shared(tvec,dij,vec,indxi,indxj)
+              do n=1,nlim
+                 tvec(indxj(n))=tvec(indxj(n))+dij(n)*vec(indxi(n))
+              enddo
+              !$omp end parallel do
+           enddo
+        endif
 
 !-----------------------------------------------------------------------
 ! Close the dipole matrix file

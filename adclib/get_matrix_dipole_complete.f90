@@ -11,8 +11,17 @@
     use omp_lib
 
     implicit none
+
+    ! Record size for disk-based dipole matrix storage
+    ! 100 Mb per record
+    ! integer, parameter :: buf_size=6553600
+    ! 10 Mb per record
+    integer, parameter :: buf_size=655360
+    ! 1 Mb per record
+    !integer, parameter :: buf_size=65536
+    ! 128 Kb per record
+    !integer, parameter :: buf_size=8192
     
-    integer, parameter                       :: buf_size=8192
     integer                                  :: nthreads
     real(d), parameter                       :: vectol=1d-8
     real(d), dimension(:,:), allocatable     :: pre_vv,pre_oo
@@ -12309,28 +12318,25 @@ ar_offdiag_ij = 0.
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    
+    integer, intent(in)                :: ndimf,ndim
+    integer*8, intent(out)             :: count
+    integer, intent(out)               :: nbuf
+    integer                            :: inda,indb,indk,indl,spin,&
+                                          indapr,indbpr,indkpr,&
+                                          indlpr,spinpr
+    integer                            :: i,j,k,nlim,dim_count,&
+                                          dim_countf,ndim1,ndim1f
+    integer                            :: lim1i,lim2i,lim1j,lim2j
+    integer                            :: rec_count
+    integer, dimension(:), allocatable :: oi,oj
+    real(d)                            :: ar_offdiag_ij
+    real(d), dimension(:), allocatable :: file_offdiag
+    character(len=60)                  :: filename
 
-    integer, intent(in)          :: ndimf,ndim
-    integer*8, intent(out)       :: count
-    integer, intent(out)         :: nbuf
-    integer                      :: inda,indb,indk,indl,spin,indapr,&
-                                    indbpr,indkpr,indlpr,spinpr   
-    integer                      :: i,j,k,nlim,dim_count,dim_countf,&
-                                    ndim1,ndim1f
-    integer                      :: lim1i,lim2i,lim1j,lim2j
-    integer                      :: rec_count
-    integer, dimension(buf_size) :: oi,oj
-    real(d)                      :: ar_offdiag_ij
-    real(d), dimension(buf_size) :: file_offdiag
-    character(len=60)            :: filename
-
-    ! NEW
     integer                                       :: idpl
     integer                                       :: nvirt,itmp,itmp1,dim
-    real(d)                                       :: func,mem4indx
-    real(d)                                       :: tw1,tw2,tc1,tc2
-
-    integer                                       :: nthreads,tid
+    integer                                       :: tid
     integer, dimension(:), allocatable            :: dplunit    
     integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
     integer*8, dimension(:), allocatable          :: count_omp
@@ -12338,15 +12344,11 @@ ar_offdiag_ij = 0.
     integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
-    character(len=120), dimension(:), allocatable :: dplfile
-
-    integer                                       :: buf_size2
-    real(d)                                       :: minc2
     integer, dimension(:), allocatable            :: nsaved
-
-    buf_size2=buf_size
-    minc2=minc
+    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    real(d)                                       :: func,mem4indx
+    real(d)                                       :: tw1,tw2,tc1,tc2
+    character(len=120), dimension(:), allocatable :: dplfile
 
 !-----------------------------------------------------------------------
 ! Determine the no. threads
@@ -12354,22 +12356,17 @@ ar_offdiag_ij = 0.
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
-    
+
     write(ilog,*) "nthreads:",nthreads
 
 !-----------------------------------------------------------------------
-! Allocation and initialisation
+! Start timing
 !-----------------------------------------------------------------------
     call times(tw1,tc1)
-
-    count=0
-    rec_count=0
-    nbuf=0
-    oi(:)=0
-    oj(:)=0
-    file_offdiag(:)=0.0d0
-    nvirt=nbas-nocc
-
+    
+!-----------------------------------------------------------------------
+! Allocation and initialisation
+!-----------------------------------------------------------------------
     allocate(dplunit(nthreads))
     allocate(dplfile(nthreads))
     allocate(oi_omp(nthreads,buf_size))
@@ -12379,7 +12376,22 @@ ar_offdiag_ij = 0.
     allocate(rec_count_omp(nthreads))
     allocate(nlim_omp(nthreads))
     allocate(nsaved(nthreads))
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiag(buf_size))
 
+    count=0
+    nbuf=0
+    rec_count=0
+    oi=0
+    oj=0
+    file_offdiag=0.0d0
+    rec_count_omp=0
+    oi_omp=0
+    oj_omp=0
+    file_offdiag_omp=0.0d0
+    nvirt=nbas-nocc
+    
 !-----------------------------------------------------------------------
 ! Open the working dipole files
 !-----------------------------------------------------------------------
@@ -12440,7 +12452,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
 
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12497,7 +12509,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
 
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12568,7 +12580,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
        
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12639,7 +12651,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
        
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12710,7 +12722,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
 
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12785,7 +12797,7 @@ ar_offdiag_ij = 0.
     !$omp& inda,indb,indk,indl,spin,indapr,indbpr,indkpr,indlpr,spinpr) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=1,ndim1f
 
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
@@ -12862,7 +12874,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -12933,7 +12945,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -12977,7 +12989,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13021,7 +13033,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13065,7 +13077,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13109,7 +13121,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(2,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13153,7 +13165,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13223,7 +13235,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13267,7 +13279,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13311,7 +13323,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13355,7 +13367,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13399,7 +13411,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(3,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13443,7 +13455,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13514,7 +13526,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
        
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13558,7 +13570,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13602,7 +13614,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13646,7 +13658,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13690,7 +13702,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(4,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13734,7 +13746,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13805,7 +13817,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13849,7 +13861,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13893,7 +13905,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13937,7 +13949,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -13981,7 +13993,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14025,7 +14037,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14096,7 +14108,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14140,7 +14152,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14184,7 +14196,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14228,7 +14240,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14272,7 +14284,7 @@ ar_offdiag_ij = 0.
     !$omp& indapr,indbpr,indkpr,indlpr,spinpr,inda,indb,indk,indl,spin) &
     !$omp& shared(kpq,kpqf,count_omp,file_offdiag_omp,rec_count_omp, &
     !$omp& nlim_omp,oi_omp,oj_omp,dplunit) &
-    !$omp& firstprivate(buf_size2,minc2,dim_count,dim_countf,ndim1,ndim1f)
+    !$omp& firstprivate(dim_count,dim_countf,ndim1,ndim1f)
     do i=dim_countf+1,dim_countf+kpqf(5,0)
 
        call get_indices(kpqf(:,i),indapr,indbpr,indkpr,indlpr,spinpr)
@@ -14410,7 +14422,10 @@ ar_offdiag_ij = 0.
     deallocate(rec_count_omp)
     deallocate(nlim_omp)
     deallocate(nsaved)
-
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiag)
+    
 !-----------------------------------------------------------------------
 ! Output the timing information
 !-----------------------------------------------------------------------
