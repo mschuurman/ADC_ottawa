@@ -119,10 +119,19 @@
         endif
 
 !-----------------------------------------------------------------------
+! If we are performing a Lanczos-TPXAS calculation and the initial
+! state is the ground state, then we must calculate and store the
+! initial space Hamiltonian for use in a block-Lanczos calculation.
+! Note that for an excited initial state, this has already been done.
+!-----------------------------------------------------------------------
+        if (ltpxas.and.statenumber.eq.0) &
+             call initial_space_hamiltonian(ndim,kpq,noffd)
+
+!-----------------------------------------------------------------------
 ! Calculation of the final space states
 !-----------------------------------------------------------------------
         call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffdf,rvec,travec2)
+           vec_init,mtmf,noffd,noffdf,rvec,travec2)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the final states
@@ -320,7 +329,7 @@
         character(len=120)                        :: msg
 
 !-----------------------------------------------------------------------
-! Write the initial space ADC(2)-s Hamiltonian to disk
+! Write the initial space ADC(2) Hamiltonian to disk
 !-----------------------------------------------------------------------
         if (method.eq.2) then
            msg='Calculating the initial space ADC(2)-s Hamiltonian &
@@ -334,7 +343,7 @@
 
         if (method.eq.2) then
            ! ADC(2)-s
-           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i') 
+           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i')
         else if (method.eq.3) then
            ! ADC(2)-x
            call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
@@ -352,6 +361,51 @@
         return
 
       end subroutine initial_space_diag
+
+!#######################################################################
+
+      subroutine initial_space_hamiltonian(ndim,kpq,noffd)
+
+        use constants
+        use parameters
+        use fspace
+        
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
+        integer                                   :: ndim
+        integer*8                                 :: noffd
+        real(d)                                   :: time
+        character(len=120)                        :: msg
+
+!-----------------------------------------------------------------------
+! Write the initial space ADC(2) Hamiltonian to disk
+!-----------------------------------------------------------------------
+        if (method.eq.2) then
+           msg='Calculating the initial space ADC(2)-s Hamiltonian &
+                matrix'
+        else if (method.eq.3) then
+           msg='Calculating the initial space ADC(2)-x Hamiltonian &
+                matrix'
+        endif
+
+        write(ilog,'(/,a)') trim(msg)
+
+        if (method.eq.2) then
+           ! ADC(2)-s
+           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i')
+        else if (method.eq.3) then
+           ! ADC(2)-x
+           call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
+        endif
+
+        call cpu_time(time)
+
+        write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time=',time," s"
+
+        return
+
+      end subroutine initial_space_hamiltonian
 
 !#######################################################################
 
@@ -408,7 +462,7 @@
 !#######################################################################
 
       subroutine final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffdf,rvec,travec2)
+           vec_init,mtmf,noffd,noffdf,rvec,travec2)
 
         use constants
         use parameters
@@ -418,7 +472,7 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,ndimsf
-        integer*8                                 :: noffdf
+        integer*8                                 :: noffd,noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndim,davstates)        :: rvec
@@ -427,8 +481,7 @@
         if (ltpxas) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
                 travec,vec_init,mtmf,noffdf,rvec,travec2)
-           print*,"WRITE THE REST OF THE LANCZOS-TPXAS CODE!"
-           STOP
+           call tpxas_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
         else
            if (ldiagfinal) then
               call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
@@ -640,7 +693,7 @@
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,c,k,&
-                                                     f
+                                                     f,i,j
         integer*8, dimension(3)                   :: nel_cv,nel_cc,&
                                                      nel_vv
         integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
@@ -651,6 +704,12 @@
         character(len=70)                         :: msg
         character(len=60)                         :: filename
         
+
+        integer                              :: dim,error,ivecs
+        real(d), dimension(:,:), allocatable :: smat,tdmvec,&
+                                                initvecs
+        real(d), dimension(:), allocatable   :: tau,work
+
         acomp=(/ 'x','y','z' /)
 
 !-----------------------------------------------------------------------
@@ -775,6 +834,89 @@
                    nel_cv(c),'r')
            enddo
         endif
+
+!-----------------------------------------------------------------------
+! Generate the initial Lanczos vectors via the orthogonalisation of
+! the projected dipole-matrix state-vector products
+!-----------------------------------------------------------------------
+        ! (1) Valence-excited space
+        !
+        ! Copy the contents of the travec_iv and travec_cv arrays
+        tpblock(1)=3+3*davstates_f
+        allocate(initvecs(ndim,tpblock(1)))
+        initvecs(:,1:3)=travec_iv(:,1:3)
+        k=3
+        do f=1,davstates_f
+           initvecs(:,k+1:k+3)=travec_fv(:,1:3,f)
+           k=k+3
+        enddo
+
+        ! Orthogonalisation of the dipole matrix-state vector
+        ! contractions via a QR factorisation
+        allocate(tau(tpblock(1)))
+        allocate(work(tpblock(1)))
+        call dgeqrf(ndim,tpblock(1),initvecs,ndim,tau,work,&
+             tpblock(1),error)
+        if (error.ne.0) then
+           errmsg='dqerf failed in subroutine &
+                dipole_ispace_contraction_tpxas'
+           call error_control
+        endif
+        call dorgqr(ndim,tpblock(1),tpblock(1),initvecs,ndim,tau,&
+             work,tpblock(1),error)
+        if (error.ne.0) then
+           errmsg='dorgqr failed in subroutine &
+                dipole_ispace_contraction_tpxas'
+           call error_control
+        endif
+        
+        ! Write the valence-excited space guess vectors to file
+        call freeunit(ivecs)
+        open(ivecs,file='SCRATCH/tpxas_initi',form='unformatted',&
+             status='unknown')
+        write(ivecs) initvecs
+        close(ivecs)
+
+        deallocate(initvecs)
+        deallocate(tau)
+        deallocate(work)
+
+        ! (2) Core-excited space
+        !
+        tpblock(2)=3+3*davstates_f
+        allocate(initvecs(ndimf,tpblock(2)))
+        initvecs(:,1:3)=travec_ic(:,1:3)
+        k=3
+        do f=1,davstates_f
+           initvecs(:,k+1:k+3)=travec_fc(:,1:3,f)
+           k=k+3
+        enddo
+        
+        ! Orthogonalisation of the dipole matrix-state vector
+        ! contractions via a QR factorisation
+        allocate(tau(tpblock(2)))
+        allocate(work(tpblock(2)))
+        call dgeqrf(ndimf,tpblock(2),initvecs,ndimf,tau,work,&
+             tpblock(2),error)
+        if (error.ne.0) then
+           errmsg='dqerf failed in subroutine &
+                dipole_ispace_contraction_tpxas'
+           call error_control
+        endif
+        call dorgqr(ndimf,tpblock(2),tpblock(2),initvecs,ndimf,tau,&
+             work,tpblock(2),error)
+        if (error.ne.0) then
+           errmsg='dorgqr failed in subroutine &
+                dipole_ispace_contraction_tpxas'
+           call error_control
+        endif
+        
+        ! Write the core-excited space guess vectors to file
+        call freeunit(ivecs)
+        open(ivecs,file='SCRATCH/tpxas_initc',form='unformatted',&
+             status='unknown')
+        write(ivecs) initvecs
+        close(ivecs)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -957,7 +1099,7 @@
         endif
 
 !-----------------------------------------------------------------------
-! Perform the band-Lanczos calculation
+! Perform the block-Lanczos calculation
 !-----------------------------------------------------------------------
         call lancdiag_block(ndimf,noffdf,'c')
 
@@ -1021,7 +1163,7 @@
                                                      ivecs,ilbl
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2,initvecs
-        real(d), dimension(:), allocatable        :: tmpvec,tau,work
+        real(d), dimension(:), allocatable        :: tau,work
 
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
@@ -1417,6 +1559,50 @@
 
 !#######################################################################
 
+      subroutine tpxas_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
+
+        use constants
+        use parameters
+        use block_lanczos
+
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf
+        integer*8                                 :: noffd,noffdf
+
+!-----------------------------------------------------------------------
+! Perform the block-Lanczos calculation using the initial-space
+! Hamiltonian
+!-----------------------------------------------------------------------
+        lmain=tpblock(1)
+        call lancdiag_block(ndim,noffd,'i')
+
+!-----------------------------------------------------------------------
+! Rename the valence-excited space Lanczos vector file
+!-----------------------------------------------------------------------
+        call system('mv '//trim(lancname)//' SCRATCH/lancstates_v')
+
+!-----------------------------------------------------------------------
+! Perform the block-Lanczos calculation using the final-space
+! Hamiltonian
+!-----------------------------------------------------------------------
+        lmain=tpblock(1)
+        call lancdiag_block(ndim,noffd,'i')
+        lmain=tpblock(2)
+        call lancdiag_block(ndimf,noffdf,'c')
+
+!-----------------------------------------------------------------------
+! Rename the core-excited space Lanczos vector file
+!-----------------------------------------------------------------------
+        call system('mv '//trim(lancname)//' SCRATCH/lancstates_c')
+
+        return
+
+      end subroutine tpxas_lanczos
+
+!#######################################################################
+
       subroutine initial_space_dipole(ndim,ndims,kpq)
 
         use channels
@@ -1545,6 +1731,8 @@
 
         if (lrixs) then
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
+        else if (ltpxas) then
+           call tdm_tpxas
         else
            if (ldiagfinal) then
               ! Davidson states
@@ -1691,6 +1879,23 @@
         return
 
       end subroutine tdm_rixs
+
+!#######################################################################
+
+      subroutine tdm_tpxas
+
+        use constants
+        use parameters
+        use iomod
+
+        implicit none
+
+        print*,"WRITE THE REST OF THE TPXAS CODE!"
+        STOP
+
+        return
+
+      end subroutine tdm_tpxas
 
 !#######################################################################
 

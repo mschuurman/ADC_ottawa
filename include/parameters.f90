@@ -283,17 +283,18 @@ logical                          :: ltarg
 !!$************************************************
 !!$**********RIXS Calculations*********************
 !!$************************************************
-logical                                :: lrixs
 real(d), dimension(:,:,:), allocatable :: dpl_all
+logical                                :: lrixs
 
 !!$************************************************
 !!$**********TPXAS Calculations********************
 !!$************************************************
-logical                                :: ltpxas
+integer, dimension(2)                  :: tpblock
 real(d), dimension(:,:), allocatable   :: travec_ic,&
                                           travec_iv
 real(d), dimension(:,:,:), allocatable :: travec_fc,&
                                           travec_fv
+logical                                :: ltpxas
 
 !!$************************************************
 !!$**********Other Parameters**********************

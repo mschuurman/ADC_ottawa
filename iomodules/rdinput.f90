@@ -555,7 +555,7 @@
          endif
 
          ! Set lancguess=6: this is required so that the appropriate
-         ! initial vectors are read from fie
+         ! initial vectors are used
          lancguess=6
 
       endif

@@ -19,6 +19,7 @@ module block_lanczos
     real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
     real(d), dimension(:), allocatable     :: anorm,bnorm
     real(d)                                :: epmach,eps,orthlim,eta
+    character(len=1)                       :: hflag
 
   contains
     
@@ -33,6 +34,11 @@ module block_lanczos
       character(1),intent(in) :: flag
 
 !-----------------------------------------------------------------------
+! Set the Hamiltonian flag
+!-----------------------------------------------------------------------
+      hflag=flag
+
+!-----------------------------------------------------------------------
 ! Set dimensions
 !-----------------------------------------------------------------------
       matdim=dimf
@@ -42,6 +48,44 @@ module block_lanczos
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
+      call alloc_block_lanczos
+
+!-----------------------------------------------------------------------
+! Set the initial Lanczos vectors
+!-----------------------------------------------------------------------
+      call init_vec
+
+!-----------------------------------------------------------------------
+! If a partial reorthogonalisation is to be performed, then estimate
+! the machine epsilon, set the limit for reorthogonalisation and set
+! the limit eta that is used in the MPRO algorithm
+!-----------------------------------------------------------------------
+      if (orthotype.gt.0) then
+         epmach=machine_precision()
+         orthlim=dsqrt(epmach)
+         eta=epmach**0.75d0
+      endif
+
+!-----------------------------------------------------------------------
+! Perform the block Lanczos calculation
+!-----------------------------------------------------------------------
+      call run_block_lanczos(noff)
+
+!-----------------------------------------------------------------------
+! Finalise/deallocate arrays
+!-----------------------------------------------------------------------
+      call finalise_block_lanczos
+
+      return
+      
+    end subroutine lancdiag_block
+
+!#######################################################################
+
+    subroutine alloc_block_lanczos
+    
+      implicit none
+
       ! Main block Lanczos arays
       allocate(qmat1(matdim,blocksize))
       allocate(qmat2(matdim,blocksize))
@@ -66,7 +110,7 @@ module block_lanczos
       allocate(anorm(ncycles))
       allocate(bnorm(ncycles))
       allocate(lk(ncycles))
-      allocate(uk(ncycles)) 
+      allocate(uk(ncycles))
       amat_all=0.0d0
       bmat_all=0.0d0
       omkj=0.0d0
@@ -75,31 +119,10 @@ module block_lanczos
       lk=0
       uk=0
 
-!-----------------------------------------------------------------------
-! Set the initial Lanczos vectors
-!-----------------------------------------------------------------------
-      call init_vec
-
-!-----------------------------------------------------------------------
-! If a partial reorthogonalisation is to be performed, then estimate
-! the machine epsilon, set the limit for reorthogonalisation and set
-! the limit eta that is used in the MPRO algorithm
-!-----------------------------------------------------------------------
-      if (orthotype.gt.0) then
-         epmach=machine_precision()
-         orthlim=dsqrt(epmach)
-         eta=epmach**0.75d0
-      endif
-
-!-----------------------------------------------------------------------
-! Perform the block Lanczos calculation
-!-----------------------------------------------------------------------
-      call run_block_lanczos(noff)
-
       return
-      
-    end subroutine lancdiag_block
-    
+
+    end subroutine alloc_block_lanczos
+
 !#######################################################################
     
     subroutine init_vec
@@ -131,6 +154,9 @@ module block_lanczos
 !                   eigenvectors and 2h2p IS unit vectors
 !
 !             5 <-> RIXS calculation - read the initial vectors from
+!                   file
+!
+!             6 <-> TPXAS calculation - read the initial vectors from
 !                   file
 !-----------------------------------------------------------------------
 
@@ -229,6 +255,24 @@ module block_lanczos
               status='old')
          read(ivecs) qmat2
          close(ivecs)
+         
+      else if (lancguess.eq.6) then
+         ! TPXAS calculation
+         if (hflag.eq.'i') then
+            ! Valence-excited space calculation
+            call freeunit(ivecs)
+            open(ivecs,file='SCRATCH/tpxas_initi',form='unformatted',&
+                 status='old')
+            read(ivecs) qmat2
+            close(ivecs)
+         else if (hflag.eq.'c') then
+            ! Core-excited space calculation
+            call freeunit(ivecs)
+            open(ivecs,file='SCRATCH/tpxas_initc',form='unformatted',&
+                 status='old')
+            read(ivecs) qmat2
+            close(ivecs)
+         endif
          
       endif
       
@@ -386,7 +430,6 @@ module block_lanczos
 !-----------------------------------------------------------------------
          ! (1) File to be used in the PRO routines
          write(lanunit2,rec=j) qmat2
-
 
          ! (2) File to be used in the calculation of the Ritz vectors
          nprev=nv
@@ -552,13 +595,6 @@ module block_lanczos
 ! Deallocate arrays
 !-----------------------------------------------------------------------
       deallocate(buffer)
-      deallocate(qmat1)
-      deallocate(qmat2)
-      deallocate(rmat)
-      deallocate(amat)
-      deallocate(bmat)
-      deallocate(tmpmat)
-
       if (allocated(hii)) deallocate(hii)
       if (allocated(hij)) deallocate(hij)
 
@@ -607,7 +643,7 @@ module block_lanczos
 !-----------------------------------------------------------------------
       call freeunit(unit)
 
-      open(unit,file='SCRATCH/hmlt.diac',status='old',&
+      open(unit,file='SCRATCH/hmlt.dia'//hflag,status='old',&
            access='sequential',form='unformatted')
       
       read(unit) maxbl,nrec
@@ -622,7 +658,7 @@ module block_lanczos
       allocate(itmp1(maxbl))
       allocate(itmp2(maxbl))
 
-      open(unit,file='SCRATCH/hmlt.offc',status='old',&
+      open(unit,file='SCRATCH/hmlt.off'//hflag,status='old',&
            access='sequential',form='unformatted')
 
       count=0
@@ -699,8 +735,8 @@ module block_lanczos
       allocate(hii(matdim))
 
       unit=77
-      open(unit,file='SCRATCH/hmlt.diac',status='old',access='sequential',&
-           form='unformatted')
+      open(unit,file='SCRATCH/hmlt.dia'//hflag,status='old',&
+           access='sequential',form='unformatted')
 
       read(unit) maxbl,nrec
       read(unit) hii
@@ -723,8 +759,8 @@ module block_lanczos
 !-----------------------------------------------------------------------
       allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
       
-      open(unit,file='SCRATCH/hmlt.offc',status='old',access='sequential',&
-           form='unformatted')
+      open(unit,file='SCRATCH/hmlt.off'//hflag,status='old',&
+           access='sequential',form='unformatted')
 
       do k=1,nrec
          read(unit) hij(:),indxi(:),indxj(:),nlim
@@ -1676,6 +1712,31 @@ module block_lanczos
       return
 
     end subroutine chkortho
+
+!#######################################################################
+
+    subroutine finalise_block_lanczos
+
+      implicit none
+
+      deallocate(qmat1)
+      deallocate(qmat2)
+      deallocate(umat)
+      deallocate(rmat)
+      deallocate(tmpmat)
+      deallocate(amat)
+      deallocate(bmat)
+      deallocate(amat_all)
+      deallocate(bmat_all)
+      deallocate(omkj)
+      deallocate(anorm)
+      deallocate(bnorm)
+      deallocate(lk)
+      deallocate(uk)
+
+      return
+
+    end subroutine finalise_block_lanczos
 
 !#######################################################################
 
