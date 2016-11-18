@@ -290,10 +290,13 @@ logical                                :: lrixs
 !!$**********TPXAS Calculations********************
 !!$************************************************
 integer, dimension(2)                  :: tpblock
+real(d), dimension(3)                  :: tdmgsi
 real(d), dimension(:,:), allocatable   :: travec_ic,&
-                                          travec_iv
+                                          travec_iv,&
+                                          tdmgsf
 real(d), dimension(:,:,:), allocatable :: travec_fc,&
                                           travec_fv
+real(d), dimension(:), allocatable     :: edavf
 logical                                :: ltpxas
 
 !!$************************************************

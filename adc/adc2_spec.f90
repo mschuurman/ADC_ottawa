@@ -157,7 +157,7 @@
 !-----------------------------------------------------------------------
         if (allocated(ener)) deallocate(ener)
         if (allocated(rvec)) deallocate(rvec)
-        if (allocated(vec_init)) deallocate(vec_init)        
+        if (allocated(vec_init)) deallocate(vec_init)
         if (allocated(travec)) deallocate(travec)
         if (allocated(dipmom)) deallocate(dipmom)
         if (allocated(dipmom_f)) deallocate(dipmom_f)
@@ -167,6 +167,8 @@
         if (allocated(travec_iv)) deallocate(travec_iv)
         if (allocated(travec_fc)) deallocate(travec_fc)
         if (allocated(travec_fv)) deallocate(travec_fv)
+        if (allocated(tdmgsf)) deallocate(tdmgsf)
+        if (allocated(edavf)) deallocate(edavf)
         deallocate(kpq,kpqf,kpqd)
 
         return
@@ -698,17 +700,16 @@
                                                      nel_vv
         integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
                                                      nbuf_vv
-        real(d), dimension(:,:), allocatable      :: veci,vecf
+        integer                                   :: dim,error,ivecs
+        real(d), dimension(:,:), allocatable      :: veci,vecf,mtm_v,&
+                                                     mtm_c
         real(d), dimension(:), allocatable        :: ei,ef
+        real(d), dimension(:,:), allocatable      :: smat,tdmvec,&
+                                                     initvecs
+        real(d), dimension(:), allocatable        :: tau,work
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
         character(len=60)                         :: filename
-        
-
-        integer                              :: dim,error,ivecs
-        real(d), dimension(:,:), allocatable :: smat,tdmvec,&
-                                                initvecs
-        real(d), dimension(:), allocatable   :: tau,work
 
         acomp=(/ 'x','y','z' /)
 
@@ -736,10 +737,16 @@
            ! Set the dipole component
            dpl(:,:)=dpl_all(c,:,:)
            ! Calculate the IS representation of the dipole operator
+           write(ilog,'(70a)') ('-',k=1,70)
+           msg='Calculation of P_c . D_'//acomp(c)//' . P_v'
+           write(ilog,'(2x,a)') trim(msg)
+           write(ilog,'(70a)') ('-',k=1,70)
            filename='SCRATCH/dipole_cv_'//acomp(c)
            call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
                 nbuf_cv(c),nel_cv(c),filename)
+
         enddo
+        
         ! (ii) Core, core
         !
         ! Loop over the components of the dipole operator
@@ -747,7 +754,11 @@
            ! Set the dipole component
            dpl(:,:)=dpl_all(c,:,:)
            ! Calculate the IS representation of the dipole operator
-           filename='SCRATCH/dipole_cc_'//acomp(c)           
+           write(ilog,'(70a)') ('-',k=1,70)
+           msg='Calculation of P_c . D_'//acomp(c)//' . P_c'
+           write(ilog,'(2x,a)') trim(msg)
+           write(ilog,'(70a)') ('-',k=1,70)
+           filename='SCRATCH/dipole_cc_'//acomp(c)
            call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
                 nbuf_cc(c),nel_cc(c),filename)
         enddo
@@ -756,6 +767,7 @@
 ! Transition matrix elements: initial state
 !-----------------------------------------------------------------------        
         if (statenumber.eq.0) then
+        
            ! (i) Valence-excited
            !
            ! Loop over the components of the dipole operator
@@ -763,8 +775,13 @@
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
               ! Calculate the F-vector
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),0)
            enddo
+           
            ! (ii) Core-excited
            !
            ! Loop over the components of the dipole operator
@@ -772,28 +789,44 @@
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
               ! Calculate the F-vector
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_c . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec_ic(:,c),0)
            enddo
+
         else
-           ! Valence, valence
+
+           ! (i) Valence, valence
            !
            ! Loop over the components of the dipole operator
            do c=1,3
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
               ! Calculate the IS representation of the dipole operator
-              filename='SCRATCH/dipole_vv_'//acomp(c)           
+              filename='SCRATCH/dipole_vv_'//acomp(c)
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
               call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
                    nbuf_vv(c),nel_vv(c),filename)
            enddo
+
         endif
 
 !-----------------------------------------------------------------------
 ! Read the Davidson vectors from file
 !-----------------------------------------------------------------------
-        ! Final sttaes
+        ! Final states
         call readdavvc(davstates_f,ef,vecf,'f',ndimf)
         
+        ! Save the final space Davidson energies for use later in
+        ! the calculation of the two-photon transition moments
+        allocate(edavf(davstates_f))
+        edavf=ef
+
         ! Initial states
         if (statenumber.gt.0) call readdavvc(davstates,ei,veci,'i',ndim)
 
@@ -917,6 +950,58 @@
              status='unknown')
         write(ivecs) initvecs
         close(ivecs)
+
+!-----------------------------------------------------------------------
+! If we are considering two-photon excitation from an excited state,
+! then we additionally require the transition dipole moments between
+! the ground state and the initial state, and between the ground state
+! and all final states
+!-----------------------------------------------------------------------
+        if (statenumber.ne.0) then
+           
+           ! Allocate arrays
+           allocate(mtm_v(ndim,3))
+           allocate(mtm_c(ndimf,3))
+           allocate(tdmgsf(3,davstates_f))
+
+           ! (i) Valence
+           do c=1,3
+
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm_v(:,c),0)
+
+              ! Calculate the transition dipole moment between the
+              ! ground state and the initial state
+              tdmgsi(c)=dot_product(mtm_v(:,c),veci(:,statenumber))
+
+           enddo
+
+           ! (ii) Core
+           do c=1,3
+
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtm_c(:,c),0)
+
+              ! Calculate the transition dipole moment between the
+              ! ground state and the final states
+              do f=1,davstates_f
+                 tdmgsf(c,f)=dot_product(mtm_c(:,c),vecf(:,f))
+              enddo
+
+           enddo
+
+           ! Deallocate arrays
+           deallocate(mtm_v)
+           deallocate(mtm_c)
+
+        endif
+
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1587,8 +1672,6 @@
 ! Perform the block-Lanczos calculation using the final-space
 ! Hamiltonian
 !-----------------------------------------------------------------------
-        lmain=tpblock(1)
-        call lancdiag_block(ndim,noffd,'i')
         lmain=tpblock(2)
         call lancdiag_block(ndimf,noffdf,'c')
 
@@ -1732,7 +1815,7 @@
         if (lrixs) then
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         else if (ltpxas) then
-           call tdm_tpxas
+           call tdm_tpxas(ndim,ndimf,e_init)
         else
            if (ldiagfinal) then
               ! Davidson states
@@ -1882,7 +1965,7 @@
 
 !#######################################################################
 
-      subroutine tdm_tpxas
+      subroutine tdm_tpxas(ndim,ndimf,e_init)
 
         use constants
         use parameters
@@ -1890,8 +1973,276 @@
 
         implicit none
 
-        print*,"WRITE THE REST OF THE TPXAS CODE!"
-        STOP
+        integer                                :: ndim,ndimf,f,k,i,&
+                                                  nlanc_v,nlanc_c,&
+                                                  ilanc,a,b,alpha,&
+                                                  itpa
+        real(d)                                :: e_init
+        real(d), dimension(:,:,:), allocatable :: sabif
+        real(d), dimension(:), allocatable     :: lvec,lener_v,&
+                                                  lener_c,tpaxsec
+        real(d), dimension(:,:), allocatable   :: tdmil_v,tdmil_c
+        real(d), dimension(:,:,:), allocatable :: tdmfl_v,tdmfl_c
+
+!----------------------------------------------------------------------
+! Output where we are at
+!----------------------------------------------------------------------
+        write(ilog,'(/,70a)') ('-',k=1,70)
+        write(ilog,'(2x,a)') 'Calculation of the two-photon &
+             cross-sections'
+        write(ilog,'(70a)') ('-',k=1,70)
+
+!----------------------------------------------------------------------
+! Allocate and initialise arrays
+!----------------------------------------------------------------------
+        ! Two-photon transition moments
+        allocate(sabif(3,3,davstates_f))
+        sabif=0.0d0
+
+        ! Valence-excited space Lanczos energies
+        nlanc_v=tpblock(1)*ncycles
+        allocate(lener_v(nlanc_v))
+        lener_v=0.0d0
+
+        ! Core-excited space Lanczos energies
+        nlanc_c=tpblock(1)*ncycles
+        allocate(lener_c(nlanc_c))
+        lener_c=0.0d0
+
+        ! Transition dipole moments between the initial state
+        ! and the valence-excited space Lanczos pseudo-states
+        allocate(tdmil_v(3,nlanc_v))
+        tdmil_v=0.0d0
+
+        ! Transition dipole moments between the initial state
+        ! and the core-excited space Lanczos pseudo-states
+        allocate(tdmil_c(3,nlanc_c))
+        tdmil_c=0.0d0
+
+        ! Transition dipole moments between the final states
+        ! and the valence-excited space Lanczos pseudo-states
+        allocate(tdmfl_v(3,davstates_f,nlanc_v))
+        tdmfl_v=0.0d0
+
+        ! Transition dipole moments between the final states
+        ! and the core-excited space Lanczos pseudo-states
+        allocate(tdmfl_c(3,davstates_f,nlanc_c))
+        tdmfl_c=0.0d0
+
+        ! Two photon cross-sections
+        allocate(tpaxsec(davstates_f))
+        tpaxsec=0.0d0
+
+!----------------------------------------------------------------------
+! Calculate the transition dipole moments between the initial state
+! and the valence-excited space Lanczos pseudo-states, and the 
+! final states and the valence-excited Lanczos pseudo-states
+!----------------------------------------------------------------------
+        ! Allocate arrays
+        allocate(lvec(ndim))
+
+        ! Open the valence-excited space Lanczos pseudo-state file
+        call freeunit(ilanc)
+        open(ilanc,file='SCRATCH/lancstates_v',status='old',&
+             access='sequential',form='unformatted')
+
+        ! Loop over the valence-excited space Lanczos pseudo-states
+        do alpha=1,nlanc_v
+
+           ! Read the current Lanczos pseudo-state
+           read(ilanc) k,lener_v(alpha),lvec
+
+           ! < i | D_a | alpha >
+           do a=1,3
+              tdmil_v(a,alpha)=dot_product(travec_iv(:,a),lvec)
+           enddo
+
+           ! < f | D_a | alpha >
+           do f=1,davstates_f
+              do a=1,3
+                 tdmfl_v(a,f,alpha)=&
+                      dot_product(travec_fv(:,a,f),lvec)
+              enddo
+           enddo
+
+        enddo
+
+        ! Deallocate arrays
+        deallocate(lvec)
+
+        ! Close the valence-excited space Lanczos pseudo-state file
+        close(ilanc)
+
+!----------------------------------------------------------------------
+! Calculate the transition dipole moments between the initial state
+! and the core-excited space Lanczos pseudo-states, and the 
+! final states and the core-excited Lanczos pseudo-states
+!----------------------------------------------------------------------
+        ! Allocate arrays
+        allocate(lvec(ndimf))
+
+        ! Open the valence-excited space Lanczos pseudo-state file
+        call freeunit(ilanc)
+        open(ilanc,file='SCRATCH/lancstates_c',status='old',&
+             access='sequential',form='unformatted')
+
+        ! Loop over the valence-excited space Lanczos pseudo-states
+        do alpha=1,nlanc_c
+
+           ! Read the current Lanczos pseudo-state
+           read(ilanc) k,lener_v(alpha),lvec
+
+           ! < i | D_a | alpha >
+           do a=1,3
+              tdmil_c(a,alpha)=dot_product(travec_ic(:,a),lvec)
+           enddo
+
+           ! < f | D_a | alpha >
+           do f=1,davstates_f
+              do a=1,3
+                 tdmfl_c(a,f,alpha)=&
+                      dot_product(travec_fc(:,a,f),lvec)
+              enddo
+           enddo
+
+        enddo
+
+        ! Deallocate arrays
+        deallocate(lvec)
+
+        ! Close the valence-excited space Lanczos pseudo-state file
+        close(ilanc)
+
+!----------------------------------------------------------------------
+! Calculation of the valence-excited space contribution to the
+! two-photon transition moments
+!----------------------------------------------------------------------
+        ! Loop over final states
+        do f=1,davstates_f
+           
+           ! Loop over pairs of dipole operator components
+           do a=1,3
+              do b=1,3
+
+                 ! Loop over valence-excited space Lanczos
+                 ! pseudo-states
+                 do alpha=1,nlanc_v
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmil_v(a,alpha)*tdmfl_v(a,f,alpha)&
+                         /(lener_v(alpha)-0.5d0*edavf(f))
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmil_v(b,alpha)*tdmfl_v(a,f,alpha)&
+                         /(lener_v(alpha)-0.5d0*edavf(f))
+
+                 enddo
+
+              enddo
+           enddo
+
+        enddo
+
+!----------------------------------------------------------------------
+! Calculation of the core-excited space contribution to the
+! two-photon transition moments
+!----------------------------------------------------------------------
+        ! Loop over final states
+        do f=1,davstates_f
+           
+           ! Loop over pairs of dipole operator components
+           do a=1,3
+              do b=1,3
+
+                 ! Loop over valence-excited space Lanczos
+                 ! pseudo-states
+                 do alpha=1,nlanc_c
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmil_c(a,alpha)*tdmfl_c(a,f,alpha)&
+                         /(lener_c(alpha)-0.5d0*edavf(f))
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmil_c(b,alpha)*tdmfl_c(a,f,alpha)&
+                         /(lener_c(alpha)-0.5d0*edavf(f))
+
+                 enddo
+
+              enddo
+           enddo
+
+        enddo
+
+!----------------------------------------------------------------------
+! Contribution of the ground state to the two-photon transition
+! moments (excited initial states only)
+! N.B., E_0 = 0, hence the E_f/2 denominators
+!----------------------------------------------------------------------
+        if (statenumber.ne.0) then
+
+           ! Loop over final states
+           do f=1,davstates_f
+
+              ! Loop over pairs of dipole operator components
+              do a=1,3
+                 do b=1,3
+                    
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmgsi(a)*tdmgsf(b,f)&
+                         /(-0.5d0*edavf(f))
+                    
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmgsi(b)*tdmgsf(a,f)&
+                         /(-0.5d0*edavf(f))
+                    
+                 enddo
+              enddo
+              
+           enddo
+           
+        endif
+
+!----------------------------------------------------------------------
+! Calculation of the two-photon cross-sections for (parallel) linearly
+! polarised light
+!----------------------------------------------------------------------
+        do f=1,davstates_f
+           do a=1,3
+              do b=1,3
+                 tpaxsec(f)=tpaxsec(f)&
+                      +2.0d0*sabif(a,a,f)*sabif(b,b,f)&
+                      +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
+                      +2.0d0*sabif(a,b,f)*sabif(b,a,f)
+              enddo
+           enddo
+        enddo
+        tpaxsec=tpaxsec/30.0d0
+
+!----------------------------------------------------------------------
+! Output the two-photon cross-sections
+! N.B., we output the excitation energies relative to the initial
+! state
+!----------------------------------------------------------------------
+        ! Stick spectrum
+        call freeunit(itpa)
+        open(itpa,file='tpa.dat',form='formatted',status='unknown')
+        do f=1,davstates_f
+           write(itpa,'(2(F11.5,2x))') (edavf(f)-e_init)*eh2ev,&
+                tpaxsec(f)
+        enddo
+        close(itpa)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+        deallocate(sabif)
+        deallocate(lener_v)
+        deallocate(lener_c)
+        deallocate(tdmil_v)
+        deallocate(tdmil_c)
+        deallocate(tdmfl_v)
+        deallocate(tdmfl_c)
+        deallocate(tpaxsec)
 
         return
 
