@@ -58,7 +58,7 @@
       davtol=1d-7
       ladc1guess=.false.
       davname='SCRATCH/davstates'
-      precon=1
+      precon=2
       maxsubdim=-1
       ldfl=.true.
       solver=1
@@ -70,7 +70,7 @@
       davtol_f=1d-7
       ladc1guess_f=.false.
       davname_f='SCRATCH/davstates_final'
-      precon_f=1
+      precon_f=2
       maxsubdim_f=-1
       ldfl_f=.true.
       solver_f=1

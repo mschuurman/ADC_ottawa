@@ -705,6 +705,8 @@
          num=8.0d0
       else if (lbl.eq.'s') then
          num=16.0d0
+      else if (lbl.eq.'ne') then
+         num=10.0d0
       else
          write(6,'(/,2(2x,a),/)') 'Atomic no. not known for atom:',lbl
       endif
@@ -786,6 +788,8 @@
          mass=32.065d0
       else if (label.eq.'o') then
          mass=15.9994d0
+      else if (label.eq.'ne') then
+         mass=20.1797d0
       else
          write(6,'(2(2x,a))') 'Unknown atom type:',trim(label)
          STOP

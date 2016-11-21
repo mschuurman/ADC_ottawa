@@ -704,13 +704,17 @@
         real(d), dimension(:,:), allocatable      :: veci,vecf,mtm_v,&
                                                      mtm_c
         real(d), dimension(:), allocatable        :: ei,ef
-        real(d), dimension(:,:), allocatable      :: smat,tdmvec,&
-                                                     initvecs
+        real(d), dimension(:,:), allocatable      :: tdmvec,initvecs
         real(d), dimension(:), allocatable        :: tau,work
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
         character(len=60)                         :: filename
 
+        
+        integer                              :: e2
+        real(d), dimension(:,:), allocatable :: smat
+        real(d), dimension(:), allocatable   :: eig
+        
         acomp=(/ 'x','y','z' /)
 
 !-----------------------------------------------------------------------
@@ -884,6 +888,46 @@
            k=k+3
         enddo
 
+
+        !! TEST
+        !!
+        !! DIAGONALISATION OF THE OVERLAP MATRIX
+        !allocate(smat(tpblock(1),tpblock(1)))
+        !allocate(eig(tpblock(1)))
+        !allocate(work(3*tpblock(1)))
+        !
+        !write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
+        !     matrix:'
+        !do i=1,tpblock(1)
+        !   do j=i,tpblock(1)
+        !      smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
+        !      smat(j,i)=smat(i,j)
+        !      write(ilog,*) i,j,smat(i,j)
+        !   enddo
+        !enddo
+        !
+        !e2=3*tpblock(1)
+        !call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
+        !
+        !if (error.ne.0) then
+        !   errmsg='This fucked up...'
+        !   call error_control
+        !endif
+        !
+        !write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
+        !     space overlap matrix:'
+        !do i=1,tpblock(1)
+        !   write(ilog,*) i,eig(i)
+        !enddo
+        !
+        !deallocate(smat)
+        !deallocate(eig)
+        !deallocate(work)
+        !! TEST
+
+
+
+
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
         allocate(tau(tpblock(1)))
@@ -925,6 +969,54 @@
            k=k+3
         enddo
         
+
+
+
+
+        !! TEST
+        !!
+        !! DIAGONALISATION OF THE OVERLAP MATRIX
+        !allocate(smat(tpblock(2),tpblock(2)))
+        !allocate(eig(tpblock(2)))
+        !allocate(work(3*tpblock(2)))
+        !
+        !write(ilog,'(/,2x,a)') 'Core-excited space overlap &
+        !     matrix:'
+        !do i=1,tpblock(2)
+        !   do j=i,tpblock(2)
+        !      smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
+        !      smat(j,i)=smat(i,j)
+        !      write(ilog,*) i,j,smat(i,j)
+        !   enddo
+        !enddo
+        !
+        !e2=3*tpblock(2)
+        !call dsyev('V','U',tpblock(2),smat,tpblock(2),eig,work,e2,error)
+        !
+        !if (error.ne.0) then
+        !   errmsg='This fucked up...'
+        !   call error_control
+        !endif
+        !
+        !write(ilog,'(/,2x,a)') 'Eigenvalues of the core-excited &
+        !     space overlap matrix:'
+        !do i=1,tpblock(2)
+        !   write(ilog,*) i,eig(i)
+        !enddo
+        !
+        !deallocate(smat)
+        !deallocate(eig)
+        !deallocate(work)
+        !! TEST
+
+
+
+
+
+
+
+
+
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
         allocate(tau(tpblock(2)))
@@ -951,6 +1043,10 @@
         write(ivecs) initvecs
         close(ivecs)
 
+        deallocate(initvecs)
+        deallocate(tau)
+        deallocate(work)
+
 !-----------------------------------------------------------------------
 ! If we are considering two-photon excitation from an excited state,
 ! then we additionally require the transition dipole moments between
@@ -971,6 +1067,10 @@
               dpl(:,:)=dpl_all(c,:,:)
 
               ! Calculate the F-vector
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndim,kpq(:,:),mtm_v(:,c),0)
 
               ! Calculate the transition dipole moment between the
@@ -986,6 +1086,10 @@
               dpl(:,:)=dpl_all(c,:,:)
 
               ! Calculate the F-vector
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_c . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtm_c(:,c),0)
 
               ! Calculate the transition dipole moment between the
@@ -1060,6 +1164,8 @@
 ! Note that the cntrdir flag controls whether we operate with the
 ! dipole operator from the right or the left of the state vector
 !-----------------------------------------------------------------------
+        tvec=0.0d0
+
         if (cntrdir.eq.'r') then
            do k=1,nbuf
               read(idpl) dij(:),indxi(:),indxj(:),nlim
@@ -1983,6 +2089,7 @@
                                                   lener_c,tpaxsec
         real(d), dimension(:,:), allocatable   :: tdmil_v,tdmil_c
         real(d), dimension(:,:,:), allocatable :: tdmfl_v,tdmfl_c
+        real(d), parameter                     :: c_au=137.0359991d0
 
 !----------------------------------------------------------------------
 ! Output where we are at
@@ -2090,7 +2197,7 @@
         do alpha=1,nlanc_c
 
            ! Read the current Lanczos pseudo-state
-           read(ilanc) k,lener_v(alpha),lvec
+           read(ilanc) k,lener_c(alpha),lvec
 
            ! < i | D_a | alpha >
            do a=1,3
@@ -2129,7 +2236,7 @@
                  do alpha=1,nlanc_v
 
                     sabif(a,b,f)=sabif(a,b,f)&
-                         +tdmil_v(a,alpha)*tdmfl_v(a,f,alpha)&
+                         +tdmil_v(a,alpha)*tdmfl_v(b,f,alpha)&
                          /(lener_v(alpha)-0.5d0*edavf(f))
 
                     sabif(a,b,f)=sabif(a,b,f)&
@@ -2159,7 +2266,7 @@
                  do alpha=1,nlanc_c
 
                     sabif(a,b,f)=sabif(a,b,f)&
-                         +tdmil_c(a,alpha)*tdmfl_c(a,f,alpha)&
+                         +tdmil_c(a,alpha)*tdmfl_c(b,f,alpha)&
                          /(lener_c(alpha)-0.5d0*edavf(f))
 
                     sabif(a,b,f)=sabif(a,b,f)&
@@ -2214,6 +2321,8 @@
                       +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(b,a,f)
               enddo
+              !tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*(edavf(f)/2.0d0)**2
+              !tpaxsec(f)=tpaxsec(f)/(c_au**2)
            enddo
         enddo
         tpaxsec=tpaxsec/30.0d0
