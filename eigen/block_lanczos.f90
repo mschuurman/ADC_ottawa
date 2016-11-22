@@ -156,7 +156,7 @@ module block_lanczos
 !             5 <-> RIXS calculation - read the initial vectors from
 !                   file
 !
-!             6 <-> TPXAS calculation - read the initial vectors from
+!             6 <-> TPA calculation - read the initial vectors from
 !                   file
 !-----------------------------------------------------------------------
 
@@ -257,18 +257,18 @@ module block_lanczos
          close(ivecs)
          
       else if (lancguess.eq.6) then
-         ! TPXAS calculation
+         ! TPA calculation
          if (hflag.eq.'i') then
             ! Valence-excited space calculation
             call freeunit(ivecs)
-            open(ivecs,file='SCRATCH/tpxas_initi',form='unformatted',&
+            open(ivecs,file='SCRATCH/tpa_initi',form='unformatted',&
                  status='old')
             read(ivecs) qmat2
             close(ivecs)
          else if (hflag.eq.'c') then
             ! Core-excited space calculation
             call freeunit(ivecs)
-            open(ivecs,file='SCRATCH/tpxas_initc',form='unformatted',&
+            open(ivecs,file='SCRATCH/tpa_initc',form='unformatted',&
                  status='old')
             read(ivecs) qmat2
             close(ivecs)

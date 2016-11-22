@@ -11205,7 +11205,7 @@ ar_offdiag_ij = 0.
 !-----------------------------------------------------------------------
 ! Final space 1h1p, initial space 1h1p block
 !-----------------------------------------------------------------------
-    write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
+    write(ilog,'(/,2x,a)') 'Calculating the D-matrix...'
 
     ndim1=kpq(1,0)
     ndim1f=kpqf(1,0)
@@ -12443,7 +12443,7 @@ ar_offdiag_ij = 0.
 !-----------------------------------------------------------------------
 ! Final space 1h1p, initial space 1h1p block
 !-----------------------------------------------------------------------
-    write(ilog,'(/,2x,a)') 'Calculating the matrix-vector product...'
+    write(ilog,'(/,2x,a)') 'Calculating the D-matrix...'
 
     ndim1=kpq(1,0)
     ndim1f=kpqf(1,0)

@@ -287,7 +287,7 @@ real(d), dimension(:,:,:), allocatable :: dpl_all
 logical                                :: lrixs
 
 !!$************************************************
-!!$**********TPXAS Calculations********************
+!!$**********TPA Calculations**********************
 !!$************************************************
 integer, dimension(2)                  :: tpblock
 real(d), dimension(3)                  :: tdmgsi
@@ -297,7 +297,7 @@ real(d), dimension(:,:), allocatable   :: travec_ic,&
 real(d), dimension(:,:,:), allocatable :: travec_fc,&
                                           travec_fv
 real(d), dimension(:), allocatable     :: edavf
-logical                                :: ltpxas
+logical                                :: ltpa
 
 !!$************************************************
 !!$**********Other Parameters**********************

@@ -49,7 +49,7 @@
 
 !-----------------------------------------------------------------------  
 ! Calculate guess initial space vectors from an ADC(1) calculation if 
-! requested.
+! requested
 !-----------------------------------------------------------------------  
         if (ladc1guess) call adc1_guessvecs
 
@@ -65,9 +65,10 @@
         call set_dpl
 
 !-----------------------------------------------------------------------
-! Block-Davidson diagonalisation in the initial space.
+! Block-Davidson diagonalisation in the initial space
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0) &
+        if (statenumber.gt.0&
+             .or.(ltpa.and..not.lcvsfinal)) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
 
 !-----------------------------------------------------------------------
@@ -124,7 +125,7 @@
 ! initial space Hamiltonian for use in a block-Lanczos calculation.
 ! Note that for an excited initial state, this has already been done.
 !-----------------------------------------------------------------------
-        if (ltpxas.and.statenumber.eq.0) &
+        if (ltpa.and.statenumber.eq.0.and.lcvsfinal) &
              call initial_space_hamiltonian(ndim,kpq,noffd)
 
 !-----------------------------------------------------------------------
@@ -185,12 +186,12 @@
         implicit none
 
 !-----------------------------------------------------------------------
-! If we are performing a RIXS calculation, then symmetry is NOT
-! supported
+! If we are performing a non-linear spectroscopy calculation, then
+! then symmetry is NOT supported
 !-----------------------------------------------------------------------
-        if (lrixs.or.ltpxas) then
+        if (lrixs.or.ltpa) then
            if (pntgroup.ne.'C1') then
-              errmsg='Symmetry is NOT supported in RIXS and TPXAS &
+              errmsg='Symmetry is NOT supported in RIXS and TPA &
                    calculations'
            endif
         endif
@@ -299,10 +300,10 @@
         CHECK_dip = nirrep2
 
 !-----------------------------------------------------------------------
-! If we are performing a RIXS calculation, then set up the total dipole
-! matrix array
+! If we are performing a non-linear spectroscopy calculation, then set
+! up the total dipole matrix array
 !-----------------------------------------------------------------------
-        if (lrixs.or.ltpxas) then
+        if (lrixs.or.ltpa) then
            allocate(dpl_all(3,nbas,nbas))
            dpl_all(1,:,:)=x_dipole(:,:)
            dpl_all(2,:,:)=y_dipole(:,:)
@@ -480,10 +481,16 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2
 
-        if (ltpxas) then
-           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
-                travec,vec_init,mtmf,noffdf,rvec,travec2)
-           call tpxas_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
+        if (ltpa) then
+           if (lcvsfinal) then
+              call davidson_final_space_diag(ndim,ndimf,ndimsf,&
+                   kpq,kpqf,travec,vec_init,mtmf,noffdf,rvec,&
+                   travec2)
+              call dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
+           else
+              call dipole_ispace_contraction_tpa(ndim,ndimf,kpq,kpqf)
+           endif
+           call tpa_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
         else
            if (ldiagfinal) then
               call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
@@ -580,9 +587,6 @@
         if (lrixs) then
            ! Davidson-RIXS calculation
            call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
-        else if (ltpxas) then
-           ! TPXAS calculation
-           call dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
         else
            ! Absorption spectrum calculation
            if (statenumber.eq.0) then
@@ -720,10 +724,10 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-        allocate(travec_ic(ndimf,3))
         allocate(travec_iv(ndim,3))
-        allocate(travec_fc(ndimf,3,davstates_f))
         allocate(travec_fv(ndim,3,davstates_f))
+        allocate(travec_ic(ndimf,3))
+        allocate(travec_fc(ndimf,3,davstates_f))
         allocate(vecf(ndimf,davstates_f))
         allocate(ef(davstates_f))
         if (statenumber.gt.0) then
@@ -732,7 +736,7 @@
         endif
         
 !-----------------------------------------------------------------------
-! Transition matrix elements: final states
+! Transition matrix elements: core-excited states
 !-----------------------------------------------------------------------
         ! (i) Core, valence
         !
@@ -799,26 +803,23 @@
               write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec_ic(:,c),0)
            enddo
-
-        else
-
-           ! (i) Valence, valence
-           !
-           ! Loop over the components of the dipole operator
-           do c=1,3
-              ! Set the dipole component
-              dpl(:,:)=dpl_all(c,:,:)
-              ! Calculate the IS representation of the dipole operator
-              filename='SCRATCH/dipole_vv_'//acomp(c)
-              write(ilog,'(70a)') ('-',k=1,70)
-              msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
-              write(ilog,'(2x,a)') trim(msg)
-              write(ilog,'(70a)') ('-',k=1,70)
-              call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
-                   nbuf_vv(c),nel_vv(c),filename)
-           enddo
-
         endif
+
+        ! (i) Valence, valence
+        !
+        ! Loop over the components of the dipole operator
+        do c=1,3
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+           ! Calculate the IS representation of the dipole operator
+           filename='SCRATCH/dipole_vv_'//acomp(c)
+           write(ilog,'(70a)') ('-',k=1,70)
+           msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
+           write(ilog,'(2x,a)') trim(msg)
+           write(ilog,'(70a)') ('-',k=1,70)
+           call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
+                nbuf_vv(c),nel_vv(c),filename)
+        enddo
 
 !-----------------------------------------------------------------------
 ! Read the Davidson vectors from file
@@ -830,7 +831,7 @@
         ! the calculation of the two-photon transition moments
         allocate(edavf(davstates_f))
         edavf=ef
-
+     
         ! Initial states
         if (statenumber.gt.0) call readdavvc(davstates,ei,veci,'i',ndim)
 
@@ -888,7 +889,6 @@
            k=k+3
         enddo
 
-
         !! TEST
         !!
         !! DIAGONALISATION OF THE OVERLAP MATRIX
@@ -925,9 +925,6 @@
         !deallocate(work)
         !! TEST
 
-
-
-
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
         allocate(tau(tpblock(1)))
@@ -936,20 +933,20 @@
              tpblock(1),error)
         if (error.ne.0) then
            errmsg='dqerf failed in subroutine &
-                dipole_ispace_contraction_tpxas'
+                dipole_ispace_contraction_tpa'
            call error_control
         endif
         call dorgqr(ndim,tpblock(1),tpblock(1),initvecs,ndim,tau,&
              work,tpblock(1),error)
         if (error.ne.0) then
            errmsg='dorgqr failed in subroutine &
-                dipole_ispace_contraction_tpxas'
+                dipole_ispace_contraction_tpa'
            call error_control
         endif
         
         ! Write the valence-excited space guess vectors to file
         call freeunit(ivecs)
-        open(ivecs,file='SCRATCH/tpxas_initi',form='unformatted',&
+        open(ivecs,file='SCRATCH/tpa_initi',form='unformatted',&
              status='unknown')
         write(ivecs) initvecs
         close(ivecs)
@@ -968,10 +965,6 @@
            initvecs(:,k+1:k+3)=travec_fc(:,1:3,f)
            k=k+3
         enddo
-        
-
-
-
 
         !! TEST
         !!
@@ -1009,14 +1002,6 @@
         !deallocate(work)
         !! TEST
 
-
-
-
-
-
-
-
-
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
         allocate(tau(tpblock(2)))
@@ -1025,24 +1010,24 @@
              tpblock(2),error)
         if (error.ne.0) then
            errmsg='dqerf failed in subroutine &
-                dipole_ispace_contraction_tpxas'
+                dipole_ispace_contraction_tpa'
            call error_control
         endif
         call dorgqr(ndimf,tpblock(2),tpblock(2),initvecs,ndimf,tau,&
              work,tpblock(2),error)
         if (error.ne.0) then
            errmsg='dorgqr failed in subroutine &
-                dipole_ispace_contraction_tpxas'
+                dipole_ispace_contraction_tpa'
            call error_control
         endif
-        
+           
         ! Write the core-excited space guess vectors to file
         call freeunit(ivecs)
-        open(ivecs,file='SCRATCH/tpxas_initc',form='unformatted',&
+        open(ivecs,file='SCRATCH/tpa_initc',form='unformatted',&
              status='unknown')
         write(ivecs) initvecs
         close(ivecs)
-
+           
         deallocate(initvecs)
         deallocate(tau)
         deallocate(work)
@@ -1081,23 +1066,23 @@
 
            ! (ii) Core
            do c=1,3
-
+              
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
-
+              
               ! Calculate the F-vector
               write(ilog,'(70a)') ('-',k=1,70)
               msg='Calculation of P_c . F_'//acomp(c)
               write(ilog,'(2x,a)') trim(msg)
               write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtm_c(:,c),0)
-
+              
               ! Calculate the transition dipole moment between the
               ! ground state and the final states
               do f=1,davstates_f
                  tdmgsf(c,f)=dot_product(mtm_c(:,c),vecf(:,f))
               enddo
-
+              
            enddo
 
            ! Deallocate arrays
@@ -1105,7 +1090,6 @@
            deallocate(mtm_c)
 
         endif
-
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1118,6 +1102,278 @@
         return
         
       end subroutine dipole_ispace_contraction_tpxas
+
+!#######################################################################
+      
+      subroutine dipole_ispace_contraction_tpa(ndim,ndimf,kpq,kpqf)
+
+        use constants
+        use parameters
+        use misc
+        use get_matrix_dipole
+        use get_moment
+        use fspace
+        use guessvecs
+        use iomod
+        use diagmod
+        
+        implicit none
+
+        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+        integer                                   :: ndim,ndimf,c,&
+                                                     k,f,i,j,error,&
+                                                     ivecs
+        integer*8, dimension(3)                   :: nel_vv
+        integer, dimension(3)                     :: nbuf_vv
+        real(d), dimension(:,:), allocatable      :: vec,initvecs
+        real(d), dimension(:), allocatable        :: ener
+        real(d), dimension(:), allocatable        :: tau,work
+        real(d), dimension(:,:), allocatable      :: mtm
+        character(len=1), dimension(3)            :: acomp
+        character(len=70)                         :: msg
+        character(len=60)                         :: filename
+
+        integer                              :: e2
+        real(d), dimension(:,:), allocatable :: smat
+        real(d), dimension(:), allocatable   :: eig
+
+        acomp=(/ 'x','y','z' /)
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+        allocate(travec_iv(ndim,3))
+        allocate(travec_fv(ndim,3,davstates))
+        allocate(vec(ndim,davstates))
+        allocate(ener(davstates))
+
+!-----------------------------------------------------------------------
+! P_v . D_a . P_v, a=x,y,z
+!-----------------------------------------------------------------------
+        ! Loop over the components of the dipole operator
+        do c=1,3
+           
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+
+           ! Output progress
+           write(ilog,'(70a)') ('-',k=1,70)
+           msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
+           write(ilog,'(2x,a)') trim(msg)
+           write(ilog,'(70a)') ('-',k=1,70)
+
+           ! Calculate the IS representation of the dipole operator
+           filename='SCRATCH/dipole_vv_'//acomp(c)
+           call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
+                nbuf_vv(c),nel_vv(c),filename)
+
+        enddo
+
+!-----------------------------------------------------------------------
+! Read the Davidson vectors from file
+!-----------------------------------------------------------------------
+        call readdavvc(davstates,ener,vec,'i',ndim)
+
+        ! Save the Davidson energies for use later in the
+        ! calculation of the two-photon transition moments
+        allocate(edavf(davstates))
+        edavf=ener
+
+!-----------------------------------------------------------------------
+! P_v . D_a . Psi_i, a=x,y,z
+!-----------------------------------------------------------------------
+        if (statenumber.eq.0) then
+           
+           ! Loop over the components of the dipole operator
+           do c=1,3
+           
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+           
+              ! Output progress
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
+              
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),0)
+              
+           enddo
+
+        else
+
+           ! Loop over the components of the dipole operator
+           do c=1,3
+
+              ! Calculate P_v . D_c . Psi_i
+              filename='SCRATCH/dipole_vv_'//acomp(c)
+              call contract_dipole_state(filename,ndim,ndim,&
+                   vec(:,statenumber),travec_iv(:,c),nbuf_vv(c),&
+                   nel_vv(c),'r')
+
+           enddo
+
+        endif
+
+!-----------------------------------------------------------------------
+! P_v . D_a . Psi_f, a=x,y,z, f=1,davstates
+!-----------------------------------------------------------------------
+        ! Loop over the Davidson states
+        do f=1,davstates
+
+           ! Loop over the components of the dipole operator
+           do c=1,3
+
+              ! Calculate P_v . D_c . Psi_f
+              filename='SCRATCH/dipole_vv_'//acomp(c)
+              call contract_dipole_state(filename,ndimf,ndim,&
+                   vec(:,f),travec_fv(:,c,f),nbuf_vv(c),nel_vv(c)&
+                   &,'r')
+
+           enddo
+
+        enddo
+
+!-----------------------------------------------------------------------
+! Generate the initial Lanczos vectors via the orthogonalisation of
+! the dipole-matrix state-vector products
+!-----------------------------------------------------------------------
+        ! Set the block size
+        if (statenumber.eq.0) then
+           tpblock(1)=3+3*davstates
+        else
+           tpblock(1)=3+3*(davstates-1)
+        endif
+
+        ! Allocate arrays
+        allocate(initvecs(ndim,tpblock(1)))
+
+        ! Copy the contents of the travec_iv and travec_fv arrays
+        initvecs(:,1:3)=travec_iv(:,1:3)
+        k=3
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+           initvecs(:,k+1:k+3)=travec_fv(:,1:3,f)
+           k=k+3
+        enddo
+
+        !! TEST
+        !!
+        !! DIAGONALISATION OF THE OVERLAP MATRIX
+        !allocate(smat(tpblock(1),tpblock(1)))
+        !allocate(eig(tpblock(1)))
+        !allocate(work(3*tpblock(1)))
+        !
+        !write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
+        !     matrix:'
+        !do i=1,tpblock(1)
+        !   do j=i,tpblock(1)
+        !      smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
+        !      smat(j,i)=smat(i,j)
+        !      write(ilog,*) i,j,smat(i,j)
+        !   enddo
+        !enddo
+        !
+        !e2=3*tpblock(1)
+        !call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
+        !
+        !if (error.ne.0) then
+        !   errmsg='This fucked up...'
+        !   call error_control
+        !endif
+        !
+        !write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
+        !     space overlap matrix:'
+        !do i=1,tpblock(1)
+        !   write(ilog,*) i,eig(i)
+        !enddo
+        !
+        !deallocate(smat)
+        !deallocate(eig)
+        !deallocate(work)
+        !! TEST
+
+        ! Orthogonalisation of the dipole matrix-state vector
+        ! contractions via a QR factorisation
+        allocate(tau(tpblock(1)))
+        allocate(work(tpblock(1)))
+        call dgeqrf(ndim,tpblock(1),initvecs,ndim,tau,work,&
+             tpblock(1),error)
+        if (error.ne.0) then
+           errmsg='dqerf failed in subroutine &
+                dipole_ispace_contraction_tpa'
+           call error_control
+        endif
+        call dorgqr(ndim,tpblock(1),tpblock(1),initvecs,ndim,tau,&
+             work,tpblock(1),error)
+        if (error.ne.0) then
+           errmsg='dorgqr failed in subroutine &
+                dipole_ispace_contraction_tpa'
+           call error_control
+        endif
+        
+        ! Write the valence-excited space guess vectors to file
+        call freeunit(ivecs)
+        open(ivecs,file='SCRATCH/tpa_initi',form='unformatted',&
+             status='unknown')
+        write(ivecs) initvecs
+        close(ivecs)
+
+        ! Deallocate arrays
+        deallocate(tau)
+        deallocate(work)
+        deallocate(initvecs)
+
+!-----------------------------------------------------------------------
+! If we are considering two-photon excitation from an excited state,
+! then we additionally require the transition dipole moments between
+! the ground state and all Davidson states
+!-----------------------------------------------------------------------
+        if (statenumber.ne.0) then
+
+           ! Allocate arrays
+           allocate(mtm(ndim,3))
+           allocate(tdmgsf(3,davstates))
+
+           ! Loop over the components of the dipole operator
+           do c=1,3
+
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+
+              ! Output our progress
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . F_'//acomp(c)
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
+
+              ! Calculate the F-vector
+              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:,c),0)
+
+              ! Calculate the transition dipole moment between the
+              ! ground state and the Davidson states
+              do f=1,davstates
+                 tdmgsf(c,f)=dot_product(mtm(:,c),vec(:,f))
+              enddo
+              tdmgsi(:)=tdmgsf(:,statenumber)
+
+           enddo
+           
+           ! Deallocate arrays
+           deallocate(mtm)
+
+        endif
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+        deallocate(vec)
+        deallocate(ener)
+
+        return
+
+      end subroutine dipole_ispace_contraction_tpa
 
 !#######################################################################
 
@@ -1750,7 +2006,7 @@
 
 !#######################################################################
 
-      subroutine tpxas_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
+      subroutine tpa_lanczos(ndim,ndimf,kpq,kpqf,noffd,noffdf)
 
         use constants
         use parameters
@@ -1769,26 +2025,26 @@
         lmain=tpblock(1)
         call lancdiag_block(ndim,noffd,'i')
 
-!-----------------------------------------------------------------------
-! Rename the valence-excited space Lanczos vector file
-!-----------------------------------------------------------------------
+        ! Rename the valence-excited space Lanczos vector file
         call system('mv '//trim(lancname)//' SCRATCH/lancstates_v')
 
 !-----------------------------------------------------------------------
-! Perform the block-Lanczos calculation using the final-space
-! Hamiltonian
+! If we are calculating a TPXAS spectrum, then perform the
+! block-Lanczos calculation using the final-space Hamiltonian
 !-----------------------------------------------------------------------
-        lmain=tpblock(2)
-        call lancdiag_block(ndimf,noffdf,'c')
+        if (lcvsfinal) then
 
-!-----------------------------------------------------------------------
-! Rename the core-excited space Lanczos vector file
-!-----------------------------------------------------------------------
-        call system('mv '//trim(lancname)//' SCRATCH/lancstates_c')
+           lmain=tpblock(2)
+           call lancdiag_block(ndimf,noffdf,'c')
+           
+           ! Rename the core-excited space Lanczos vector file
+           call system('mv '//trim(lancname)//' SCRATCH/lancstates_c')
+
+        endif
 
         return
 
-      end subroutine tpxas_lanczos
+      end subroutine tpa_lanczos
 
 !#######################################################################
 
@@ -1920,8 +2176,12 @@
 
         if (lrixs) then
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
-        else if (ltpxas) then
-           call tdm_tpxas(ndim,ndimf,e_init)
+        else if (ltpa) then
+           if (lcvsfinal) then
+              call tdm_tpa(ndim,ndimf,e_init)
+           else
+              call tdm_tpa(ndim,ndimf,e_init)
+           endif
         else
            if (ldiagfinal) then
               ! Davidson states
@@ -2321,8 +2581,8 @@
                       +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(b,a,f)
               enddo
-              !tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*(edavf(f)/2.0d0)**2
-              !tpaxsec(f)=tpaxsec(f)/(c_au**2)
+              tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
+              tpaxsec(f)=tpaxsec(f)/(c_au**2)
            enddo
         enddo
         tpaxsec=tpaxsec/30.0d0
@@ -2336,8 +2596,7 @@
         call freeunit(itpa)
         open(itpa,file='tpa.dat',form='formatted',status='unknown')
         do f=1,davstates_f
-           write(itpa,'(2(F11.5,2x))') (edavf(f)-e_init)*eh2ev,&
-                tpaxsec(f)
+           write(itpa,*) (edavf(f)-e_init)*eh2ev,tpaxsec(f)
         enddo
         close(itpa)
 
@@ -2356,6 +2615,200 @@
         return
 
       end subroutine tdm_tpxas
+
+!#######################################################################
+
+      subroutine tdm_tpa(ndim,ndimf,e_init)
+
+        use constants
+        use parameters
+        use iomod
+
+        implicit none
+
+        integer                                :: ndim,ndimf,k,&
+                                                  nlanc,ilanc,alpha,&
+                                                  a,b,f,itpa
+        real(d)                                :: e_init
+        real(d), dimension(:,:,:), allocatable :: sabif
+        real(d), dimension(:), allocatable     :: lener,lvec,&
+                                                  tpaxsec
+        real(d), dimension(:,:), allocatable   :: tdmil
+        real(d), dimension(:,:,:), allocatable :: tdmfl
+
+!----------------------------------------------------------------------
+! Output where we are at
+!----------------------------------------------------------------------
+        write(ilog,'(/,70a)') ('-',k=1,70)
+        write(ilog,'(2x,a)') 'Calculation of the two-photon &
+             cross-sections'
+        write(ilog,'(70a)') ('-',k=1,70)
+
+!----------------------------------------------------------------------
+! Allocate and initialise arrays
+!----------------------------------------------------------------------
+        ! Two-photon transition moments
+        allocate(sabif(3,3,davstates))
+        sabif=0.0d0
+
+        ! Lanczos energies
+        nlanc=tpblock(1)*ncycles
+        allocate(lener(nlanc))
+        lener=0.0d0
+
+        ! Transition dipole moments between the initial state and
+        ! the Lanczos pseudo-states
+        allocate(tdmil(3,nlanc))
+        tdmil=0.0d0
+
+        ! Transition dipole moments between the final states and
+        ! the Lanczos pseudo-states
+        allocate(tdmfl(3,davstates,nlanc))
+        tdmfl=0.0d0
+
+        ! Two photon cross-sections
+        allocate(tpaxsec(davstates))
+        tpaxsec=0.0d0
+
+!----------------------------------------------------------------------
+! Calculation of the transition dipole moments between the ADC
+! eigenstates and the Lanczos pseudostates
+!----------------------------------------------------------------------
+        ! Allocate arrays
+        allocate(lvec(ndim))
+
+        ! Open the Lanczos pseudo-spectrum file
+        call freeunit(ilanc)
+        open(ilanc,file='SCRATCH/lancstates_v',status='old',&
+             access='sequential',form='unformatted')
+
+        ! Loop over the Lanczos pseudo-states
+        do alpha=1,nlanc
+           
+           ! Read the current Lanczos pseudo-state
+           read(ilanc) k,lener(alpha),lvec
+
+           ! < i | D_a | alpha >
+           do a=1,3
+              tdmil(a,alpha)=dot_product(travec_iv(:,a),lvec)
+           enddo
+
+           ! < f | D_a | alpha >
+           do f=1,davstates
+              do a=1,3
+                 tdmfl(a,f,alpha)=&
+                      dot_product(travec_fv(:,a,f),lvec)
+              enddo
+           enddo
+
+        enddo
+
+        ! Close the Lanczos pseudo-spectrum file
+        close(ilanc)
+
+        ! Deallocate arrays
+        deallocate(lvec)
+
+!----------------------------------------------------------------------
+! Calculation of the two-photon transition moments
+!----------------------------------------------------------------------
+        ! Loop over final states
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+
+           ! Loop over pairs of dipole operator components
+           do a=1,3
+              do b=1,3
+
+                 ! Loop over the Lanczos pseudo-states
+                 do alpha=1,nlanc
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         + tdmil(a,alpha)*tdmfl(b,f,alpha)&
+                         /(lener(alpha)-0.5d0*edavf(f))
+
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         + tdmil(b,alpha)*tdmfl(a,f,alpha)&
+                         /(lener(alpha)-0.5d0*edavf(f))
+
+                 enddo
+                 
+              enddo
+           enddo
+
+        enddo
+
+        !  Contribution of the ground state to the two-photon transition
+        ! moments (excited initial states only)
+        ! N.B., E_0 = 0, hence the -E_f/2 denominators
+        if (statenumber.gt.0) then
+           
+           ! Loop over final states
+           do f=1,davstates
+              if (statenumber.ne.0.and.f.eq.statenumber) cycle
+
+              ! Loop over pairs of dipole operator components
+              do a=1,3
+                 do b=1,3
+                    
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmgsi(a)*tdmgsf(b,f)&
+                         /(-0.5d0*edavf(f))
+                    
+                    sabif(a,b,f)=sabif(a,b,f)&
+                         +tdmgsi(b)*tdmgsf(a,f)&
+                         /(-0.5d0*edavf(f))
+
+                 enddo
+              enddo
+
+           enddo
+           
+        endif
+
+!----------------------------------------------------------------------
+! Calculation of the two-photon cross-sections for (parallel) linearly
+! polarised light
+!----------------------------------------------------------------------
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+           do a=1,3
+              do b=1,3
+                 tpaxsec(f)=tpaxsec(f)&
+                      +2.0d0*sabif(a,a,f)*sabif(b,b,f)&
+                      +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
+                      +2.0d0*sabif(a,b,f)*sabif(b,a,f)
+              enddo
+           enddo
+        enddo
+        tpaxsec=tpaxsec/30.0d0
+
+!----------------------------------------------------------------------
+! Output the two-photon cross-sections
+! N.B., we output the excitation energies relative to the initial
+! state
+!----------------------------------------------------------------------
+        ! Stick spectrum
+        call freeunit(itpa)
+        open(itpa,file='tpa.dat',form='formatted',status='unknown')
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+           write(itpa,*) (edavf(f)-e_init)*eh2ev,tpaxsec(f)
+        enddo
+        close(itpa)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+        deallocate(sabif)
+        deallocate(lener)
+        deallocate(tdmil)
+        deallocate(tdmfl)
+        deallocate(tpaxsec)
+
+        return
+
+      end subroutine tdm_tpa
 
 !#######################################################################
 

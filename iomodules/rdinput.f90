@@ -109,8 +109,8 @@
          else if (keyword(i).eq.'rixs') then
             lrixs=.true.
 
-         else if (keyword(i).eq.'tpxas') then
-            ltpxas=.true.
+         else if (keyword(i).eq.'tpa') then
+            ltpa=.true.
 
          else if (keyword(i).eq.'energy_only') then
             energyonly=.true.
@@ -329,8 +329,6 @@
 
         if (lrixs) lcvsfinal=.true.
 
-        if (ltpxas) lcvsfinal=.true.
-
 !-----------------------------------------------------------------------
 ! If an energy-only calculation has been requested, reset method
 ! accordingly
@@ -346,11 +344,7 @@
 !-----------------------------------------------------------------------
 ! Read the Davidson section(s)
 !-----------------------------------------------------------------------
-        if (ldiag) then
-           if (statenumber.gt.0.or.energyonly) then
-              call rddiaginp
-           endif
-        endif
+        if (ldiag) call rddiaginp
 
         if (ldiagfinal)  call rddiagfinalinp
 
@@ -502,11 +496,11 @@
 
 !-----------------------------------------------------------------------
 ! Lanczos section: only required if we are considering ionization,
-! a block-Lanczos-RIXS or block-Lanczos-TPXAS calculation
+! a block-Lanczos-RIXS or block-Lanczos-TPA calculation
 !-----------------------------------------------------------------------
       ! Photoionisation cross-section calculation
       if (.not.energyonly.and..not.ldiagfinal&
-           .and..not.ldyson.and..not.lrixs.and..not.ltpxas) then
+           .and..not.ldyson.and..not.lrixs.and..not.ltpa) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -542,8 +536,8 @@
          
       endif
 
-      ! Block Lanczos-TPXAS calculation
-      if (ltpxas) then
+      ! Block Lanczos-TPA calculation
+      if (ltpa) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -557,6 +551,13 @@
          ! Set lancguess=6: this is required so that the appropriate
          ! initial vectors are used
          lancguess=6
+
+         ! If a TPXAS spectrum is to be calculated, then make sure
+         ! that a diag_final section is present
+         if (lcvsfinal.and..not.ldiagfinal) then
+            msg='No diag_final section has been found'
+            goto 999
+         endif
 
       endif
 
