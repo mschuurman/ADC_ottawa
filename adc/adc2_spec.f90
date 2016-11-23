@@ -1258,41 +1258,41 @@
            k=k+3
         enddo
 
-        !! TEST
-        !!
-        !! DIAGONALISATION OF THE OVERLAP MATRIX
-        !allocate(smat(tpblock(1),tpblock(1)))
-        !allocate(eig(tpblock(1)))
-        !allocate(work(3*tpblock(1)))
+        ! TEST
         !
-        !write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
-        !     matrix:'
-        !do i=1,tpblock(1)
-        !   do j=i,tpblock(1)
-        !      smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
-        !      smat(j,i)=smat(i,j)
-        !      write(ilog,*) i,j,smat(i,j)
-        !   enddo
-        !enddo
-        !
-        !e2=3*tpblock(1)
-        !call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
-        !
-        !if (error.ne.0) then
-        !   errmsg='This fucked up...'
-        !   call error_control
-        !endif
-        !
-        !write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
-        !     space overlap matrix:'
-        !do i=1,tpblock(1)
-        !   write(ilog,*) i,eig(i)
-        !enddo
-        !
-        !deallocate(smat)
-        !deallocate(eig)
-        !deallocate(work)
-        !! TEST
+        ! DIAGONALISATION OF THE OVERLAP MATRIX
+        allocate(smat(tpblock(1),tpblock(1)))
+        allocate(eig(tpblock(1)))
+        allocate(work(3*tpblock(1)))
+        
+        write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
+             matrix:'
+        do i=1,tpblock(1)
+           do j=i,tpblock(1)
+              smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
+              smat(j,i)=smat(i,j)
+              write(ilog,*) i,j,smat(i,j)
+           enddo
+        enddo
+        
+        e2=3*tpblock(1)
+        call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
+        
+        if (error.ne.0) then
+           errmsg='This fucked up...'
+           call error_control
+        endif
+        
+        write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
+             space overlap matrix:'
+        do i=1,tpblock(1)
+           write(ilog,*) i,eig(i)
+        enddo
+        
+        deallocate(smat)
+        deallocate(eig)
+        deallocate(work)
+        ! TEST
 
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation

@@ -188,6 +188,8 @@ contains
     real(d) :: q
 !!$ The subroutine is taken from the NR p233, employs heapsort.
 
+    if (ndim.eq.1) return
+
     do i= 1,ndim
        indx(i)=i
     end do

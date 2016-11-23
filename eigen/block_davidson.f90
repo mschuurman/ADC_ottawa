@@ -1292,8 +1292,12 @@
 ! Note that this is only relevant if subspace deflation was used, but
 ! makes no difference if not
 !-----------------------------------------------------------------------
-      call dsortindxa1('A',nstates,reigval(1:nstates),indx)
-      
+      if (nstates.gt.1) then
+         call dsortindxa1('A',nstates,reigval(1:nstates),indx)
+      else
+         indx(1)=1
+      endif
+
 !-----------------------------------------------------------------------
 ! Open the Davidson vector file
 !-----------------------------------------------------------------------
