@@ -82,13 +82,14 @@
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.lrixs)&
-             call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
+        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvs)) then
+           call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
+        endif
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0) then
+        if (statenumber.gt.0.or.(ltpa.and..not.lcvs)) then
            write(ilog,'(/,70a)') ('*',i=1,70)
            write(ilog,'(2x,a)') &
                 'Initial space ADC(2)-s excitation energies'
@@ -1258,42 +1259,42 @@
            k=k+3
         enddo
 
-        ! TEST
+        !! TEST
+        !!
+        !! DIAGONALISATION OF THE OVERLAP MATRIX
+        !allocate(smat(tpblock(1),tpblock(1)))
+        !allocate(eig(tpblock(1)))
+        !allocate(work(3*tpblock(1)))
         !
-        ! DIAGONALISATION OF THE OVERLAP MATRIX
-        allocate(smat(tpblock(1),tpblock(1)))
-        allocate(eig(tpblock(1)))
-        allocate(work(3*tpblock(1)))
+        !write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
+        !     matrix:'
+        !do i=1,tpblock(1)
+        !   do j=i,tpblock(1)
+        !      smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
+        !      smat(j,i)=smat(i,j)
+        !      write(ilog,*) i,j,smat(i,j)
+        !   enddo
+        !enddo
+        !
+        !e2=3*tpblock(1)
+        !call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
+        !
+        !if (error.ne.0) then
+        !   errmsg='This fucked up...'
+        !   call error_control
+        !endif
+        !
+        !write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
+        !     space overlap matrix:'
+        !do i=1,tpblock(1)
+        !   write(ilog,*) i,eig(i)
+        !enddo
+        !
+        !deallocate(smat)
+        !deallocate(eig)
+        !deallocate(work)
+        !! TEST
         
-        write(ilog,'(/,2x,a)') 'Valence-excited space overlap &
-             matrix:'
-        do i=1,tpblock(1)
-           do j=i,tpblock(1)
-              smat(i,j)=dot_product(initvecs(:,i),initvecs(:,j))
-              smat(j,i)=smat(i,j)
-              write(ilog,*) i,j,smat(i,j)
-           enddo
-        enddo
-        
-        e2=3*tpblock(1)
-        call dsyev('V','U',tpblock(1),smat,tpblock(1),eig,work,e2,error)
-        
-        if (error.ne.0) then
-           errmsg='This fucked up...'
-           call error_control
-        endif
-        
-        write(ilog,'(/,2x,a)') 'Eigenvalues of the valence-excited &
-             space overlap matrix:'
-        do i=1,tpblock(1)
-           write(ilog,*) i,eig(i)
-        enddo
-        
-        deallocate(smat)
-        deallocate(eig)
-        deallocate(work)
-        ! TEST
-
         ! Orthogonalisation of the dipole matrix-state vector
         ! contractions via a QR factorisation
         allocate(tau(tpblock(1)))
@@ -2581,8 +2582,8 @@
                       +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(b,a,f)
               enddo
-              tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
-              tpaxsec(f)=tpaxsec(f)/(c_au**2)
+              !tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
+              !tpaxsec(f)=tpaxsec(f)/(c_au**2)
            enddo
         enddo
         tpaxsec=tpaxsec/30.0d0
@@ -2592,6 +2593,19 @@
 ! N.B., we output the excitation energies relative to the initial
 ! state
 !----------------------------------------------------------------------
+        ! Log file
+        write(ilog,'(/,2x,63a)') ('=',k=1,63)
+        write(ilog,'(2x,a)') '     i     |     f     |     &
+             E_if (eV)     |     delta_TP (au)'
+        write(ilog,'(2x,63a)') ('-',k=1,63)
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+           write(ilog,'(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,F10.5)') &
+                statenumber,'|',f,'|',(edavf(f)-e_init)*eh2ev,&
+                '|',tpaxsec(f)
+        enddo
+        write(ilog,'(2x,63a,/)') ('=',k=1,63)
+
         ! Stick spectrum
         call freeunit(itpa)
         open(itpa,file='tpa.dat',form='formatted',status='unknown')
@@ -2788,7 +2802,20 @@
 ! N.B., we output the excitation energies relative to the initial
 ! state
 !----------------------------------------------------------------------
-        ! Stick spectrum
+        ! Log file
+        write(ilog,'(/,2x,63a)') ('=',k=1,63)
+        write(ilog,'(2x,a)') '     i     |     f     |     &
+             E_if (eV)     |     delta_TP (au)'
+        write(ilog,'(2x,63a)') ('-',k=1,63)
+        do f=1,davstates
+           if (statenumber.ne.0.and.f.eq.statenumber) cycle
+           write(ilog,'(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,F10.5)') &
+                statenumber,'|',f,'|',(edavf(f)-e_init)*eh2ev,&
+                '|',tpaxsec(f)
+        enddo
+        write(ilog,'(2x,63a,/)') ('=',k=1,63)
+
+        ! Stick spectrum file
         call freeunit(itpa)
         open(itpa,file='tpa.dat',form='formatted',status='unknown')
         do f=1,davstates

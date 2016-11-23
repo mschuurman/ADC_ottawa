@@ -1203,20 +1203,20 @@ do b1=nOcc+1,nBas
 
     integer :: b,c,j,i,nsym1,nsym2,nsym3,b1,c1,i1,j1,cnt
     integer :: apr,bpr,cpr,kpr,lpr,mpr,apr1,bpr1,cpr1,kpr1,lpr1,mpr1
-    real*8 :: DA,DB,eabij,ebckj,eak,term,term1,term2,eka
-    real*8 :: ekkpraapr,ebprcprlprmpr
+    real*8  :: DA,DB,eabij,ebckj,eak,term,term1,term2,eka
+    real*8  :: ekkpraapr,ebprcprlprmpr
 
 !!!!!!!!!!!!!!!!!!!!!!!!!! ZEROTH ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! IT DOES NOT GIVE ANY CONTRIBUTION TO THE HOLE-PARTICLE PART !!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!! SECOND ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     func=0.0d0
     cnt=0
-  do b1=nOcc+1,nBas
-     b=roccnum(b1)
-   do c1=nOcc+1,nBas
-      c=roccnum(c1)
-     do j1=1,nOcc
-        j=roccnum(j1)
+    do b1=nOcc+1,nBas
+       b=roccnum(b1)
+       do c1=nOcc+1,nBas
+          c=roccnum(c1)
+          do j1=1,nOcc
+             j=roccnum(j1)
 
              nsym1=MT(orbSym(b),orbSym(c))
              nsym2=MT(orbSym(a),orbSym(j))
@@ -1226,11 +1226,11 @@ do b1=nOcc+1,nBas
                 
                 cnt=cnt+1
                 term=0.0d0
-
+                
                 eak=e(a)-e(k)
                 ebckj=e(b)+e(c)-e(k)-e(j)
                 DA=eak*ebckj
-
+                
                 term=term+vpqrs(b,a,c,j)*(+2.0d0*vpqrs(k,b,j,c)-1.0d0*vpqrs(k,c,j,b))
                 term=term+vpqrs(b,j,c,a)*(-1.0d0*vpqrs(k,b,j,c)+2.0d0*vpqrs(k,c,j,b))
                 term=term/DA
@@ -1240,21 +1240,21 @@ do b1=nOcc+1,nBas
              end if
           end do
        end do
-    end do 
-
-do b1=nOcc+1,nBas
-     b=roccnum(b1)
-   do i1=1,nOcc
-      i=roccnum(i1)
-     do j1=1,nOcc
-        j=roccnum(j1)
-
+    end do
+    
+    do b1=nOcc+1,nBas
+       b=roccnum(b1)
+       do i1=1,nOcc
+          i=roccnum(i1)
+          do j1=1,nOcc
+             j=roccnum(j1)
+             
              nsym1=MT(orbSym(i),orbSym(j))
              nsym2=MT(orbSym(b),orbSym(a))
              nsym3=MT(orbSym(b),orbSym(k))
 
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
-
+                
                 cnt=cnt+1
                 term=0.0d0
 
@@ -1267,172 +1267,172 @@ do b1=nOcc+1,nBas
                 term=term/DB
 
                 func = func - term  ! this part has minus sign
-
+                
              end if
           end do
        end do
     end do
-
-   func = 0.5*func  ! EXPRESSION FACTOR IN THE DENSITY
+    
+    func = 0.5d0*func  ! EXPRESSION FACTOR IN THE DENSITY
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  END SECOND ORDER PART !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  THIRD ORDER PART  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- if(denord .gt. 2) then
+    if(denord .gt. 2) then
 
 !!! t2_1h1p part !!!!!!!!!!!
- do apr1=nOcc+1,nBas
-     apr=roccnum(apr1)
-   do kpr1=1,nOcc
-      kpr=roccnum(kpr1)
+       do apr1=nOcc+1,nBas
+          apr=roccnum(apr1)
+          do kpr1=1,nOcc
+             kpr=roccnum(kpr1)
 
              nsym1=MT(orbSym(kpr),orbSym(k))
              nsym2=MT(orbSym(apr),orbSym(a))
 
-      if(MT(nsym1,nsym2) .eq. 1)  then
+             if(MT(nsym1,nsym2) .eq. 1)  then
 
-         cnt=cnt+1
-         term=0.0d0
+                cnt=cnt+1
+                term=0.0d0
+                
+                ekkpraapr=e(k)+e(kpr)-e(a)-e(apr)
 
-         ekkpraapr=e(k)+e(kpr)-e(a)-e(apr)
+                term=term+(+2.0d0*vpqrs(k,a,kpr,apr)-1.0d0*vpqrs(k,apr,kpr,a))*t2_1h1p(apr,kpr)
+                term=term/ekkpraapr 
+                
+                func=func+term
 
-         term=term+(+2.0d0*vpqrs(k,a,kpr,apr)-1.0d0*vpqrs(k,apr,kpr,a))*t2_1h1p(apr,kpr)
-         term=term/ekkpraapr 
-
-         func=func+term
-
-     end if
-   end do
- end do
+             end if
+          end do
+       end do
 
 
 !!!  end t2_1h1p part !!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!! t2_1h1p_hc part !!!!!!!!!!!
- do apr1=nOcc+1,nBas
-     apr=roccnum(apr1)
-   do kpr1=1,nOcc
-      kpr=roccnum(kpr1)
+       do apr1=nOcc+1,nBas
+          apr=roccnum(apr1)
+          do kpr1=1,nOcc
+             kpr=roccnum(kpr1)
 
              nsym1=MT(orbSym(kpr),orbSym(k))
              nsym2=MT(orbSym(apr),orbSym(a))
 
-      if(MT(nsym1,nsym2) .eq. 1)  then
+             if(MT(nsym1,nsym2) .eq. 1)  then
 
-         cnt=cnt+1
-         term=0.0d0
+                cnt=cnt+1
+                term=0.0d0
 
-         eka=e(k)-e(a)
+                eka=e(k)-e(a)
 
-         term=term+(+2.0d0*vpqrs(k,a,apr,kpr)-1.0d0*vpqrs(k,kpr,apr,a))*t2_1h1p_hc(apr,kpr)
-         term=term/eka 
+                term=term+(+2.0d0*vpqrs(k,a,apr,kpr)-1.0d0*vpqrs(k,kpr,apr,a))*t2_1h1p_hc(apr,kpr)
+                term=term/eka
 
-         func=func+term
+                func=func+term
 
-     end if
-   end do
- end do
+             end if
+          end do
+       end do
 !!! end t2_1h1p_hc_part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!! t2_2h2p_hc part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- do apr1=nOcc+1,nBas
-     apr=roccnum(apr1)
-  do bpr1=nOcc+1,nBas
-     bpr=roccnum(bpr1)
-   do lpr1=1,nOcc
-      lpr=roccnum(lpr1)
+       do apr1=nOcc+1,nBas
+          apr=roccnum(apr1)
+          do bpr1=nOcc+1,nBas
+             bpr=roccnum(bpr1)
+             do lpr1=1,nOcc
+                lpr=roccnum(lpr1)
 
-             nsym1=MT(orbSym(lpr),orbSym(a))
-             nsym2=MT(orbSym(apr),orbSym(bpr))
+                nsym1=MT(orbSym(lpr),orbSym(a))
+                nsym2=MT(orbSym(apr),orbSym(bpr))
+                
+                if(MT(nsym1,nsym2) .eq. 1)  then
 
-      if(MT(nsym1,nsym2) .eq. 1)  then
+                   cnt=cnt+1
+                   term=0.0d0
+                   
+                   eka=e(k)-e(a)
 
-         cnt=cnt+1
-         term=0.0d0
+                   term=term+(+1.0d0*vpqrs(apr,a,bpr,lpr))*t2_2h2p_hc(apr,bpr,k,lpr,1)
+                   term=term+(-1.0d0*vpqrs(apr,lpr,bpr,a))*t2_2h2p_hc(apr,bpr,k,lpr,2)
+                   term=term/eka 
 
-         eka=e(k)-e(a)
+                   func=func+term*0.5d0   !!! PLUS PART
 
-         term=term+(+1.0d0*vpqrs(apr,a,bpr,lpr))*t2_2h2p_hc(apr,bpr,k,lpr,1)
-         term=term+(-1.0d0*vpqrs(apr,lpr,bpr,a))*t2_2h2p_hc(apr,bpr,k,lpr,2)
-         term=term/eka 
-
-         func=func+term*0.5d0   !!! PLUS PART
-
-         end if
-      end do
-    end do
-  end do
-
-
- do bpr1=nOcc+1,nBas
-     bpr=roccnum(bpr1)
-  do kpr1=1,nOcc
-     kpr=roccnum(kpr1)
-   do lpr1=1,nOcc
-      lpr=roccnum(lpr1)
-
-             nsym1=MT(orbSym(bpr),orbSym(k))
-             nsym2=MT(orbSym(kpr),orbSym(lpr))
-
-      if(MT(nsym1,nsym2) .eq. 1)  then
-
-         cnt=cnt+1
-         term=0.0d0
-
-         eka=e(k)-e(a)
-
-         term=term+(+1.0d0*vpqrs(k,kpr,bpr,lpr))*t2_2h2p_hc(a,bpr,kpr,lpr,1)
-         term=term+(-1.0d0*vpqrs(k,lpr,bpr,kpr))*t2_2h2p_hc(a,bpr,kpr,lpr,2)
-         term=term/eka 
-
-         func=func-term*0.5d0  !!! MINUS PART
-
-         end if
+                end if
+             end do
+          end do
        end do
-     end do
-   end do
+
+
+       do bpr1=nOcc+1,nBas
+          bpr=roccnum(bpr1)
+          do kpr1=1,nOcc
+             kpr=roccnum(kpr1)
+             do lpr1=1,nOcc
+                lpr=roccnum(lpr1)
+
+                nsym1=MT(orbSym(bpr),orbSym(k))
+                nsym2=MT(orbSym(kpr),orbSym(lpr))
+
+                if(MT(nsym1,nsym2) .eq. 1)  then
+
+                   cnt=cnt+1
+                   term=0.0d0
+
+                   eka=e(k)-e(a)
+
+                   term=term+(+1.0d0*vpqrs(k,kpr,bpr,lpr))*t2_2h2p_hc(a,bpr,kpr,lpr,1)
+                   term=term+(-1.0d0*vpqrs(k,lpr,bpr,kpr))*t2_2h2p_hc(a,bpr,kpr,lpr,2)
+                   term=term/eka 
+
+                   func=func-term*0.5d0  !!! MINUS PART
+
+                end if
+             end do
+          end do
+       end do
 !!! end t2_2h2p_hc_part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 !!! t2_3h3p_hc part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- do bpr1=nOcc+1,nBas
-     bpr=roccnum(bpr1)
-  do cpr1=nOcc+1,nBas
-     cpr=roccnum(cpr1)
-   do lpr1=1,nOcc
-      lpr=roccnum(lpr1)
-    do mpr1=1,nOcc
-       mpr=roccnum(mpr1)
+       do bpr1=nOcc+1,nBas
+          bpr=roccnum(bpr1)
+          do cpr1=nOcc+1,nBas
+             cpr=roccnum(cpr1)
+             do lpr1=1,nOcc
+                lpr=roccnum(lpr1)
+                do mpr1=1,nOcc
+                   mpr=roccnum(mpr1)
 
-             nsym1=MT(orbSym(bpr),orbSym(cpr))
-             nsym2=MT(orbSym(mpr),orbSym(lpr))
+                   nsym1=MT(orbSym(bpr),orbSym(cpr))
+                   nsym2=MT(orbSym(mpr),orbSym(lpr))
 
-      if(MT(nsym1,nsym2) .eq. 1)  then
+                   if(MT(nsym1,nsym2) .eq. 1)  then
 
-         cnt=cnt+1
-         term=0.0d0
-         term1=0.0d0
-         term2=0.0d0
+                      cnt=cnt+1
+                      term=0.0d0
+                      term1=0.0d0
+                      term2=0.0d0
 
-         eka=e(k)-e(a)
-         ebprcprlprmpr=e(bpr)+e(cpr)-e(lpr)-e(mpr)
+                      eka=e(k)-e(a)
+                      ebprcprlprmpr=e(bpr)+e(cpr)-e(lpr)-e(mpr)
+                      
+                      term=term+(+1.0d0*vpqrs(bpr,lpr,cpr,mpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,1)
+                      term=term+(-1.0d0*vpqrs(bpr,mpr,cpr,lpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,2)
+                      term1=term/eka 
+                      term2=term/ebprcprlprmpr
+                      
+                      func=func+(term1+term2)*0.25d0
 
-         term=term+(+1.0d0*vpqrs(bpr,lpr,cpr,mpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,1)
-         term=term+(-1.0d0*vpqrs(bpr,mpr,cpr,lpr))*t2_3h3p_hc(a,bpr,cpr,k,lpr,mpr,2)
-         term1=term/eka 
-         term2=term/ebprcprlprmpr
-
-         func=func+(term1+term2)*0.25d0
-
-         end if
+                   end if
+                end do
+             end do
+          end do
        end do
-     end do
-   end do
- end do
 !!! end t2_3h3p_hc_part !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- end if
+    end if
 
  end function calc_density
 
