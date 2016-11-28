@@ -67,7 +67,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation in the initial space
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0&
+        if (statenumber.gt.0.or.lrixs &
              .or.(ltpa.and..not.lcvsfinal)) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
 
@@ -82,14 +82,14 @@
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvs)) then
+        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvsfinal)) then
            call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
         endif
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.(ltpa.and..not.lcvs)) then
+        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvsfinal)) then
            write(ilog,'(/,70a)') ('*',i=1,70)
            write(ilog,'(2x,a)') &
                 'Initial space ADC(2)-s excitation energies'
@@ -587,14 +587,15 @@
 !-----------------------------------------------------------------------
         if (lrixs) then
            ! Davidson-RIXS calculation
-           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
+           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
+                kpq,kpqf)
         else
            ! Absorption spectrum calculation
            if (statenumber.eq.0) then
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
            else
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
-                   travec)
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                   vec_init,travec)
            endif
         endif
 
@@ -625,7 +626,12 @@
         real(d), dimension(ndimf,3*(davstates+1)) :: travec2
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
-        
+
+
+        integer*8, dimension(3)                   :: nel_cv
+        integer, dimension(3)                     :: nbuf_cv
+        character(len=60)                         :: filename
+
 !-----------------------------------------------------------------------
 ! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
 ! are the ISs spanning the final space and a=x,y,z
@@ -650,34 +656,37 @@
 ! Calculate the products of the IS representation of the dipole
 ! operator and the initial space vectors
 !-----------------------------------------------------------------------
-        ! Loop over the valence excited states
-        do i=1,davstates
+        ! P_c . D_a . P_v
+        ! 
+        ! Loop over the components of the dipole operator
+        do c=1,3
+           
+           ! Set the dipole component
+           dpl(:,:)=dpl_all(c,:,:)
+        
+           ! Calculate the IS representation of the dipole operator
+           write(ilog,'(70a)') ('-',k=1,70)
+           msg='Calculation of P_c . D_'//acomp(c)//' . P_v'
 
-           ! Loop over the components of the dipole operator
-           do c=1,3
-
-              ! Set the dipole component
-              dpl(:,:)=dpl_all(c,:,:)
-              
-              ! Output where we are at
-              write(ilog,'(90a)') ('-', k=1,90)
-              msg='Calculating the '//acomp(c)//&
-                '-component of the contraction D.Psi_i for state'
-              k=len_trim(msg)
-              write(msg(k+2:k+3),'(i2)') i
-              write(ilog,'(/,2x,a)') trim(msg)
-
-              ! Set the travec2 index for the current
-              ! state and dipole component
-              ilbl=3+(i-1)*3+c
-
-              ! Calculate the contraction D_c . Psi_i
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                   rvec(:,i),travec2(:,ilbl))
-           enddo
+           write(ilog,'(2x,a)') trim(msg)
+           write(ilog,'(70a)') ('-',k=1,70)
+           filename='SCRATCH/dipole_cv_'//acomp(c)
+           call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
+                nbuf_cv(c),nel_cv(c),filename)
 
         enddo
         
+        ! P_c . D_a . Psi_i
+        do i=1,davstates           
+           do c=1,3
+              ilbl=3+(i-1)*3+c
+              filename='SCRATCH/dipole_cv_'//acomp(c)
+              call contract_dipole_state(filename,ndim,ndimf,&
+                   rvec(:,i),travec2(:,ilbl),nbuf_cv(c),nel_cv(c),'r')
+           enddo
+
+        enddo
+
         return
         
       end subroutine dipole_ispace_contraction_all
@@ -695,12 +704,12 @@
         use guessvecs
         use iomod
         use diagmod
-        
+
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,c,k,&
-                                                     f,i,j
+                                                     f,i,j,a
         integer*8, dimension(3)                   :: nel_cv,nel_cc,&
                                                      nel_vv
         integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
@@ -735,7 +744,7 @@
            allocate(veci(ndim,davstates))
            allocate(ei(davstates))
         endif
-        
+
 !-----------------------------------------------------------------------
 ! Transition matrix elements: core-excited states
 !-----------------------------------------------------------------------
@@ -753,7 +762,6 @@
            filename='SCRATCH/dipole_cv_'//acomp(c)
            call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
                 nbuf_cv(c),nel_cv(c),filename)
-
         enddo
         
         ! (ii) Core, core
@@ -804,23 +812,26 @@
               write(ilog,'(70a)') ('-',k=1,70)
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec_ic(:,c),0)
            enddo
-        endif
 
-        ! (i) Valence, valence
-        !
-        ! Loop over the components of the dipole operator
-        do c=1,3
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
-           ! Calculate the IS representation of the dipole operator
-           filename='SCRATCH/dipole_vv_'//acomp(c)
-           write(ilog,'(70a)') ('-',k=1,70)
-           msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
-           write(ilog,'(2x,a)') trim(msg)
-           write(ilog,'(70a)') ('-',k=1,70)
-           call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
-                nbuf_vv(c),nel_vv(c),filename)
-        enddo
+        else
+
+           ! (i) Valence, valence
+           !
+           ! Loop over the components of the dipole operator
+           do c=1,3
+              ! Set the dipole component
+              dpl(:,:)=dpl_all(c,:,:)
+              ! Calculate the IS representation of the dipole operator
+              filename='SCRATCH/dipole_vv_'//acomp(c)
+              write(ilog,'(70a)') ('-',k=1,70)
+              msg='Calculation of P_v . D_'//acomp(c)//' . P_v'
+              write(ilog,'(2x,a)') trim(msg)
+              write(ilog,'(70a)') ('-',k=1,70)
+              call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
+                   nbuf_vv(c),nel_vv(c),filename)
+           enddo
+           
+        endif
 
 !-----------------------------------------------------------------------
 ! Read the Davidson vectors from file
@@ -1117,13 +1128,13 @@
         use guessvecs
         use iomod
         use diagmod
-        
+
         implicit none
 
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
         integer                                   :: ndim,ndimf,c,&
                                                      k,f,i,j,error,&
-                                                     ivecs
+                                                     ivecs,a,b
         integer*8, dimension(3)                   :: nel_vv
         integer, dimension(3)                     :: nbuf_vv
         real(d), dimension(:,:), allocatable      :: vec,initvecs
@@ -2179,7 +2190,7 @@
            call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
         else if (ltpa) then
            if (lcvsfinal) then
-              call tdm_tpa(ndim,ndimf,e_init)
+              call tdm_tpxas(ndim,ndimf,e_init)
            else
               call tdm_tpa(ndim,ndimf,e_init)
            endif
@@ -2347,7 +2358,8 @@
         real(d)                                :: e_init
         real(d), dimension(:,:,:), allocatable :: sabif
         real(d), dimension(:), allocatable     :: lvec,lener_v,&
-                                                  lener_c,tpaxsec
+                                                  lener_c,xsec,&
+                                                  delta
         real(d), dimension(:,:), allocatable   :: tdmil_v,tdmil_c
         real(d), dimension(:,:,:), allocatable :: tdmfl_v,tdmfl_c
         real(d), parameter                     :: c_au=137.0359991d0
@@ -2398,8 +2410,10 @@
         tdmfl_c=0.0d0
 
         ! Two photon cross-sections
-        allocate(tpaxsec(davstates_f))
-        tpaxsec=0.0d0
+        allocate(xsec(davstates_f))
+        xsec=0.0d0
+        allocate(delta(davstates_f))
+        delta=0.0d0
 
 !----------------------------------------------------------------------
 ! Calculate the transition dipole moments between the initial state
@@ -2577,16 +2591,18 @@
         do f=1,davstates_f
            do a=1,3
               do b=1,3
-                 tpaxsec(f)=tpaxsec(f)&
+                 delta(f)=delta(f)&
                       +2.0d0*sabif(a,a,f)*sabif(b,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(b,a,f)
               enddo
-              !tpaxsec(f)=tpaxsec(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
-              !tpaxsec(f)=tpaxsec(f)/(c_au**2)
+              ! Conversion to cross-sections
+              xsec(f)=delta(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
+              xsec(f)=xsec(f)/(c_au**2)
            enddo
         enddo
-        tpaxsec=tpaxsec/30.0d0
+        xsec=xsec/30.0d0
+        delta=delta/30.0d0
 
 !----------------------------------------------------------------------
 ! Output the two-photon cross-sections
@@ -2594,25 +2610,30 @@
 ! state
 !----------------------------------------------------------------------
         ! Log file
-        write(ilog,'(/,2x,63a)') ('=',k=1,63)
+        write(ilog,'(/,2x,85a)') ('=',k=1,85)
         write(ilog,'(2x,a)') '     i     |     f     |     &
-             E_if (eV)     |     delta_TP (au)'
-        write(ilog,'(2x,63a)') ('-',k=1,63)
-        do f=1,davstates
+             E_if (eV)     |     delta_TP (au)     |     omega2 (au)'
+        write(ilog,'(2x,85a)') ('-',k=1,85)
+        do f=1,davstates_f
            if (statenumber.ne.0.and.f.eq.statenumber) cycle
-           write(ilog,'(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,F10.5)') &
-                statenumber,'|',f,'|',(edavf(f)-e_init)*eh2ev,&
-                '|',tpaxsec(f)
+           write(ilog,10) statenumber,'|',f,'|',&
+                (edavf(f)-e_init)*eh2ev,'|',delta(f),'|',xsec(f)
         enddo
-        write(ilog,'(2x,63a,/)') ('=',k=1,63)
+        write(ilog,'(2x,85a,/)') ('=',k=1,85)
 
         ! Stick spectrum
         call freeunit(itpa)
         open(itpa,file='tpa.dat',form='formatted',status='unknown')
         do f=1,davstates_f
-           write(itpa,*) (edavf(f)-e_init)*eh2ev,tpaxsec(f)
+           write(itpa,*) (edavf(f)-e_init)*eh2ev,xsec(f)
         enddo
         close(itpa)
+
+10      format(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,&
+             F10.5,10x,a1,3x,F10.5)
+
+        ! Gnuplot spectrum file
+        call wrgnuplot(davstates_f,edavf-e_init,xsec)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -2624,7 +2645,8 @@
         deallocate(tdmil_c)
         deallocate(tdmfl_v)
         deallocate(tdmfl_c)
-        deallocate(tpaxsec)
+        deallocate(xsec)
+        deallocate(delta)
 
         return
 
@@ -2646,9 +2668,10 @@
         real(d)                                :: e_init
         real(d), dimension(:,:,:), allocatable :: sabif
         real(d), dimension(:), allocatable     :: lener,lvec,&
-                                                  tpaxsec
+                                                  xsec,delta
         real(d), dimension(:,:), allocatable   :: tdmil
         real(d), dimension(:,:,:), allocatable :: tdmfl
+        real(d), parameter                     :: c_au=137.0359991d0
 
 !----------------------------------------------------------------------
 ! Output where we are at
@@ -2681,8 +2704,10 @@
         tdmfl=0.0d0
 
         ! Two photon cross-sections
-        allocate(tpaxsec(davstates))
-        tpaxsec=0.0d0
+        allocate(xsec(davstates))
+        xsec=0.0d0
+        allocate(delta(davstates))
+        delta=0.0d0
 
 !----------------------------------------------------------------------
 ! Calculation of the transition dipole moments between the ADC
@@ -2788,14 +2813,18 @@
            if (statenumber.ne.0.and.f.eq.statenumber) cycle
            do a=1,3
               do b=1,3
-                 tpaxsec(f)=tpaxsec(f)&
+                 delta(f)=delta(f)&
                       +2.0d0*sabif(a,a,f)*sabif(b,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(a,b,f)&
                       +2.0d0*sabif(a,b,f)*sabif(b,a,f)
               enddo
+              ! Conversion to cross-sections
+              xsec(f)=delta(f)*16.0d0*(pi**3)*((edavf(f)-e_init)/2.0d0)**2
+              xsec(f)=xsec(f)/(c_au**2)
            enddo
         enddo
-        tpaxsec=tpaxsec/30.0d0
+        xsec=xsec/30.0d0
+        delta=delta/30.0d0
 
 !----------------------------------------------------------------------
 ! Output the two-photon cross-sections
@@ -2803,26 +2832,31 @@
 ! state
 !----------------------------------------------------------------------
         ! Log file
-        write(ilog,'(/,2x,63a)') ('=',k=1,63)
+        write(ilog,'(/,2x,85a)') ('=',k=1,85)
         write(ilog,'(2x,a)') '     i     |     f     |     &
-             E_if (eV)     |     delta_TP (au)'
-        write(ilog,'(2x,63a)') ('-',k=1,63)
+             E_if (eV)     |     delta_TP (au)     |     omega2 (au)'
+        write(ilog,'(2x,85a)') ('-',k=1,85)
         do f=1,davstates
            if (statenumber.ne.0.and.f.eq.statenumber) cycle
-           write(ilog,'(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,F10.5)') &
-                statenumber,'|',f,'|',(edavf(f)-e_init)*eh2ev,&
-                '|',tpaxsec(f)
+           write(ilog,10) statenumber,'|',f,'|',&
+                (edavf(f)-e_init)*eh2ev,'|',delta(f),'|',xsec(f)
         enddo
-        write(ilog,'(2x,63a,/)') ('=',k=1,63)
+        write(ilog,'(2x,85a,/)') ('=',k=1,85)
 
         ! Stick spectrum file
         call freeunit(itpa)
         open(itpa,file='tpa.dat',form='formatted',status='unknown')
         do f=1,davstates
            if (statenumber.ne.0.and.f.eq.statenumber) cycle
-           write(itpa,*) (edavf(f)-e_init)*eh2ev,tpaxsec(f)
+           write(itpa,*) (edavf(f)-e_init)*eh2ev,xsec(f)
         enddo
         close(itpa)
+
+10      format(6x,i2,5x,a1,4x,i2,5x,a1,3x,F10.5,6x,a1,3x,&
+             F10.5,10x,a1,3x,F10.5)
+
+        ! Gnuplot spectrum file
+        call wrgnuplot(davstates,edavf-e_init,xsec)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -2831,11 +2865,107 @@
         deallocate(lener)
         deallocate(tdmil)
         deallocate(tdmfl)
-        deallocate(tpaxsec)
+        deallocate(xsec)
+        deallocate(delta)
 
         return
 
       end subroutine tdm_tpa
+
+!#######################################################################
+
+      subroutine wrgnuplot(nsta,ener,xsec)
+
+        use constants
+        use parameters
+        use iomod
+        
+        implicit none
+
+        integer                  :: nsta,iout,count,i,k
+        real(d), dimension(nsta) :: ener,xsec
+        real(d), parameter       :: tol=1e-10
+        real(d)                  :: lb,ub
+        character(len=400)       :: atmp
+
+!----------------------------------------------------------------------
+! Open the gnuplot file
+!----------------------------------------------------------------------
+        call freeunit(iout)
+        open(iout,file='tpa.gnu',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the gnuplot file
+!----------------------------------------------------------------------
+        ! Broadening parameters
+        write(iout,'(a,/)') 'fwhm=1.0'
+        write(iout,'(a,/)') 'sigsq=(fwhm/2.35482)**2'
+
+        count=0
+        do i=1,nsta
+           if (abs(xsec(i)).lt.tol) cycle
+           count=count+1
+           if (count.lt.10) then
+              write(iout,'(a1,i1,a1,F11.5)') 'e',count,'=',ener(i)*eh2ev
+              write(iout,'(a1,i1,a1,F16.10)') 'f',count,'=',xsec(i)
+           else if (count.lt.100) then
+              write(iout,'(a1,i2,a1,F11.5)') 'e',count,'=',ener(i)*eh2ev
+              write(iout,'(a1,i2,a1,F16.10)') 'f',count,'=',xsec(i)
+           else
+              write(iout,'(a1,i3,a1,F11.5)') 'e',count,'=',ener(i)*eh2ev
+              write(iout,'(a1,i3,a1,F16.10)') 'f',count,'=',xsec(i)
+           endif
+        enddo
+
+        do i=1,count
+           if (i.lt.10) then
+              write(iout,'(a1,i1,a5,i1,a10,i1,a15)') &
+                   'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+           else if (i.lt.100) then
+              write(iout,'(a1,i2,a5,i2,a10,i2,a15)') &
+                   'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+           else
+              write(iout,'(a1,i3,a5,i3,a10,i3,a15)') &
+                   'g',i,'(x)=f',i,'*exp(-(x-e',i,')**2/(2*sigsq))'
+           endif
+        enddo
+
+        atmp='f(x)='
+        k=6
+        do i=1,count
+           if (i.lt.10) then
+              write(atmp(k:k+5),'(a2,i1,a3)') '+g',i,'(x)'
+              k=k+6
+           else if (i.lt.100) then
+              write(atmp(k:k+6),'(a2,i2,a3)') '+g',i,'(x)'
+              k=k+7
+           else
+              write(atmp(k:k+7),'(a2,i3,a3)') '+g',i,'(x)'
+              k=k+8
+           endif
+        enddo
+
+        write(iout,'(a)') trim(atmp)
+
+        lb=0.95*ener(1)*eh2ev
+        ub=1.05*ener(nsta)*eh2ev
+       
+        write(iout,'(a12,F7.2,a1,F7.2,a1)') 'set xrange [',lb,':',ub,']'
+       
+        write(iout,'(a)') 'set size ratio 0.4'
+        write(iout,'(a)') 'set samples 5000'       
+        write(iout,'(a)') 'plot f(x) lt -1 lw 2 notitle'
+        write(iout,'(a)') 'replot ''tpa.dat'' w i lt -1 lw 2 notitle'
+        write(iout,'(a)') 'pause -1'
+
+!----------------------------------------------------------------------
+! Close the gnuplot file
+!----------------------------------------------------------------------
+        close(iout)
+
+        return
+
+      end subroutine wrgnuplot
 
 !#######################################################################
 
@@ -3087,7 +3217,7 @@
        enddo
        
        do i=1,count
-          if (i.lt.10) then             
+          if (i.lt.10) then
              write(iout,'(a2,i1,a6,i1,a11,i1,a15)') &
                   'g'//tranmom2,i,'(x)=f'//tranmom2,i,'*exp(-(x-e'//tranmom2,i,')**2/(2*sigsq))'
           else if (i.lt.100) then
