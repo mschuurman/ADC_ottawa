@@ -586,14 +586,15 @@
 !-----------------------------------------------------------------------
         if (lrixs) then
            ! Davidson-RIXS calculation
-           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,kpq,kpqf)
+           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
+                kpq,kpqf)
         else
            ! Absorption spectrum calculation
            if (statenumber.eq.0) then
               call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
            else
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,vec_init,&
-                   travec)
+              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                   vec_init,travec)
            endif
         endif
 
@@ -624,7 +625,7 @@
         real(d), dimension(ndimf,3*(davstates+1)) :: travec2
         character(len=1), dimension(3)            :: acomp
         character(len=70)                         :: msg
-        
+
         integer*8, dimension(3)                   :: nel_cv
         integer, dimension(3)                     :: nbuf_cv
         character(len=60)                         :: filename
@@ -815,14 +816,14 @@
            enddo
 
         else
-
+           
            ! (i) Valence, valence
            !
            ! Loop over the components of the dipole operator
            do c=1,3
               ! Set the dipole component
               dpl(:,:)=dpl_all(c,:,:)
-              ! Calculate the IS representation of the shifter 
+              ! Calculate the IS representation of the shifted
               ! dipole operator
               filename='SCRATCH/dipole_vv_'//acomp(c)
               write(ilog,'(70a)') ('-',k=1,70)
@@ -831,8 +832,8 @@
               write(ilog,'(70a)') ('-',k=1,70)
               call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
                    nbuf_vv(c),nel_vv(c),filename)
-           enddo
-           
+           enddo           
+
         endif
 
 !-----------------------------------------------------------------------
@@ -2170,7 +2171,7 @@
         ! Multiplication by e
         dip0=-dip0
 
-        write(ilog,*) "dip0:",dip0
+        write(ilog,*) "dip0:",dip0+dipnuc
 
 !-----------------------------------------------------------------------
 ! Read the initial space Davidson states from file
