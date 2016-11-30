@@ -145,23 +145,6 @@
       endif
 
 !-----------------------------------------------------------------------
-! If requested, calculate the excited state dipole moments
-!-----------------------------------------------------------------------
-      if (ldipole) then         
-         allocate(dmvec(ndim,davstates))
-         allocate(dipmom(davstates))
-         write(ilog,'(/,2x,a,/)') "Calculating the initial state dipole &
-              moments..."
-         do i=1,davstates
-            write(ilog,'(90a)') ('-', k=1,90)
-            write(ilog,'(2x,a,1x,i2)') "State:",i
-            call get_dipole_initial_product(ndim,ndim,kpq,kpq,&
-                 rvec(:,i),dmvec(:,i))
-            dipmom(i)=dot_product(rvec(:,i),dmvec(:,i))
-         enddo
-      endif
-
-!-----------------------------------------------------------------------
 ! Output the ADC(2) state information
 !-----------------------------------------------------------------------      
       itmp=1+nBas**2*4*nOcc**2

@@ -124,7 +124,7 @@
 ! Final space 2h2p i=j, a=b configurations
 ! N.B. this block is zero under the CVS approximation
 !-----------------------------------------------------------------------
-    if (.not.lcvsfinal) then
+!    if (.not.lcvsfinal) then
 
        ! Initial space 1h1p configs
        call dmatrix_f2h2p1_i1h1p(ndim,ndimf,kpq,kpqf,travec,autvec)
@@ -144,13 +144,13 @@
        ! Initial space 2h2p i|=j, a|=b II configs
        call dmatrix_f2h2p1_i2h2p4II(ndim,ndimf,kpq,kpqf,travec,autvec)
        
-    endif
+!    endif
 
 !-----------------------------------------------------------------------
 ! Final space 2h2p i=j, a|=b configurations
 ! N.B. this block is zero under the CVS approximation
 !-----------------------------------------------------------------------
-    if (.not.lcvsfinal) then
+!    if (.not.lcvsfinal) then
 
        ! Initial space 1h1p configs
        call dmatrix_f2h2p2_i1h1p(ndim,ndimf,kpq,kpqf,travec,autvec)
@@ -170,7 +170,7 @@
        ! Initial space 2h2p configs i|=j, a|=b II
        call dmatrix_f2h2p2_i2h2p4II(ndim,ndimf,kpq,kpqf,travec,autvec)
        
-    endif
+!    endif
     
 !-----------------------------------------------------------------------
 ! Final space 2h2p i|=j, a=b configurations

@@ -319,6 +319,7 @@
 
       use channels
       use parameters
+      use misc
 
       implicit none
 
@@ -531,6 +532,7 @@
 
       use parameters
       use iomod
+      use misc
 
       implicit none
 
@@ -667,56 +669,6 @@
 
 !#######################################################################
 
-    function uppercase(string1) result(string2)
-
-      implicit none
-
-      integer                     :: dim,i,j
-      character(len=*)            :: string1
-      character(len=len(string1)) :: string2
-
-      do i = 1, len(string1)
-         j = iachar(string1(i:i))
-         if (j>= iachar("a") .and. j<=iachar("z") ) then
-            string2(i:i) = achar(iachar(string1(i:i))-32)
-         else
-            string2(i:i) = string1(i:i)
-         endif
-     enddo
-
-      return
-
-    end function uppercase
-
-!#######################################################################
-
-    function atomic_number(lbl) result(num)
-
-      real*8           :: num
-      character(len=*) :: lbl
-
-      if (lbl.eq.'h') then
-         num=1.0d0
-      else if (lbl.eq.'c') then
-         num=6.0d0
-      else if (lbl.eq.'n') then
-         num=7.0d0
-      else if (lbl.eq.'o') then
-         num=8.0d0
-      else if (lbl.eq.'s') then
-         num=16.0d0
-      else if (lbl.eq.'ne') then
-         num=10.0d0
-      else
-         write(6,'(/,2(2x,a),/)') 'Atomic no. not known for atom:',lbl
-      endif
-
-      return
-
-    end function atomic_number
-
-!#######################################################################
-
     function get_lquantlbl(l) result(lbl)
 
       implicit none
@@ -739,65 +691,6 @@
       return
 
     end function get_lquantlbl
-
-!#######################################################################
-
-    subroutine getcom(xcom)
-
-      use parameters
-
-      implicit none
-
-      integer              :: i,j
-      real*8, dimension(3) :: xcom
-      real*8               :: m,tmass
-
-      xcom=0.0d0
-      tmass=0.0d0
-
-      do i=1,natm
-         m=mass(atlbl(i))
-         tmass=tmass+m
-         do j=1,3
-            xcom(j)=xcom(j)+xcoo(i*3-3+j)*m
-         enddo
-      enddo
-
-      xcom=xcom/tmass
-
-      return
-
-    end subroutine getcom 
-
-!#######################################################################
-
-    function mass(label)
-
-      implicit none
-
-      real*8           :: mass
-      character(len=*) :: label
-
-      if (label.eq.'h') then
-         mass=1.00794d0
-      else if (label.eq.'c') then
-         mass=12.0107d0
-      else if (label.eq.'n') then
-         mass=14.0067d0
-      else if (label.eq.'s') then
-         mass=32.065d0
-      else if (label.eq.'o') then
-         mass=15.9994d0
-      else if (label.eq.'ne') then
-         mass=20.1797d0
-      else
-         write(6,'(2(2x,a))') 'Unknown atom type:',trim(label)
-         STOP
-      endif
-
-      return
-
-    end function mass
 
 !#######################################################################
 
