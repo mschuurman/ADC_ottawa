@@ -798,7 +798,7 @@
               msg='Calculation of P_v . F_'//acomp(c)
               write(ilog,'(2x,a)') trim(msg)
               write(ilog,'(70a)') ('-',k=1,70)
-              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),0)
+              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),1)
            enddo
            
            ! (ii) Core-excited
@@ -1071,7 +1071,7 @@
               msg='Calculation of P_v . F_'//acomp(c)
               write(ilog,'(2x,a)') trim(msg)
               write(ilog,'(70a)') ('-',k=1,70)
-              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm_v(:,c),0)
+              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm_v(:,c),1)
 
               ! Calculate the transition dipole moment between the
               ! ground state and the initial state
@@ -1213,7 +1213,7 @@
               write(ilog,'(70a)') ('-',k=1,70)
               
               ! Calculate the F-vector
-              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),0)
+              call get_modifiedtm_adc2(ndim,kpq(:,:),travec_iv(:,c),1)
               
            enddo
 
@@ -1365,7 +1365,7 @@
               write(ilog,'(70a)') ('-',k=1,70)
 
               ! Calculate the F-vector
-              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:,c),0)
+              call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:,c),1)
 
               ! Calculate the transition dipole moment between the
               ! ground state and the Davidson states
