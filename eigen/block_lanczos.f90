@@ -934,8 +934,9 @@ module block_lanczos
          bnorm(2)=sigma(1)
          
          ! Set the various values that depend on the machine epsilon
-         eps=epmach!*blocksize*dsqrt(dble(matdim))
-         
+         !eps=epmach!*blocksize*dsqrt(dble(matdim))
+         eps=epmach*blocksize*dsqrt(dble(matdim))
+
          ! Initialisation of the omkj array
          omkj(1,1)=eps
          omkj(2,2)=eps

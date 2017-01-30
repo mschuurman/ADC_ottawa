@@ -293,6 +293,9 @@
          else if (keyword(i).eq.'dipole_moment') then
             ldipole=.true.
 
+         else if (keyword(i).eq.'debug') then
+            debug=.true.
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

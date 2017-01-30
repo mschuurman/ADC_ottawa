@@ -651,8 +651,7 @@
         enddo
 
 !-----------------------------------------------------------------------
-! Calculate the products of the IS representation of the shifted dipole
-! operator and the initial space vectors
+! Calculate the IS representation of the shifted dipole operator
 !-----------------------------------------------------------------------
         ! Loop over the components of the dipole operator
         do c=1,3
@@ -672,15 +671,19 @@
 
         enddo
 
-
+!-----------------------------------------------------------------------
+! Calculate the products of the IS representation of the shifted dipole
+! operator and the initial space vectors
+!-----------------------------------------------------------------------
+        ! Loop over initial states
         do i=1,davstates
            
+           ! Loop over the components of the dipole operator
            do c=1,3
 
+              ! Calculate the matrix-vector product
               ilbl=3+(i-1)*3+c
-
               filename='SCRATCH/dipole_cv_'//acomp(c)
-
               call contract_dipole_state(filename,ndim,ndimf,&
                    rvec(:,i),travec2(:,ilbl),nbuf_cv(c),nel_cv(c),'r')
 

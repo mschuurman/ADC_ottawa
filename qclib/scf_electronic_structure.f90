@@ -10,11 +10,11 @@
   use channels, only: ilog
   implicit none
   type(gam_structure),intent(in)         :: gam ! gamess info (orbitals, geom,etc.) 
-  real(xrk),intent(out)                   :: hmat(gam%nbasis,gam%nbasis)  ! Current 1-electron Hamiltonian matrix
+  real(xrk),intent(out)                  :: hmat(gam%nbasis,gam%nbasis)  ! Current 1-electron Hamiltonian matrix
 
   integer(ik)                            :: i,nao
-  real(xrk)                               :: xyz(3),q
-  real(xrk), allocatable                  :: tmp(:,:)         ! Overlap matrix (AObasis),null-space projected out
+  real(xrk)                              :: xyz(3),q
+  real(xrk), allocatable                 :: tmp(:,:)         ! Overlap matrix (AObasis),null-space projected out
 
   nao = gam%nbasis
   allocate(tmp(nao,nao))

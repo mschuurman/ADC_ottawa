@@ -16,7 +16,8 @@ module parameters
 !!$e - real*8 array(nBas) containing MO's energies
 !!$occNum - real*8 array(nBas) containing MO's occupation numbers 
 !!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements
-  
+!!$hcore - real*8 array(nOcc,nOcc) containing the elements h_ij of the
+!!         core Hamiltonian in the MO basis
   integer*4                            :: nelec,nIrr,nBas,nCen
   integer                              :: nOcc,nVirt
   real(d)                              :: Ehf
@@ -29,6 +30,7 @@ module parameters
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
   character*100                        :: moType ! Either 'incore' or 'disk'
   integer                              :: imotype
+  real(d), dimension(:,:), allocatable :: hcore
   
 !!$**************************************************
 !!$*********User provided variables******************

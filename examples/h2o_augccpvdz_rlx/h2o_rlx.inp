@@ -1,0 +1,36 @@
+method=adc2-s,adc2-x
+
+initial_state=1
+istate_symm = 1
+
+dipole_component = x
+dipole_symm = 1
+
+frozen_core=initial
+
+scf_iter=100
+
+mem=900
+
+diag_section
+ nstates = 2
+ block_size = 4
+ method=relaxation_liu
+ timestep = 100.0
+ krydim = 6
+ maxit = 100
+ siltol=1e-5
+ guess = subdiag
+ tol=1d-6
+end-diag_section
+
+diag_final_section
+ nstates = 2
+ block_size = 4
+ maxvec=12
+ tol=1d-6
+ maxit=200
+ guess=adc1
+end-diag_final_section
+
+end-input

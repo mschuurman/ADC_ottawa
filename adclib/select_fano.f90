@@ -30,7 +30,7 @@ contains
 
     if (lifrzcore) then
        do ap=nOcc+1,nBas
-          a=roccnum(ap)          
+          a=roccnum(ap)
           if (ldyson.and.a.eq.ifakeorb) cycle
           do i=1,hcentre(0)
              cah=hcentre(i)

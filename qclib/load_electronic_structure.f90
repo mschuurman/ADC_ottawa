@@ -265,11 +265,15 @@
    call print_matrix(fmo,15,'f15.10')
   endif
 
+  if (debug.and.nmo <= nao) then
+     call mo_energy_decomposition(nmo,nocc_spin,hmo)
+  endif
+
   ! ensure Fock matrix is diagonal
   refval = 0._rk
   scan_row: do i = 1,nmo
    ! this check just looks for a mapping (i.e. major change due to SCF
-   ! procedure) error. The number of figures in e(i) from reading the 
+   ! procedure) error. The number of figures in e(i) from reading the
    ! log is small enough that an error of 10*^-4 is reasonable.
    if(abs(e(i)-fmo(i,i)) > 0.001)write(ilog,"('warning: orbital ',i3,' energy mismatch - gamess.log=',f15.10,' internal=',f15.10)")i,e(i),fmo(i,i)
    e(i) = fmo(i,i)
@@ -406,3 +410,52 @@
 
  end subroutine rdgeom
 
+!#######################################################################
+ 
+ subroutine mo_energy_decomposition(nmo,nocc_spin,hmo)
+
+   use accuracy
+   use vpqrsmod
+   use channels, only: ilog
+
+   implicit none
+
+   integer(ik)                  :: nmo,nocc_spin,i,j,a
+   real(xrk),dimension(nmo,nmo) :: hmo,fmo
+   real(xrk),dimension(nmo,nmo) :: jterm,kterm
+
+!-----------------------------------------------------------------------
+! Calculate the Fock matrix and its various contributions
+!-----------------------------------------------------------------------
+   jterm=0.0d0
+   kterm=0.0d0
+
+   fmo = hmo
+   sum_orb: do a = 1,nocc_spin
+      sum_row: do i = 1,nmo
+         sum_col: do j = 1,nmo
+            fmo(i,j) = fmo(i,j) + 2.0d0*vpqrs(i,j,a,a) - vpqrs(i,a,j,a)
+            jterm(i,j)=jterm(i,j) + 2.0d0*vpqrs(i,j,a,a)
+            kterm(i,j)=kterm(i,j) - vpqrs(i,a,j,a)
+         enddo sum_col
+      enddo sum_row
+   enddo sum_orb
+
+!-----------------------------------------------------------------------
+! Output the orbital energies and their various contributions
+!-----------------------------------------------------------------------
+   write(ilog,'(/,75a)') ('-', i=1,75)
+   write(ilog,'(26x,a)') 'MO Energy Decomposition'
+   write(ilog,'(75a)') ('-', i=1,75)
+   write(ilog,'(a)')'  i   | Total Energy  | Core Energy    |  &
+        Coulomb Energy | Exchange Energy'
+   write(ilog,'(75a)') ('-', i=1,75)
+   do i=1,nmo
+      write(ilog,'(2x,i3,4(2x,F15.10))') i,fmo(i,i),hmo(i,i),&
+           jterm(i,i),kterm(i,i)
+   enddo
+   write(ilog,'(75a,/)') ('-', i=1,75)
+
+   return
+
+ end subroutine mo_energy_decomposition

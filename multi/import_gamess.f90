@@ -302,7 +302,7 @@
                                                                ! The MO mos(i) should end up in grid(:,:,:,dst(i))
       type(gam_structure), intent(inout), target, optional &
                                              :: structure      ! Context to use
-      real(rk), intent(in), optional        :: rot(:,:)       ! Rotation matrix to apply to the structure. It is
+      real(rk), intent(in), optional        :: rot(:,:)        ! Rotation matrix to apply to the structure. It is
                                                                ! perfectly OK to use different rotation matrix
                                                                ! in different calls using the same context. 
                                                                ! If the rotation matrix is not given for a call where
