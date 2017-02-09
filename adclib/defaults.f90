@@ -62,6 +62,7 @@
       dmain=0
       davtol=1d-7
       ladc1guess=.false.
+      lsubdiag=.false.
       davname='SCRATCH/davstates'
       precon=2
       maxsubdim=-1
@@ -74,6 +75,7 @@
       dmain_f=0
       davtol_f=1d-7
       ladc1guess_f=.false.
+      lsubdiag_f=.false.
       davname_f='SCRATCH/davstates_final'
       precon_f=2
       maxsubdim_f=-1
@@ -96,7 +98,7 @@
       siltol=1e-5
       rlxtype=1
       
-     ! Final space
+      ! Final space
       kdim_f=10
       stepsize_f=10.0d0
       lnoise_f=.false.

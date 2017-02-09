@@ -42,7 +42,7 @@ diag_section
  block_size = 20
  tol = 1e-6
  maxit = 500
- guess = adc1
+ guess = subdiag
 end-diag_section
 
 diag_final_section

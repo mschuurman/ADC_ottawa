@@ -1977,16 +1977,6 @@
       coeff1=matmul(umat,coeff0)
       norm=sqrt(dot_product(coeff1,coeff1))
       coeff1=coeff1/norm
-      
-      
-
-
-      ! Diagonalisation of the density matrix to yield the
-      ! natural populations
-      call natural_populations(coeff1,nlin)
-
-
-
 
       ! Transformation to the original, untransformed subspace basis
       coeff=matmul(new2old,coeff1)
@@ -2142,60 +2132,6 @@
       return
 
     end subroutine canonical_ortho
-
-!#######################################################################
-
-    subroutine natural_populations(coeff1,nlin)
-
-      implicit none
-
-      integer                       :: nlin,i,j,lwork,error
-      real(d), dimension(nlin)      :: coeff1,eigval
-      real(d), dimension(nlin,nlin) :: rho,eigvec
-      real(d), dimension(3*nlin)    :: work
-
-!----------------------------------------------------------------------
-! Construct the density matrix
-!----------------------------------------------------------------------
-      do i=1,nlin
-         do j=1,nlin
-            rho(i,j)=coeff1(i)*coeff1(j)
-         enddo
-      enddo
-
-!----------------------------------------------------------------------
-! Diagonalise the density matrix
-!----------------------------------------------------------------------
-      lwork=3*nlin
-      eigvec=rho
-      call dsyev('V','U',nlin,eigvec,nlin,eigval,work,lwork,error)
-
-      if (error.ne.0) then
-         errmsg='Diagonalisation of the density matrix failed in &
-              natural_populations'
-         call error_control
-      endif
-
-
-      print*,
-      do i=1,nlin
-         print*,coeff1(i)
-      enddo
-!      print*,
-!      do i=1,nlin
-!         print*,
-!         print*,eigvec(:,i)
-!      enddo
-!      print*,
-!      do i=1,nlin
-!         print*,eigval(i)
-!      enddo
-
-      STOP
-
-      return
-
-    end subroutine natural_populations
 
 !#######################################################################
 
