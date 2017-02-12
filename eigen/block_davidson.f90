@@ -458,8 +458,6 @@
       deallocate(subeig)
       deallocate(work)
 
-      print*,"HERE9"
-
       return
 
     end subroutine initvec_subdiag

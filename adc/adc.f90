@@ -8,6 +8,8 @@ program adc
   use adc2specmod
   use adc2enermod
   use adc2dysonmod
+  use adc2rixsmod
+  use adc2tpamod
   use rdinput
   use orbindx
   use defaults
@@ -105,18 +107,43 @@ program adc
 ! Perform the ADC calculation
 !-----------------------------------------------------------------------
   if (ldyson) then
-     ! Approximate Dyson orbital calculation
+     
+     ! Approximate ADC(2) Dyson orbital calculation
      call adc2_dyson(gamess_info)
-  else
-     ! Spectrum or energy calculations
+
+  else 
+     
      select case(method)
-     case(1) ! ADC(1), full diagonalisation
-        call adc1_spec()
-     case(2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
-        call adc2_spec(gamess_info)
+        
      case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
+
         call adc2_ener()
+
+     case(1) ! ADC(1) spectrum, full diagonalisation
+           
+        call adc1_spec()
+        
+     case (2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
+
+        if (lrixs) then
+
+           ! ADC(2) RIXS spectrum
+           call adc2_rixs(gamess_info)
+
+        else if (ltpa) then
+
+           ! ADC(2) TPA spectrum
+           call adc2_tpa(gamess_info)
+
+        else
+
+           ! ADC(2) OPA spectrum
+           call adc2_spec(gamess_info)
+
+        endif
+
      end select
+     
   endif
 
 !-----------------------------------------------------------------------    

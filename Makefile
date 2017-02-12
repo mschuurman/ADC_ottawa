@@ -99,12 +99,15 @@ ADCLIB= adclib/defaults.o \
 	adclib/dyson_calc.o \
 	adclib/dyson_io.o \
 	adclib/target_matching.o \
-	adclib/mp2.o
+	adclib/mp2.o \
+	adclib/adc2common.o 
 
-ADC_MAIN=adc/adc1_spec.o \
-	adc/adc2_spec.o \
+ADC_MAIN=adc/adc1_opa.o \
+	adc/adc2_opa.o \
 	adc/adc2_ener.o \
 	adc/adc2_dyson.o \
+	adc/adc2_rixs.o \
+	adc/adc2_tpa.o \
 	adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -172,11 +175,14 @@ ADC_OBJ=accuracy.o \
 	dyson_io.o \
 	target_matching.o \
 	mp2.o \
+	adc2common.o \
         guessvecs.o \
-	adc1_spec.o \
-	adc2_spec.o \
+	adc1_opa.o \
+	adc2_opa.o \
 	adc2_ener.o \
 	adc2_dyson.o \
+	adc2_rixs.o \
+	adc2_tpa.o \
 	adc.o
 
 ########################################################################

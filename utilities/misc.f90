@@ -135,7 +135,7 @@ contains
     
   end function kdelta
 
-!-----------------------------------------------------------------------
+!#######################################################################
 
   logical function lkdelta(k,kpr)
 
@@ -146,6 +146,8 @@ contains
     if (k .eq. kpr) lkdelta=.true.
 
   end function lkdelta
+
+!#######################################################################
 
   subroutine diagonalise(nsout,ndim,arr)
     
@@ -187,7 +189,8 @@ contains
     deallocate(work)
     
   end subroutine diagonalise
-!!$---------------------------------------------------
+
+!#######################################################################
 
   subroutine vdiagonalise(ndim,arr,evector)
 
@@ -224,7 +227,7 @@ contains
 
   end subroutine vdiagonalise
 
-!!$----------------------------------------------------
+!#######################################################################
 
   subroutine get_indices(col,a,b,j,k,spin)
     
@@ -239,7 +242,7 @@ contains
     
   end subroutine get_indices
 
-!!$---------------------------------------------------------------------
+!#######################################################################
 
   subroutine get_indices1(col,spin,a,b,j,k,type)
     
@@ -255,8 +258,7 @@ contains
     
   end subroutine get_indices1
 
-!----------------------------------------------------------
-!----------------------------------------------------------
+!#######################################################################
 
   subroutine fill_indices(col,cnf,spin,a,b,j,k,type)
     
@@ -273,7 +275,7 @@ contains
     
   end subroutine fill_indices
 
-!-------------------------------------
+!#######################################################################
 
   real(d) function dsp(ndim,vec1,vec2)
     
@@ -289,7 +291,9 @@ contains
     end do
     
   end function dsp
-!!$---------------------------------------------
+
+!#######################################################################
+
   subroutine dsortindxa1(order,ndim,arrin,indx)
 
     use constants
@@ -391,8 +395,7 @@ contains
        
   end subroutine dsortindxa1
 
-
-!!$-------------------------------------------------
+!#######################################################################
 
   subroutine dsortindxa(order,ndim,arr,indarr)
     
@@ -414,8 +417,9 @@ contains
 !    call M01EBF (indarr(:),1,ndim,irank(:),ifail)
     
   end subroutine dsortindxa
-!!$------------------------------------------------------
-  
+
+!#######################################################################
+
   subroutine table1(ndim1,ndim2,en,vspace)
     
     integer, intent(in) :: ndim1,ndim2
@@ -444,7 +448,7 @@ contains
 
   end subroutine table1
 
-!!$-----------------------------------------------------------
+!#######################################################################
 
   subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str,&
        kpq,kpqdim2,flag)
@@ -907,6 +911,8 @@ contains
 
   end subroutine mat_vec_multiply_SYM
 
+!#######################################################################
+
  subroutine mat_vec_multiply(ndimiA,ndimjA,A,vec,fin)
 
     integer, intent(in) :: ndimiA
@@ -935,8 +941,7 @@ contains
 
   end subroutine mat_vec_multiply
 
-
-
+!#######################################################################
 
   subroutine read_density_matrix
 
@@ -956,6 +961,6 @@ contains
 
   end subroutine read_density_matrix
  
-
+!#######################################################################
 
 end module misc

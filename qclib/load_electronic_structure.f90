@@ -344,6 +344,7 @@
 
    use parameters
    use iomod, only: freeunit
+   use parsemod, only: lowercase
    use channels
 
    implicit none
@@ -391,6 +392,27 @@
 ! Close the GAMESS output file
 !-----------------------------------------------------------------------
    close(igms)
+
+!-----------------------------------------------------------------------
+! If the Cartesian coordinates have not been read from the input file
+! then save the coordinates read from the gamess log file
+!-----------------------------------------------------------------------
+   ! Cartesian coordinates
+   if (.not.allocated(xcoo)) then
+      allocate(xcoo(natm*3))
+      xcoo=x
+   endif
+
+   ! Atom labels.
+   ! N.B. these have to be lowercase for use in other parts of the
+   ! code.
+   if (.not.allocated(atlbl)) then
+      allocate(atlbl(natm))
+      do i=1,natm
+         call lowercase(aatm(i))
+         atlbl(i)=aatm(i)
+      enddo
+   endif
 
 !-----------------------------------------------------------------------
 ! Write the coordinates to the log file

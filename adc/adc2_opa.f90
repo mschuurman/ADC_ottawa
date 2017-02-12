@@ -1,3 +1,12 @@
+!#######################################################################
+! Calculation of one photon ADC(2) spectra. Either:
+!
+! (1) Bound state-bound state absorption spectra, or;
+!
+! (2) Spectral moments for use in Stieltjes imaging calculations of
+!     photoionisation spectra.
+!#######################################################################
+
   module adc2specmod
 
     use channels
@@ -10,9 +19,10 @@
         
         use constants
         use parameters
+        use adc2common
         use fspace
         use misc
-        use guessvecs
+        use guessvecs        
         use mp2
         use targetmatching
 
@@ -38,11 +48,6 @@
 !        ! TEST
 
 !-----------------------------------------------------------------------
-! Make sure that everything is consistent
-!-----------------------------------------------------------------------
-        call check_calc
-        
-!-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
         call mp2_master(e0)
@@ -67,8 +72,7 @@
 !-----------------------------------------------------------------------
 ! Block-Davidson diagonalisation in the initial space
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.lrixs &
-             .or.(ltpa.and..not.lcvsfinal)) &
+        if (statenumber.gt.0.or.(ltpa.and..not.lcvsfinal)) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
 
 !-----------------------------------------------------------------------
@@ -80,14 +84,14 @@
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvsfinal)) then
-           call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
-        endif
+        if (statenumber.gt.0.or.(ltpa.and..not.lcvsfinal)) &
+             call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,&
+             osc_str,kpq)
 
 !-----------------------------------------------------------------------
 ! Output the results of initial space calculation
 !-----------------------------------------------------------------------
-        if (statenumber.gt.0.or.lrixs.or.(ltpa.and..not.lcvsfinal)) then
+        if (statenumber.gt.0.or.(ltpa.and..not.lcvsfinal)) then
            write(ilog,'(/,70a)') ('*',i=1,70)
            write(ilog,'(2x,a)') &
                 'Initial space ADC(2)-s excitation energies'
@@ -145,9 +149,8 @@
 ! Calculate the transition moments and oscillator strengths between 
 ! the initial state and the final states
 !
-! Note that if we are NOT considering ionization or a RIXS
-! calculation, then we will also output the final Davidson state
-! energies and configurations here 
+! Note that if we are NOT considering ionization, then we will also
+! output the final Davidson state energies and configurations here 
 !-----------------------------------------------------------------------
         call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
              travec2,ndim)
@@ -174,196 +177,7 @@
         return
         
       end subroutine adc2_spec
-
-!#######################################################################
-
-      subroutine check_calc
-
-        use parameters
-        use iomod
-        
-        implicit none
-
-!-----------------------------------------------------------------------
-! If we are performing a non-linear spectroscopy calculation, then
-! then symmetry is NOT supported
-!-----------------------------------------------------------------------
-        if (lrixs.or.ltpa) then
-           if (pntgroup.ne.'C1') then
-              errmsg='Symmetry is NOT supported in RIXS and TPA &
-                   calculations'
-           endif
-        endif
-        
-        return
-        
-      end subroutine check_calc
       
-!#######################################################################
-
-      subroutine get_subspaces(kpq,kpqf,kpqd,ndim,ndimf,ndimd,nout,&
-           noutf,ndims,ndimsf)
-  
-        use constants
-        use parameters
-        use select_fano
-
-        implicit none
-
-        integer                              :: ndim,ndimf,ndimd,&
-                                                nout,noutf,ndims,&
-                                                ndimsf
-        integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-  
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-        allocate(kpq(7,0:nBas**2*4*nOcc**2))
-        allocate(kpqd(7,0:nBas**2*4*nOcc**2))
-        allocate(kpqf(7,0:nBas**2*4*nOcc**2))
-        
-!-----------------------------------------------------------------------
-! Determine the initial, final and total subspaces
-!-----------------------------------------------------------------------
-        ! Initial subspace
-        kpq(:,:)=-1
-        call select_atom_is(kpq(:,:))
-        call select_atom_d(kpq(:,:),-1)
-
-        ! Final subspace
-        kpqf(:,:)=-1
-        if (lcvsfinal) then
-           call select_atom_isf_cvs(kpqf(:,:))
-           call select_atom_df_cvs(kpqf(:,:),-1)
-        else
-           call select_atom_isf(kpqf(:,:))
-           call select_atom_df(kpqf(:,:),-1)
-        endif
-           
-        ! Total subspace
-        kpqd(:,:)=-1
-        call select_atom_ist(kpqd(:,:))
-        call select_atom_dt(kpqd(:,:),-1)
-           
-!-----------------------------------------------------------------------
-! Determine the various subspace dimensions
-!-----------------------------------------------------------------------
-        ndim=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+2*kpq(5,0)
-        ndimf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+2*kpqf(5,0)
-        ndimd=kpqd(1,0)+kpqd(2,0)+kpqd(3,0)+kpqd(4,0)+2*kpqd(5,0)
-
-        nout=ndim
-        noutf=ndimf
-        ndims=kpq(1,0)
-        ndimsf=kpqf(1,0)
-
-!-----------------------------------------------------------------------
-! Output the subspace information
-!-----------------------------------------------------------------------
-        write(ilog,*) 'ADC(2) INITIAL Space dim',ndim
-        write(ilog,*) 'ADC(2) FINAL Space dim',ndimf
-        write(ilog,*) 'ADC(2) TOTAL Space dim WITHOUT GROUND STATE',ndimd
-        write(ilog,*) 'dimension of various INITIAL configuration spaces'
-        write(ilog,*) kpq(1,0),kpq(2,0),kpq(3,0),kpq(4,0),kpq(5,0)
-        write(ilog,*) 'dimension of various FINAL configuration spaces'
-        write(ilog,*) kpqf(1,0),kpqf(2,0),kpqf(3,0),kpqf(4,0),kpqf(5,0)
-        write(ilog,*) 'dimension of various TOTAL configuration spaces'
-        write(ilog,*) kpqd(1,0),kpqd(2,0),kpqd(3,0),kpqd(4,0),kpqd(5,0)
-
-        return
-
-      end subroutine get_subspaces
-
-!#######################################################################
-
-      subroutine set_dpl
-
-        use parameters
-
-        implicit none
-
-!-----------------------------------------------------------------------
-! Set the MO representation of the dipole operator
-!-----------------------------------------------------------------------
-        if (tranmom2 .eq. 'x') then
-           dpl(:,:)=x_dipole(:,:)
-        elseif (tranmom2 .eq. 'y') then
-           dpl(:,:)=y_dipole(:,:)
-        elseif (tranmom2 .eq. 'z') then
-           dpl(:,:)=z_dipole(:,:)
-        end if
-
-!-----------------------------------------------------------------------
-! Set the irrep of the dipole operator
-!-----------------------------------------------------------------------
-        CHECK_dip = nirrep2
-
-!-----------------------------------------------------------------------
-! If we are performing a non-linear spectroscopy calculation, then set
-! up the total dipole matrix array
-!-----------------------------------------------------------------------
-        if (lrixs.or.ltpa) then
-           allocate(dpl_all(3,nbas,nbas))
-           dpl_all(1,:,:)=x_dipole(:,:)
-           dpl_all(2,:,:)=y_dipole(:,:)
-           dpl_all(3,:,:)=z_dipole(:,:)
-        endif
-        
-        return
-
-      end subroutine set_dpl
-
-!#######################################################################
-
-      subroutine initial_space_diag(time,kpq,ndim,ndims,noffd)
-        
-        use constants
-        use parameters
-        use fspace
-        use diagmod
-        
-        implicit none
-
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
-        integer                                   :: ndim,ndims
-        integer*8                                 :: noffd
-        real(d)                                   :: time
-        character(len=120)                        :: msg
-
-!-----------------------------------------------------------------------
-! Write the initial space ADC(2) Hamiltonian to disk
-!-----------------------------------------------------------------------
-        if (method.eq.2) then
-           msg='Calculating the initial space ADC(2)-s Hamiltonian &
-                matrix'
-        else if (method.eq.3) then
-           msg='Calculating the initial space ADC(2)-x Hamiltonian &
-                matrix'
-        endif
-
-        write(ilog,'(/,a)') trim(msg)
-
-        if (method.eq.2) then
-           ! ADC(2)-s
-           call write_fspace_adc2_1(ndim,kpq(:,:),noffd,'i')
-        else if (method.eq.3) then
-           ! ADC(2)-x
-           call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
-        endif
-
-        call cpu_time(time)
-
-        write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time=',time," s"
-
-!-----------------------------------------------------------------------
-! Diagonalisation
-!-----------------------------------------------------------------------
-        call master_eig(ndim,noffd,'i')
-
-        return
-
-      end subroutine initial_space_diag
-
 !#######################################################################
 
       subroutine initial_space_hamiltonian(ndim,kpq,noffd)
@@ -408,58 +222,6 @@
         return
 
       end subroutine initial_space_hamiltonian
-
-!#######################################################################
-
-      subroutine initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,&
-           kpq)
-
-        use constants
-        use parameters
-        use diagmod
-        use get_moment
-
-        implicit none
-
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
-        integer                                   :: ndim,i
-        real(d), dimension(:), allocatable        :: ener,mtm,tmvec,&
-                                                     osc_str
-        real(d), dimension(:,:), allocatable      :: rvec
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-        allocate(ener(davstates),rvec(ndim,davstates))
-        allocate(mtm(ndim),tmvec(davstates),osc_str(davstates))
-
-!-----------------------------------------------------------------------
-! Read the Davidson state vectors from file
-!-----------------------------------------------------------------------
-        call readdavvc(davstates,ener,rvec,'i',ndim)
-
-!-----------------------------------------------------------------------
-! Calculate the vector F_J = < Psi_J | D | Psi_0 > (mtm)
-!-----------------------------------------------------------------------
-        if (ltdm_gs2i) call get_modifiedtm_adc2(ndim,kpq(:,:),mtm(:),1)
-
-!-----------------------------------------------------------------------
-! Contract the F-vector with the Davidson states to yield the
-! transition moments between the ground state and the Davidson states
-!-----------------------------------------------------------------------
-        osc_str=0.0d0
-        if (ltdm_gs2i) then
-           do i=1,davstates
-              tmvec(i)=tm(ndim,rvec(:,i),mtm(:))
-              osc_str(i)=(2.0d0/3.0d0)*ener(i)*tmvec(i)**2
-           enddo
-        endif
-
-        deallocate(mtm)
-
-        return
-
-      end subroutine initial_space_tdm
 
 !#######################################################################
 
@@ -563,16 +325,10 @@
 ! representation of the shifted dipole operator with the initial
 ! state vector
 !-----------------------------------------------------------------------
-        if (lrixs) then
-           ! Davidson-RIXS calculation
-           allocate(travec2(ndimf,3*(davstates+1)))
+        if (statenumber.eq.0) then
+           allocate(mtmf(ndimf))
         else
-           ! Absorption spectrum calculation
-           if (statenumber.eq.0) then
-              allocate(mtmf(ndimf))
-           else
-              allocate(travec(ndimf))
-           endif
+           allocate(travec(ndimf))
         endif
 
 !-----------------------------------------------------------------------
@@ -584,18 +340,11 @@
 !
 ! Really this should be done elsewhere...
 !-----------------------------------------------------------------------
-        if (lrixs) then
-           ! Davidson-RIXS calculation
-           call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
-                kpq,kpqf)
+        if (statenumber.eq.0) then
+           call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
         else
-           ! Absorption spectrum calculation
-           if (statenumber.eq.0) then
-              call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
-           else
-              call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
-                   vec_init,travec)
-           endif
+           call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+                vec_init,travec)
         endif
 
         return
@@ -604,103 +353,11 @@
 
 !#######################################################################
 
-      subroutine dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
-           kpq,kpqf)
-
-        use constants
-        use parameters
-        use misc
-        use get_matrix_dipole
-        use get_moment
-        use fspace
-        use guessvecs
-        use iomod
-        
-        implicit none
-
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: ndim,ndimf,c,i,&
-                                                     k,ilbl
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
-        character(len=1), dimension(3)            :: acomp
-        character(len=70)                         :: msg
-
-        integer*8, dimension(3)                   :: nel_cv
-        integer, dimension(3)                     :: nbuf_cv
-        character(len=60)                         :: filename
-
-!-----------------------------------------------------------------------
-! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
-! are the ISs spanning the final space and a=x,y,z
-!-----------------------------------------------------------------------
-        acomp=(/ 'x','y','z' /)
-
-        ! Loop over the components of the dipole operator
-        do c=1,3
-
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
-
-           ! Calculate the vector F_Jc
-           msg='Calculating the '//acomp(c)//&
-                '-component of the F-vector'
-           write(ilog,'(/,2x,a)') trim(msg)
-           call get_modifiedtm_adc2(ndimf,kpqf(:,:),travec2(:,c),0)
-           
-        enddo
-
-!-----------------------------------------------------------------------
-! Calculate the IS representation of the shifted dipole operator
-!-----------------------------------------------------------------------
-        ! Loop over the components of the dipole operator
-        do c=1,3
-           
-           ! Set the dipole component
-           dpl(:,:)=dpl_all(c,:,:)
-        
-           ! Calculate the IS representation of the dipole operator
-           write(ilog,'(70a)') ('-',k=1,70)
-           msg='Calculation of P_c . D_'//acomp(c)//' . P_v'
-
-           write(ilog,'(2x,a)') trim(msg)
-           write(ilog,'(70a)') ('-',k=1,70)
-           filename='SCRATCH/dipole_cv_'//acomp(c)
-           call get_adc2_dipole_improved_omp(ndimf,ndim,kpqf,kpq,&
-                nbuf_cv(c),nel_cv(c),filename)
-
-        enddo
-
-!-----------------------------------------------------------------------
-! Calculate the products of the IS representation of the shifted dipole
-! operator and the initial space vectors
-!-----------------------------------------------------------------------
-        ! Loop over initial states
-        do i=1,davstates
-           
-           ! Loop over the components of the dipole operator
-           do c=1,3
-
-              ! Calculate the matrix-vector product
-              ilbl=3+(i-1)*3+c
-              filename='SCRATCH/dipole_cv_'//acomp(c)
-              call contract_dipole_state(filename,ndim,ndimf,&
-                   rvec(:,i),travec2(:,ilbl),nbuf_cv(c),nel_cv(c),'r')
-
-           enddo
-
-        enddo
-
-        return
-        
-      end subroutine dipole_ispace_contraction_all
-
-!#######################################################################
-
       subroutine dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
 
         use constants
         use parameters
+        use adc2common
         use misc
         use get_matrix_dipole
         use get_moment
@@ -1127,6 +784,7 @@
 
         use constants
         use parameters
+        use adc2common
         use misc
         use get_matrix_dipole
         use get_moment
@@ -1395,113 +1053,6 @@
       end subroutine dipole_ispace_contraction_tpa
 
 !#######################################################################
-
-      subroutine contract_dipole_state(filename,dim1,dim2,vec,tvec,&
-           nbuf,nel,cntrdir)
-
-        use constants
-        use iomod
-        use omp_lib
-
-        implicit none
-
-        integer                              :: dim1,dim2,idpl,nbuf,&
-                                                nlim,k,n,buffsize,&
-                                                nthreads,tid
-        integer*8                            :: nel
-        integer, dimension(:), allocatable   :: indxi,indxj
-        real(d), dimension(dim1)             :: vec
-        real(d), dimension(dim2)             :: tvec
-        real(d), dimension(:), allocatable   :: dij
-        real(d), dimension(:,:), allocatable :: tmpvec
-        character(len=60)                    :: filename
-        character(len=1)                     :: cntrdir
-        
-!-----------------------------------------------------------------------
-! Open the dipole matrix file
-!-----------------------------------------------------------------------
-        call freeunit(idpl)
-        open(idpl,file=filename,status='unknown',access='sequential',&
-             form='unformatted')
-
-!-----------------------------------------------------------------------
-! Read the buffer size
-!-----------------------------------------------------------------------
-        read(idpl) buffsize
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-        allocate(dij(buffsize))
-        allocate(indxi(buffsize))
-        allocate(indxj(buffsize))
-
-        !$omp parallel
-        nthreads=omp_get_num_threads()
-        !$omp end parallel
-        allocate(tmpvec(dim2,nthreads))
-
-!-----------------------------------------------------------------------
-! Perform the contraction of the shifted dipole matrix with the state
-! vector
-!
-! Note that the cntrdir flag controls whether we operate with the
-! shifted dipole operator from the right or the left of the state
-! vector
-!-----------------------------------------------------------------------
-        tvec=0.0d0
-        tmpvec=0.0d0
-
-        if (cntrdir.eq.'r') then
-           do k=1,nbuf
-              read(idpl) dij(:),indxi(:),indxj(:),nlim
-              !$omp parallel do &
-              !$omp& private(n) &
-              !$omp& shared(tmpvec,dij,vec,indxi,indxj)
-              do n=1,nlim
-                 tid=1+omp_get_thread_num()
-                 tmpvec(indxi(n),tid)=tmpvec(indxi(n),tid)&
-                      +dij(n)*vec(indxj(n))
-              enddo
-              !$omp end parallel do
-           enddo
-        else if (cntrdir.eq.'l') then
-           do k=1,nbuf
-              read(idpl) dij(:),indxi(:),indxj(:),nlim
-              !$omp parallel do &
-              !$omp& private(n) &
-              !$omp& shared(tmpvec,dij,vec,indxi,indxj)
-              do n=1,nlim
-                 tid=1+omp_get_thread_num()
-                 tmpvec(indxj(n),tid)=tmpvec(indxj(n),tid)&
-                      +dij(n)*vec(indxi(n))
-              enddo
-              !$omp end parallel do
-           enddo
-        endif
-
-        do k=1,nthreads
-           tvec=tvec+tmpvec(:,k)
-        enddo
-
-!-----------------------------------------------------------------------
-! Close the dipole matrix file
-!-----------------------------------------------------------------------
-        close(idpl)
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-        deallocate(dij)
-        deallocate(indxi)
-        deallocate(indxj)
-        deallocate(tmpvec)
-
-        return
-
-      end subroutine contract_dipole_state
-      
-!#######################################################################
       
       subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
            travec,vec_init,mtmf,noffdf,rvec,travec2)
@@ -1542,8 +1093,8 @@
         endif
 
 !-----------------------------------------------------------------------        
-! If requested, determine the initial vectors Lanczos vectors by 
-! diagonalising the ADC(1) Hamiltonian matrix
+! If requested, determine the initial Lanczos vectors by diagonalising
+! the ADC(1) Hamiltonian matrix
 !-----------------------------------------------------------------------        
         if (lancguess.eq.2.or.lancguess.eq.4) call adc1_guessvecs_final
 
@@ -1611,11 +1162,7 @@
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2
 
-        if (lrixs) then
-           ! RIXS calculation
-           call guess_vecs_rixs(rvec,ndim,ndimf,ndimsf,kpq,kpqf,&
-                travec2)
-        else if (statenumber.eq.0) then
+        if (statenumber.eq.0) then
            ! Ionisation from the ground state
            call guess_vecs_gs2ex(ndimf,ndimsf,mtmf,kpqf)
         else
@@ -1627,94 +1174,6 @@
         return
 
       end subroutine lanczos_guess_vecs
-
-!#######################################################################
-
-      subroutine guess_vecs_rixs(rvec,ndim,ndimf,ndimsf,kpq,kpqf,travec2)
-        
-        use constants
-        use parameters
-        use misc
-        use get_matrix_dipole
-        use get_moment
-        use fspace
-        use guessvecs
-        use iomod
-
-        implicit none
-        
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: i,j,k,c,ndim,ndimf,&
-                                                     ndimsf,error,&
-                                                     ivecs,ilbl
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2,initvecs
-        real(d), dimension(:), allocatable        :: tau,work
-
-!----------------------------------------------------------------------
-! Allocate the travec2 array
-!
-! The first three columns of this array holds the F-vectors
-! F_Ja = < Psi_J | Da | Psi_0 >, a=x,y,z, where the Psi_J
-! are the ISs spanning the final space
-!
-! The remaining columns hold the products of the IS representation of
-! the shifted dipole operator and the initial space vectors
-!----------------------------------------------------------------------
-        allocate(travec2(ndimf,3*(davstates+1)))
-
-!-----------------------------------------------------------------------
-! Calculate the contractions of the IS shifted dipole matrix and the
-! valence space vectors
-!-----------------------------------------------------------------------
-        call dipole_ispace_contraction_all(rvec,travec2,ndim,ndimf,&
-             kpq,kpqf)
-        
-!-----------------------------------------------------------------------
-! The initial Lanczos vectors will be formed from the contractions of
-! the shifted dipole matrix with the valence states (ground + excited),
-! i.e., the vectors held in the travec2 array
-!
-! IN THE ORTHOGONALISATION STEP, WE ARE MIXING THE DIPOLE-STATE
-! PRODUCTS AMONGST THEMSELVES. IS THIS GOING TO PRODUCE VECTORS THAT
-! DO NOT GENERATE IRREPS OF THE MOLECULAR POINT GROUP?
-!-----------------------------------------------------------------------
-        ! Set the block size
-        lmain=3*(davstates+1)
-
-        ! Copy the contents of the travec2 array
-        allocate(initvecs(ndimf,lmain))
-        initvecs=travec2
-        
-        ! Orthogonalisation of the shifted dipole matrix-state vector
-        ! contractions via a QR factorisation
-        allocate(tau(lmain))
-        allocate(work(lmain))
-        call dgeqrf(ndimf,lmain,initvecs,ndimf,tau,work,lmain,error)
-        if (error.ne.0) then
-           errmsg='dqerf failed in subroutine guess_vecs_rixs'
-           call error_control
-        endif
-        call dorgqr(ndimf,lmain,lmain,initvecs,ndimf,tau,work,lmain,error)
-        if (error.ne.0) then
-           errmsg='dorgqr failed in subroutine guess_vecs_rixs'
-           call error_control
-        endif
-        deallocate(tau)
-        deallocate(work)
-
-        ! Write the guess vectors to file
-        call freeunit(ivecs)
-        open(ivecs,file='SCRATCH/rixs_ivecs',form='unformatted',&
-             status='unknown')
-        write(ivecs) initvecs
-        close(ivecs)
-        
-        deallocate(initvecs)
-
-        return
-
-      end subroutine guess_vecs_rixs
 
 !#######################################################################
 
@@ -2087,304 +1546,6 @@
 
 !#######################################################################
 
-      subroutine initial_space_dipole(ndim,ndims,kpq)
-
-        use channels
-        use constants
-        use parameters
-        use diagmod, only: readdavvc
-        use get_matrix_dipole
-        use misc
-        use dyson_calc
-
-        implicit none
-
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
-        integer                                   :: ndim,ndims,i,j,&
-                                                     k,a,b,p,q,c
-        integer*8                                 :: nel
-        integer                                   :: nbuf
-        real(d), dimension(:,:), allocatable      :: rvec,dmvec
-        real(d), dimension(davstates_f)           :: ener
-        real(d)                                   :: dip0,dipnuc
-        real(d), parameter                        :: ang2bohr=1.889725989d0
-        character(len=60)                         :: filename
-
-!-----------------------------------------------------------------------
-! Nuclear contribution to the dipole moments
-!-----------------------------------------------------------------------
-        if (tranmom2.eq.'x') then
-           c=1
-        else if (tranmom2.eq.'y') then
-           c=2
-        else if (tranmom2.eq.'z') then
-           c=3
-        endif
-
-        dipnuc=0.0d0
-        do i=1,natm
-           dipnuc=dipnuc+ang2bohr*xcoo(i*3-3+c)*atomic_number(atlbl(i))
-        enddo
-
-!-----------------------------------------------------------------------
-! Ground state density matrix
-!-----------------------------------------------------------------------
-        if (.not.allocated(density)) allocate(density(nbas,nbas))
-        density=0.0d0
-
-        ! Occupied-occupied block: 0th-order contribution
-        do i=1,nocc
-           density(i,i)=2.0d0
-        enddo
-
-        ! Occupied-occupied block: 2nd-order contribution
-        do i=1,nocc
-           do j=i,nocc
-              density(i,j)=density(i,j)+rhogs2_oo(i,j)
-              density(j,i)=density(i,j)
-           enddo
-        enddo
-
-        ! Unoccupied-unoccupied block: 2nd-order contribution
-        do a=nocc+1,nbas
-           do b=a,nbas
-              density(a,b)=rhogs2_uu(a,b)
-              density(b,a)=density(a,b)
-           enddo
-        enddo
-
-        ! Occupied-unoccupied block: 2nd-order contribution
-        do i=1,nocc
-           do a=nocc+1,nbas
-              density(i,a)=rhogs2_ou(i,a)
-              density(a,i)=density(i,a)
-           enddo
-        enddo
-
-!-----------------------------------------------------------------------
-! Ground state electronic dipole moment
-!-----------------------------------------------------------------------
-        dip0=0.0d0
-        do p=1,nbas
-           do q=1,nbas
-              dip0=dip0+dpl(p,q)*density(p,q)
-           enddo
-        enddo
-
-        ! Multiplication by e
-        dip0=-dip0
-
-        write(ilog,*) "dip0:",dip0+dipnuc
-
-!-----------------------------------------------------------------------
-! Read the initial space Davidson states from file
-!-----------------------------------------------------------------------
-        allocate(rvec(ndim,davstates))
-        call readdavvc(davstates,ener,rvec,'i',ndim)
-
-!-----------------------------------------------------------------------
-! Form the dmvec vectors: contractions of the IS representation of the
-! shifted dipole operator with the initial state vectors
-! -----------------------------------------------------------------------
-        allocate(dmvec(ndim,davstates))
-
-        write(ilog,'(/,2x,a,/)') "Calculating the initial state dipole &
-             moments..."
-
-        filename='SCRATCH/dipole_vv'
-
-        call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,nbuf,&
-             nel,filename)
-
-        do i=1,davstates
-           call contract_dipole_state(filename,ndim,ndim,rvec(:,i),&
-                dmvec(:,i),nbuf,nel,'r')
-        enddo        
-
-!-----------------------------------------------------------------------
-! Contract the dmvec vectors with the final state vectors to yield the
-! final state electronic dipole moments
-!-----------------------------------------------------------------------
-        allocate(dipmom(davstates))
-
-        ! Loop over Davidson states
-        do i=1,davstates
-
-           ! < Psi_i | D - D0 | Psi_i > (including the multiplication
-           ! by e)
-           dipmom(i)=-dot_product(rvec(:,i),dmvec(:,i))
-
-           ! ! < Psi_i | D | Psi_i >
-           dipmom(i)=dipmom(i)+dip0
-
-        enddo
-
-!-----------------------------------------------------------------------
-! Total excited state dipole moments
-!-----------------------------------------------------------------------
-        dipmom=dipmom+dipnuc
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-        deallocate(rvec)
-        deallocate(dmvec)
-
-        return
-
-      end subroutine initial_space_dipole
-
-!#######################################################################
-
-      subroutine final_space_dipole(ndimf,ndimsf,kpqf)
-        
-        use channels
-        use constants
-        use parameters
-        use diagmod, only: readdavvc
-        use get_matrix_dipole
-        use misc
-        use dyson_calc
-
-        implicit none
-
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-        integer                                   :: ndimf,ndimsf,i,j,&
-                                                     k,a,b,p,q,c
-        integer*8                                 :: nel
-        integer                                   :: nbuf
-        real(d), dimension(:,:), allocatable      :: rvec,dmvec
-        real(d), dimension(davstates_f)           :: ener
-        real(d)                                   :: dip0,dipnuc
-        real(d), parameter                        :: ang2bohr=1.889725989d0
-        character(len=60)                         :: filename
-
-!-----------------------------------------------------------------------
-! Nuclear contribution to the dipole moments
-!-----------------------------------------------------------------------
-        if (tranmom2.eq.'x') then
-           c=1
-        else if (tranmom2.eq.'y') then
-           c=2
-        else if (tranmom2.eq.'z') then
-           c=3
-        endif
-
-        dipnuc=0.0d0
-        do i=1,natm
-           dipnuc=dipnuc+ang2bohr*xcoo(i*3-3+c)*atomic_number(atlbl(i))
-        enddo
-
-!-----------------------------------------------------------------------
-! Ground state density matrix
-!-----------------------------------------------------------------------
-        if (.not.allocated(density)) allocate(density(nbas,nbas))
-        density=0.0d0
-
-        ! Occupied-occupied block: 0th-order contribution
-        do i=1,nocc
-           density(i,i)=2.0d0
-        enddo
-
-        ! Occupied-occupied block: 2nd-order contribution
-        do i=1,nocc
-           do j=i,nocc
-              density(i,j)=density(i,j)+rhogs2_oo(i,j)
-              density(j,i)=density(i,j)
-           enddo
-        enddo
-
-        ! Unoccupied-unoccupied block: 2nd-order contribution
-        do a=nocc+1,nbas
-           do b=a,nbas
-              density(a,b)=rhogs2_uu(a,b)
-              density(b,a)=density(a,b)
-           enddo
-        enddo
-
-        ! Occupied-unoccupied block: 2nd-order contribution
-        do i=1,nocc
-           do a=nocc+1,nbas
-              density(i,a)=rhogs2_ou(i,a)
-              density(a,i)=density(i,a)
-           enddo
-        enddo
-
-!-----------------------------------------------------------------------
-! Ground state electronic dipole moment
-!-----------------------------------------------------------------------
-        dip0=0.0d0
-        do p=1,nbas
-           do q=1,nbas
-              dip0=dip0+dpl(p,q)*density(p,q)
-           enddo
-        enddo
-
-        ! Multiplication by e
-        dip0=-dip0
-
-        !write(ilog,*) "dip0:",dip0
-
-!-----------------------------------------------------------------------
-! Read the final space Davidson states from file
-!-----------------------------------------------------------------------
-        allocate(rvec(ndimf,davstates_f))
-        call readdavvc(davstates_f,ener,rvec,'f',ndimf)
-
-!-----------------------------------------------------------------------
-! Form the dmvec vectors: contractions of the IS representation of the
-! shifted dipole operator with the final state vectors
-! -----------------------------------------------------------------------
-        allocate(dmvec(ndimf,davstates_f))
-
-        write(ilog,'(/,2x,a,/)') "Calculating the final state dipole &
-             moments..."
-
-        filename='SCRATCH/dipole_cc'
-
-        call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,nbuf,&
-             nel,filename)
-
-        do i=1,davstates_f
-           call contract_dipole_state(filename,ndimf,ndimf,rvec(:,i),&
-                dmvec(:,i),nbuf,nel,'r')
-        enddo
-
-!-----------------------------------------------------------------------
-! Contract the dmvec vectors with the final state vectors to yield the
-! final state dipole moments
-!-----------------------------------------------------------------------
-        allocate(dipmom_f(davstates_f))
-
-        ! Loop over Davidson states
-        do i=1,davstates_f
-
-           ! < Psi_i | D - D0 | Psi_i > (including the multiplication
-           ! by e)
-           dipmom_f(i)=-dot_product(rvec(:,i),dmvec(:,i))
-
-           ! ! < Psi_i | D | Psi_i >
-           dipmom_f(i)=dipmom_f(i)+dip0
-
-        enddo
-
-!-----------------------------------------------------------------------
-! Total excited state dipole moments
-!-----------------------------------------------------------------------
-        dipmom_f=dipmom_f+dipnuc
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-        deallocate(rvec)
-        deallocate(dmvec)
-
-        return
-
-      end subroutine final_space_dipole
-
-!#######################################################################
-
       subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
            travec2,ndim)
 
@@ -2399,9 +1560,7 @@
         real(d)                                   :: e_init
         real(d), dimension(ndimf,3*(davstates+1)) :: travec2
 
-        if (lrixs) then
-           call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
-        else if (ltpa) then
+        if (ltpa) then
            if (lcvsfinal) then
               call tdm_tpxas(ndim,ndimf,e_init)
            else
@@ -2420,139 +1579,6 @@
         return
 
       end subroutine final_space_tdm
-
-!#######################################################################
-
-      subroutine tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
-        
-        use constants
-        use parameters
-        use iomod
-
-        implicit none
-
-        integer                                   :: ndim,ndimf,&
-                                                     ndimsf,i,j,k,&
-                                                     ivecf,irixs,&
-                                                     idav,nfinal
-        real(d)                                   :: e_init
-        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
-        real(d), dimension(:,:), allocatable      :: tdm
-        real(d), dimension(:), allocatable        :: vec
-        real(d), dimension(:), allocatable        :: enerf
-        real(d), dimension(davstates)             :: ener
-        character(len=70)                         :: filename
-
-!-----------------------------------------------------------------------
-! Set dimensions and filenames
-!-----------------------------------------------------------------------
-        if (ldiagfinal) then
-           ! Davidson-RIXS
-           nfinal=davstates_f
-           filename=davname_f
-        else
-           ! Block Lanczos-RIXS
-           nfinal=lancstates
-           filename=lancname
-        endif
-        
-!-----------------------------------------------------------------------
-! For all valence states |Psi_i> (including the ground state),
-! calculate the matrix elements <Psi_i | Da | chi_j>, where the chi_j
-! are the final space states and a=x,y,z
-!-----------------------------------------------------------------------
-        ! Allocate arrays        
-        allocate(vec(ndimf))
-        allocate(tdm(3*(davstates+1),nfinal))
-        allocate(enerf(nfinal))
-        
-        ! Open the final space vector file
-        call freeunit(ivecf)
-        open(ivecf,file=filename,status='old',access='sequential',&
-             form='unformatted')
-
-        ! Loop over the final space states
-        do j=1,nfinal
-
-           ! Read the jth final space eigenpair
-           read(ivecf) k,enerf(j),vec
-
-           ! Loop over the x, y, and z components of D for each
-           ! of the valence states (ground + excited)
-           do i=1,3*(davstates+1)
-              tdm(i,j)=dot_product(travec2(:,i),vec)
-           enddo
-
-        enddo
-        
-        ! Close the final space vector file
-        close(ivecf)
-
-        ! Deallocate arrays
-        deallocate(vec)
-
-!-----------------------------------------------------------------------
-! Read the initial space energies from file
-!-----------------------------------------------------------------------
-        ! Allocate arrays
-        allocate(vec(ndim))
-
-        ! Open the Davidson file
-        call freeunit(idav)
-        open(idav,file=davname,status='unknown',access='sequential',&
-             form='unformatted')
-
-        ! Read the energies
-        do i=1,davstates
-           read(idav) k,ener(i),vec
-        enddo
-
-        ! Close the Davidson file
-        close(idav)
-        
-        ! Deallocate arrays
-        deallocate(vec)
-
-!-----------------------------------------------------------------------
-! Write the RIXS data file
-!-----------------------------------------------------------------------
-        ! Open the RIXS data file
-        call freeunit(irixs)
-        filename='rixs.dat'
-        open(irixs,file=filename,status='unknown',form='unformatted')
-
-        ! Dimensions
-        write(irixs) davstates+1
-        write(irixs) nfinal
-
-        ! Ground state energy
-        write(irixs) ehf+e_mp2
-        
-        ! Energies of the valence-excited states
-        do i=1,davstates
-           write(irixs) ehf+e_mp2+ener(i)
-        enddo
-
-        ! Energies of the final space states
-        do i=1,nfinal
-           write(irixs) ehf+e_mp2+enerf(i)
-        enddo
-
-        ! Transition dipole matrix elements <Psi_i | Da | chi_j>,
-        ! a=x,y,z between the valence states and the
-        ! final space states
-        do i=1,3*(davstates+1)
-           do j=1,nfinal
-              write(irixs) tdm(i,j)
-           enddo
-        enddo
-
-        ! Close the RIXS data file
-        close(irixs)
-
-        return
-
-      end subroutine tdm_rixs
 
 !#######################################################################
 
