@@ -199,6 +199,91 @@
 
 !#######################################################################
 
+    subroutine davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
+         travec,vec_init,mtmf,noffdf,rvec,travec2)
+
+      use constants
+      use parameters
+      use fspace
+      use get_matrix_dipole
+      use diagmod
+      use guessvecs
+        
+      implicit none
+
+      integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+      integer                                   :: ndim,ndimf,ndimsf
+      integer*8                                 :: noffdf
+      real(d), dimension(:), allocatable        :: travec,mtmf
+      real(d), dimension(ndim)                  :: vec_init
+      real(d), dimension(ndim,davstates)        :: rvec
+      real(d), dimension(:,:), allocatable      :: travec2
+
+!-----------------------------------------------------------------------        
+! If requested, determine the Davidson guess vectors by diagonalising 
+! the ADC(1) Hamiltonian matrix
+!-----------------------------------------------------------------------        
+      if (ladc1guess_f) call adc1_guessvecs_final
+
+!-----------------------------------------------------------------------
+! Write the final space ADC(2) Hamiltonian to disk
+!-----------------------------------------------------------------------
+      write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
+
+      if (method_f.eq.2) then
+         ! ADC(2)-s
+         if (lcvsfinal) then
+            call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+         else
+            call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+         endif
+      else if (method_f.eq.3) then
+         ! ADC(2)-x
+         if (lcvsfinal) then
+            call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')           
+         else
+            call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+         endif
+      endif
+
+!-----------------------------------------------------------------------
+! Diagonalisation in the final space
+!-----------------------------------------------------------------------
+      call master_eig(ndimf,noffdf,'f')
+        
+!-----------------------------------------------------------------------
+! Allocate the travec array that will hold the contraction of the IS
+! representation of the shifted dipole operator with the initial
+! state vector
+!-----------------------------------------------------------------------
+      if (statenumber.eq.0) then
+         allocate(mtmf(ndimf))
+      else
+         allocate(travec(ndimf))
+      endif
+
+!-----------------------------------------------------------------------
+! Calculate travec: the product of the IS representation of the 
+! shifted dipole operator and the initial state vector.
+!
+! This will be used later in the calculation of transition dipole
+! matrix elements between the initial and final states.
+!
+! Really this should be done elsewhere...
+!-----------------------------------------------------------------------
+      if (statenumber.eq.0) then
+         call get_modifiedtm_adc2(ndimf,kpqf(:,:),mtmf(:),0)
+      else
+         call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+              vec_init,travec)
+      endif
+
+      return
+
+    end subroutine davidson_final_space_diag
+    
+!#######################################################################
+
     subroutine initial_space_dipole(ndim,ndims,kpq)
 
       use channels

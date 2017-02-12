@@ -602,6 +602,9 @@
 ! Target state section
 !-----------------------------------------------------------------------
       if (ltarg) then
+         ! Make sure that statenumber>0 so that the initial space
+         ! diagonalisation is performed
+         statenumber=1
          if (detthrsh.eq.-1.0d0) then
             msg='The Slater determinant threshold has not been given'
             goto 999
