@@ -154,8 +154,6 @@ contains
     if (allocated(edavf)) deallocate(edavf)
     deallocate(kpq,kpqf,kpqd)
     
-    STOP
-
     return
 
   end subroutine adc2_rixs
@@ -512,6 +510,7 @@ contains
     use constants
     use parameters
     use iomod
+    use timingmod
 
     implicit none
     
@@ -525,7 +524,22 @@ contains
     real(d), dimension(:), allocatable        :: vec
     real(d), dimension(:), allocatable        :: enerf
     real(d), dimension(davstates)             :: ener
+    real(d)                                   :: tw1,tw2,tc1,tc2
     character(len=70)                         :: filename
+
+!-----------------------------------------------------------------------
+! Output what we are doing
+!-----------------------------------------------------------------------
+    write(ilog,'(/,70a)') ('-',i=1,70)
+    write(ilog,'(2x,a,/,2x,a)') &
+         'Calculating the ADC-to-CVS-ADC-Lanczos transition &
+         dipoles and','writing the RIXS data file'
+    write(ilog,'(70a)') ('-',i=1,70)
+
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Set dimensions and filenames
@@ -600,6 +614,9 @@ contains
 !-----------------------------------------------------------------------
 ! Write the RIXS data file
 !-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') 'Transition dipole matrix elements written &
+         to rixs.dat'
+
     ! Open the RIXS data file
     call freeunit(irixs)
     filename='rixs.dat'
@@ -633,6 +650,12 @@ contains
     
     ! Close the RIXS data file
     close(irixs)
+
+!-----------------------------------------------------------------------
+! Finish timing and output the walltime taken
+!-----------------------------------------------------------------------
+      call times(tw2,tc2)
+      write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
 

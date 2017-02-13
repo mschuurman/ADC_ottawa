@@ -22,6 +22,7 @@ program adc
   
   implicit none
   
+  integer               :: i
   integer, dimension(2) :: shp
   real(d)               :: tw1,tw2,tc1,tc2
   character(len=72)     :: gam_chkpt,gam_log
@@ -119,7 +120,7 @@ program adc
 
         call adc2_ener()
 
-     case(1) ! ADC(1) spectrum, full diagonalisation
+     case(1) ! ADC(1) OPA spectrum, full diagonalisation
            
         call adc1_spec()
         
@@ -155,8 +156,10 @@ program adc
 ! Output timings and stop
 !-----------------------------------------------------------------------    
   call times(tw2,tc2)
-  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final wall time:',tw2-tw1," s"
-  write(ilog,'(/,a,1x,F9.2,1x,a)') 'Final cpu time: ',tc2-tc1," s"
+  write(ilog,'(/,70a)') ('*',i=1,70)
+  write(ilog,'(a,1x,F9.2,1x,a)') 'Final wall time:',tw2-tw1," s"
+  write(ilog,'(a,1x,F9.2,1x,a)') 'Final cpu time: ',tc2-tc1," s"
+  write(ilog,'(70a)') ('*',i=1,70)
 
   STOP
   

@@ -293,6 +293,7 @@
       use get_matrix_dipole
       use misc
       use dyson_calc
+      use timingmod
 
       implicit none
 
@@ -305,7 +306,21 @@
       real(d), dimension(davstates_f)           :: ener
       real(d)                                   :: dip0,dipnuc
       real(d), parameter                        :: ang2bohr=1.889725989d0
+      real(d)                                   :: tw1,tw2,tc1,tc2
       character(len=60)                         :: filename
+
+!-----------------------------------------------------------------------
+! Output what we are doing
+!-----------------------------------------------------------------------
+      write(ilog,'(/,70a)') ('-',i=1,70)
+      write(ilog,'(2x,a)') 'Calculating the initial space dipole &
+           moments'
+      write(ilog,'(70a)') ('-',i=1,70)
+
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Nuclear contribution to the dipole moments
@@ -423,6 +438,12 @@
       dipmom=dipmom+dipnuc
 
 !-----------------------------------------------------------------------
+! Finish timing and output the walltime taken
+!-----------------------------------------------------------------------
+      call times(tw2,tc2)
+      write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
+!-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
       deallocate(rvec)
@@ -443,6 +464,7 @@
       use get_matrix_dipole
       use misc
       use dyson_calc
+      use timingmod
 
       implicit none
 
@@ -455,8 +477,21 @@
       real(d), dimension(davstates_f)           :: ener
       real(d)                                   :: dip0,dipnuc
       real(d), parameter                        :: ang2bohr=1.889725989d0
+      real(d)                                   :: tw1,tw2,tc1,tc2
       character(len=60)                         :: filename
       
+!-----------------------------------------------------------------------
+! Output what we are doing
+!-----------------------------------------------------------------------
+      write(ilog,'(/,70a)') ('-',i=1,70)
+      write(ilog,'(2x,a)') 'Calculating the final space dipole moments'
+      write(ilog,'(70a)') ('-',i=1,70)
+
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+      call times(tw1,tc1)
+
 !-----------------------------------------------------------------------
 ! Nuclear contribution to the dipole moments
 !-----------------------------------------------------------------------
@@ -570,6 +605,12 @@
 ! Total excited state dipole moments
 !-----------------------------------------------------------------------
       dipmom_f=dipmom_f+dipnuc
+
+!-----------------------------------------------------------------------
+! Finish timing and output the walltime taken
+!-----------------------------------------------------------------------
+      call times(tw2,tc2)
+      write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
