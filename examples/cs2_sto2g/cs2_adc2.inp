@@ -19,31 +19,31 @@ cvs
 
 mem=1500
 
-debug
+#debug
 
-## Relaxation
-#diag_section
-# method=relaxation_liu
-# nstates = 6
-# block_size = 7
-# tol = 1e-5
-# timestep = 10.0
-# krydim = 5
-# maxit = 100
-# siltol=1e-5
-# guess = subdiag
-#end-diag_section
-
+# Relaxation
 diag_section
- method=davidson
- preconditioner = olsen
- maxvec = 60
- nstates = 10
- block_size = 20
- tol = 1e-6
- maxit = 500
+ method=relaxation_liu
+ nstates = 6
+ block_size = 7
+ tol = 1e-5
+ timestep = 20.0
+ krydim = 5
+ maxit = 100
+ siltol=1e-5
  guess = subdiag
 end-diag_section
+
+#diag_section
+# method=davidson
+# preconditioner = olsen
+# maxvec = 60
+# nstates = 10
+# block_size = 20
+# tol = 1e-6
+# maxit = 500
+# guess = subdiag
+#end-diag_section
 
 diag_final_section
  method=davidson

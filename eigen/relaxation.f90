@@ -1920,7 +1920,8 @@
       integer                              :: istep,nvec,nlin,nnull,&
                                               error,i,j,k,m,i1,j1
       real(d), dimension(matdim)           :: vecprop
-      real(d), dimension(:,:), allocatable :: new2old,hmat1,eigvec,umat
+      real(d), dimension(:,:), allocatable :: transmat,hmat1,eigvec,&
+                                              umat,funcmat
       real(d), dimension(:), allocatable   :: eigval,work,coeff0,coeff,&
                                               coeff1
       real(d)                              :: dtau,norm
@@ -1930,7 +1931,7 @@
 ! vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
       call canonical_ortho(nvec,nlin,nnull,istep,hmat1,coeff0,&
-           new2old)
+           transmat)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -1941,6 +1942,7 @@
       allocate(coeff1(nlin))
       allocate(eigvec(nlin,nlin))
       allocate(umat(nlin,nlin))
+      allocate(funcmat(nlin,nlin))
 
 !----------------------------------------------------------------------
 ! Diagonalise the transformed subspace Hamiltonian matrix, hmat1
@@ -1960,17 +1962,22 @@
 !----------------------------------------------------------------------
       dtau=step
 
-      ! Representation of the propagator in the transformed subspace
-      ! basis
-      umat=0.0d0
-      do j=1,nlin
-         do m=1,nlin
-            do k=1,nlin
-               umat(j,m)=umat(j,m)+&
-                    eigvec(j,k)*exp(-eigval(k)*dtau)*eigvec(m,k)
-            enddo
-         enddo
+      ! Function of Ht
+      funcmat=0.0d0
+      do k=1,nlin
+         ! exp(-Ht)
+         funcmat(k,k)=exp(-eigval(k)*dtau)
+         
+         ! 1-tanh(Ht)
+         !funcmat(k,k)=1-tanh(eigval(k)*dtau)
+
+         ! 1-erf(Ht)
+         !funcmat(k,k)=1-erf(eigval(k)*dtau)
       enddo
+
+      ! Representation of the propagator in the transformed
+      ! subspace basis
+      umat=matmul(eigvec,matmul(funcmat,transpose(eigvec)))
 
       ! Expansion coefficients for |Psi(dt)> in the basis of the
       ! transformed subspace states
@@ -1979,7 +1986,7 @@
       coeff1=coeff1/norm
 
       ! Transformation to the original, untransformed subspace basis
-      coeff=matmul(new2old,coeff1)
+      coeff=matmul(transmat,coeff1)
 
       ! Construction of |Psi(dt)>
       !
@@ -2012,7 +2019,7 @@
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
-      deallocate(new2old)
+      deallocate(transmat)
       deallocate(hmat1)
       deallocate(eigval)
       deallocate(coeff0)
@@ -2020,6 +2027,7 @@
       deallocate(eigvec)
       deallocate(coeff)
       deallocate(umat)
+      deallocate(funcmat)
 
       return
 
@@ -2028,14 +2036,15 @@
 !#######################################################################
 
     subroutine canonical_ortho(nvec,nlin,nnull,istep,hmat1,coeff0,&
-         new2old)
+         transmat)
 
       implicit none
 
       integer                              :: nvec,nlin,nnull,istep,&
                                               error,i,j,k,l,lwork
       real(d), dimension(:,:), allocatable :: smat,hmat,eigvec,&
-                                              smat1,hmat1,new2old
+                                              smat1,hmat1,transmat,&
+                                              invtransmat
       real(d), dimension(:), allocatable   :: eigval,work,coeff0
       real(d), parameter                   :: eps=1e-6
 
@@ -2094,21 +2103,24 @@
       allocate(smat1(nlin,nlin))
       allocate(hmat1(nlin,nlin))
       allocate(coeff0(nlin))
-      allocate(new2old(nvec,nlin))
+      allocate(transmat(nvec,nlin))
+      allocate(invtransmat(nlin,nvec))
 
       ! Set up the transformation matrices, taking into account
       ! the normalisation factors
-      new2old=eigvec(1:nvec,nnull+1:nvec)
+      transmat=eigvec(1:nvec,nnull+1:nvec)
+      invtransmat=transpose(transmat)
       do i=1,nlin
-         new2old(:,i)=new2old(:,i)/sqrt(eigval(nnull+i))
+         transmat(:,i)=transmat(:,i)/sqrt(eigval(nnull+i))
+         invtransmat(i,:)=invtransmat(i,:)*sqrt(eigval(nnull+i))
       enddo
-      
+
       ! Transformed subspace overlap and Hamiltonian matrices
       ! N.B., we only calculate the transformed overlap matrix
       ! for checking purposes (if this isn't the unit matrix,
       ! then things have gone terribly wrong).
-      smat1=matmul(transpose(new2old),matmul(smat,new2old))
-      hmat1=matmul(transpose(new2old),matmul(hmat,new2old))
+      smat1=matmul(transpose(transmat),matmul(smat,transmat))
+      hmat1=matmul(transpose(transmat),matmul(hmat,transmat))
 
 !----------------------------------------------------------------------
 ! Initial wavefunction in the basis of the transformed subspace vectors
@@ -2117,7 +2129,7 @@
 ! vectors, |Psi(0)> = (0,...,0,1,0,...,0)^T
 !----------------------------------------------------------------------
       k=(istep-1)*krydim+1
-      coeff0(:)=new2old(k,:)
+      coeff0(:)=invtransmat(:,k)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -2128,7 +2140,8 @@
       deallocate(eigvec)
       deallocate(work)
       deallocate(smat1)
-      
+      deallocate(invtransmat)
+
       return
 
     end subroutine canonical_ortho
