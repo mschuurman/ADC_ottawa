@@ -23,15 +23,16 @@ mem=1500
 
 # Relaxation
 diag_section
- method=relaxation_liu
+ method=relaxation_expo
  nstates = 6
  block_size = 7
- tol = 1e-5
- timestep = 20.0
- krydim = 5
+ tol = 1e-4
+ timestep = 20
+ krydim = 17
  maxit = 100
- siltol=1e-5
+ siltol=1e-6
  guess = subdiag
+ #guess = adc1
 end-diag_section
 
 #diag_section

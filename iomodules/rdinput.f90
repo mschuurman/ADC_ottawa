@@ -735,6 +735,9 @@
                else if (keyword(i).eq.'relaxation_liu') then
                   solver=2
                   rlxtype=2
+               else if (keyword(i).eq.'relaxation_expo') then
+                  solver=2
+                  rlxtype=3
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -948,6 +951,9 @@
                else if (keyword(i).eq.'relaxation_liu') then
                   solver_f=2
                   rlxtype_f=2
+               else if (keyword(i).eq.'relaxation_expo') then
+                  solver_f=2
+                  rlxtype_f=3
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control

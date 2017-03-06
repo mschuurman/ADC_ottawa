@@ -117,6 +117,9 @@
       else if (algor.eq.2) then
          ! Basis reuse algorithm of Liu
          call relaxation_liu(matdim,noffd)
+      else if (algor.eq.3) then
+         ! External expokit libraries
+         call relaxation_expokit(matdim,noffd)
       endif
 
 !-----------------------------------------------------------------------
@@ -315,7 +318,212 @@
       return
       
     end subroutine relaxation_liu
-    
+
+!#######################################################################
+
+    subroutine relaxation_expokit(matdim,noffd)
+
+      implicit none
+
+      integer                            :: s,i,n
+      integer, intent(in)                :: matdim
+      integer*8, intent(in)              :: noffd
+      real(d)                            :: hnorm,energy,residual
+      real(d), dimension(:), allocatable :: vec0,vecprop
+      
+      ! Expokit
+      integer                            :: lwsp,liwsp,itrace,iflag
+      integer, dimension(:), allocatable :: iwsp
+      real(d), dimension(:), allocatable :: wsp
+
+      external matxvec
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      ! |Psi(0)>
+      allocate(vec0(matdim))
+      vec0=0.0d0
+
+      ! |Psi(dt)>
+      allocate(vecprop(matdim))
+      vecprop=0.0d0
+
+      ! Converged states
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+      
+      ! Expokit work arrays
+      lwsp=2*(matdim*(krydim+1)+matdim+(krydim+2)**2+4*(krydim+2)**2+7)
+      liwsp=2*(krydim+2)
+      allocate(wsp(lwsp))
+      allocate(iwsp(liwsp))
+
+      ! Expokit flags
+      itrace=1
+
+!-----------------------------------------------------------------------
+! Calculate the infinity norm of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      call infnorm(hnorm,matdim)
+
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the external Expokit
+! libraries
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! |Psi(0)>
+         vec0=vec_old(:,s)
+
+         ! Loop over timesteps
+         do n=1,niter
+
+            ! Orthogonalisation no. 1
+            do i=1,s-1
+               vec0=vec0-dot_product(vec0,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+               
+            ! Take one step using the Expokit Lanczos code
+            call dsexpv(matdim,krydim,step,vec0,vecprop,&
+                 toler,hnorm,wsp,lwsp,iwsp,liwsp,matxvec,&
+                 itrace,iflag)
+
+            ! Orthogonalisation no. 2
+            do i=1,s-1
+               vec0=vec0-dot_product(vec0,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            
+            ! Renormalisation
+            vecprop=vecprop/sqrt(dot_product(vecprop,vecprop))
+            
+            ! Calculate the residual
+            call residual_1vec(vecprop,matdim,noffd,energy,residual)
+
+            ! Reset |Psi(0)>
+            vec0=vecprop
+
+            ! Bodgy output
+            print*,
+            print*,"Nhvec:",iwsp(1)
+            print*,"Serr:",wsp(6)
+            print*,"Res.:",residual
+            print*,"Ener.:",energy*eh2ev
+            print*,
+            
+            ! Exit if convergence has been reached
+            if (residual.lt.eps) then
+               vec_conv(:,s)=vecprop
+               print*,
+               print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+               print*,"CONVERGED:",s,energy*eh2ev
+               print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+               print*,
+               exit
+            endif
+               
+         enddo
+
+      enddo
+
+      STOP
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(wsp)
+      deallocate(iwsp)
+      deallocate(vec_conv)
+      deallocate(vec0)
+      deallocate(vecprop)
+      
+      return
+      
+    end subroutine relaxation_expokit
+
+!#######################################################################
+
+    subroutine infnorm(norm,matdim)
+
+      use misc, only: dsortindxa1
+      
+      implicit none
+
+      integer                            :: k,l,iham,nlim
+      integer, intent(in)                :: matdim
+      integer, dimension(:), allocatable :: rindx
+      real(d)                            :: norm
+      real(d), dimension(:), allocatable :: rsum
+      character(len=70)                  :: filename
+      
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+      allocate(rsum(matdim))
+      rsum=0.0d0
+
+      allocate(rindx(matdim))
+      rindx=0
+      
+!----------------------------------------------------------------------
+! Contribution from the on-diagonal elements
+!----------------------------------------------------------------------
+      rsum=abs(hii)
+      
+!----------------------------------------------------------------------      
+! Contribution from the off-diagonal elements
+!----------------------------------------------------------------------      
+      if (lincore) then
+
+         ! In core storage of the Hamiltonian
+         do k=1,nrec
+            rsum(indxi(k))=rsum(indxi(k))+abs(hij(k))
+         enddo
+         
+      else
+
+         ! Out-of-core storage of the Hamiltonian
+         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      
+         if (hamflag.eq.'i') then
+            filename='SCRATCH/hmlt.offi'
+         else if (hamflag.eq.'f') then
+            filename='SCRATCH/hmlt.offc'
+         endif
+
+         open(iham,file=filename,status='old',access='sequential',&
+              form='unformatted')
+
+         do k=1,nrec
+            read(iham) hij(:),indxi(:),indxj(:),nlim
+            do l=1,nlim
+               rsum(indxi(l))=rsum(indxi(l))+abs(hij(l))
+            enddo
+         enddo
+         
+         close(iham)
+         
+         deallocate(hij,indxi,indxj)
+         
+      endif
+
+!----------------------------------------------------------------------
+! Determination of the infinity norm of the Hamiltonian matrix
+!----------------------------------------------------------------------
+      call dsortindxa1('D',matdim,rsum,rindx)
+      norm=rsum(rindx(1))
+      
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+      deallocate(rsum)
+      deallocate(rindx)
+      
+      return
+      
+    end subroutine infnorm
+      
 !#######################################################################
 
     subroutine initialise(matdim)
