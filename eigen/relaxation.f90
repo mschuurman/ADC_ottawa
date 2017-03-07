@@ -101,16 +101,6 @@
       call initvec(matdim,noffd)
       
 !-----------------------------------------------------------------------
-! Output the initial energies and convergence information (SIL only)
-!-----------------------------------------------------------------------
-      if (algor.eq.1) then
-         vec_new=vec_old
-         call getener(matdim,noffd)
-         call check_conv(matdim,noffd)
-         call wrtable(0)
-      endif
-         
-!-----------------------------------------------------------------------
 ! Perform the block-relaxation calculation
 !-----------------------------------------------------------------------
       if (algor.eq.1) then
@@ -162,6 +152,25 @@
       integer*8, intent(in) :: noffd
       integer               :: n,k
 
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: Block short iterative Lanczos'
+      write(ilog,'(2x,a,F12.7,/)') 'Max. timestep:',step
+      write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
+           krydim
+
+!-----------------------------------------------------------------------
+! Output the initial energies and convergence information
+!-----------------------------------------------------------------------
+      vec_new=vec_old
+      call getener(matdim,noffd)
+      call check_conv(matdim,noffd)
+      call wrtable(0)
+
+!-----------------------------------------------------------------------
+! Perform the relaxation calculation
+!-----------------------------------------------------------------------
       ! Loop over timesteps
       do n=1,niter
 
@@ -215,7 +224,7 @@
 
       integer, intent(in)                :: matdim
       integer*8, intent(in)              :: noffd
-      integer                            :: s,n
+      integer                            :: s,n,i
       real(d), dimension(:), allocatable :: vec0,vecprop
       real(d)                            :: energy,residual
 
@@ -262,6 +271,17 @@
       allocate(betamat(krydim,niter))
       betamat=0.0d0
       
+      ! No. converged states
+      nconv=0
+
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: Lanczos-Liu'
+      write(ilog,'(2x,a,F12.7,/)') 'Timestep:',step
+      write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
+           krydim
+
 !-----------------------------------------------------------------------
 ! Perform the relaxation calculations using the SIL-Liu algorithm
 !-----------------------------------------------------------------------
@@ -276,9 +296,16 @@
          betamat=0.0d0
          vec0=vec_old(:,s)
 
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+
+         ! Output the initial energy and residual
+         call residual_1vec(vec0,matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+
          ! Loop over timesteps
          do n=1,niter
-         
+
             ! Generation of the Lanczos vectors for the current
             ! timestep
             call get_lancvecs_current(s,n,matdim,noffd,vec0)
@@ -289,21 +316,46 @@
 
             ! Calculate |Psi(t+dt)>
             call solve_subspace_tdse(n,vecprop,matdim)
-            
+
+            ! Orthogonalise |Psi(t+dt)> against the previously
+            ! converged states
+            do i=1,s-1
+               vecprop=vecprop&
+                    -dot_product(vecprop,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            vecprop=vecprop/sqrt(dot_product(vecprop,vecprop))
+
             ! Calculate the residual
             call residual_1vec(vecprop,matdim,noffd,energy,residual)
 
             ! Reset vec0
             vec0=vecprop
 
-            ! Output info
-            print*,n,residual
-            
-            if (n.eq.5) STOP
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(n,energy,residual)
+
+            ! Exit if convergence has been reached
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state
+               vec_new(:,s)=vecprop
+               vec_conv(:,s)=vecprop
+               ! Output some things
+               write(ilog,'(/,2x,a,/)') 'Converged'
+               ! Terminate the relaxation for the current state
+               exit
+            endif
 
          enddo
 
-         STOP
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
 
       enddo
 
@@ -366,7 +418,8 @@
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
 !-----------------------------------------------------------------------
-      write(ilog,'(2x,a,F12.7)') 'Timestep:',step
+      write(ilog,'(2x,a,/)') 'Algorithm: Short iterative Lanczos'
+      write(ilog,'(2x,a,F12.7,/)') 'Timestep:',step
       write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
            krydim
       
@@ -388,9 +441,13 @@
          ! Write the table header for the current state
          call wrheader_1vec(s)
 
+         ! Output the initial energy and residual
+         call residual_1vec(vec0,matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+
          ! Reset nmult
          nmult=0
-         
+
          ! Loop over timesteps
          do n=1,niter
 
@@ -406,7 +463,8 @@
 
             ! Orthogonalisation no. 2
             do i=1,s-1
-               vec0=vec0-dot_product(vec0,vec_new(:,s))*vec_new(:,s)
+               vecprop=vecprop&
+                    -dot_product(vecprop,vec_new(:,s))*vec_new(:,s)
             enddo
             
             ! Renormalisation
@@ -1899,12 +1957,12 @@
                vecin=vecin-dp*vec_new(:,i)
             enddo
          endif
-      else if (iortho.eq.3) then
-         ! SIL-Liu
-         do i=1,ista-1
-            dp=dot_product(vec_conv(:,i),vecin)
-            vecin=vecin-dp*vec_conv(:,i)
-         enddo
+      !else if (iortho.eq.3) then
+      !   ! SIL-Liu
+      !   do i=1,ista-1
+      !      dp=dot_product(vec_new(:,i),vecin)
+      !      vecin=vecin-dp*vec_new(:,i)
+      !   enddo
       endif
 
 !-----------------------------------------------------------------------
@@ -1965,12 +2023,12 @@
             dp=dot_product(vec_new(:,i),vecout)
             vecout=vecout-dp*vec_new(:,i)
          enddo
-      else if (iortho.eq.3) then
-         ! SIL-liu
-         do i=1,ista-1
-            dp=dot_product(vec_conv(:,i),vecin)
-            vecin=vecin-dp*vec_conv(:,i)
-         enddo
+      !else if (iortho.eq.3) then
+      !   ! SIL-liu
+      !   do i=1,ista-1
+      !      dp=dot_product(vec_new(:,i),vecin)
+      !      vecin=vecin-dp*vec_new(:,i)
+      !   enddo
       endif
 
       return
@@ -2238,19 +2296,7 @@
          i=i+1
          vecprop=vecprop+coeff(i)*lancvec(:,i1)
       endif
-      if (i1.lt.istep*krydim+1) goto 10
-
-      !! NORM CHECK
-      !norm=0.0d0
-      !do i=1,nvec
-      !   do j=1,nvec
-      !      norm=norm+subsmat(i,j)*coeff(i)*coeff(j)
-      !   enddo
-      !enddo
-      !norm=sqrt(norm)
-      !print*,
-      !print*,"Norm:",norm
-      !if (istep.eq.2) STOP
+      if (i1.lt.istep*(krydim+1)) goto 10
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
