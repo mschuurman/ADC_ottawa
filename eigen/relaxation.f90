@@ -101,13 +101,15 @@
       call initvec(matdim,noffd)
       
 !-----------------------------------------------------------------------
-! Output the initial energies and convergence information
+! Output the initial energies and convergence information (SIL only)
 !-----------------------------------------------------------------------
-      vec_new=vec_old
-      call getener(matdim,noffd)
-      call check_conv(matdim,noffd)
-      call wrtable(0)
-
+      if (algor.eq.1) then
+         vec_new=vec_old
+         call getener(matdim,noffd)
+         call check_conv(matdim,noffd)
+         call wrtable(0)
+      endif
+         
 !-----------------------------------------------------------------------
 ! Perform the block-relaxation calculation
 !-----------------------------------------------------------------------
@@ -325,7 +327,7 @@
 
       implicit none
 
-      integer                            :: s,i,n
+      integer                            :: s,i,n,nmult
       integer, intent(in)                :: matdim
       integer*8, intent(in)              :: noffd
       real(d)                            :: hnorm,energy,residual
@@ -349,19 +351,25 @@
       allocate(vecprop(matdim))
       vecprop=0.0d0
 
-      ! Converged states
-      allocate(vec_conv(matdim,nblock))
-      vec_conv=0.0d0
-      
       ! Expokit work arrays
       lwsp=2*(matdim*(krydim+1)+matdim+(krydim+2)**2+4*(krydim+2)**2+7)
       liwsp=2*(krydim+2)
       allocate(wsp(lwsp))
       allocate(iwsp(liwsp))
 
-      ! Expokit flags
-      itrace=1
+      ! Expokit flags: supress output
+      itrace=0
 
+      ! No. converged states
+      nconv=0
+
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,F12.7)') 'Timestep:',step
+      write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
+           krydim
+      
 !-----------------------------------------------------------------------
 ! Calculate the infinity norm of the Hamiltonian matrix
 !-----------------------------------------------------------------------
@@ -377,12 +385,18 @@
          ! |Psi(0)>
          vec0=vec_old(:,s)
 
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+
+         ! Reset nmult
+         nmult=0
+         
          ! Loop over timesteps
          do n=1,niter
 
             ! Orthogonalisation no. 1
             do i=1,s-1
-               vec0=vec0-dot_product(vec0,vec_conv(:,s))*vec_conv(:,s)
+               vec0=vec0-dot_product(vec0,vec_new(:,s))*vec_new(:,s)
             enddo
                
             ! Take one step using the Expokit Lanczos code
@@ -392,7 +406,7 @@
 
             ! Orthogonalisation no. 2
             do i=1,s-1
-               vec0=vec0-dot_product(vec0,vec_conv(:,s))*vec_conv(:,s)
+               vec0=vec0-dot_product(vec0,vec_new(:,s))*vec_new(:,s)
             enddo
             
             ! Renormalisation
@@ -404,37 +418,43 @@
             ! Reset |Psi(0)>
             vec0=vecprop
 
-            ! Bodgy output
-            print*,
-            print*,"Nhvec:",iwsp(1)
-            print*,"Serr:",wsp(6)
-            print*,"Res.:",residual
-            print*,"Ener.:",energy*eh2ev
-            print*,
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(n,energy,residual)
+
+            ! Update nmult
+            nmult=nmult+iwsp(1)
             
             ! Exit if convergence has been reached
-            if (residual.lt.eps) then
-               vec_conv(:,s)=vecprop
-               print*,
-               print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-               print*,"CONVERGED:",s,energy*eh2ev
-               print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-               print*,
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state
+               vec_new(:,s)=vecprop
+               ! Output some things
+               write(ilog,'(/,2x,a)') 'Converged'
+               write(ilog,'(2x,a,2x,i3,/)') &
+                    'No. matrix-vector multiplications:',nmult
+               ! Terminate the relaxation for the current state
                exit
             endif
                
          enddo
 
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
+         
       enddo
 
-      STOP
-      
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
       deallocate(wsp)
       deallocate(iwsp)
-      deallocate(vec_conv)
       deallocate(vec0)
       deallocate(vecprop)
       
@@ -888,9 +908,17 @@
       real(d), dimension(:,:), allocatable :: hsub
       real(d), dimension(:), allocatable   :: subeig,work
       character(len=70)                    :: filename
+
+!-----------------------------------------------------------------------
+! Output where we are at
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Generating guess vectors by &
+           diagonalising a subspace Hamiltonian...'
       
-      ! Temporary hard-wiring of the subspace dimension
-      subdim=1000
+!-----------------------------------------------------------------------
+! Temporary hard-wiring of the subspace dimension
+!-----------------------------------------------------------------------
+      subdim=800
       
 !-----------------------------------------------------------------------
 ! Sort the on-diagonal Hamiltonian matrix elements in order of
@@ -2544,6 +2572,39 @@
 
     end subroutine wrtable
 
+!#######################################################################
+
+    subroutine wrheader_1vec(s)
+
+      implicit none
+
+      integer :: s,i
+
+      write(ilog,'(64a)') ('=',i=1,64)
+      write(ilog,'(a,i2)') 'State',s
+      write(ilog,'(64a)') ('=',i=1,64)
+      write(ilog,'(a)') 'Iteration        Energy        Residual'
+      write(ilog,'(64a)') ('=',i=1,64)
+      
+      return
+      
+    end subroutine wrheader_1vec
+      
+!#######################################################################
+
+    subroutine wrtable_1vec(n,energy,residual)
+
+      implicit none
+
+      integer :: n
+      real(d) :: energy,residual
+
+      write(ilog,'(i3,11x,F12.7,5x,E13.7)') n,energy*eh2ev,residual
+      
+      return
+
+    end subroutine wrtable_1vec
+      
 !#######################################################################
 
     subroutine wreigenpairs

@@ -27,10 +27,10 @@ diag_section
  nstates = 6
  block_size = 7
  tol = 1e-4
- timestep = 20
- krydim = 17
+ timestep = 10.0
+ krydim = 10
  maxit = 100
- siltol=1e-6
+ siltol = 1e-6
  guess = subdiag
  #guess = adc1
 end-diag_section
