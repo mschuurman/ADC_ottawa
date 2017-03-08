@@ -36,7 +36,7 @@
     logical                              :: lincore,lrdadc1,lrandom,lsub
 
     ! Lanczos-Liu arrays
-    integer                              :: maxvec
+    integer                              :: maxvec,nlin
     real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
                                             vec_conv,alphamat,betamat
     real(d), dimension(:), allocatable   :: knorm
@@ -294,17 +294,18 @@
          lancvec=0.0d0
          alphamat=0.0d0
          betamat=0.0d0
-         vec0=vec_old(:,s)
+         vec0=vec_old(:,s)         
 
          ! Write the table header for the current state
          call wrheader_1vec(s)
 
          ! Output the initial energy and residual
+         nlin=0
          call residual_1vec(vec0,matdim,noffd,energy,residual)
          call wrtable_1vec(0,energy,residual)
 
          ! Loop over timesteps
-         do n=1,niter
+         do n=1,niter            
 
             ! Generation of the Lanczos vectors for the current
             ! timestep
@@ -2213,7 +2214,7 @@
       implicit none
 
       integer, intent(in)                  :: matdim
-      integer                              :: istep,nvec,nlin,nnull,&
+      integer                              :: istep,nvec,nnull,&
                                               error,i,j,k,m,i1,j1
       real(d), dimension(matdim)           :: vecprop
       real(d), dimension(:,:), allocatable :: transmat,hmat1,eigvec,&
@@ -2226,7 +2227,7 @@
 ! Perform Lowdin's canonical orthogonalisation of the subspace basis
 ! vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
-      call canonical_ortho(nvec,nlin,nnull,istep,hmat1,coeff0,&
+      call canonical_ortho(nvec,nnull,istep,hmat1,coeff0,&
            transmat)
 
 !----------------------------------------------------------------------
@@ -2319,12 +2320,12 @@
 
 !#######################################################################
 
-    subroutine canonical_ortho(nvec,nlin,nnull,istep,hmat1,coeff0,&
+    subroutine canonical_ortho(nvec,nnull,istep,hmat1,coeff0,&
          transmat)
 
       implicit none
 
-      integer                              :: nvec,nlin,nnull,istep,&
+      integer                              :: nvec,nnull,istep,&
                                               error,i,j,k,l,lwork
       real(d), dimension(:,:), allocatable :: smat,hmat,eigvec,&
                                               smat1,hmat1,transmat,&
@@ -2629,9 +2630,10 @@
       integer :: s,i
 
       write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(a,i2)') 'State',s
+      write(ilog,'(a,i3)') 'State',s
       write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(a)') 'Iteration        Energy        Residual'
+      write(ilog,'(2(a,8x),a,10x,a)') 'Iteration','Energy',&
+           'Residual','Subdim'
       write(ilog,'(64a)') ('=',i=1,64)
       
       return
@@ -2647,7 +2649,8 @@
       integer :: n
       real(d) :: energy,residual
 
-      write(ilog,'(i3,11x,F12.7,5x,E13.7)') n,energy*eh2ev,residual
+      write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
+           residual,nlin
       
       return
 

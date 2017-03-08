@@ -75,8 +75,8 @@ QCLIB=	qclib/vpqrsmod.o \
 	qclib/load_electronic_structure.o \
 	qclib/scf_electronic_structure.o 
 
-EIGEN=expokit/matvecmul.o \
-	expokit/expokit.o \
+EIGEN=  eigen/matvecmul.o \
+	eigen/expokit.o \
 	eigen/block_davidson.o \
 	eigen/relaxation.o \
 	eigen/diagmod.o \
