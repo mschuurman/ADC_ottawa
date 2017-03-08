@@ -338,9 +338,10 @@
             if (residual.le.eps) then
                ! Update the number of converged states
                nconv=nconv+1
-               ! Save the converged state
+               ! Save the converged state and energy
                vec_new(:,s)=vecprop
                vec_conv(:,s)=vecprop
+               ener(s)=energy
                ! Output some things
                write(ilog,'(/,2x,a,/)') 'Converged'
                ! Terminate the relaxation for the current state
@@ -486,8 +487,9 @@
             if (residual.le.eps) then
                ! Update the number of converged states
                nconv=nconv+1
-               ! Save the converged state
+               ! Save the converged state and energy
                vec_new(:,s)=vecprop
+               ener(s)=energy
                ! Output some things
                write(ilog,'(/,2x,a)') 'Converged'
                write(ilog,'(2x,a,2x,i3,/)') &
