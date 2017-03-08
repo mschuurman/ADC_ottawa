@@ -26,7 +26,8 @@ diag_section
  method=relaxation_liu
  nstates = 6
  block_size = 7
- tol = 1e-4
+ maxvec = 70
+ tol = 1e-6
  timestep = 10.0
  krydim = 7
  maxit = 100

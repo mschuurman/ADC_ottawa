@@ -13,11 +13,12 @@ mem=2000
 # Relaxation
 diag_section
  method=relaxation_liu
- nstates = 10
- block_size = 10
+ nstates = 3
+ block_size = 3
  tol = 1e-6
- timestep = 100.0
+ timestep = 50.0
  krydim = 20
+ maxvec = 100
  maxit = 12
  siltol = 1e-6
  guess = subdiag
@@ -25,9 +26,9 @@ diag_section
 end-diag_section
 
 diag_final_section
- nstates = 10
- block_size = 15
- maxvec = 45
+ nstates = 3
+ block_size = 6
+ maxvec = 18
  tol = 1e-6
  maxit = 1000
  guess = subdiag

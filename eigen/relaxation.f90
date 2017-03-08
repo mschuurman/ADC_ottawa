@@ -36,10 +36,9 @@
     logical                              :: lincore,lrdadc1,lrandom,lsub
 
     ! Lanczos-Liu arrays
-    integer                              :: maxvec,nlin
+    integer                              :: maxvec,maxdim,nlin
     real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
                                             vec_conv,alphamat,betamat
-    real(d), dimension(:), allocatable   :: knorm
     
   contains
 
@@ -224,7 +223,7 @@
 
       integer, intent(in)                :: matdim
       integer*8, intent(in)              :: noffd
-      integer                            :: s,n,i
+      integer                            :: s,n,i,ncurr
       real(d), dimension(:), allocatable :: vec0,vecprop
       real(d)                            :: energy,residual
 
@@ -232,10 +231,13 @@
 ! Initialisation
 !-----------------------------------------------------------------------
       ! Maximum no. of vectors that will be generated per state.
-      ! Note that krydim+1 enters here as we generate one more vector
-      ! per timestep than is used in forming the variational subspace
-      maxvec=(krydim+1)*niter
-      
+      ! Note that this is set to the maximum subspace dimension plus
+      ! maxdim/krydim as one extra Lanczos vector is required to be
+      ! calculated and stored each timestep in order to calculate the
+      ! matrix elements with the vectors of the previous timesteps
+      if (maxdim.lt.0) maxdim=2*krydim
+      maxvec=maxdim+maxdim/krydim
+
       ! Representation of the Hamiltonian in the variational subspace
       allocate(subhmat(maxvec,maxvec))
       subhmat=0.0d0
@@ -248,11 +250,6 @@
       allocate(lancvec(matdim,maxvec))
       lancvec=0.0d0
 
-      ! Norms of the Krylov vectors prior to normalisation (needed
-      ! for the calculation of the subspace Hamiltonian matrix
-      ! elements)
-      allocate(knorm(maxvec))
-      
       ! |Psi(0)>
       allocate(vec0(matdim))
       vec0=0.0d0
@@ -288,35 +285,49 @@
       ! Loop over states
       do s=1,nstates
 
-         ! Initialise arrays
+         ! Initialisation
          subhmat=0.0d0
          subsmat=0.0d0
          lancvec=0.0d0
          alphamat=0.0d0
          betamat=0.0d0
-         vec0=vec_old(:,s)         
+         vec0=vec_old(:,s)
+         ncurr=0
+         nlin=0
 
          ! Write the table header for the current state
          call wrheader_1vec(s)
 
          ! Output the initial energy and residual
-         nlin=0
          call residual_1vec(vec0,matdim,noffd,energy,residual)
          call wrtable_1vec(0,energy,residual)
 
          ! Loop over timesteps
-         do n=1,niter            
+         do n=1,niter
+
+            ! Subspace collapse
+            if (ncurr*(krydim+1).eq.maxvec) then
+               call collapse_subspace(matdim)
+               ncurr=ncurr-1
+            endif
+
+            ! Current no. steps used in the subspace basis
+            ! generation (N.B., after the first subspace
+            ! collapse, this stays constant due to the
+            ! subsequent collapsing of the subspace on every
+            ! iteration)
+            ncurr=ncurr+1
 
             ! Generation of the Lanczos vectors for the current
             ! timestep
-            call get_lancvecs_current(s,n,matdim,noffd,vec0)
+            call get_lancvecs_current(s,ncurr,matdim,noffd,vec0)
             
             ! Calculation of the subspace Hamiltonian and overlap
             ! matrix elements
-            call subspace_matrices(n)
+            call subspace_matrices(ncurr)
 
             ! Calculate |Psi(t+dt)>
-            call solve_subspace_tdse(n,vecprop,matdim)
+            call solve_subspace_tdse(ncurr,vecprop,matdim)
 
             ! Orthogonalise |Psi(t+dt)> against the previously
             ! converged states
@@ -367,7 +378,6 @@
       deallocate(subhmat)
       deallocate(subsmat)
       deallocate(lancvec)
-      deallocate(knorm)
       deallocate(vecprop)
       deallocate(vec_conv)
       
@@ -627,6 +637,7 @@
          iortho=rlxortho
          toler=siltol
          algor=rlxtype
+         maxdim=maxsubdim
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -638,6 +649,7 @@
          iortho=rlxortho_f
          toler=siltol_f
          algor=rlxtype_f
+         maxdim=maxsubdim
       endif
 
       if (algor.eq.2) iortho=3
@@ -2040,6 +2052,50 @@
 
 !#######################################################################
 
+    subroutine collapse_subspace(matdim)
+
+      implicit none
+
+      integer, intent(in)                  :: matdim
+      integer                              :: n
+      real(d), dimension(:,:), allocatable :: tmp
+
+!-----------------------------------------------------------------------
+! Reorder the lancvec, subhmat, subsmat, alphamat and betamat arrays
+! s.t. the elements corresponding to the last iteration are removed
+!-----------------------------------------------------------------------
+      ! lancvec: removal of elements corresponding to krydim+1
+      ! vectors
+      allocate(tmp(matdim,maxvec-(krydim+1)))
+      tmp=lancvec(:,krydim+2:maxvec)
+      lancvec(:,1:maxvec-(krydim+1))=tmp
+      deallocate(tmp)
+
+      ! subsmat and subhmat: removal of elements corresponding
+      ! to krydim vectors
+      allocate(tmp(maxvec-krydim,maxvec-krydim))
+      tmp=subsmat(krydim+1:maxvec,krydim+1:maxvec)
+      subsmat(1:maxvec-krydim,1:maxvec-krydim)=tmp
+      tmp=subhmat(krydim+1:maxvec,krydim+1:maxvec)
+      subhmat(1:maxvec-krydim,1:maxvec-krydim)=tmp
+      deallocate(tmp)
+
+      ! alphamat and betamat: removal of elements corresponding
+      ! to krydim vectors
+      n=maxvec/(krydim+1)
+      allocate(tmp(krydim,n-1))
+      tmp=alphamat(:,2:n)
+      alphamat(:,1:n-1)=tmp
+      tmp=betamat(:,2:n)
+      betamat(:,1:n-1)=tmp
+      deallocate(tmp)
+
+      return
+
+    end subroutine collapse_subspace
+
+!#######################################################################
+
     subroutine get_lancvecs_current(ista,istep,matdim,noffd,vec0)
 
       implicit none
@@ -2077,7 +2133,6 @@
       enddo
       dp=dot_product(lancvec(:,k1),lancvec(:,k1))
       lancvec(:,k1)=lancvec(:,k1)/sqrt(dp)
-      knorm(k1)=sqrt(dp)
       
       q=lancvec(:,k1)
 
