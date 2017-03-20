@@ -10,7 +10,7 @@
                                             niter,currdim,ipre,nconv,&
                                             nconv_prev,nrec,maxbl,&
                                             blocksize_curr,maxvec_curr,&
-                                            nstates_curr
+                                            nstates_curr,nmult
     integer, dimension(:), allocatable   :: indxi,indxj
     real(d), dimension(:), allocatable   :: hii,hij
     real(d), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
@@ -127,8 +127,11 @@
       call davfinalise
 
 !-----------------------------------------------------------------------    
-! Output timings
+! Output timings and the no. matrix-vector multiplications
 !-----------------------------------------------------------------------    
+      write(ilog,'(/,a,1x,i4)') 'No. matrix-vector multiplications:',&
+           nmult
+
       call times(tw2,tc2)
       write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
       
@@ -171,6 +174,11 @@
          maxvec=maxsubdim_f
          ldeflate=ldfl_f
       endif
+
+!-----------------------------------------------------------------------
+! Number of matrix-vector multiplications
+!-----------------------------------------------------------------------
+      nmult=0
 
 !-----------------------------------------------------------------------
 ! Temporary: set the maximum subspace dimension
@@ -853,6 +861,11 @@
       integer               :: m,n,k
 
 !-----------------------------------------------------------------------
+! Update the no. matrix-vector multiplications
+!-----------------------------------------------------------------------
+      nmult=nmult+currdim
+
+!-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
       wmat=0.0d0
@@ -895,6 +908,11 @@
       integer               :: iham
       integer               :: nlim,i,j,k,l,m,n
       character(len=70)     :: filename
+
+!-----------------------------------------------------------------------
+! Update the no. matrix-vector multiplications
+!-----------------------------------------------------------------------
+      nmult=nmult+currdim
 
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix

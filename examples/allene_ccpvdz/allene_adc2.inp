@@ -16,7 +16,7 @@ diag_section
  nstates = 3
  block_size = 3
  tol = 1e-6
- timestep = 50.0
+ timestep = 10.0
  krydim = 20
  maxvec = 100
  maxit = 12

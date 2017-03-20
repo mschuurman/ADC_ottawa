@@ -26,7 +26,7 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,&
-                                            iortho,algor
+                                            iortho,algor,subdim,nmult
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
@@ -132,8 +132,11 @@
       call finalise
 
 !-----------------------------------------------------------------------    
-! Output timings
+! Output timings and the no. matrix-vector multiplications
 !-----------------------------------------------------------------------    
+      write(ilog,'(/,a,1x,i4)') 'No. matrix-vector multiplications:',&
+           nmult
+
       call times(tw2,tc2)
       write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
 
@@ -150,6 +153,11 @@
       integer, intent(in)   :: matdim
       integer*8, intent(in) :: noffd
       integer               :: n,k
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      nmult=0
 
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
@@ -236,6 +244,10 @@
       ! calculated and stored each timestep in order to calculate the
       ! matrix elements with the vectors of the previous timesteps
       if (maxdim.lt.0) maxdim=2*krydim
+      if (mod(maxdim,krydim).ne.0) then
+         errmsg='maxvec must be an integer multiple of krydim...'
+         call error_control
+      endif
       maxvec=maxdim+maxdim/krydim
 
       ! Representation of the Hamiltonian in the variational subspace
@@ -291,9 +303,9 @@
          lancvec=0.0d0
          alphamat=0.0d0
          betamat=0.0d0
-         vec0=vec_old(:,s)
          ncurr=0
          nlin=0
+         vec0=vec_old(:,s)
 
          ! Write the table header for the current state
          call wrheader_1vec(s)
@@ -391,7 +403,7 @@
 
       implicit none
 
-      integer                            :: s,i,n,nmult
+      integer                            :: s,i,n
       integer, intent(in)                :: matdim
       integer*8, intent(in)              :: noffd
       real(d)                            :: hnorm,energy,residual
@@ -427,6 +439,9 @@
       ! No. converged states
       nconv=0
 
+      ! No. matrix-vector multiplications
+      nmult=0
+
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
 !-----------------------------------------------------------------------
@@ -456,9 +471,6 @@
          ! Output the initial energy and residual
          call residual_1vec(vec0,matdim,noffd,energy,residual)
          call wrtable_1vec(0,energy,residual)
-
-         ! Reset nmult
-         nmult=0
 
          ! Loop over timesteps
          do n=1,niter
@@ -638,6 +650,7 @@
          toler=siltol
          algor=rlxtype
          maxdim=maxsubdim
+         subdim=guessdim
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -650,6 +663,7 @@
          toler=siltol_f
          algor=rlxtype_f
          maxdim=maxsubdim
+         subdim=guessdim_f
       endif
 
       if (algor.eq.2) iortho=3
@@ -975,9 +989,10 @@
 
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
-      integer, dimension(:), allocatable   :: full2sub,sub2full,indxhii
-      integer                              :: subdim,i,j,k,i1,j1,e2,&
-                                              error,iham,nlim,l
+      integer, dimension(:), allocatable   :: full2sub,sub2full,&
+                                              indxhii
+      integer                              :: i,j,k,i1,j1,e2,error,&
+                                              iham,nlim,l
       real(d), dimension(:,:), allocatable :: hsub
       real(d), dimension(:), allocatable   :: subeig,work
       character(len=70)                    :: filename
@@ -987,11 +1002,6 @@
 !-----------------------------------------------------------------------
       write(ilog,'(2x,a,/)') 'Generating guess vectors by &
            diagonalising a subspace Hamiltonian...'
-      
-!-----------------------------------------------------------------------
-! Temporary hard-wiring of the subspace dimension
-!-----------------------------------------------------------------------
-      subdim=800
       
 !-----------------------------------------------------------------------
 ! Sort the on-diagonal Hamiltonian matrix elements in order of
@@ -1962,6 +1972,11 @@
       vecout=0.0d0
 
 !-----------------------------------------------------------------------
+! Update nmult
+!-----------------------------------------------------------------------
+      nmult=nmult+1
+
+!-----------------------------------------------------------------------
 ! Q |Psi>
 !-----------------------------------------------------------------------
       if (iortho.eq.2) then
@@ -1976,7 +1991,7 @@
       !   ! SIL-Liu
       !   do i=1,ista-1
       !      dp=dot_product(vec_new(:,i),vecin)
-      !      vecin=vecin-dp*vec_new(:,i)
+         !      vecin=vecin-dp*vec_new(:,i)
       !   enddo
       endif
 
@@ -2154,7 +2169,14 @@
          ! Compute the next vector and pair of matrix elements
          v=q
          q=r/beta(j1-1)
+
+         !! Explicit orthogonalisation
+         !do i=k1,j-1
+         !   q=q-dot_product(q,lancvec(:,i))*lancvec(:,i)/sqrt(dot_product(lancvec(:,i),lancvec(:,i)))
+         !enddo
+
          lancvec(:,j)=q
+
          call hxkryvec(ista,j1,matdim,noffd,q,r)
          r=r-beta(j1-1)*v
          alpha(j1)=dot_product(q,r)
@@ -2168,6 +2190,16 @@
       ! matrix elements
       q=r/beta(krydim)
       lancvec(:,istep*(krydim+1))=q
+
+ 
+      !! Orthonormality check
+      !print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+      !do i=k1,istep*(krydim+1)
+      !   do j=k1,istep*(krydim+1)
+      !      print*,i,j,dot_product(lancvec(:,i),lancvec(:,j))
+      !   enddo
+      !enddo
+      !print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 !-----------------------------------------------------------------------
 ! Fill in the current intra-timestep block of the subspace Hamiltonian
@@ -2314,17 +2346,17 @@
 !----------------------------------------------------------------------
       dtau=step
 
-      ! Function of Ht
+      ! F(Et)
       funcmat=0.0d0
       do k=1,nlin
          ! exp(-Ht)
          funcmat(k,k)=exp(-eigval(k)*dtau)
          
          ! 1-tanh(Ht)
-         !funcmat(k,k)=1-tanh(eigval(k)*dtau)
+         !funcmat(k,k)=1.0d0-tanh(eigval(k)*dtau)
 
          ! 1-erf(Ht)
-         !funcmat(k,k)=1-erf(eigval(k)*dtau)
+         !funcmat(k,k)=1.0d0-erf(eigval(k)*dtau)
       enddo
 
       ! Representation of the propagator in the transformed
