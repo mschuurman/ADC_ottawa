@@ -2148,7 +2148,7 @@
       enddo
       dp=dot_product(lancvec(:,k1),lancvec(:,k1))
       lancvec(:,k1)=lancvec(:,k1)/sqrt(dp)
-      
+
       q=lancvec(:,k1)
 
       ! alpha_1
@@ -2170,11 +2170,6 @@
          v=q
          q=r/beta(j1-1)
 
-         !! Explicit orthogonalisation
-         !do i=k1,j-1
-         !   q=q-dot_product(q,lancvec(:,i))*lancvec(:,i)/sqrt(dot_product(lancvec(:,i),lancvec(:,i)))
-         !enddo
-
          lancvec(:,j)=q
 
          call hxkryvec(ista,j1,matdim,noffd,q,r)
@@ -2190,16 +2185,6 @@
       ! matrix elements
       q=r/beta(krydim)
       lancvec(:,istep*(krydim+1))=q
-
- 
-      !! Orthonormality check
-      !print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-      !do i=k1,istep*(krydim+1)
-      !   do j=k1,istep*(krydim+1)
-      !      print*,i,j,dot_product(lancvec(:,i),lancvec(:,j))
-      !   enddo
-      !enddo
-      !print*,">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
 !-----------------------------------------------------------------------
 ! Fill in the current intra-timestep block of the subspace Hamiltonian
@@ -2309,7 +2294,7 @@
       real(d), dimension(:), allocatable   :: eigval,work,coeff0,coeff,&
                                               coeff1
       real(d)                              :: dtau,norm
-      
+
 !----------------------------------------------------------------------
 ! Perform Lowdin's canonical orthogonalisation of the subspace basis
 ! vectors to generate a linearly independent basis
@@ -2354,15 +2339,15 @@
          
          ! 1-tanh(Ht)
          !funcmat(k,k)=1.0d0-tanh(eigval(k)*dtau)
-
+      
          ! 1-erf(Ht)
          !funcmat(k,k)=1.0d0-erf(eigval(k)*dtau)
       enddo
-
+      
       ! Representation of the propagator in the transformed
       ! subspace basis
       umat=matmul(eigvec,matmul(funcmat,transpose(eigvec)))
-
+      
       ! Expansion coefficients for |Psi(dt)> in the basis of the
       ! transformed subspace states
       coeff1=matmul(umat,coeff0)
@@ -2498,7 +2483,9 @@
 ! Initial wavefunction in the basis of the transformed subspace vectors
 !
 ! Note that in the basis of the original, untransformed subspace 
-! vectors, |Psi(0)> = (0,...,0,1,0,...,0)^T
+! vectors, |Psi(0)> = (0,...,0,1,0,...,0)^T, hence the coefficient
+! vector in the transformed subspace basis is simply given by the
+! corresponding column of the inverse transformation matrix
 !----------------------------------------------------------------------
       k=(istep-1)*krydim+1
       coeff0(:)=invtransmat(:,k)

@@ -698,6 +698,10 @@
                   lnoise=.true.
                else if (keyword(i).eq.'subdiag') then
                   lsubdiag=.true.
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) guessdim
+                  endif
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -914,6 +918,10 @@
                   lnoise_f=.true.
                else if (keyword(i).eq.'subdiag') then
                   lsubdiag_f=.true.
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) guessdim_f
+                  endif
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control

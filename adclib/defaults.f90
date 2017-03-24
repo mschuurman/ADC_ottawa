@@ -68,6 +68,7 @@
       maxsubdim=-1
       ldfl=.true.
       solver=1
+      guessdim=800
       
       ! Final space
       davstates_f=0
@@ -81,7 +82,8 @@
       maxsubdim_f=-1
       ldfl_f=.true.
       solver_f=1
-      
+      guessdim_f=800
+
       ! Common
       ndavcalls=0
       eigentype=1
