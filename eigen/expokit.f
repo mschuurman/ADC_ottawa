@@ -2618,7 +2618,7 @@
       j1v = iv + n
       do 200 j = 1,m
          nmult = nmult + 1
-         call matvec( wsp(j1v-n), wsp(j1v) )
+         call matvec( n, wsp(j1v-n), wsp(j1v) )
          do i = 1,j
             hij = ZDOTC( n, wsp(iv+(i-1)*n),1, wsp(j1v),1 )
             call ZAXPY( n, -hij, wsp(iv+(i-1)*n),1, wsp(j1v),1 )
@@ -2640,7 +2640,7 @@
          j1v = j1v + n
  200  continue
       nmult = nmult + 1
-      call matvec( wsp(j1v-n), wsp(j1v) )
+      call matvec( n, wsp(j1v-n), wsp(j1v) )
       avnorm = DZNRM2( n, wsp(j1v),1 )
 *
 *---  set 1 for the 2-corrected scheme ...
@@ -3004,7 +3004,7 @@
       j1v = iv + n
       do 200 j = 1,m
          nmult = nmult + 1
-         call matvec( wsp(j1v-n), wsp(j1v) )
+         call matvec( m, wsp(j1v-n), wsp(j1v) )
          if ( j.gt.1 )
      .     call ZAXPY(n,-wsp(ih+(j-1)*mh+j-2),wsp(j1v-2*n),1,wsp(j1v),1)
          hjj = ZDOTC( n, wsp(j1v-n),1, wsp(j1v),1 )
@@ -3027,7 +3027,7 @@
          j1v = j1v + n
  200  continue
       nmult = nmult + 1
-      call matvec( wsp(j1v-n), wsp(j1v) )
+      call matvec( n, wsp(j1v-n), wsp(j1v) )
       avnorm = DZNRM2( n, wsp(j1v),1 )
 *
 *---  set 1 for the 2-corrected scheme ...

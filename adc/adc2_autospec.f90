@@ -22,11 +22,6 @@ contains
     use guessvecs
     use mp2
     use targetmatching
-    
-    !use constants
-    !use parameters
-    !use adc2common
-    !use mp2
     use fvecprop
     
     implicit none
@@ -69,13 +64,20 @@ contains
 ! Perform the wavepacket propagation and autocorrelation function
 ! calculation
 !-----------------------------------------------------------------------
+    hamflag='f'
     call propagate_fvec(fvec,ndimf)
-    
+
+!-----------------------------------------------------------------------
+! Output the autocorrelation function
+!-----------------------------------------------------------------------
+    call wrauto
+
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
     deallocate(fvec)
-        
+    deallocate(auto)
+
     return
       
   end subroutine adc2_autospec
@@ -141,7 +143,47 @@ contains
     return
     
   end subroutine calc_hamiltonian
+
+!#######################################################################
     
+  subroutine wrauto
+
+    use constants
+    use parameters
+    use iomod
+
+    implicit none
+
+    integer :: iauto,i
+    real(d) :: t
+
+!----------------------------------------------------------------------
+! Open output file
+!----------------------------------------------------------------------
+    call freeunit(iauto)
+    open(iauto,file='auto',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the autocorrelation function to file
+!----------------------------------------------------------------------
+    write(iauto,'(a)') '#    time[fs]         Re(autocorrel)     &
+         Im(autocorrel)     Abs(autocorrel)'
+
+    do i=1,nstep
+       t=(i-1)*dt/41.341375d0
+       write(iauto,'(F15.8,4x,3(2x,F17.14))') &
+            t,real(auto(i)),aimag(auto(i)),abs(auto(i)) 
+    enddo
+
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(iauto)
+
+    return
+
+  end subroutine wrauto
+
 !#######################################################################
   
 end module adc2automod

@@ -944,7 +944,7 @@
          read(iham) hij(:),indxi(:),indxj(:),nlim
          !$omp parallel do private(l,n) shared(wmat,hij,vmat,indxi,indxj)
          do n=1,currdim
-            do l=1,nlim               
+            do l=1,nlim
                wmat(indxi(l),n)=wmat(indxi(l),n)+hij(l)*vmat(indxj(l),n)
                wmat(indxj(l),n)=wmat(indxj(l),n)+hij(l)*vmat(indxi(l),n)
             enddo
