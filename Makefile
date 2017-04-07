@@ -79,6 +79,7 @@ EIGEN=  eigen/matvecmul.o \
 	eigen/expokit.o \
 	eigen/block_davidson.o \
 	eigen/relaxation.o \
+	eigen/fvecprop.o \
 	eigen/diagmod.o \
 	eigen/block_lanczos.o 
 
@@ -110,6 +111,7 @@ ADC_MAIN=adc/adc1_opa.o \
 	adc/adc2_dyson.o \
 	adc/adc2_rixs.o \
 	adc/adc2_tpa.o \
+	adc/adc2_autospec.o \
 	adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -171,6 +173,7 @@ ADC_OBJ=accuracy.o \
 	matvecmul.o \
 	expokit.o \
 	relaxation.o \
+	fvecprop.o \
 	diagmod.o \
 	block_lanczos.o \
 	photoionisation.o \
@@ -187,6 +190,7 @@ ADC_OBJ=accuracy.o \
 	adc2_dyson.o \
 	adc2_rixs.o \
 	adc2_tpa.o \
+	adc2_autospec.o \
 	adc.o
 
 ########################################################################

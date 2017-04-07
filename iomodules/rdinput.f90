@@ -146,8 +146,8 @@
 25          continue
             call rdinp(iin)
             if (keyword(1).ne.'end-diag_final_section') goto 25
-            i=inkw
-
+            i=inkw            
+            
          else if (keyword(i).eq.'no_tdm') then
             ltdm_gs2i=.false.
 
@@ -296,6 +296,13 @@
          else if (keyword(i).eq.'debug') then
             debug=.true.
 
+         else if (keyword(i).eq.'autospec_section') then
+            lautospec=.true.
+55          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-autospec_section') goto 55
+            i=inkw
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -366,6 +373,11 @@
 !-----------------------------------------------------------------------
         if (ltarg) call rdtargetinp
 
+!-----------------------------------------------------------------------
+! Read the autospec section
+!-----------------------------------------------------------------------
+        if (lautospec) call rdautospecinp
+        
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
@@ -456,29 +468,33 @@
 ! (1) We are ionizing from an excited state, or;
 ! (2) We are performing an energy-only calculation.
 !-----------------------------------------------------------------------
-      if (.not.ldiag) then
+      if (.not.lautospec) then
+
+         if (.not.ldiag) then
+            if (statenumber.gt.0.or.energyonly) then
+               msg='The diagonalisation section has not been found.'
+               goto 999
+            endif
+         endif
+
          if (statenumber.gt.0.or.energyonly) then
-            msg='The diagonalisation section has not been found.'
-            goto 999
+            if (davstates.eq.0) then
+               msg='The number of initial space states has not been given'
+               goto 999
+            else if (maxiter.eq.0) then
+               msg='The maximum no. iterations for the initial space &
+                    diagonalisation has not been &
+                    given'
+               goto 999
+            else if (dmain.eq.0) then
+               msg='The block size for the initial space diagonalisation &
+                    has not been given'
+               goto 999
+            endif
          endif
-      endif
 
-      if (statenumber.gt.0.or.energyonly) then
-         if (davstates.eq.0) then
-            msg='The number of initial space states has not been given'
-            goto 999
-         else if (maxiter.eq.0) then
-            msg='The maximum no. iterations for the initial space &
-                 diagonalisation has not been &
-                 given'
-            goto 999
-         else if (dmain.eq.0) then
-            msg='The block size for the initial space diagonalisation &
-                 has not been given'
-            goto 999
-         endif
       endif
-
+         
 !-----------------------------------------------------------------------
 ! Final space diagonalisation section
 !-----------------------------------------------------------------------
@@ -503,7 +519,8 @@
 !-----------------------------------------------------------------------
       ! Photoionisation cross-section calculation
       if (.not.energyonly.and..not.ldiagfinal&
-           .and..not.ldyson.and..not.lrixs.and..not.ltpa) then
+           .and..not.ldyson.and..not.lrixs&
+           .and..not.ltpa.and..not.lautospec) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -624,6 +641,33 @@
          endif
       endif
 
+!-----------------------------------------------------------------------
+! Autospec section
+!-----------------------------------------------------------------------
+      if (lautospec) then
+
+         ! State number: currently only excitation from S0
+         ! is supported
+         if (statenumber.ne.0) then
+            msg='Currently only excitation from S0 is supported &
+                 in an autospec calculation'
+            goto 999
+         endif
+         
+         ! Final propagation time
+         if (tf.eq.0.0d0) then
+            msg='The final propagation time has not been given'
+            goto 999
+         endif
+
+         ! Timestep
+         if (tf.eq.0.0d0) then
+            msg='The timestep has not been given'
+            goto 999
+         endif
+         
+      endif
+      
       return
 
 999   continue
@@ -1477,6 +1521,80 @@
       return
 
     end subroutine rdtargetinp
+
+!#######################################################################
+
+    subroutine rdautospecinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Read to the autospec section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'autospec_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the target state matching parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-autospec_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'tfinal') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) tf
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'dt') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) dt
+            else
+               goto 100
+            endif
+
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+         
+      return
+      
+    end subroutine rdautospecinp
       
 !#######################################################################
 

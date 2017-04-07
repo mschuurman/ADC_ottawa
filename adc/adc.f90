@@ -10,6 +10,7 @@ program adc
   use adc2dysonmod
   use adc2rixsmod
   use adc2tpamod
+  use adc2automod
   use rdinput
   use orbindx
   use defaults
@@ -136,6 +137,11 @@ program adc
            ! ADC(2) TPA spectrum
            call adc2_tpa(gamess_info)
 
+        else if (lautospec) then
+
+           ! ADC(2) autocorrelation function calculation
+           call adc2_autospec(gamess_info)
+           
         else
 
            ! ADC(2) OPA spectrum
