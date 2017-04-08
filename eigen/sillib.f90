@@ -1,5 +1,5 @@
 ! **********************************************************************
-! ******** SIL libraries taken and adapted from the MCTDH code *********
+! ******* SIL libraries taken and adapted from the Quantics code *******
 ! **********************************************************************
 
 ! **********************************************************************
@@ -49,7 +49,7 @@
 ! *   DtPsi:     Action of Hamiltonian on the initial-value vector,    *
 ! *              i.e. H|Psi> or -i H|Psi>, depending on "StdForm".     *
 ! *   PsiDim     Length of Psi and DtPsi vectors.                      *
-! *   IntPeriod: Lenght of time interval to be integrated.             *
+! *   IntPeriod: Length of time interval to be integrated.             *
 ! *   IntOrder:  Maximum integration order.                            *
 ! *   TolError:  Maximum error that is tolerated.                      *
 ! *   Relax:     Flag for relaxation calculation. If true, Psi is      *
@@ -131,8 +131,7 @@
       Real(dop), dimension(IntOrder), intent(out)                  :: OffDiag
       Real(dop), dimension(IntOrder+1), intent(out)                :: OffDg2
       Complex(dop)                                                 :: Alpha,CBeta,PreFactor,CInverse,sum
-
-
+      
 ! --- CHECK INTEGRATION ORDER ---
 
       If ( IntOrder .LT. 2 ) Then
@@ -248,9 +247,9 @@
 ! --- EVALUATE FUNCTION WITH LAST BASIS VECTOR ---
 
       If (TrueOrder .Eq. 2) Then
-         Call Func(Time,DtPsi,Krylov(1,2))
+         Call Func(PsiDim,DtPsi,Krylov(1,2))
       Else
-         Call Func(Time,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
+         Call Func(PsiDim,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
       EndIf
 
 ! --- COMPUTE DIAGONAL ELEMENT ---

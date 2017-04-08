@@ -23,8 +23,17 @@ contains
     implicit none
 
     integer, intent(in)                   :: ndimf
+    integer                               :: k
     real(d), dimension(ndimf), intent(in) :: fvec
 
+!----------------------------------------------------------------------
+! Output where we are at
+!----------------------------------------------------------------------
+    write(ilog,'(/,70a)') ('-',k=1,70)
+    write(ilog,'(2x,a)') 'Dipole moment autocorrelation function &
+         calculation'
+    write(ilog,'(70a,/)') ('-',k=1,70)
+    
 !----------------------------------------------------------------------
 ! Initialisation and allocatation
 !----------------------------------------------------------------------
@@ -38,7 +47,11 @@ contains
 !----------------------------------------------------------------------
 ! Propagation
 !----------------------------------------------------------------------
-    call propagate
+    ! Expokit libraries
+    !call propagate_expokit
+
+    ! sillib libraries
+    call propagate_sillib
     
 !----------------------------------------------------------------------
 ! Finalisation and deallocation
@@ -111,7 +124,7 @@ contains
 
 !######################################################################
 
-  subroutine propagate
+  subroutine propagate_expokit
 
     implicit none
 
@@ -204,8 +217,171 @@ contains
     
     return
     
-  end subroutine propagate
+  end subroutine propagate_expokit
 
+!######################################################################
+
+  subroutine propagate_sillib
+
+    use sillib
+    
+    implicit none
+
+    integer                               :: i,kdim
+    real(d)                               :: norm,tol
+    real(d), parameter                    :: tiny=1e-9_d
+    complex*16, dimension(:), allocatable :: psi,dtpsi
+
+    ! SIL
+    integer                                 :: steps,trueorder,&
+                                               errorcode
+    real(d)                                 :: intperiod,stepsize,&
+                                               truestepsize,time,&
+                                               inttime
+    real(d), dimension(:,:), allocatable    :: eigenvector
+    real(d), dimension(:), allocatable      :: diagonal,eigenval
+    real(d), dimension(:), allocatable      :: offdiag
+    real(d), dimension(:), allocatable      :: offdg2    
+    complex(d), dimension(:,:), allocatable :: krylov
+    logical(kind=4)                         :: restart,relax,stdform
+    
+    external matxvec_treal
+
+!----------------------------------------------------------------------
+! sillib variables
+!----------------------------------------------------------------------
+    ! This is not a relaxation calculation
+    relax=.false.
+
+    ! func <-> -iH|Psi>
+    stdform=.true.
+
+    ! No. steps taken
+    steps=0
+
+    ! Time
+    time=0.0d0
+
+    ! Restart flag - if true, the Krylov space is built up
+    ! before propagation, else the old Krylov vectors are used.       
+    restart=.true.
+    
+!----------------------------------------------------------------------
+! Temporary hard-wiring of the maximum Krylov subspace dimension and
+! error tolerance
+!----------------------------------------------------------------------
+    kdim=7
+    tol=1e-6_d
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! Wavefunction arrays
+    allocate(psi(matdim))
+    psi=czero
+    allocate(dtpsi(matdim))
+    dtpsi=czero
+
+    ! sillib arrays
+    allocate(krylov(matdim,kdim-1))
+    krylov=czero
+    allocate(eigenvector(kdim+1,kdim+3))
+    eigenvector=0.0d0
+    allocate(eigenval(kdim+1))
+    eigenval=0.0d0
+    allocate(diagonal(kdim+1))
+    diagonal=0.0d0
+    allocate(offdg2(kdim+1))
+    offdg2=0.0d0
+    allocate(offdiag(kdim))
+    offdiag=0.0d0
+    
+!----------------------------------------------------------------------
+! Propagate |Psi(t=0)> = mu |Psi_0> forwards in time using the
+! Quantics sillib libraries
+!----------------------------------------------------------------------
+    ! Integration period
+    intperiod=dt
+
+    ! Set the initial wavepacket
+    psi=psi0
+
+    ! Set the autocorrelation function at time t=0
+    auto(1)=dot_product(psi0,psi0)
+
+    ! Loop over timesteps at which we want the autocorrelation
+    ! function
+    do i=1,nstep
+       
+       ! Propagate forwards one timestep
+       inttime=0.0d0
+100    continue
+
+       ! Update the required stepsize
+       stepsize = intperiod-inttime
+       
+       ! dtpsi = -iH|Psi>
+       call matxvec_treal(matdim,psi,dtpsi)       
+    
+       ! Take one step using the SIL algorithm
+       call silstep(psi,dtpsi,matdim,stepsize,kdim,tol,relax,restart,&
+            stdform,steps,krylov,truestepsize,trueorder,errorcode,&
+            time,matxvec_treal,eigenvector,eigenval,diagonal,&
+            offdg2,offdiag)
+
+       ! Exit if the SIL integration failed
+       if (errorcode.ne.0) then
+          call silerrormsg (errorcode,errmsg)
+          call error_control
+       endif
+
+       ! Check whether the integration is complete
+       inttime=inttime+truestepsize
+       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+       ! Calculate the autocorrelation function at the current
+       ! timestep
+       auto(i+1)=dot_product(psi0,psi)
+       
+       ! Output some information
+       norm=real(sqrt(dot_product(psi,psi)))
+       call wrprogress(i*dt,norm)
+
+    enddo
+       
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(psi)
+    deallocate(dtpsi)
+    deallocate(krylov)
+    deallocate(eigenvector)
+    deallocate(eigenval)
+    deallocate(diagonal)
+    deallocate(offdg2)
+    deallocate(offdiag)
+    
+    return
+    
+  end subroutine propagate_sillib
+
+!######################################################################
+
+  subroutine wrprogress(t,norm)
+
+    implicit none
+
+    integer :: k
+    real(d) :: t,norm
+
+    write(ilog,'(70a)') ('+',k=1,70)
+    write(ilog,'(a,x,F10.4)') 'Time:',t
+    write(ilog,'(a,x,F8.6)') 'Norm',norm
+    
+    return
+    
+  end subroutine wrprogress
+    
 !######################################################################
     
   subroutine infnorm_outofcore(norm,matdim)
