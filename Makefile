@@ -77,6 +77,7 @@ QCLIB=	qclib/vpqrsmod.o \
 
 EIGEN=  eigen/matvecmul.o \
 	eigen/expokit.o \
+	eigen/sillib.o \
 	eigen/block_davidson.o \
 	eigen/relaxation.o \
 	eigen/fvecprop.o \
@@ -172,6 +173,7 @@ ADC_OBJ=accuracy.o \
 	block_davidson.o \
 	matvecmul.o \
 	expokit.o \
+	sillib.o \
 	relaxation.o \
 	fvecprop.o \
 	diagmod.o \
