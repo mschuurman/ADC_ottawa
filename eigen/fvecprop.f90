@@ -4,6 +4,7 @@ module fvecprop
   use parameters
   use channels
   use iomod
+  use timingmod
   
   implicit none
 
@@ -22,15 +23,22 @@ contains
     integer, intent(in)                   :: ndimf
     integer                               :: k
     real(d), dimension(ndimf), intent(in) :: fvec
-
+    real(d)                               :: tw1,tw2,tc1,tc2
+    
+!----------------------------------------------------------------------
+! Start timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
+    
 !----------------------------------------------------------------------
 ! Output where we are at
 !----------------------------------------------------------------------
     write(ilog,'(/,70a)') ('-',k=1,70)
-    write(ilog,'(2x,a)') 'Dipole moment autocorrelation function &
-         calculation'
+    write(ilog,'(2x,a,/,3x,a)') &
+         'Calculation of the autocorrelation function:',&
+         'a(t) = < Psi_0| D exp(-iHt) D | Psi_0 >'
     write(ilog,'(70a,/)') ('-',k=1,70)
-    
+
 !----------------------------------------------------------------------
 ! Initialisation and allocatation
 !----------------------------------------------------------------------
@@ -47,7 +55,7 @@ contains
 !----------------------------------------------------------------------
     call freeunit(iout)
     open(iout,file='auto',form='formatted',status='unknown')
-    write(iout,'(a)') '#    time[fs]         Re(autocorrel)     &
+    write(iout,'(a)') '#    time[au]         Re(autocorrel)     &
          Im(autocorrel)     Abs(autocorrel)'
     
 !----------------------------------------------------------------------
@@ -59,6 +67,13 @@ contains
 ! Close the autocorrelation function output file
 !----------------------------------------------------------------------
     close(iout)
+
+!----------------------------------------------------------------------
+! Output timings
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(70a)') ('+',k=1,70)
+    write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"  
     
 !----------------------------------------------------------------------
 ! Finalisation and deallocation
@@ -111,7 +126,7 @@ contains
     real(d)                                :: norm
     
 !----------------------------------------------------------------------
-! The initial wavepacket is taken as mu |Psi_0>/|| mu |Psi_0> ||
+! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
 !----------------------------------------------------------------------
     do i=1,matdim
        psi0(i)=complex(fvec(i),0.0d0)
@@ -303,7 +318,7 @@ contains
     real(d)    :: t
 
     write(iout,'(F15.8,4x,3(2x,F17.14))') &
-         t*au2fs,real(auto),aimag(auto),abs(auto) 
+         t,real(auto),aimag(auto),abs(auto) 
     
     return
     

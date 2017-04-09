@@ -287,6 +287,21 @@ RIXSPLT_OBJ = constants.o \
 	rixsmod.o \
 	rixsplt.o
 
+########################################################################
+# Autocorrelation function-to-spectrum code
+########################################################################
+AUTO2SPEC = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	auto2spec/auto2spec.o
+
+AUTO2SPEC_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	auto2spec.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -308,6 +323,10 @@ numhess: $(NUMHESS)
 
 rixsplt: $(RIXSPLT)
 	$(F90) $(F90OPTS) $(RIXSPLT_OBJ) $(LIBS) -o rixsplt.x
+	rm -f *.o *~ *.mod
+
+auto2spec: $(AUTO2SPEC)
+	$(F90) $(F90OPTS) $(AUTO2SPEC_OBJ) $(LIBS) -o auto2spec.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

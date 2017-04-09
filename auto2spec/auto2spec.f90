@@ -1,0 +1,292 @@
+module auto2specmod
+
+  use constants
+
+  save
+
+  integer                               :: maxtp,epoints
+  real(d)                               :: dt,t0,emin,emax,tau,sigma,&
+                                           dele
+  real(d), dimension(:,:), allocatable  :: sp
+  real(d), parameter                    :: eh2ev=27.2113845d0
+  complex(d), dimension(:), allocatable :: auto
+  
+end module auto2specmod
+
+!######################################################################
+
+program auto2spec
+
+  use auto2specmod
+  
+  implicit none
+
+!----------------------------------------------------------------------
+! Read the command line arguments
+!----------------------------------------------------------------------
+  call rdauto2specinp
+  
+!----------------------------------------------------------------------
+! Read the autocorrelation function from file
+!----------------------------------------------------------------------
+  call rdauto
+  
+!----------------------------------------------------------------------
+! Calculate the spectrum
+!----------------------------------------------------------------------
+  call calc_spectrum
+
+!----------------------------------------------------------------------
+! Write the spectrum to file
+!----------------------------------------------------------------------
+  call wrspectrum
+  
+contains
+
+!######################################################################
+
+  subroutine rdauto2specinp
+
+    use auto2specmod
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer           :: i
+    character(len=30) :: string1,string2
+    
+!----------------------------------------------------------------------
+! Initialise variables
+!----------------------------------------------------------------------
+    ! Energy range
+    emin=-1.0d0
+    emax=-1.0d0
+
+    ! No. energy points
+    epoints=1000
+
+    ! Damping time
+    tau=-1.0d0
+    
+!----------------------------------------------------------------------
+! Read the command line arguments
+!----------------------------------------------------------------------
+    i=1
+5   call getarg(i,string1)
+
+    if (string1.eq.'-sigma') then
+       ! FWHM in eV
+       i=i+1
+       call getarg(i,string2)
+       read(string2,*) sigma
+       ! Convert to tau in au
+       sigma=sigma/eh2ev
+       tau=2.0d0/sigma
+    else if (string1.eq.'-e') then
+       ! Energy range in eV
+       i=i+1
+       call getarg(i,string2)
+       read(string2,*) emin
+       i=i+1
+       call getarg(i,string2)
+       read(string2,*) emax
+       ! Convert to au
+       emin=emin/eh2ev
+       emax=emax/eh2ev
+    else if (string1.eq.'-np') then
+       ! No. energy points
+       i=i+1
+       call getarg(i,string2)
+       read(string2,*) epoints
+    else
+       errmsg='Unknown keyword: '//trim(string1)
+       call error_control
+    endif
+       
+    if (i.lt.iargc()) then
+       i=i+1
+       goto 5
+    endif
+
+!----------------------------------------------------------------------
+! Make sure that all the required information has been given
+!----------------------------------------------------------------------
+    if (emin.eq.-1.0d0) then
+       errmsg='The energy range has not been given'
+       call error_control
+    endif
+
+    if (tau.eq.-1.0d0) then
+       errmsg='The spectral broadening has not been given'
+       call error_control
+    endif
+    
+    return
+    
+  end subroutine rdauto2specinp
+    
+!######################################################################
+
+  subroutine rdauto
+
+    use auto2specmod
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer :: iauto,i
+    real(d) :: t,re,im
+    
+!----------------------------------------------------------------------
+! Open the autocorrelation function file
+!----------------------------------------------------------------------
+    call freeunit(iauto)
+    open(iauto,file='auto',form='formatted',status='old')
+
+!----------------------------------------------------------------------
+! Determine the no. timesteps and the time interval, and allocate
+! arrays
+!----------------------------------------------------------------------
+    ! Read past the comment line
+    read(iauto,*)
+
+    ! Determine the timestep
+    read(iauto,'(F15.8)') t0
+    read(iauto,'(F15.8)') t
+    dt=t-t0
+
+    ! Determine the number of timesteps
+    maxtp=2
+5   read(iauto,*,end=10)
+    maxtp=maxtp+1
+    goto 5
+    
+10 continue
+
+    ! Allocate arrays
+    allocate(auto(maxtp))
+    auto=czero
+
+!----------------------------------------------------------------------
+! Read the autocorrelation function
+!----------------------------------------------------------------------
+    rewind(iauto)
+    read(iauto,*)
+
+    do i=1,maxtp
+       read(iauto,'(F15.8,4x,3(2x,F17.14))') t,re,im
+       auto(i)=complex(re,im)
+    enddo
+       
+!----------------------------------------------------------------------
+! Close the autocorrelation function file
+!----------------------------------------------------------------------
+    close(iauto)
+    
+    return
+
+  end subroutine rdauto
+
+!######################################################################
+
+  subroutine calc_spectrum
+
+    use auto2specmod
+    
+    implicit none
+
+    integer :: i,j
+    real(d) :: eau,t,cc,sum0,sum1,sum2,sum3,pia
+
+!----------------------------------------------------------------------
+! Allocate the spectrum arrays
+!----------------------------------------------------------------------
+    allocate(sp(0:epoints,0:2))
+    
+!----------------------------------------------------------------------
+! Calculate the spectrum
+!----------------------------------------------------------------------
+    dele=(emax-emin)/dble(epoints)
+    pia=pi/dble(2*maxtp+2)
+    
+    ! Loop over energy points
+    do j=0,epoints
+
+       ! Current energy
+       eau=emin+j*dele
+
+       sum0 = 0.0d0
+       sum1 = 0.0d0
+       sum2 = 0.0d0
+       sum3 = 0.0d0
+       
+       ! Loop over timesteps
+       do i=1,maxtp
+
+          t=i*dt
+
+          cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*exp(-(t/tau))
+          sum0=sum0+cc
+          sum1=sum1+cc*cos(pia*i)
+          sum2=sum2+cc*cos(pia*i)**2
+          sum3=sum3+cc*(maxtp+1-i)/dble(maxtp)   
+
+          sp(j,0)=eau*sum0*dt/pi
+          sp(j,1)=eau*sum1*dt/pi
+          sp(j,2)=eau*sum2*dt/pi
+          
+       enddo
+          
+    enddo
+
+    return
+    
+  end subroutine calc_spectrum
+    
+!######################################################################
+
+  subroutine wrspectrum
+
+    use auto2specmod
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer :: i,iout
+    real(d) :: e
+    
+!----------------------------------------------------------------------
+! Open the spectrum file
+!----------------------------------------------------------------------
+    call freeunit(iout)
+    open(iout,file='spectrum.dat',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the spectra to file
+!----------------------------------------------------------------------
+    write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
+    write(iout,'(/,71a)') ('#',i=1,71)
+    write(iout,'(a)') '#  Energy (eV)      no filter        &
+         cos filter       cos^2 filter'
+    write(iout,'(71a)') ('#',i=1,71)
+    
+    do i=0,epoints
+       e=(emin+i*dele)*eh2ev
+       write(iout,'(4(ES15.6,2x))') e,sp(i,0),sp(i,1),sp(i,2)
+    enddo
+    
+!----------------------------------------------------------------------
+! Close the spectrum file
+!----------------------------------------------------------------------
+    close(iout)
+    
+    return
+    
+  end subroutine wrspectrum
+    
+!######################################################################
+  
+end program auto2spec
