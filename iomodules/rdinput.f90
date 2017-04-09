@@ -655,13 +655,13 @@
          endif
          
          ! Final propagation time
-         if (tf.eq.0.0d0) then
+         if (tfinal.eq.0.0d0) then
             msg='The final propagation time has not been given'
             goto 999
          endif
 
          ! Timestep
-         if (tf.eq.0.0d0) then
+         if (tout.eq.0.0d0) then
             msg='The timestep has not been given'
             goto 999
          endif
@@ -1558,15 +1558,15 @@
          if (keyword(i).eq.'tfinal') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) tf
+               read(keyword(i),*) tfinal
             else
                goto 100
             endif
 
-         else if (keyword(i).eq.'dt') then
+         else if (keyword(i).eq.'tout') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) dt
+               read(keyword(i),*) tout
             else
                goto 100
             endif

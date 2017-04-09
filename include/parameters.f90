@@ -304,9 +304,7 @@ logical                                :: ltpa
 !!$************************************************
 !!$**********Autospec Calculations*****************
 !!$************************************************
-real(d)                               :: tf,dt
-integer                               :: nstep
-complex*16, dimension(:), allocatable :: auto
+real(d)                               :: tfinal,tout
 logical                               :: lautospec
 
 !!$************************************************

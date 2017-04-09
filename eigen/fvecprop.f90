@@ -7,12 +7,9 @@ module fvecprop
   
   implicit none
 
-  integer                               :: matdim
-  complex*16, dimension(:), allocatable :: psi0
-
-  integer                               :: maxbl,nrec
-  integer, dimension(:), allocatable    :: indxi,indxj
-  real(d), dimension(:), allocatable    :: hii,hij
+  integer                               :: matdim,iout
+  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
+  complex(d), dimension(:), allocatable :: psi0
 
 contains
 
@@ -45,13 +42,23 @@ contains
     call init_wavepacket(fvec)
 
 !----------------------------------------------------------------------
-! Propagation
+! Open the autocorrelation function output file and write the file
+! header
 !----------------------------------------------------------------------
-    ! Expokit libraries
-    !call propagate_expokit
-
-    ! sillib libraries
+    call freeunit(iout)
+    open(iout,file='auto',form='formatted',status='unknown')
+    write(iout,'(a)') '#    time[fs]         Re(autocorrel)     &
+         Im(autocorrel)     Abs(autocorrel)'
+    
+!----------------------------------------------------------------------
+! Propagation and calculation of the autocorrelation function
+!----------------------------------------------------------------------
     call propagate_sillib
+
+!----------------------------------------------------------------------
+! Close the autocorrelation function output file
+!----------------------------------------------------------------------
+    close(iout)
     
 !----------------------------------------------------------------------
 ! Finalisation and deallocation
@@ -77,11 +84,6 @@ contains
     allocate(psi0(matdim))
     psi0=czero
     
-    ! Autocorrelation function
-    nstep=int(tf/dt)+1
-    allocate(auto(nstep))
-    auto=czero
-
     return
     
   end subroutine initialise
@@ -124,103 +126,6 @@ contains
 
 !######################################################################
 
-  subroutine propagate_expokit
-
-    implicit none
-
-    integer                               :: i,kdim
-    real(d)                               :: t,hnorm,tol
-    complex*16, dimension(:), allocatable :: psi1,psi2
-
-    ! Expokit
-    integer                               :: lwsp,liwsp,itrace,iflag
-    integer, dimension(:), allocatable    :: iwsp
-    complex*16, dimension(:), allocatable :: wsp
-
-    external matxvec_treal
-
-!----------------------------------------------------------------------
-! Temporary hard-wiring of the maximum Krylov subspace dimension and
-! error tolerance
-!----------------------------------------------------------------------
-    kdim=7
-    tol=1e-6
-
-!----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-    ! Wavefunction arrays
-    allocate(psi1(matdim))
-    allocate(psi2(matdim))
-    psi1=czero
-    psi2=czero
-
-    ! Expokit work arrays
-    lwsp=matdim*(kdim+1)+matdim+(kdim+2)**2+4*(kdim+2)**2+7
-    liwsp=kdim+2
-    allocate(wsp(lwsp))
-    allocate(iwsp(liwsp))
-
-    ! Expokit flags: supress output
-    itrace=0
-
-!-----------------------------------------------------------------------
-! Calculate the infinity norm of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-    call infnorm_outofcore(hnorm,matdim)
-    
-!----------------------------------------------------------------------
-! Propagate |Psi(t=0)> = mu |Psi_0> forwards in time using the
-! expokit libraries
-!----------------------------------------------------------------------
-    ! Set the initial wavepacket
-    psi1=psi0
-
-    ! Set the autocorrelation function at time t=0
-    auto(1)=dot_product(psi0,psi0)
-
-    ! Loop over timesteps
-    do i=1,nstep-1
-
-       ! Update the time
-       t=i*dt
-
-       ! Propagate the wavepacket forwards one timestep
-       call zgexpv(matdim,kdim,dt,psi1,psi2,tol,hnorm,wsp,lwsp,iwsp,&
-            liwsp,matxvec_treal,itrace,iflag)
-       if (iflag.ne.0) then
-          errmsg='Wavepacket propagation failed...'
-          call error_control
-       endif
-
-       ! Calculate the autocorrelation function at the current
-       ! timestep
-       auto(i+1)=dot_product(psi0,psi2)
-
-       ! Output some information
-       print*,
-       print*,"Time:",t
-       print*,"Norm:",real(sqrt(dot_product(psi2,psi2)))
-
-       ! Reset the initial wavepacket
-       psi1=psi2
-
-    enddo
-
-!----------------------------------------------------------------------
-! Deallocate arrays
-!----------------------------------------------------------------------
-    deallocate(wsp)
-    deallocate(iwsp)
-    deallocate(psi1)
-    deallocate(psi2)
-    
-    return
-    
-  end subroutine propagate_expokit
-
-!######################################################################
-
   subroutine propagate_sillib
 
     use sillib
@@ -230,8 +135,9 @@ contains
     integer                               :: i,kdim
     real(d)                               :: norm,tol
     real(d), parameter                    :: tiny=1e-9_d
-    complex*16, dimension(:), allocatable :: psi,dtpsi
-
+    complex(d), dimension(:), allocatable :: psi,dtpsi
+    complex(d)                            :: auto
+    
     ! SIL
     integer                                 :: steps,trueorder,&
                                                errorcode
@@ -270,7 +176,7 @@ contains
 ! Temporary hard-wiring of the maximum Krylov subspace dimension and
 ! error tolerance
 !----------------------------------------------------------------------
-    kdim=7
+    kdim=15
     tol=1e-6_d
     
 !----------------------------------------------------------------------
@@ -299,26 +205,30 @@ contains
 !----------------------------------------------------------------------
 ! Propagate |Psi(t=0)> = mu |Psi_0> forwards in time using the
 ! Quantics sillib libraries
+!
+! Note that we are using t/2 trick here in calculating the
+! autocorrelation function
 !----------------------------------------------------------------------
     ! Integration period
-    intperiod=dt
+    intperiod=0.5d0*tout
 
     ! Set the initial wavepacket
     psi=psi0
 
-    ! Set the autocorrelation function at time t=0
-    auto(1)=dot_product(psi0,psi0)
-
-    ! Loop over timesteps at which we want the autocorrelation
+    ! Output the autocorrelation function at time t=0
+    auto=dot_product(psi0,psi0)
+    call wrauto(auto,0.0d0)
+    
+    ! Loop over the timesteps at which we want the autocorrelation
     ! function
-    do i=1,nstep
+    do i=1,int(tfinal/intperiod)
        
        ! Propagate forwards one timestep
        inttime=0.0d0
 100    continue
 
        ! Update the required stepsize
-       stepsize = intperiod-inttime
+       stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
        call matxvec_treal(matdim,psi,dtpsi)       
@@ -339,13 +249,14 @@ contains
        inttime=inttime+truestepsize
        if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
 
-       ! Calculate the autocorrelation function at the current
-       ! timestep
-       auto(i+1)=dot_product(psi0,psi)
+       ! Calculate and output the autocorrelation function at the
+       ! current timestep
+       auto=dot_product(conjg(psi),psi)
+       call wrauto(auto,i*intperiod*2.0d0)
        
        ! Output some information
        norm=real(sqrt(dot_product(psi,psi)))
-       call wrprogress(i*dt,norm)
+       call wrprogress(i*intperiod,norm)
 
     enddo
        
@@ -381,100 +292,23 @@ contains
     return
     
   end subroutine wrprogress
-    
-!######################################################################
-    
-  subroutine infnorm_outofcore(norm,matdim)
 
-    use iomod
-    use misc, only: dsortindxa1
+!######################################################################
+
+  subroutine wrauto(auto,t)
 
     implicit none
 
-    integer                            :: k,l,iham,nlim
-    integer, intent(in)                :: matdim
-    integer, dimension(:), allocatable :: rindx
-    real(d)                            :: norm
-    real(d), dimension(:), allocatable :: rsum
-    character(len=70)                  :: filename
+    complex(d) :: auto
+    real(d)    :: t
+
+    write(iout,'(F15.8,4x,3(2x,F17.14))') &
+         t*au2fs,real(auto),aimag(auto),abs(auto) 
     
-!----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-    allocate(rsum(matdim))
-    rsum=0.0d0
-
-    allocate(rindx(matdim))
-    rindx=0
-
-!----------------------------------------------------------------------
-! Contribution from the on-diagonal elements
-!----------------------------------------------------------------------
-    allocate(hii(matdim))
-
-    if (hamflag.eq.'i') then
-       filename='SCRATCH/hmlt.diai'
-    else if (hamflag.eq.'f') then
-       filename='SCRATCH/hmlt.diac'
-    endif
-
-    call freeunit(iham)
-    open(iham,file=filename,status='old',access='sequential',&
-       form='unformatted')
-
-    read(iham) maxbl,nrec
-    read(iham) hii
-
-    close(iham)
-
-    rsum=abs(hii)
-
-    deallocate(hii)
-    
-!----------------------------------------------------------------------
-! Contribution from the off-diagonal elements
-!----------------------------------------------------------------------
-    ! Out-of-core storage of the Hamiltonian
-    allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-
-    if (hamflag.eq.'i') then
-       filename='SCRATCH/hmlt.offi'
-    else if (hamflag.eq.'f') then
-       filename='SCRATCH/hmlt.offc'
-    endif
-    
-    call freeunit(iham)
-    open(iham,file=filename,status='old',access='sequential',&
-         form='unformatted')
-      
-    do k=1,nrec
-       read(iham) hij(:),indxi(:),indxj(:),nlim
-       do l=1,nlim
-          rsum(indxi(l))=rsum(indxi(l))+abs(hij(l))
-       enddo
-    enddo
-      
-    close(iham)
-    
-    deallocate(hij,indxi,indxj)
-
-!----------------------------------------------------------------------
-! Determination of the infinity norm of the Hamiltonian matrix.
-! (Note that this is equal to the infinity norm of -iH)
-!----------------------------------------------------------------------
-    call dsortindxa1('D',matdim,rsum,rindx)
-    norm=rsum(rindx(1))
-
-!----------------------------------------------------------------------
-! Deallocate arrays
-!----------------------------------------------------------------------
-    deallocate(rsum)
-    deallocate(rindx)
-      
     return
-
-  end subroutine infnorm_outofcore
-
+    
+  end subroutine wrauto
+    
 !######################################################################
-  
+    
 end module fvecprop
