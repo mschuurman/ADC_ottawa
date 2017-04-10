@@ -4,11 +4,12 @@ module auto2specmod
 
   save
 
-  integer                               :: maxtp,epoints
+  integer                               :: maxtp,iauto,epoints
   real(d)                               :: dt,t0,emin,emax,tau,sigma,&
-                                           dele
+                                           dele,a0,b0
   real(d), dimension(:,:), allocatable  :: sp
   real(d), parameter                    :: eh2ev=27.2113845d0
+  real(d), parameter                    :: fs2au=41.3413745758d0
   complex(d), dimension(:), allocatable :: auto
   
 end module auto2specmod
@@ -136,34 +137,36 @@ contains
     
     implicit none
 
-    integer :: iauto,i
+    integer :: iin,i
     real(d) :: t,re,im
     
 !----------------------------------------------------------------------
 ! Open the autocorrelation function file
 !----------------------------------------------------------------------
-    call freeunit(iauto)
-    open(iauto,file='auto',form='formatted',status='old')
+    call freeunit(iin)
+    open(iin,file='auto',form='formatted',status='old')
 
 !----------------------------------------------------------------------
 ! Determine the no. timesteps and the time interval, and allocate
 ! arrays
 !----------------------------------------------------------------------
     ! Read past the comment line
-    read(iauto,*)
+    read(iin,*)
 
     ! Determine the timestep
-    read(iauto,'(F15.8)') t0
-    read(iauto,'(F15.8)') t
+    read(iin,'(F15.8)') t0
+    read(iin,'(F15.8)') t
+    t0=t0*fs2au
+    t=t*fs2au
     dt=t-t0
 
     ! Determine the number of timesteps
     maxtp=2
-5   read(iauto,*,end=10)
+5   read(iin,*,end=10)
     maxtp=maxtp+1
     goto 5
-    
 10 continue
+    iauto=maxtp-1
 
     ! Allocate arrays
     allocate(auto(maxtp))
@@ -172,18 +175,19 @@ contains
 !----------------------------------------------------------------------
 ! Read the autocorrelation function
 !----------------------------------------------------------------------
-    rewind(iauto)
-    read(iauto,*)
+    rewind(iin)
+    read(iin,*)
+    read(iin,'(F15.8,4x,3(2x,F17.14))') t,a0,b0
 
-    do i=1,maxtp
-       read(iauto,'(F15.8,4x,3(2x,F17.14))') t,re,im
+    do i=1,iauto
+       read(iin,'(F15.8,4x,3(2x,F17.14))') t,re,im
        auto(i)=complex(re,im)
     enddo
        
 !----------------------------------------------------------------------
 ! Close the autocorrelation function file
 !----------------------------------------------------------------------
-    close(iauto)
+    close(iin)
     
     return
 
@@ -217,13 +221,13 @@ contains
        ! Current energy
        eau=emin+j*dele
 
-       sum0 = 0.0d0
-       sum1 = 0.0d0
-       sum2 = 0.0d0
-       sum3 = 0.0d0
+       sum0=0.5d0*a0
+       sum1=0.5d0*a0
+       sum2=0.5d0*a0
+       sum3=0.5d0*a0
        
        ! Loop over timesteps
-       do i=1,maxtp
+       do i=1,iauto
 
           t=i*dt
 

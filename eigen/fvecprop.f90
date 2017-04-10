@@ -9,7 +9,7 @@ module fvecprop
   implicit none
 
   integer                               :: matdim,iout
-  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
+  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0  
   complex(d), dimension(:), allocatable :: psi0
 
 contains
@@ -55,7 +55,7 @@ contains
 !----------------------------------------------------------------------
     call freeunit(iout)
     open(iout,file='auto',form='formatted',status='unknown')
-    write(iout,'(a)') '#    time[au]         Re(autocorrel)     &
+    write(iout,'(a)') '#    time[fs]         Re(autocorrel)     &
          Im(autocorrel)     Abs(autocorrel)'
     
 !----------------------------------------------------------------------
@@ -318,7 +318,7 @@ contains
     real(d)    :: t
 
     write(iout,'(F15.8,4x,3(2x,F17.14))') &
-         t,real(auto),aimag(auto),abs(auto) 
+         t*au2fs,real(auto),aimag(auto),abs(auto) 
     
     return
     
