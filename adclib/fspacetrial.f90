@@ -9,17 +9,13 @@ module fspace
   use misc
   use get_matrix_DIPOLE  
   use channels
+  use omp_lib
 
   implicit none
   
 contains
 
-
-
 !!!!!!!!! DIPOLE MATRIX ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
 
 !!$----------------------------------------------------------
 
@@ -428,8 +424,21 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in)                            :: chr
     integer*8, intent(out)                              :: noffdel 
-    integer                                              :: ndim1,ndim2,nbuf,i
+    integer                                             :: ndim1,ndim2,&
+                                                           nbuf,i,nthreads
 
+!----------------------------------------------------------------------
+! Allocate the array holding the no. records stored in each
+! off-diagonal element file
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    allocate(nrec_omp(nthreads))
+
+!----------------------------------------------------------------------
+! Write the non-zero off-diagonal elements to file
+!----------------------------------------------------------------------
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     write(ilog,*) 'in write_space'
@@ -446,13 +455,25 @@ contains
 
     subroutine write_fspace_adc2e_1_cvs(ndim,kpq,noffdel,chr) 
 
-    integer, intent(in) :: ndim
+    integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    character(1), intent(in) :: chr
-    integer*8, intent(out) :: noffdel 
+    character(1), intent(in)                            :: chr
+    integer*8, intent(out)                              :: noffdel
+    integer                                             :: ndim1,ndim2,&
+                                                           nbuf,i,nthreads
 
-    integer :: ndim1,ndim2,nbuf,i
+!----------------------------------------------------------------------
+! Allocate the array holding the no. records stored in each
+! off-diagonal element file
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    allocate(nrec_omp(nthreads))
 
+!----------------------------------------------------------------------
+! Write the non-zero off-diagonal elements to file
+!----------------------------------------------------------------------
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     write(ilog,*) 'in write_space'
@@ -555,9 +576,20 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in) :: chr
     integer*8, intent(out) :: noffdel
-
-    integer :: ndim1, ndim2, nbuf,i
+    integer :: ndim1,ndim2,nbuf,i,nthreads
     
+!----------------------------------------------------------------------
+! Allocate the array holding the no. records stored in each
+! off-diagonal element file
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    allocate(nrec_omp(nthreads))
+
+!----------------------------------------------------------------------
+! Write the non-zero off-diagonal elements to file
+!----------------------------------------------------------------------
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     
@@ -578,8 +610,20 @@ contains
     character(1), intent(in)                            :: chr
     integer*8, intent(out)                              :: noffdel
 
-    integer :: ndim1, ndim2, nbuf,i
+    integer :: ndim1,ndim2,nbuf,i,nthreads
     
+!----------------------------------------------------------------------
+! Allocate the array holding the no. records stored in each
+! off-diagonal element file
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    allocate(nrec_omp(nthreads))
+
+!----------------------------------------------------------------------
+! Write the non-zero off-diagonal elements to file
+!----------------------------------------------------------------------
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
     

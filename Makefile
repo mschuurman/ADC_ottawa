@@ -11,20 +11,20 @@
 #
 # gfortran
 #
-F90	= gfortran
-F77	= gfortran
-CC	= gcc
-F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O3 -fbacktrace
-CCOPTS  = -g -O0
+#F90	= gfortran
+#F77	= gfortran
+#CC	= gcc
+#F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O3 -fbacktrace
+#CCOPTS  = -g -O0
 
 #
 # intel
 #
-#F90	 = ifort
-#F77	 = ifort
-#CC	 = icc
-#F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O3 -unroll0
-#CCOPTS  = -g -O0
+F90	 = ifort
+F77	 = ifort
+CC	 = icc
+F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O3 -unroll0 -diag-disable 8290 -diag-disable 8291
+CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------
 # External libraries

@@ -181,7 +181,7 @@ contains
 
     do i=1,iauto
        read(iin,'(F15.8,4x,3(2x,F17.14))') t,re,im
-       auto(i)=complex(re,im)
+       auto(i)=dcmplx(re,im)
     enddo
        
 !----------------------------------------------------------------------
@@ -202,19 +202,20 @@ contains
     implicit none
 
     integer :: i,j
-    real(d) :: eau,t,cc,sum0,sum1,sum2,sum3,pia
+    real(d) :: eau,t,cc,sum0,sum1,sum2,sum3,pia,gfac
 
 !----------------------------------------------------------------------
 ! Allocate the spectrum arrays
 !----------------------------------------------------------------------
-    allocate(sp(0:epoints,0:2))
+    allocate(sp(0:epoints,0:3))
     
 !----------------------------------------------------------------------
 ! Calculate the spectrum
 !----------------------------------------------------------------------
     dele=(emax-emin)/dble(epoints)
-    pia=pi/dble(2*maxtp+2)
-    
+    pia=pi/dble(2*maxtp+2)    
+    gfac=dble(2.24d0/(maxtp+1))
+
     ! Loop over energy points
     do j=0,epoints
 
@@ -232,15 +233,17 @@ contains
           t=i*dt
 
           cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*exp(-(t/tau))
+
           sum0=sum0+cc
           sum1=sum1+cc*cos(pia*i)
           sum2=sum2+cc*cos(pia*i)**2
-          sum3=sum3+cc*(maxtp+1-i)/dble(maxtp)   
+          sum3=sum3+cc*exp(-(gfac*i)**2)
 
           sp(j,0)=eau*sum0*dt/pi
           sp(j,1)=eau*sum1*dt/pi
-          sp(j,2)=eau*sum2*dt/pi
-          
+          sp(j,2)=eau*sum2*dt/pi          
+          sp(j,3)=eau*sum3*dt/pi
+
        enddo
           
     enddo
@@ -261,7 +264,7 @@ contains
 
     integer :: i,iout
     real(d) :: e
-    
+
 !----------------------------------------------------------------------
 ! Open the spectrum file
 !----------------------------------------------------------------------
@@ -274,12 +277,12 @@ contains
     write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
     write(iout,'(/,71a)') ('#',i=1,71)
     write(iout,'(a)') '#  Energy (eV)      no filter        &
-         cos filter       cos^2 filter'
+         cos filter       cos^2 filter     Gaussian window'
     write(iout,'(71a)') ('#',i=1,71)
-    
+
     do i=0,epoints
        e=(emin+i*dele)*eh2ev
-       write(iout,'(4(ES15.6,2x))') e,sp(i,0),sp(i,1),sp(i,2)
+       write(iout,'(5(ES15.6,2x))') e,sp(i,0),sp(i,1),sp(i,2),sp(i,3)
     enddo
     
 !----------------------------------------------------------------------
@@ -290,7 +293,7 @@ contains
     return
     
   end subroutine wrspectrum
-    
+
 !######################################################################
   
 end program auto2spec

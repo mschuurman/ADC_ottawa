@@ -129,7 +129,7 @@ contains
 ! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
 !----------------------------------------------------------------------
     do i=1,matdim
-       psi0(i)=complex(fvec(i),0.0d0)
+       psi0(i)=dcmplx(fvec(i),0.0d0)
     enddo
 
     norm=sqrt(dot_product(psi0,psi0))

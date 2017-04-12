@@ -311,10 +311,10 @@ logical                               :: lautospec
 !!$**********Other Parameters**********************
 !!$************************************************
 integer                                     :: natm
+integer(d), dimension(:), allocatable       :: nrec_omp
 real(d), dimension(:), allocatable          :: xcoo
+real(d), dimension(:,:,:,:), allocatable    :: fvpqrs
 character(len=2), dimension(:), allocatable :: aatm
 character(len=3)                            :: pntgroup
-
-real(d), dimension(:,:,:,:), allocatable :: fvpqrs
 
 end module parameters

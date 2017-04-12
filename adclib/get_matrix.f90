@@ -1054,7 +1054,6 @@ contains
           call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
                buf_size)
        enddo
-       close(hamunit(i))
     enddo
 
     ! Incomplete records
@@ -1107,17 +1106,40 @@ contains
     call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
     rec_count=rec_count+1
     nbuf=rec_count
-        
-    ! Close the complete hmlt.off file
-    close(unt)
     
-    ! Delete the working files
-    do i=1,nthreads
-       call system('rm -rf '//trim(hamfile(i)))
-    enddo
+!    ! Delete the working files
+!    do i=1,nthreads
+!       call system('rm -rf '//trim(hamfile(i)))
+!    enddo
 
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
+
+!-----------------------------------------------------------------------    
+! Write any incomplete records to file and save the record counts
+! for each file
+!-----------------------------------------------------------------------    
+    ! Write the incomplete records to file
+    do i=1,nthreads       
+       nlim=count_omp(i)-buf_size*int(rec_count_omp(i),8)       
+       if (nlim.gt.0) then
+          rec_count_omp(i)=rec_count_omp(i)+1
+          call wrtoffdg(hamunit(i),buf_size,&
+               file_offdiag_omp(i,:),oi_omp(i,:),&
+               oj_omp(i,:),nlim)
+       endif
+    enddo
+
+    ! Save the record counts to the nrec_omp array for use later on
+    nrec_omp=rec_count_omp
+
+!-----------------------------------------------------------------------    
+! Close files
+!-----------------------------------------------------------------------    
+    close(unt)
+    do i=1,nthreads
+       close(hamunit(i))
+    enddo
 
 !-----------------------------------------------------------------------    
 ! Deallocate arrays
@@ -1577,7 +1599,6 @@ contains
           call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
                buf_size)
        enddo
-       close(hamunit(i))
     enddo
 
     ! Incomplete records
@@ -1629,17 +1650,40 @@ contains
     call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
     rec_count=rec_count+1
     nbuf=rec_count
-        
-    ! Close the complete hmlt.off file
-    close(unt)
     
-    ! Delete the working files
-    do i=1,nthreads
-       call system('rm -rf '//trim(hamfile(i)))
-    enddo
+!    ! Delete the working files
+!    do i=1,nthreads
+!       call system('rm -rf '//trim(hamfile(i)))
+!    enddo
 
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
+
+!-----------------------------------------------------------------------    
+! Write any incomplete records to file and save the record counts
+! for each file
+!-----------------------------------------------------------------------    
+    ! Write the incomplete records to file
+    do i=1,nthreads       
+       nlim=count_omp(i)-buf_size*int(rec_count_omp(i),8)       
+       if (nlim.gt.0) then
+          rec_count_omp(i)=rec_count_omp(i)+1
+          call wrtoffdg(hamunit(i),buf_size,&
+               file_offdiag_omp(i,:),oi_omp(i,:),&
+               oj_omp(i,:),nlim)
+       endif
+    enddo
+
+    ! Save the record counts to the nrec_omp array for use later on
+    nrec_omp=rec_count_omp
+
+!-----------------------------------------------------------------------    
+! Close files
+!-----------------------------------------------------------------------    
+    close(unt)
+    do i=1,nthreads
+       close(hamunit(i))
+    enddo
 
 !-----------------------------------------------------------------------    
 ! Deallocate arrays
@@ -7670,7 +7714,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
           call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
                buf_size)
        enddo
-       close(hamunit(i))
     enddo
 
     ! Incomplete records
@@ -7724,16 +7767,39 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     rec_count=rec_count+1
     nbuf=rec_count
         
-    ! Close the complete hmlt.off file
-    close(unt)
-    
-    ! Delete the working files
-    do i=1,nthreads
-       call system('rm -rf '//trim(hamfile(i)))
-    enddo
+!    ! Delete the working files
+!    do i=1,nthreads
+!       call system('rm -rf '//trim(hamfile(i)))
+!    enddo
 
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
+
+!-----------------------------------------------------------------------    
+! Write any incomplete records to file and save the record counts
+! for each file
+!-----------------------------------------------------------------------    
+    ! Write the incomplete records to file
+    do i=1,nthreads       
+       nlim=count_omp(i)-buf_size*int(rec_count_omp(i),8)       
+       if (nlim.gt.0) then
+          rec_count_omp(i)=rec_count_omp(i)+1
+          call wrtoffdg(hamunit(i),buf_size,&
+               file_offdiag_omp(i,:),oi_omp(i,:),&
+               oj_omp(i,:),nlim)
+       endif
+    enddo
+
+    ! Save the record counts to the nrec_omp array for use later on
+    nrec_omp=rec_count_omp
+
+!-----------------------------------------------------------------------    
+! Close files
+!-----------------------------------------------------------------------    
+    close(unt)
+    do i=1,nthreads
+       close(hamunit(i))
+    enddo
 
 !-----------------------------------------------------------------------    
 ! Deallocate arrays
@@ -8270,7 +8336,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
           call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),&
                buf_size)
        enddo
-       close(hamunit(i))
     enddo
 
     ! Incomplete records
@@ -8322,17 +8387,42 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     call wrtoffdg(unt,buf_size,file_offdiag(:),oi(:),oj(:),nlim)
     rec_count=rec_count+1
     nbuf=rec_count
-        
-    ! Close the complete hmlt.off file
-    close(unt)
     
-    ! Delete the working files
-    do i=1,nthreads
-       call system('rm -rf '//trim(hamfile(i)))
-    enddo
+!    ! Delete the working files
+!    do i=1,nthreads
+!       call system('rm -rf '//trim(hamfile(i)))
+!    enddo
 
     write(ilog,*) 'rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ', name
+
+!-----------------------------------------------------------------------    
+! Write any incomplete records to file and save the record counts
+! for each file
+!-----------------------------------------------------------------------    
+    ! Write the incomplete records to file
+    do i=1,nthreads
+       nlim=count_omp(i)-buf_size*int(rec_count_omp(i),8)       
+       if (nlim.gt.0) then
+          rec_count_omp(i)=rec_count_omp(i)+1
+          call wrtoffdg(hamunit(i),buf_size,&
+               file_offdiag_omp(i,:),oi_omp(i,:),&
+               oj_omp(i,:),nlim)
+       endif
+    enddo
+
+    ! Save the record counts to the nrec_omp array for use later on
+    nrec_omp=rec_count_omp
+
+    nbuf=sum(nrec_omp)
+
+!-----------------------------------------------------------------------    
+! Close files
+!-----------------------------------------------------------------------    
+    close(unt)
+    do i=1,nthreads
+       close(hamunit(i))
+    enddo
 
 !-----------------------------------------------------------------------    
 ! Deallocate arrays
