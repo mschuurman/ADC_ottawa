@@ -8414,8 +8414,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     ! Save the record counts to the nrec_omp array for use later on
     nrec_omp=rec_count_omp
 
-    nbuf=sum(nrec_omp)
-
 !-----------------------------------------------------------------------    
 ! Close files
 !-----------------------------------------------------------------------    
