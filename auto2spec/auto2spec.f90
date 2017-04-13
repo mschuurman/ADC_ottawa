@@ -239,12 +239,12 @@ contains
           sum2=sum2+cc*cos(pia*i)**2
           sum3=sum3+cc*exp(-(gfac*i)**2)
 
-          sp(j,0)=eau*sum0*dt/pi
-          sp(j,1)=eau*sum1*dt/pi
-          sp(j,2)=eau*sum2*dt/pi          
-          sp(j,3)=eau*sum3*dt/pi
-
        enddo
+
+       sp(j,0)=eau*sum0*dt/pi
+       sp(j,1)=eau*sum1*dt/pi
+       sp(j,2)=eau*sum2*dt/pi          
+       sp(j,3)=eau*sum3*dt/pi
           
     enddo
 
