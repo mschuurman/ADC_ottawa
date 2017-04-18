@@ -320,7 +320,7 @@
       integer               :: itype,i,k,nneg,npos,nindx,pindx
       integer, dimension(2) :: xindx,ilbl
       real(d)               :: diff
-      real(d), parameter    :: tol=1e-6
+      real(d), parameter    :: tol=1e-6_d
 
 !-----------------------------------------------------------------------
 ! Set the displacement type:
@@ -803,7 +803,7 @@
       real(d), dimension(ncoo,ncoo) :: tmp
       real(d), dimension(ncoo)      :: lambda
       real(d), dimension(3*ncoo)    :: work
-      real(d), parameter            :: tol=1e-5
+      real(d), parameter            :: tol=1e-5_d
       real(d)                       :: norm,ftmp
       
 !-----------------------------------------------------------------------

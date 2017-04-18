@@ -128,10 +128,6 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the transition moments and oscillator strengths between 
 ! the initial state and the final states
-!
-! Note that if we are NOT considering ionization or a RIXS
-! calculation, then we will also output the final Davidson state
-! energies and configurations here 
 !-----------------------------------------------------------------------
     call tdm_rixs(ndim,ndimf,ndimsf,travec2,e_init)
 

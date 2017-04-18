@@ -1571,6 +1571,22 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'tol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) autotol
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'krydim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

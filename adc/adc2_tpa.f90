@@ -1561,7 +1561,7 @@ contains
 
     integer                  :: nsta,iout,count,i,k
     real(d), dimension(nsta) :: ener,xsec
-    real(d), parameter       :: tol=1e-10
+    real(d), parameter       :: tol=1e-10_d
     real(d)                  :: lb,ub
     character(len=400)       :: atmp
 

@@ -147,8 +147,8 @@ contains
     
     implicit none
 
-    integer                               :: i,kdim
-    real(d)                               :: norm,tol
+    integer                               :: i
+    real(d)                               :: norm
     real(d), parameter                    :: tiny=1e-9_d
     complex(d), dimension(:), allocatable :: psi,dtpsi
     complex(d)                            :: auto
@@ -186,13 +186,6 @@ contains
     ! Restart flag - if true, the Krylov space is built up
     ! before propagation, else the old Krylov vectors are used.       
     restart=.true.
-    
-!----------------------------------------------------------------------
-! Temporary hard-wiring of the maximum Krylov subspace dimension and
-! error tolerance
-!----------------------------------------------------------------------
-    kdim=15
-    tol=1e-6_d
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -249,10 +242,10 @@ contains
        call matxvec_treal(matdim,psi,dtpsi)       
     
        ! Take one step using the SIL algorithm
-       call silstep(psi,dtpsi,matdim,stepsize,kdim,tol,relax,restart,&
-            stdform,steps,krylov,truestepsize,trueorder,errorcode,&
-            time,matxvec_treal,eigenvector,eigenval,diagonal,&
-            offdg2,offdiag)
+       call silstep(psi,dtpsi,matdim,stepsize,kdim,autotol,relax,&
+            restart,stdform,steps,krylov,truestepsize,trueorder,&
+            errorcode,time,matxvec_treal,eigenvector,eigenval,&
+            diagonal,offdg2,offdiag)
 
        ! Exit if the SIL integration failed
        if (errorcode.ne.0) then

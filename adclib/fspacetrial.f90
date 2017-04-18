@@ -1284,7 +1284,7 @@ contains
     
     allocate(sgmvc_short(ndim),ener_short(ndim))
 
-    oslimit=1.e-8
+    oslimit=1e-8_d
     ncount=0
 
 ! sgmvc_short: array of oscillator strengths (in Mb) that are greater than oslimit

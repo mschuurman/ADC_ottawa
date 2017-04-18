@@ -1683,7 +1683,7 @@ module block_lanczos
       real(d), dimension(matdim,dim)       :: lvec
       real(d), dimension(matdim,blocksize) :: tmpvec
       real(d)                              :: dp,tmp
-      real(d), parameter                   :: tol=1d-8
+      real(d), parameter                   :: tol=1e-8_d
 
       lvec=0.0d0
 

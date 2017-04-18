@@ -1015,7 +1015,7 @@
 ! and if it is, increase subdim accordingly
 !-----------------------------------------------------------------------
 5     continue
-      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6) then
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
          subdim=subdim+1
          goto 5
       endif
@@ -2403,7 +2403,7 @@
                                               smat1,hmat1,transmat,&
                                               invtransmat
       real(d), dimension(:), allocatable   :: eigval,work,coeff0
-      real(d), parameter                   :: eps=1e-6
+      real(d), parameter                   :: eps=1e-6_d
 
 !----------------------------------------------------------------------
 ! Allocate arrays

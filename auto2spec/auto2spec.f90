@@ -11,6 +11,7 @@ module auto2specmod
   real(d), parameter                    :: eh2ev=27.2113845d0
   real(d), parameter                    :: fs2au=41.3413745758d0
   complex(d), dimension(:), allocatable :: auto
+  character(len=70)                     :: outfile
   
 end module auto2specmod
 
@@ -70,6 +71,9 @@ contains
     ! Damping time
     tau=-1.0d0
     
+    ! Name of the output file
+    outfile=''
+
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -100,6 +104,10 @@ contains
        i=i+1
        call getarg(i,string2)
        read(string2,*) epoints
+    else if (string1.eq.'-o') then
+       ! Name of the output file
+       i=i+1
+       call getarg(i,outfile)
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -123,6 +131,10 @@ contains
        call error_control
     endif
     
+    if (outfile.eq.'') then
+       outfile='spectrum.dat'
+    endif
+
     return
     
   end subroutine rdauto2specinp
@@ -269,20 +281,20 @@ contains
 ! Open the spectrum file
 !----------------------------------------------------------------------
     call freeunit(iout)
-    open(iout,file='spectrum.dat',form='formatted',status='unknown')
+    open(iout,file=outfile,form='formatted',status='unknown')
 
 !----------------------------------------------------------------------
 ! Write the spectra to file
 !----------------------------------------------------------------------
     write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
-    write(iout,'(/,71a)') ('#',i=1,71)
-    write(iout,'(a)') '#  Energy (eV)      no filter        &
-         cos filter       cos^2 filter     Gaussian window'
-    write(iout,'(71a)') ('#',i=1,71)
+    write(iout,'(/,84a)') ('#',i=1,84)
+    write(iout,'(a)') '#  Energy (eV)      cos^2 filter     &
+         cos filter       Gaussian filter  no filter'
+    write(iout,'(84a)') ('#',i=1,84)
 
     do i=0,epoints
        e=(emin+i*dele)*eh2ev
-       write(iout,'(5(ES15.6,2x))') e,sp(i,0),sp(i,1),sp(i,2),sp(i,3)
+       write(iout,'(5(ES15.6,2x))') e,sp(i,2),sp(i,1),sp(i,3),sp(i,0)
     enddo
     
 !----------------------------------------------------------------------

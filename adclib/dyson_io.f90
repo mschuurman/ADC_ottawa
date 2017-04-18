@@ -5,6 +5,12 @@
 
   module dyson_io
 
+    save
+
+    ! Annoyingly, the gamess_internal module contains a variable
+    ! named 'd', so we will use 'dp' here instead
+    integer, parameter :: dp=selected_real_kind(8)
+
     contains
 
 !#######################################################################
@@ -18,8 +24,8 @@
         implicit none
 
         integer             :: i,j,p1,p2,np
-        real*8              :: alpha
-        real*8, parameter   :: zettol=1d-15
+        real(dp)            :: alpha
+        real(dp), parameter :: zettol=1e-15_dp
         logical             :: ldir
         type(gam_structure) :: gam
 
@@ -112,14 +118,14 @@
 
         implicit none
 
-        integer, intent(in)        :: n
-        integer                    :: imolden,i,j,k,iang,p1,p2,np,&
-                                      count,pk,norb,atmcnt,irmfunc
-        real*8, dimension(nbas)    :: dyscoeff
-        real*8, dimension(nbas_ao) :: dyscoeff_ao
-        real*8                     :: nfac,alpha,coeff
-        character(len=60)          :: filename
-        type(gam_structure)        :: gam
+        integer, intent(in)          :: n
+        integer                      :: imolden,i,j,k,iang,p1,p2,np,&
+                                        count,pk,norb,atmcnt,irmfunc
+        real(dp), dimension(nbas)    :: dyscoeff
+        real(dp), dimension(nbas_ao) :: dyscoeff_ao
+        real(dp)                     :: nfac,alpha,coeff
+        character(len=60)            :: filename
+        type(gam_structure)          :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels
@@ -302,15 +308,15 @@
 
         implicit none
 
-        integer, intent(in)             :: n
-        integer                         :: iezd,i,j,k,m,pk,iang,p1,p2,&
-                                           np,count,norb
-        real*8, dimension(nbas)         :: dyscoeff
-        real*8, dimension(nbas_ao)      :: dyscoeff_ao
-        real*8                          :: alpha,dnorm,si,sf,coeff,de
-        character(len=60)               :: filename
-        character(len=60), dimension(2) :: comment
-        type(gam_structure)             :: gam
+        integer, intent(in)               :: n
+        integer                           :: iezd,i,j,k,m,pk,iang,p1,p2,&
+                                             np,count,norb
+        real(dp), dimension(nbas)         :: dyscoeff
+        real(dp), dimension(nbas_ao)      :: dyscoeff_ao
+        real(dp)                          :: alpha,dnorm,si,sf,coeff,de
+        character(len=60)                 :: filename
+        character(len=60), dimension(2)   :: comment
+        type(gam_structure)               :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels

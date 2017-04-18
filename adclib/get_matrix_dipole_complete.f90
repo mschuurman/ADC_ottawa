@@ -23,7 +23,7 @@
     !integer, parameter :: buf_size=8192
     
     integer                                  :: nthreads
-    real(d), parameter                       :: vectol=1d-8
+    real(d), parameter                       :: vectol=1e-8_d
     real(d), dimension(:,:), allocatable     :: pre_vv,pre_oo
     real(d), dimension(:,:,:,:), allocatable :: D261,D262,D263,D264
 

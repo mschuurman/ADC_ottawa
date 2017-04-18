@@ -60,7 +60,7 @@
       davstates=0
       maxiter=0
       dmain=0
-      davtol=1d-7
+      davtol=1e-7_d
       ladc1guess=.false.
       lsubdiag=.false.
       davname='SCRATCH/davstates'
@@ -74,7 +74,7 @@
       davstates_f=0
       maxiter_f=0
       dmain_f=0
-      davtol_f=1d-7
+      davtol_f=1e-7_d
       ladc1guess_f=.false.
       lsubdiag_f=.false.
       davname_f='SCRATCH/davstates_final'
@@ -97,7 +97,7 @@
       lnoise=.false.
       lsubdiag=.false.
       rlxortho=2
-      siltol=1e-5
+      siltol=1e-5_d
       rlxtype=1
       
       ! Final space
@@ -106,7 +106,7 @@
       lnoise_f=.false.
       lsubdiag_f=.false.
       rlxortho_f=2
-      siltol_f=1e-5
+      siltol_f=1e-5_d
       rlxtype_f=1
       
 !-----------------------------------------------------------------------
@@ -136,7 +136,8 @@
       lautospec=.false.
       tfinal=0.0d0
       tout=0.0d0
-      
+      autotol=1e-5_d
+
 !-----------------------------------------------------------------------
 ! I/O channels
 !-----------------------------------------------------------------------
