@@ -31,7 +31,7 @@
 !-----------------------------------------------------------------------
         e0=Ehf+E_MP2
  
-        write(ilog,'(/,2x,90a)') ('*',i=1,90)
+        write(ilog,'(/,2x,90a)') ('*',i=1,70)
 
         write(ilog,'(2x,1a)') '*'
         atmp='* HF energy:'
@@ -50,7 +50,7 @@
         write(ilog,'(2x,a25,2x,F18.10)') adjustl(atmp),d2
         
         write(ilog,'(2x,1a)') '*'
-        write(ilog,'(2x,90a,/)') ('*',i=1,90)
+        write(ilog,'(2x,90a,/)') ('*',i=1,70)
 
         return
 

@@ -666,6 +666,13 @@
             goto 999
          endif
          
+         ! Autocorrelation function order
+         if (autoord.lt.0.or.autoord.gt.2) then
+            msg='Invalid autocorrelation order. Valid values are &
+                 0, 1 or 2 only'
+            goto 999
+         endif
+
       endif
       
       return
@@ -1583,6 +1590,14 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'order') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) autoord
             else
                goto 100
             endif

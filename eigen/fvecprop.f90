@@ -8,7 +8,7 @@ module fvecprop
   
   implicit none
 
-  integer                               :: matdim,iout
+  integer                               :: matdim,iout0,iout1,iout2
   real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0  
   complex(d), dimension(:), allocatable :: psi0
 
@@ -31,13 +31,9 @@ contains
     call times(tw1,tc1)
     
 !----------------------------------------------------------------------
-! Output where we are at
+! Output where we are at and what we are doing
 !----------------------------------------------------------------------
-    write(ilog,'(/,70a)') ('-',k=1,70)
-    write(ilog,'(2x,a,/,3x,a)') &
-         'Calculation of the autocorrelation function:',&
-         'a(t) = < Psi_0| D exp(-iHt) D | Psi_0 >'
-    write(ilog,'(70a,/)') ('-',k=1,70)
+    call wrinfo
 
 !----------------------------------------------------------------------
 ! Initialisation and allocatation
@@ -50,14 +46,11 @@ contains
     call init_wavepacket(fvec)
 
 !----------------------------------------------------------------------
-! Open the autocorrelation function output file and write the file
-! header
+! Open the autocorrelation function output files and write the file
+! headers
 !----------------------------------------------------------------------
-    call freeunit(iout)
-    open(iout,file='auto',form='formatted',status='unknown')
-    write(iout,'(a)') '#    time[fs]         Re(autocorrel)     &
-         Im(autocorrel)     Abs(autocorrel)'
-    
+    call open_autofiles
+
 !----------------------------------------------------------------------
 ! Propagation and calculation of the autocorrelation function
 !----------------------------------------------------------------------
@@ -66,7 +59,7 @@ contains
 !----------------------------------------------------------------------
 ! Close the autocorrelation function output file
 !----------------------------------------------------------------------
-    close(iout)
+    call close_autofiles
 
 !----------------------------------------------------------------------
 ! Output timings
@@ -83,6 +76,45 @@ contains
     return
     
   end subroutine propagate_fvec
+
+!######################################################################
+
+  subroutine wrinfo
+
+    implicit none
+
+    integer :: k
+
+!----------------------------------------------------------------------
+! Section header
+!----------------------------------------------------------------------
+    write(ilog,'(/,70a)') ('-',k=1,70)
+    write(ilog,'(2x,a)') 'Calculation of the nth-order &
+         autocorrelation functions:'
+    write(ilog,'(70a)') ('-',k=1,70)
+    write(ilog,'(4x,a)') 'a_n(t) = <Psi(0)| H^n |Psi(t)>, &
+         |Psi(0)> = D|Psi_0>'
+    write(ilog,'(70a,/)') ('-',k=1,70)
+
+!----------------------------------------------------------------------
+! Maximum autocorrelation function order
+!----------------------------------------------------------------------
+    write(ilog,'(2x,a,x,i1,x,a,/)') &
+         'Autocorrelation functions up to order',autoord,&
+         'will be calculated'
+
+!----------------------------------------------------------------------
+! SIL parameters
+!----------------------------------------------------------------------         
+    write(ilog,'(2x,a,/)') 'Wavepacket propagation performed using &
+         the SIL method'
+    write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
+         kdim
+    write(ilog,'(2x,a,x,ES15.8,/)') 'Error tolerance:',autotol
+
+    return
+
+  end subroutine wrinfo
 
 !######################################################################
 
@@ -114,7 +146,70 @@ contains
     return
     
   end subroutine finalise
+
+!######################################################################
     
+  subroutine open_autofiles
+
+    implicit none
+
+!----------------------------------------------------------------------
+! Zeroth-order autocorrelation function file
+!----------------------------------------------------------------------
+    call freeunit(iout0)
+    open(iout0,file='auto',form='formatted',status='unknown')
+    write(iout0,'(a)') '#    time[fs]         Re(autocorrel)     &
+         Im(autocorrel)     Abs(autocorrel)'
+
+!----------------------------------------------------------------------
+! First-order autocorrelation function file
+!----------------------------------------------------------------------
+    if (autoord.ge.1) then
+       call freeunit(iout1)
+       open(iout1,file='auto1',form='formatted',status='unknown')
+       write(iout1,'(a)') '#    time[fs]         Re(autocorrel)     &
+            Im(autocorrel)     Abs(autocorrel)'
+    endif
+    
+!----------------------------------------------------------------------
+! Second-order autocorrelation function file
+!----------------------------------------------------------------------
+    if (autoord.eq.2) then
+       call freeunit(iout2)
+       open(iout2,file='auto2',form='formatted',status='unknown')
+       write(iout2,'(a)') '#    time[fs]         Re(autocorrel)     &
+            Im(autocorrel)     Abs(autocorrel)'
+    endif
+
+    return
+
+  end subroutine open_autofiles
+
+!######################################################################
+
+  subroutine close_autofiles
+
+    implicit none
+
+!----------------------------------------------------------------------
+! Zero-order autocorrelation function file
+!----------------------------------------------------------------------
+    close(iout0)
+
+!----------------------------------------------------------------------
+! First-order autocorrelation function file
+!----------------------------------------------------------------------
+    if (autoord.ge.1) close(iout1)
+
+!----------------------------------------------------------------------
+! Second-order autocorrelation function file
+!----------------------------------------------------------------------
+    if (autoord.eq.2) close(iout2)
+
+    return
+
+  end subroutine close_autofiles
+
 !######################################################################
 
   subroutine init_wavepacket(fvec)
@@ -151,7 +246,8 @@ contains
     real(d)                               :: norm
     real(d), parameter                    :: tiny=1e-9_d
     complex(d), dimension(:), allocatable :: psi,dtpsi
-    complex(d)                            :: auto
+    complex(d), dimension(:), allocatable :: hpsi,h2psi
+    complex(d)                            :: auto0,auto1,auto2
     
     ! SIL
     integer                                 :: steps,trueorder,&
@@ -193,23 +289,64 @@ contains
     ! Wavefunction arrays
     allocate(psi(matdim))
     psi=czero
+
     allocate(dtpsi(matdim))
     dtpsi=czero
+
+    if (autoord.ge.1) then
+       allocate(hpsi(matdim))
+       hpsi=czero
+    endif
+
+    if (autoord.eq.2) then
+       allocate(h2psi(matdim))
+       h2psi=czero
+    endif
 
     ! sillib arrays
     allocate(krylov(matdim,kdim-1))
     krylov=czero
+
     allocate(eigenvector(kdim+1,kdim+3))
     eigenvector=0.0d0
+
     allocate(eigenval(kdim+1))
     eigenval=0.0d0
+
     allocate(diagonal(kdim+1))
     diagonal=0.0d0
+
     allocate(offdg2(kdim+1))
     offdg2=0.0d0
+
     allocate(offdiag(kdim))
     offdiag=0.0d0
+
+!----------------------------------------------------------------------
+! Output the autocorrelation functions at time t=0
+!----------------------------------------------------------------------
+    ! Zeroth-order autocorrelation function at time t=0
+    auto0=dot_product(psi0,psi0)
+    call wrauto(iout0,auto0,0.0d0)
     
+    ! First-order autocorrelation functions at time t=0
+    if (autoord.ge.1) then
+       call matxvec_treal(matdim,psi0,hpsi)
+       hpsi=hpsi*ci
+       auto1=dot_product(psi0,hpsi)
+       write(iout1,'(F15.8,4x,3(2x,F17.14))') &
+            0.0d0*au2fs,real(auto1),aimag(auto1),abs(auto1)
+    endif
+    
+    ! Second-order autocorrelation functions at time t=0
+    if (autoord.eq.2) then
+       call matxvec_treal(matdim,hpsi,h2psi)
+       h2psi=h2psi*ci
+       auto2=dot_product(psi0,h2psi)
+       write(iout2,'(F15.8,4x,3(2x,F17.14))') &
+            0.0d0*au2fs,real(auto2),aimag(auto2),abs(auto2)
+    endif
+
 !----------------------------------------------------------------------
 ! Propagate |Psi(t=0)> = mu |Psi_0> forwards in time using the
 ! Quantics sillib libraries
@@ -221,12 +358,8 @@ contains
     intperiod=0.5d0*tout
 
     ! Set the initial wavepacket
-    psi=psi0
+    psi=psi0    
 
-    ! Output the autocorrelation function at time t=0
-    auto=dot_product(psi0,psi0)
-    call wrauto(auto,0.0d0)
-    
     ! Loop over the timesteps at which we want the autocorrelation
     ! function
     do i=1,int(tfinal/intperiod)
@@ -239,7 +372,7 @@ contains
        stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
-       call matxvec_treal(matdim,psi,dtpsi)       
+       call matxvec_treal(matdim,psi,dtpsi)
     
        ! Take one step using the SIL algorithm
        call silstep(psi,dtpsi,matdim,stepsize,kdim,autotol,relax,&
@@ -257,12 +390,30 @@ contains
        inttime=inttime+truestepsize
        if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
 
-       ! Calculate and output the autocorrelation function at the
-       ! current timestep
-       auto=dot_product(conjg(psi),psi)
-       call wrauto(auto,i*intperiod*2.0d0)
-       
-       ! Output some information
+       ! Calculate and output the zeroth-order autocorrelation 
+       ! function at the current timestep
+       auto0=dot_product(conjg(psi),psi)
+       call wrauto(iout0,auto0,i*intperiod*2.0d0)
+
+       ! Calculate and output the first-order autocorrelation
+       ! at the current timestep
+       if (autoord.ge.1) then
+          call matxvec_treal(matdim,psi,hpsi)
+          hpsi=hpsi*ci
+          auto1=dot_product(conjg(psi),hpsi)
+          call wrauto(iout1,auto1,i*intperiod*2.0d0)
+       endif
+
+       ! Calculate and output the second-order autocorrelation
+       ! at the current timestep
+       if (autoord.eq.2) then
+          call matxvec_treal(matdim,hpsi,h2psi)
+          h2psi=h2psi*ci
+          auto2=dot_product(conjg(psi),h2psi)
+          call wrauto(iout2,auto2,i*intperiod*2.0d0)
+       endif
+
+       ! Output some information about our progress
        norm=real(sqrt(dot_product(psi,psi)))
        call wrprogress(i*intperiod,norm)
 
@@ -279,7 +430,9 @@ contains
     deallocate(diagonal)
     deallocate(offdg2)
     deallocate(offdiag)
-    
+    if (allocated(hpsi)) deallocate(hpsi)
+    if (allocated(h2psi)) deallocate(h2psi)
+
     return
     
   end subroutine propagate_sillib
@@ -303,20 +456,21 @@ contains
 
 !######################################################################
 
-  subroutine wrauto(auto,t)
+  subroutine wrauto(iout,auto,t)
 
     implicit none
 
-    complex(d) :: auto
+    integer    :: iout
     real(d)    :: t
+    complex(d) :: auto
 
     write(iout,'(F15.8,4x,3(2x,F17.14))') &
-         t*au2fs,real(auto),aimag(auto),abs(auto) 
+         t*au2fs,real(auto),aimag(auto),abs(auto)
     
     return
     
   end subroutine wrauto
-    
+
 !######################################################################
     
 end module fvecprop

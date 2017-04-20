@@ -306,6 +306,7 @@ logical                                :: ltpa
 !!$************************************************
 real(d)                               :: tfinal,tout,&
                                          autotol
+integer                               :: autoord
 logical                               :: lautospec
 
 !!$************************************************
