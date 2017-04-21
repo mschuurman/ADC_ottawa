@@ -158,8 +158,8 @@ contains
 !----------------------------------------------------------------------
     call freeunit(iout0)
     open(iout0,file='auto',form='formatted',status='unknown')
-    write(iout0,'(a)') '#    time[fs]         Re(autocorrel)     &
-         Im(autocorrel)     Abs(autocorrel)'
+    write(iout0,'(a)') '#    time[fs]         Re(autocorrel)         &
+         Im(autocorrel)         Abs(autocorrel)'
 
 !----------------------------------------------------------------------
 ! First-order autocorrelation function file
@@ -167,8 +167,9 @@ contains
     if (autoord.ge.1) then
        call freeunit(iout1)
        open(iout1,file='auto1',form='formatted',status='unknown')
-       write(iout1,'(a)') '#    time[fs]         Re(autocorrel)     &
-            Im(autocorrel)     Abs(autocorrel)'
+       write(iout1,'(a)') &
+            '#    time[fs]         Re(autocorrel)         &
+            Im(autocorrel)         Abs(autocorrel)'
     endif
     
 !----------------------------------------------------------------------
@@ -177,8 +178,9 @@ contains
     if (autoord.eq.2) then
        call freeunit(iout2)
        open(iout2,file='auto2',form='formatted',status='unknown')
-       write(iout2,'(a)') '#    time[fs]         Re(autocorrel)     &
-            Im(autocorrel)     Abs(autocorrel)'
+       write(iout2,'(a)') &
+            '#    time[fs]         Re(autocorrel)         &
+            Im(autocorrel)         Abs(autocorrel)'
     endif
 
     return
@@ -334,8 +336,7 @@ contains
        call matxvec_treal(matdim,psi0,hpsi)
        hpsi=hpsi*ci
        auto1=dot_product(psi0,hpsi)
-       write(iout1,'(F15.8,4x,3(2x,F17.14))') &
-            0.0d0*au2fs,real(auto1),aimag(auto1),abs(auto1)
+       call wrauto(iout1,auto1,0.0d0)
     endif
     
     ! Second-order autocorrelation functions at time t=0
@@ -343,16 +344,15 @@ contains
        call matxvec_treal(matdim,hpsi,h2psi)
        h2psi=h2psi*ci
        auto2=dot_product(psi0,h2psi)
-       write(iout2,'(F15.8,4x,3(2x,F17.14))') &
-            0.0d0*au2fs,real(auto2),aimag(auto2),abs(auto2)
+       call wrauto(iout2,auto2,0.0d0)
     endif
 
 !----------------------------------------------------------------------
-! Propagate |Psi(t=0)> = mu |Psi_0> forwards in time using the
-! Quantics sillib libraries
+! Propagate |Psi(t=0)> = D |Psi_0> forwards in time using the Quantics
+! sillib libraries
 !
 ! Note that we are using t/2 trick here in calculating the
-! autocorrelation function
+! autocorrelation functions
 !----------------------------------------------------------------------
     ! Integration period
     intperiod=0.5d0*tout
@@ -464,9 +464,9 @@ contains
     real(d)    :: t
     complex(d) :: auto
 
-    write(iout,'(F15.8,4x,3(2x,F17.14))') &
+    write(iout,'(F15.8,4x,3(2x,E21.14))') &
          t*au2fs,real(auto),aimag(auto),abs(auto)
-    
+
     return
     
   end subroutine wrauto

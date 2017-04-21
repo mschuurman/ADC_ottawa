@@ -166,8 +166,8 @@ contains
     read(iin,*)
 
     ! Determine the timestep
-    read(iin,'(F15.8)') t0
-    read(iin,'(F15.8)') t
+    read(iin,*) t0
+    read(iin,*) t
     t0=t0*fs2au
     t=t*fs2au
     dt=t-t0
@@ -189,10 +189,10 @@ contains
 !----------------------------------------------------------------------
     rewind(iin)
     read(iin,*)
-    read(iin,'(F15.8,4x,3(2x,F17.14))') t,a0,b0
+    read(iin,*) t,a0,b0
 
     do i=1,iauto
-       read(iin,'(F15.8,4x,3(2x,F17.14))') t,re,im
+       read(iin,*) t,re,im
        auto(i)=dcmplx(re,im)
     enddo
        
