@@ -175,7 +175,7 @@
 ! and oscillator strength arrays
 !-----------------------------------------------------------------------
       npoints=0
-5     call rdinp(iosc)      
+5     call rdinp(iosc)
       if (keyword(1).ne.'end-file'.and..not.lend) then
          read(keyword(1),*) ftmp
          if (ftmp.ge.erange(1).and.ftmp.le.erange(2)) npoints=npoints+1

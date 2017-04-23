@@ -302,6 +302,23 @@ AUTO2SPEC_OBJ = constants.o \
 	parsemod.o \
 	auto2spec.o
 
+########################################################################
+# Filter diagonalisation code
+########################################################################
+FDIAG = include/constants.o \
+	include/channels.o \
+	iomodules/iomod.o \
+	iomodules/parsemod.o \
+	fdiag/filtermod.o \
+	fdiag/fdiag.o
+
+FDIAG_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	filtermod.o \
+	fdiag.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -327,6 +344,10 @@ rixsplt: $(RIXSPLT)
 
 auto2spec: $(AUTO2SPEC)
 	$(F90) $(F90OPTS) $(AUTO2SPEC_OBJ) $(LIBS) -o auto2spec.x
+	rm -f *.o *~ *.mod
+
+fdiag: $(FDIAG)
+	$(F90) $(F90OPTS) $(FDIAG_OBJ) $(LIBS) -o fdiag.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
