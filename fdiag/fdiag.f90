@@ -25,11 +25,17 @@ program fdiag
   call rdauto
 
 !----------------------------------------------------------------------
-! Calculate the Hamiltonian matrix elements in the basis of the
-! filter states
+! Calculate the Hamiltonian and overlap matrix elements in the basis
+! of the filter states
 !----------------------------------------------------------------------
-  call calcham_fstatebas
-  
+  call calc_matrices_fstatebas
+
+!----------------------------------------------------------------------
+! Perform the canonical orthogonalisation of the filter state basis
+! to yield a reduced basis of linearly independent functions
+!----------------------------------------------------------------------
+  call reduce_fstatebas
+
 !----------------------------------------------------------------------
 ! Finalisation and deallocation of arrays
 !----------------------------------------------------------------------
@@ -147,6 +153,8 @@ contains
              endif
              ! Conversion to a.u.
              ebound=ebound*ev2eh
+             ! Energy grid spacing
+             de=(ebound(2)-ebound(1))/(nener-1)
           else
              goto 100
           endif
@@ -207,7 +215,7 @@ contains
 !----------------------------------------------------------------------
     ! Energy window
     write(ilog,'(/,2x,a,2(2x,F9.4))') &
-         'Energy window (eV): ',ebound(1)*eh2ev,ebound(2)*eh2ev
+         'Energy window (eV): ',ebound(1)/ev2eh,ebound(2)/ev2eh
     write(ilog,'(/,2x,a,i4)') 'No. points: ',nener
     
     ! Window function
@@ -324,6 +332,16 @@ contains
     close(iauto)
 
 !----------------------------------------------------------------------
+! Set: (1) proptime: the wavepacket propagation time, and;
+!      (2) autotime: the time for which the autocorrelation functions
+!                    are known. We assume that autotime = 2*proptime,
+!                    i.e., that the t/2 trick was used in calculating
+!                    the autocorrelation functions.
+!----------------------------------------------------------------------
+    autotime=(nt-1)*dt
+    proptime=0.5d0*autotime
+
+!----------------------------------------------------------------------
 ! Ouput some information to the log file and return
 !----------------------------------------------------------------------
     write(ilog,'(/,2x,a,x,i4)') 'No. timesteps:',nt
@@ -350,20 +368,270 @@ contains
 
 !######################################################################
 
-  subroutine calcham_fstatebas
+  subroutine calc_matrices_fstatebas
 
     use constants
     use filtermod
     
     implicit none
 
-    print*,"Write the subroutine calcham_fstatebas"
-    stop
+    integer                          :: L,i,j,n,ti,Iindx,Jindx
+    real(d), dimension(0:nener-1,nt) :: Gk
+    real(d), dimension(2:2*nener)    :: ebar
+    real(d)                          :: t,e,h,func
+
+    L=nener
+    
+!----------------------------------------------------------------------
+! Calculation of the value of the filter function, G, at the energy
+! grid points for all timesteps
+!----------------------------------------------------------------------
+    do ti=1,nt
+       do n=0,L-1
+          Gk(n,ti)=filterfunc(n,ti)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! Calculation of all 2L-1 possible values of Ebar
+!----------------------------------------------------------------------
+    do n=2,2*L
+       ebar(n)=ebound(1)+0.5d0*de*n-de
+    enddo
+
+!----------------------------------------------------------------------
+! Calculation of filter state Hamiltonian and overlap matrices
+!----------------------------------------------------------------------
+    ! Allocate arrays
+    allocate(hfbas(L,L))
+    hfbas=0.0d0
+    allocate(sfbas(L,L))
+    sfbas=0.0d0
+
+    ! Loop over the elements of the lower triangle of Hfbas and Sfbas
+    do j=1,L
+       do i=j,L
+          
+          ! Delta E index
+          Iindx=abs(i-j)
+          
+          ! Ebar index
+          Jindx=i+j
+          
+          ! Calculate H_ij and S_ij using the trapezoidal rule
+          call calc_matrices_fstatebas_1element(hfbas(i,j),&
+               sfbas(i,j),Gk(Iindx,:),ebar(Jindx))
+
+          ! Upper triangle elements, H_ji and S_ji
+          hfbas(j,i)=hfbas(i,j)
+          sfbas(j,i)=sfbas(i,j)
+
+       enddo
+    enddo
     
     return
     
-  end subroutine calcham_fstatebas
+  end subroutine calc_matrices_fstatebas
+
+!######################################################################
+
+  subroutine calc_matrices_fstatebas_1element(hij,sij,Gk,ebar)
+
+    use constants
+    use filtermod
+
+    implicit none
+
+    integer                :: ti
+    real(d)                :: hij,sij,ebar,h,t
+    real(d), dimension(nt) :: Gk
+
+!----------------------------------------------------------------------
+! Contribution from the first time point
+!----------------------------------------------------------------------
+    hij=0.5d0*dt*Gk(1)*real(auto1(1))
+
+    sij=0.5d0*dt*Gk(1)*real(auto(1))
+
+!----------------------------------------------------------------------
+! Contribution from time points 2 to Nt-1
+!----------------------------------------------------------------------
+    do ti=2,nt-1
+             
+       t=(ti-1)*dt
+       
+       ! H_ij
+       hij=hij+dt*Gk(ti)*(real(auto1(ti))*cos(ebar*t) &
+            -imag(auto1(ti))*sin(ebar*t))
+
+       ! S_ij
+       sij=sij+dt*Gk(ti)*(real(auto(ti))*cos(ebar*t) &
+            -imag(auto(ti))*sin(ebar*t))
+       
+    enddo
     
+!----------------------------------------------------------------------
+! Contribution from the final time point
+!----------------------------------------------------------------------
+    t=(nt-1)*dt
+
+    hij=hij+0.5d0*dt*Gk(nt)*(real(auto1(nt))*cos(ebar*t)&
+         -imag(auto1(nt))*sin(ebar*t))
+
+    sij=sij+0.5d0*dt*Gk(nt)*(real(auto(nt))*cos(ebar*t) &
+         -imag(auto(nt))*sin(ebar*t))
+
+    return
+    
+  end subroutine calc_matrices_fstatebas_1element
+
+!######################################################################
+! filterfunc: for the distance n=|i-j| between two energy grid points
+!             and the time grid index tk, this function calculates
+!             the corresponding vale of the filter function
+!             G_k(Delta E_ij, t_k)
+!######################################################################    
+
+  function filterfunc(n,tk) result(func)
+
+    use constants
+    use filtermod
+
+    implicit none
+
+    integer :: n,tk
+    real(d) :: func,deltae,t,kappa,cosfunc
+
+    ! Delta E and t
+    deltae=n*de
+    t=(tk-1)*dt
+
+    ! kappa(t)
+    kappa=1.0d0-t/(2.0d0*proptime)
+
+    ! Contribution from the stepfunction Theta(kappa(t)) that is
+    ! common to all cosine-type filter functions 
+    if (kappa.lt.0) then
+       func=0.0d0
+       return
+    endif
+
+    select case(iwfunc)
+
+!----------------------------------------------------------------------
+! Filter function G_0 for the cos0 window function
+!----------------------------------------------------------------------
+    case(0)
+       
+       func=4.0d0*proptime*kappa*dsinc(deltae*proptime*kappa)
+
+       return
+
+!----------------------------------------------------------------------
+! Filter function G_1 for the cos1 window function
+!----------------------------------------------------------------------
+    case(1)
+       
+       func=proptime*kappa*(dsinc((deltae*proptime-pi)*kappa) &
+            +2.0d0*cos((pi*t)/(2.0d0*proptime))*dsinc(deltae*proptime*kappa) &
+            +dsinc((deltae*proptime+pi)*kappa))
+
+       return
+
+!----------------------------------------------------------------------
+! Filter function G_2 for the cos2 window function
+!----------------------------------------------------------------------
+    case(2)
+
+       cosfunc=cos((pi*t)/(2.0d0*proptime))
+
+       func=proptime*kappa*(0.25d0*dsinc((deltae*proptime-2.0d0*pi)*kappa) &
+            +cosfunc*dsinc((deltae*proptime-pi)*kappa) &
+            +(0.5d0+cosfunc**2)*dsinc(deltae*proptime*kappa) &
+            +cosfunc*dsinc((deltae*proptime+pi)*kappa) &
+            +0.25d0*dsinc((deltae*proptime+2.0d0*pi)*kappa))
+
+       return
+
+    end select
+
+    return
+
+  end function filterfunc
+
+!######################################################################
+! dsinc: Computes the value of the function dsinc(x) := dsin(x)/x.
+!        Special care is taken for the singularity at x = 0.
+!        Adapted from the Quantics code.
+!######################################################################
+
+  function dsinc(x)
+
+    use constants
+
+    implicit none
+
+    real(d)            :: dsinc,x,x2
+    real(d), parameter :: inv6=1.0d0/6.0d0
+    real(d), parameter :: inv20=1.0d0/20.0d0
+    real(d), parameter :: inv42=1.0d0/42.0d0
+    real(d), parameter :: tiny = 4.154252d-2
+
+! "Tiny" is chosen such that tiny**8 / 8! = eps where "eps" is the
+! machine precision (here eps = 2.2 10^(-16)).
+
+    if (abs(x).ge.tiny) then
+       dsinc=sin(x)/x
+    else
+       x2=x**2
+       dsinc=1.0d0-inv6*x2*(1.0d0-inv20*x2*(1.0d0-inv42*x2))
+    endif
+
+    return
+
+  end function dsinc
+
+!######################################################################
+
+  subroutine reduce_fstatebas
+
+    use constants
+    use iomod
+    use filtermod
+
+    implicit none
+
+    integer                         :: L,error,workdim,i,j,ichk
+    real(d), dimension(nener,nener) :: eigvec
+    real(d), dimension(nener)       :: eigval
+    real(d), dimension(3*nener)     :: work
+
+    L=nener
+    workdim=3*L
+
+!----------------------------------------------------------------------
+! Diagonalise the filter state overlap matrix, Sfbas
+!----------------------------------------------------------------------
+    eigvec=sfbas
+
+    call dsyev('V','U',L,eigvec,L,eigval,work,workdim,error)
+
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the filter state overlap matrix &
+            failed in subroutine reduce_fstatebas'
+       call error_control
+    endif
+
+
+    ! WHY ISN'T Sfbas POSITIVE SEMIDEFINITE?
+    do i=1,L
+       print*,i,eigval(i)
+    enddo
+
+    return
+
+  end subroutine reduce_fstatebas
+
 !######################################################################
 
   subroutine fdiag_finalise

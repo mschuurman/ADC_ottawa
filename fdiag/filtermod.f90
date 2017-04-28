@@ -7,16 +7,21 @@ module filtermod
   save
 
   ! Energy window
-  real(d), dimension(2)                 :: ebound
   integer                               :: nener
-
+  real(d), dimension(2)                 :: ebound
+  real(d)                               :: de
+  
   ! Window function
   integer                               :: iwfunc
 
   ! Autocorrelation functions
   integer                               :: nt
-  real(d)                               :: t0,dt
+  real(d)                               :: t0,dt,proptime,&
+                                           autotime
   complex(d), dimension(:), allocatable :: auto,auto1,auto2
+
+  ! Hamiltonian and overlap matrices
+  real(d), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas
 
   ! Unit conversion factors
   real(d), parameter                    :: fs2au=41.3413745758d0
