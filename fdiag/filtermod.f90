@@ -21,8 +21,13 @@ module filtermod
   complex(d), dimension(:), allocatable :: auto,auto1,auto2
 
   ! Hamiltonian and overlap matrices
-  real(d), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas
-
+  integer                               :: nrbas
+  real(d), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas,&
+                                           h2fbas,h2rbas,ubar,&
+                                           transmat,normfac,&
+                                           rvec
+  real(d), dimension(:), allocatable    :: rener
+  
   ! Unit conversion factors
   real(d), parameter                    :: fs2au=41.3413745758d0
   real(d), parameter                    :: au2fs=0.02418884254d0

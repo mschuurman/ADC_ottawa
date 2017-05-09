@@ -405,6 +405,8 @@ contains
     ! Allocate arrays
     allocate(hfbas(L,L))
     hfbas=0.0d0
+    allocate(h2fbas(L,L))
+    h2fbas=0.0d0
     allocate(sfbas(L,L))
     sfbas=0.0d0
 
@@ -418,12 +420,13 @@ contains
           ! Ebar index
           Jindx=i+j
           
-          ! Calculate H_ij and S_ij using the trapezoidal rule
+          ! Calculate H_ij, H^2_ij and S_ij using the trapezoidal rule
           call calc_matrices_fstatebas_1element(hfbas(i,j),&
-               sfbas(i,j),Gk(Iindx,:),ebar(Jindx))
+               h2fbas(i,j),sfbas(i,j),Gk(Iindx,:),ebar(Jindx))
 
           ! Upper triangle elements, H_ji and S_ji
           hfbas(j,i)=hfbas(i,j)
+          h2fbas(j,i)=h2fbas(i,j)
           sfbas(j,i)=sfbas(i,j)
 
        enddo
@@ -435,7 +438,7 @@ contains
 
 !######################################################################
 
-  subroutine calc_matrices_fstatebas_1element(hij,sij,Gk,ebar)
+  subroutine calc_matrices_fstatebas_1element(hij,h2ij,sij,Gk,ebar)
 
     use constants
     use filtermod
@@ -443,13 +446,15 @@ contains
     implicit none
 
     integer                :: ti
-    real(d)                :: hij,sij,ebar,h,t
+    real(d)                :: hij,h2ij,sij,ebar,h,t
     real(d), dimension(nt) :: Gk
 
 !----------------------------------------------------------------------
 ! Contribution from the first time point
 !----------------------------------------------------------------------
     hij=0.5d0*dt*Gk(1)*real(auto1(1))
+
+    h2ij=0.5d0*dt*Gk(1)*real(auto2(1))
 
     sij=0.5d0*dt*Gk(1)*real(auto(1))
 
@@ -464,6 +469,10 @@ contains
        hij=hij+dt*Gk(ti)*(real(auto1(ti))*cos(ebar*t) &
             -imag(auto1(ti))*sin(ebar*t))
 
+       ! H^2_ij
+       h2ij=h2ij+dt*Gk(ti)*(real(auto2(ti))*cos(ebar*t) &
+            -imag(auto2(ti))*sin(ebar*t))
+       
        ! S_ij
        sij=sij+dt*Gk(ti)*(real(auto(ti))*cos(ebar*t) &
             -imag(auto(ti))*sin(ebar*t))
@@ -478,6 +487,9 @@ contains
     hij=hij+0.5d0*dt*Gk(nt)*(real(auto1(nt))*cos(ebar*t)&
          -imag(auto1(nt))*sin(ebar*t))
 
+    h2ij=h2ij+0.5d0*dt*Gk(nt)*(real(auto2(nt))*cos(ebar*t)&
+         -imag(auto2(nt))*sin(ebar*t))
+    
     sij=sij+0.5d0*dt*Gk(nt)*(real(auto(nt))*cos(ebar*t) &
          -imag(auto(nt))*sin(ebar*t))
 
@@ -601,17 +613,20 @@ contains
 
     implicit none
 
-    integer                         :: L,error,workdim,i,j,ichk
-    real(d), dimension(nener,nener) :: eigvec
-    real(d), dimension(nener)       :: eigval
-    real(d), dimension(3*nener)     :: work
-
+    integer                            :: L,error,workdim,i,j
+    real(d), parameter                 :: thrsh=1e-8_d
+    real(d), dimension(nener,nener)    :: eigvec
+    real(d), dimension(nener)          :: eigval
+    real(d), dimension(:), allocatable :: work
+    
     L=nener
-    workdim=3*L
 
 !----------------------------------------------------------------------
 ! Diagonalise the filter state overlap matrix, Sfbas
 !----------------------------------------------------------------------
+    workdim=3*L
+    allocate(work(workdim))
+    
     eigvec=sfbas
 
     call dsyev('V','U',L,eigvec,L,eigval,work,workdim,error)
@@ -622,12 +637,70 @@ contains
        call error_control
     endif
 
-
+    deallocate(work)
+    
+!----------------------------------------------------------------------
+! Construct the transformation matrix
+!----------------------------------------------------------------------
+    !************************************************
     ! WHY ISN'T Sfbas POSITIVE SEMIDEFINITE?
+    !************************************************
+    
+    ! Number of eigenvectors orthogonal to the null space
+    nrbas=0
     do i=1,L
-       print*,i,eigval(i)
+       if (eigval(i).gt.thrsh) nrbas=nrbas+1
+       !print*,i,eigval(i)
     enddo
 
+    ! Truncated eigenvector matrix
+    allocate(ubar(L,nrbas))
+    ubar(:,1:nrbas)=eigvec(:,L-nrbas+1:L)
+    
+    ! Normalisation factors
+    allocate(normfac(nrbas,nrbas))
+    normfac=0.0d0
+    do i=1,nrbas
+       normfac(i,i)=sqrt(1.0d0/eigval(L-nrbas+i))
+    enddo
+    
+    ! Transformation matrix
+    allocate(transmat(L,nrbas))
+    transmat=matmul(ubar,normfac)
+    
+!----------------------------------------------------------------------
+! Hamiltonian matrices projected onto the space spanned by the
+! reduced basis
+!----------------------------------------------------------------------
+    ! < psi_i | H | psi_j >
+    allocate(hrbas(nrbas,nrbas))
+    hrbas=matmul(transpose(transmat),matmul(hfbas,transmat))
+
+    ! < psi_i | H^2 | psi_j >
+    allocate(h2rbas(nrbas,nrbas))
+    h2rbas=matmul(transpose(transmat),matmul(h2fbas,transmat))
+
+!----------------------------------------------------------------------
+! Diagonalise the reduced space Hamiltonian matrix
+!----------------------------------------------------------------------
+    ! Allocate the arrays holding the eigenvectors and eigenvalues
+    ! of the reduced space hamiltonian
+    allocate(rvec(nrbas,nrbas))
+    allocate(rener(nrbas))
+
+    ! Diagonalise the reduced space Hamiltonian
+    workdim=3*nrbas
+    allocate(work(workdim))
+    rvec=hrbas
+    call dsyev('V','U',nrbas,rvec,nrbas,rener,work,workdim,error)
+    deallocate(work)
+    
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the reduced space Hamiltonian &
+            failed in subroutine reduce_fstatebas'
+       call error_control
+    endif
+    
     return
 
   end subroutine reduce_fstatebas
@@ -647,7 +720,15 @@ contains
     deallocate(auto)
     deallocate(auto1)
     deallocate(auto2)
-
+    deallocate(hfbas)
+    deallocate(h2fbas)
+    deallocate(sfbas)
+    deallocate(hrbas)
+    deallocate(ubar)
+    deallocate(transmat)
+    deallocate(rvec)
+    deallocate(rener)
+    
 !----------------------------------------------------------------------
 ! Close files
 !----------------------------------------------------------------------
