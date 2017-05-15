@@ -33,9 +33,22 @@ program fdiag
 !----------------------------------------------------------------------
 ! Perform the canonical orthogonalisation of the filter state basis
 ! to yield a reduced basis of linearly independent functions
+!
+! Note that also we project the Hamiltonian and H^2 matrices onto the
+! reduced basis here.
 !----------------------------------------------------------------------
   call reduce_fstatebas
 
+!----------------------------------------------------------------------
+! Calculate intensities
+!----------------------------------------------------------------------
+  call calc_intens
+
+!----------------------------------------------------------------------
+! Calculate the error estimates for the energies and intensities
+!----------------------------------------------------------------------
+  call calc_errors
+  
 !----------------------------------------------------------------------
 ! Finalisation and deallocation of arrays
 !----------------------------------------------------------------------
@@ -259,23 +272,28 @@ contains
     read(keyword(1),*) t2
     dt=(t2-t1)*fs2au
 
-    ! No. timesteps, nt
-    nt=0
+    ! No. timesteps that the autocorrelation function is available
+    ! for (ntauto)
+    ntauto=0
     rewind(iauto)
 5   call rdinp(iauto)
     if (.not.lend) then
-       nt=nt+1
+       ntauto=ntauto+1
        goto 5
     endif
 
+    ! No. timesteps in the wavepacket propagation (assuming that
+    ! the t/2 trick was used)
+    ntprop=(ntauto-1)/2+1
+    
     close(iauto)
     
 !----------------------------------------------------------------------
 ! Allocate the autocorrelation function arrays
 !----------------------------------------------------------------------
-    allocate(auto(nt))
-    allocate(auto1(nt))
-    allocate(auto2(nt))
+    allocate(auto(ntauto))
+    allocate(auto1(ntauto))
+    allocate(auto2(ntauto))
 
 !----------------------------------------------------------------------
 ! Read the a0(t) file
@@ -338,13 +356,13 @@ contains
 !                    i.e., that the t/2 trick was used in calculating
 !                    the autocorrelation functions.
 !----------------------------------------------------------------------
-    autotime=(nt-1)*dt
+    autotime=(ntauto-1)*dt
     proptime=0.5d0*autotime
 
 !----------------------------------------------------------------------
 ! Ouput some information to the log file and return
 !----------------------------------------------------------------------
-    write(ilog,'(/,2x,a,x,i4)') 'No. timesteps:',nt
+    write(ilog,'(/,2x,a,x,i4)') 'No. timesteps:',ntauto
     write(ilog,'(/,2x,a,x,F8.6)') 'Timestep, dt (fs): ',dt*au2fs
     
     return
@@ -375,10 +393,10 @@ contains
     
     implicit none
 
-    integer                          :: L,i,j,n,ti,Iindx,Jindx
-    real(d), dimension(0:nener-1,nt) :: Gk
-    real(d), dimension(2:2*nener)    :: ebar
-    real(d)                          :: t,e,h,func
+    integer                              :: L,i,j,n,ti,Iindx,Jindx
+    real(d), dimension(0:nener-1,ntauto) :: Gk
+    real(d), dimension(2:2*nener)        :: ebar
+    real(d)                              :: t,e,h,func
 
     L=nener
     
@@ -386,7 +404,7 @@ contains
 ! Calculation of the value of the filter function, G, at the energy
 ! grid points for all timesteps
 !----------------------------------------------------------------------
-    do ti=1,nt
+    do ti=1,ntauto
        do n=0,L-1
           Gk(n,ti)=filterfunc(n,ti)
        enddo
@@ -445,12 +463,12 @@ contains
 
     implicit none
 
-    integer                :: ti
-    real(d)                :: hij,h2ij,sij,ebar,h,t
-    real(d), dimension(nt) :: Gk
+    integer                    :: ti
+    real(d)                    :: hij,h2ij,sij,ebar,h,t
+    real(d), dimension(ntauto) :: Gk
 
 !----------------------------------------------------------------------
-! Contribution from the first time point
+! Contribution from the first timestep
 !----------------------------------------------------------------------
     hij=0.5d0*dt*Gk(1)*real(auto1(1))
 
@@ -459,9 +477,9 @@ contains
     sij=0.5d0*dt*Gk(1)*real(auto(1))
 
 !----------------------------------------------------------------------
-! Contribution from time points 2 to Nt-1
+! Contribution from timesteps 2 to ntauto-1
 !----------------------------------------------------------------------
-    do ti=2,nt-1
+    do ti=2,ntauto-1
              
        t=(ti-1)*dt
        
@@ -480,18 +498,18 @@ contains
     enddo
     
 !----------------------------------------------------------------------
-! Contribution from the final time point
+! Contribution from the final timestep
 !----------------------------------------------------------------------
-    t=(nt-1)*dt
+    t=(ntauto-1)*dt
 
-    hij=hij+0.5d0*dt*Gk(nt)*(real(auto1(nt))*cos(ebar*t)&
-         -imag(auto1(nt))*sin(ebar*t))
+    hij=hij+0.5d0*dt*Gk(ntauto)*(real(auto1(ntauto))*cos(ebar*t)&
+         -imag(auto1(ntauto))*sin(ebar*t))
 
-    h2ij=h2ij+0.5d0*dt*Gk(nt)*(real(auto2(nt))*cos(ebar*t)&
-         -imag(auto2(nt))*sin(ebar*t))
+    h2ij=h2ij+0.5d0*dt*Gk(ntauto)*(real(auto2(ntauto))*cos(ebar*t)&
+         -imag(auto2(ntauto))*sin(ebar*t))
     
-    sij=sij+0.5d0*dt*Gk(nt)*(real(auto(nt))*cos(ebar*t) &
-         -imag(auto(nt))*sin(ebar*t))
+    sij=sij+0.5d0*dt*Gk(ntauto)*(real(auto(ntauto))*cos(ebar*t) &
+         -imag(auto(ntauto))*sin(ebar*t))
 
     return
     
@@ -650,7 +668,6 @@ contains
     nrbas=0
     do i=1,L
        if (eigval(i).gt.thrsh) nrbas=nrbas+1
-       !print*,i,eigval(i)
     enddo
 
     ! Truncated eigenvector matrix
@@ -707,6 +724,191 @@ contains
 
 !######################################################################
 
+  subroutine calc_intens
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    integer :: j
+    
+!----------------------------------------------------------------------
+! Allocate and initialise arrays
+!----------------------------------------------------------------------
+    allocate(dvec(nener))
+    dvec=0.0d0
+
+    allocate(avec(nrbas))
+    avec=0.0d0
+
+    allocate(intens(nrbas))
+    intens=0.0d0
+    
+!----------------------------------------------------------------------
+! Calculate the d-vector, d_j = < Psi(0) | psi_Ej >, where Psi(0)
+! is the intitial wavefunction, and Psi_Ej is the jth filter state
+!----------------------------------------------------------------------
+    call calc_dvec
+
+!----------------------------------------------------------------------
+! Calculate the a-vector, a_j = < psi(0) | varphi_j >, where psi(0)
+! is the intitial wavefunction, and varphi_j is the jth filter state
+!----------------------------------------------------------------------
+    avec=matmul(transpose(rvec),matmul(transpose(transmat),dvec))
+
+!----------------------------------------------------------------------
+! Calculate the intensities, I_j = a_j**2
+!----------------------------------------------------------------------
+    do j=1,nrbas
+       intens(j)=avec(j)**2
+    enddo
+       
+    return
+    
+  end subroutine calc_intens
+
+!######################################################################
+  
+  subroutine calc_dvec
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    integer :: L,i,j
+
+    L=nener
+
+!----------------------------------------------------------------------
+! Calculation of the d-vector, d_j = < psi(0) | phi_j >
+!----------------------------------------------------------------------
+    ! Loop over the energy grid points
+    do j=1,L
+
+       ! Calculate the intensity for the current grid point using
+       ! the trapezoidal rule
+       call calc_dvec_1state(j,dvec(j))
+       
+    enddo
+       
+    return
+    
+  end subroutine calc_dvec
+
+!######################################################################
+
+  subroutine calc_dvec_1state(j,dj)
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    integer :: j,ti
+    real(d) :: dj,t,ener
+
+!----------------------------------------------------------------------
+! E_j
+!----------------------------------------------------------------------
+    ener=(j-1)*de
+
+!----------------------------------------------------------------------
+! Contribution from the first timestep
+!----------------------------------------------------------------------
+    dj=dt*windowfunc(0.0d0)*real(auto(1))
+
+!----------------------------------------------------------------------
+! Contribution from timesteps 2 to ntauto-1
+!----------------------------------------------------------------------
+    do ti=2,ntprop-1
+
+       t=(ti-1)*dt
+       
+       dj=dj+2.0d0*dt*windowfunc(t) &
+            *(real(auto(ti))*cos(ener*t)-imag(auto(ti)*sin(ener*t)))
+       
+    enddo
+
+!----------------------------------------------------------------------
+! Contribution from the final timestep
+!----------------------------------------------------------------------
+    t=(ntprop-1)*dt
+
+    dj=dj+dt*windowfunc(t)*(real(auto(ntprop))*cos(ener*t) &
+         -imag(auto(ntprop)*sin(ener*t)))
+       
+    
+    return
+    
+  end subroutine calc_dvec_1state
+
+!######################################################################
+! windowfunc: for the time t, this function returns the value of the
+!             window function g_k(t)
+!######################################################################
+  
+  function windowfunc(t) result(func)
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    real(d) :: t,func
+
+    select case(iwfunc)
+
+!----------------------------------------------------------------------
+! cos0 window function
+!----------------------------------------------------------------------
+    case(0)
+       
+       func=1.0d0
+
+       return
+       
+!----------------------------------------------------------------------
+! cos1 window function
+!----------------------------------------------------------------------
+    case(1)
+
+       func=cos( (pi*t)/(2.0d0*proptime) )
+       
+       return
+
+!----------------------------------------------------------------------
+! cos2 window function
+!----------------------------------------------------------------------
+    case(2)
+
+       func=(cos((pi*t)/(2.0d0*proptime)))**2
+       
+       return
+       
+    end select
+    
+  end function windowfunc
+    
+!######################################################################
+
+  subroutine calc_errors
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    print*,"FINISH WRITING THE CALC_ERRORS SUBROUTINE!"
+    STOP
+    
+    return
+    
+  end subroutine calc_errors
+    
+!######################################################################
+  
   subroutine fdiag_finalise
 
     use channels
@@ -728,6 +930,9 @@ contains
     deallocate(transmat)
     deallocate(rvec)
     deallocate(rener)
+    deallocate(dvec)
+    deallocate(avec)
+    deallocate(intens)
     
 !----------------------------------------------------------------------
 ! Close files

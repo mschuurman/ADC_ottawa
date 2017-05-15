@@ -15,7 +15,7 @@ module filtermod
   integer                               :: iwfunc
 
   ! Autocorrelation functions
-  integer                               :: nt
+  integer                               :: ntauto,ntprop
   real(d)                               :: t0,dt,proptime,&
                                            autotime
   complex(d), dimension(:), allocatable :: auto,auto1,auto2
@@ -27,6 +27,9 @@ module filtermod
                                            transmat,normfac,&
                                            rvec
   real(d), dimension(:), allocatable    :: rener
+
+  ! Intensities
+  real(d), dimension(:), allocatable    :: dvec,avec,intens
   
   ! Unit conversion factors
   real(d), parameter                    :: fs2au=41.3413745758d0
