@@ -30,17 +30,22 @@ program fdiag
 !----------------------------------------------------------------------
   call calc_matrices_fstatebas
 
-!----------------------------------------------------------------------
-! Perform the canonical orthogonalisation of the filter state basis
-! to yield a reduced basis of linearly independent functions
-!
-! Note that also we project the Hamiltonian and H^2 matrices onto the
-! reduced basis here.
-!----------------------------------------------------------------------
-  call reduce_fstatebas
+!!----------------------------------------------------------------------
+!! Perform the canonical orthogonalisation of the filter state basis
+!! to yield a reduced basis of linearly independent functions
+!!
+!! Note that also we project the Hamiltonian and H^2 matrices onto the
+!! reduced basis here.
+!!----------------------------------------------------------------------
+!  call reduce_fstatebas
 
 !----------------------------------------------------------------------
-! Calculate intensities
+! Calculate the energies
+!----------------------------------------------------------------------
+  call calc_ener
+  
+!----------------------------------------------------------------------
+! Calculate the intensities
 !----------------------------------------------------------------------
   call calc_intens
 
@@ -128,6 +133,9 @@ contains
 
     ! Window function
     iwfunc=-1
+
+    ! Threshold for discarding eigenpairs of the overlap matrix
+    ovrthrsh=1e-6_d
     
 !----------------------------------------------------------------------
 ! Read the input file
@@ -185,6 +193,14 @@ contains
                 errmsg='Unknown window function: '//trim(keyword(i))
                 call error_control
              endif
+          else
+             goto 100
+          endif
+
+       else if (keyword(i).eq.'overthresh') then
+          if (keyword(i+1).eq.'=') then
+             i=i+2
+             read(keyword(i),*) ovrthrsh
           else
              goto 100
           endif
@@ -717,11 +733,169 @@ contains
             failed in subroutine reduce_fstatebas'
        call error_control
     endif
-    
+
     return
 
   end subroutine reduce_fstatebas
 
+!######################################################################
+! calc_ener: calculates the energies using various variational principles
+!######################################################################
+  
+  subroutine calc_ener
+
+    use constants
+    use filtermod
+    
+    implicit none
+
+    integer                         :: i
+    real(d)                         :: sigma,fac1,fac2
+    real(d), dimension(nener,nener) :: hshift,hshift2
+    
+!----------------------------------------------------------------------
+! Variational principle I:
+!----------------------------------------------------------------------
+! Omega = < Psi | H | Psi > / < Psi | Psi > 
+!----------------------------------------------------------------------
+    call solve_geneig(hfbas,sfbas,rvec,rener,transmat,nener,nrbas)
+
+    do i=1,nrbas
+       print*,i,rener(i)*eh2ev
+    enddo
+    STOP
+    
+!!----------------------------------------------------------------------
+!! Variational principle II:
+!!----------------------------------------------------------------------
+!! Omega = < Psi | (H-sigma)^2 | Psi > / < Psi | Psi > 
+!!----------------------------------------------------------------------
+!    ! sigma: we take this to be the centre of the energy interval
+!    sigma=ebound(1)+(ebound(2)-ebound(1))/2.0d0
+!
+!    ! (H-sigma)^2
+!    hshift2=h2fbas-2.0d0*sigma*hfbas+(sigma**2)*sfbas
+!
+!    ! Solve the generalised eigenvalue problem
+!    call solve_geneig(hshift2,sfbas,rvec,rener,transmat,nener,nrbas)    
+!
+!    ! Energies
+!    !do i=1,nrbas
+!    !
+!    !enddo
+!    print*,"SORT THIS OUT!"
+!    STOP
+    
+    return
+    
+  end subroutine calc_ener
+    
+!######################################################################
+! solve_geneig: solves the generalised eigenvalue problem
+!               A V = B V E
+!               For non-positive-definite matrices B, null space
+!               vectors are discarded.
+!######################################################################
+  
+  subroutine solve_geneig(A,B,Vbar,Ebar,P,matdim,rdim)
+
+    use constants
+    use iomod
+    use filtermod, only: ovrthrsh
+    
+    implicit none
+
+    integer                              :: matdim,workdim,rdim,&
+                                            error,i
+    real(d), dimension(matdim,matdim)    :: A,B
+
+    real(d), parameter                   :: thrsh=1e+2_d
+    
+    real(d), dimension(matdim,matdim)    :: U
+    real(d), dimension(matdim)           :: lambda
+    real(d), dimension(:,:), allocatable :: Ubar,normfac,P,Abar,Vbar
+    real(d), dimension(:), allocatable   :: Ebar
+    real(d), dimension(:), allocatable   :: work
+
+!----------------------------------------------------------------------
+! Diagonalise B
+!----------------------------------------------------------------------
+    workdim=3*matdim
+    allocate(work(workdim))
+
+    U=B
+
+    call dsyev('V','U',matdim,U,matdim,lambda,work,workdim,error)
+
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the B-matrix failed in subroutine &
+            solve_geneig'
+       call error_control
+    endif
+    
+    deallocate(work)
+
+!----------------------------------------------------------------------
+! Discard the null space eigenvectors of B and form the matrix that
+! projects onto the orthogonal complement of the null space
+!----------------------------------------------------------------------
+    ! Number of eigenvectors
+    rdim=0.0d0
+    do i=1,matdim
+       if (lambda(i).gt.ovrthrsh) rdim=rdim+1
+    enddo
+
+    ! Truncated eigenvector matrix
+    allocate(Ubar(matdim,rdim))
+    Ubar(:,1:rdim)=U(:,matdim-rdim+1:matdim)
+
+    ! Normalisation factors
+    allocate(normfac(rdim,rdim))
+    normfac=0.0d0
+    do i=1,rdim
+       normfac(i,i)=sqrt(1.0d0/lambda(matdim-rdim+i))
+    enddo
+
+    ! Transformation matrix, P
+    allocate(P(matdim,rdim))
+    P=matmul(Ubar,normfac)
+
+!----------------------------------------------------------------------
+! Projection of the A-matrix onto the orthogonal complement of the
+! null space
+!----------------------------------------------------------------------
+    allocate(Abar(rdim,rdim))
+    Abar=matmul(transpose(P),matmul(A,P))
+
+!----------------------------------------------------------------------
+! Diagonalisation of Abar
+!----------------------------------------------------------------------
+    allocate(Vbar(rdim,rdim))
+    allocate(Ebar(rdim))
+
+    ! Diagonalise the reduced space Hamiltonian
+    workdim=3*rdim
+    allocate(work(workdim))
+    Vbar=Abar
+    call dsyev('V','U',rdim,Vbar,rdim,Ebar,work,workdim,error)
+    deallocate(work)
+    
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the A-bar matrix failed in &
+            subroutine solve_geneig'
+       call error_control
+    endif
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(Ubar)
+    deallocate(normfac)
+    
+    return
+    
+  end subroutine solve_geneig
+    
 !######################################################################
 
   subroutine calc_intens
@@ -892,7 +1066,12 @@ contains
   end function windowfunc
     
 !######################################################################
-
+! calc_errors: calculation of error estimates for the computed
+!              energies and intensities. We here use the error
+!              estimate III in the Beck-Meyer scheme (See J. Chem.
+!              Phys., 109, 3730 (1998)).
+!######################################################################
+  
   subroutine calc_errors
 
     use constants
@@ -900,8 +1079,9 @@ contains
     
     implicit none
 
-    print*,"FINISH WRITING THE CALC_ERRORS SUBROUTINE!"
-    STOP
+!----------------------------------------------------------------------
+!
+!----------------------------------------------------------------------
     
     return
     

@@ -27,7 +27,8 @@ module filtermod
                                            transmat,normfac,&
                                            rvec
   real(d), dimension(:), allocatable    :: rener
-
+  real(d)                               :: ovrthrsh
+  
   ! Intensities
   real(d), dimension(:), allocatable    :: dvec,avec,intens
   
