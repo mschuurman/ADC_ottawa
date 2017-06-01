@@ -434,7 +434,7 @@ contains
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
-    allocate(nrec_omp(nthreads))
+    if (.not.allocated(nrec_omp)) allocate(nrec_omp(nthreads))
 
 !----------------------------------------------------------------------
 ! Write the non-zero off-diagonal elements to file
@@ -469,7 +469,7 @@ contains
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
-    allocate(nrec_omp(nthreads))
+    if (.not.allocated(nrec_omp)) allocate(nrec_omp(nthreads))
 
 !----------------------------------------------------------------------
 ! Write the non-zero off-diagonal elements to file
@@ -585,7 +585,7 @@ contains
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
-    allocate(nrec_omp(nthreads))
+    if (.not.allocated(nrec_omp)) allocate(nrec_omp(nthreads))
 
 !----------------------------------------------------------------------
 ! Write the non-zero off-diagonal elements to file
@@ -619,7 +619,7 @@ contains
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
-    allocate(nrec_omp(nthreads))
+    if (.not.allocated(nrec_omp)) allocate(nrec_omp(nthreads))
 
 !----------------------------------------------------------------------
 ! Write the non-zero off-diagonal elements to file

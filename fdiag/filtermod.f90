@@ -34,7 +34,7 @@ module filtermod
 
   ! Error estimates
   real(d), dimension(:), allocatable    :: error
-  real(d), parameter                    :: errthrsh=1e-2_d
+  real(d)                               :: errthrsh
   
   ! Unit conversion factors
   real(d), parameter                    :: fs2au=41.3413745758d0

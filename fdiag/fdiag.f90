@@ -132,6 +132,9 @@ contains
 
     ! Threshold for discarding eigenpairs of the overlap matrix
     ovrthrsh=1e-6_d
+
+    ! Error estimate threshold for printing energies/intensities
+    errthrsh=1e-2_d
     
 !----------------------------------------------------------------------
 ! Read the input file
@@ -197,6 +200,14 @@ contains
           if (keyword(i+1).eq.'=') then
              i=i+2
              read(keyword(i),*) ovrthrsh
+          else
+             goto 100
+          endif
+
+       else if (keyword(i).eq.'errorthresh') then
+          if (keyword(i+1).eq.'=') then
+             i=i+2
+             read(keyword(i),*) errthrsh
           else
              goto 100
           endif
@@ -620,8 +631,8 @@ contains
     real(d), parameter :: inv42=1.0d0/42.0d0
     real(d), parameter :: tiny = 4.154252d-2
 
-! "Tiny" is chosen such that tiny**8 / 8! = eps where "eps" is the
-! machine precision (here eps = 2.2 10^(-16)).
+    ! "Tiny" is chosen such that tiny**8 / 8! = eps where "eps" is the
+    ! machine precision (here eps = 2.2 10^(-16)).
 
     if (abs(x).ge.tiny) then
        dsinc=sin(x)/x
@@ -656,34 +667,13 @@ contains
 !----------------------------------------------------------------------
     call solve_geneig(hfbas,sfbas,rvec,rener,transmat,nener,nrbas)
 
-!!----------------------------------------------------------------------
-!! Variational principle II:
-!!----------------------------------------------------------------------
-!! Omega = < Psi | (H-sigma)^2 | Psi > / < Psi | Psi > 
-!!----------------------------------------------------------------------
-!    ! sigma: we take this to be the centre of the energy interval
-!    sigma=ebound(1)+(ebound(2)-ebound(1))/2.0d0
-!
-!    ! (H-sigma)^2
-!    hshift2=h2fbas-2.0d0*sigma*hfbas+(sigma**2)*sfbas
-!
-!    ! Solve the generalised eigenvalue problem
-!    call solve_geneig(hshift2,sfbas,rvec,rener,transmat,nener,nrbas)    
-!
-!    ! Energies
-!    !do i=1,nrbas
-!    !
-!    !enddo
-!    print*,"SORT THIS OUT!"
-!    STOP
-
 !----------------------------------------------------------------------
-! Representation of H^n in th reduced state basis
+! Representation of H and H^2 in th reduced state basis
 !----------------------------------------------------------------------
     ! < psi_i | H | psi_j >
     allocate(hrbas(nrbas,nrbas))
     hrbas=matmul(transpose(transmat),matmul(hfbas,transmat))
-
+    
     ! < psi_i | H^2 | psi_j >
     allocate(h2rbas(nrbas,nrbas))
     h2rbas=matmul(transpose(transmat),matmul(h2fbas,transmat))

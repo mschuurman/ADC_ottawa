@@ -2112,7 +2112,7 @@
 !#######################################################################
 
     subroutine get_lancvecs_current(ista,istep,matdim,noffd,vec0)
-
+      
       implicit none
 
       integer, intent(in)                  :: matdim
@@ -2121,6 +2121,8 @@
       real(d)                              :: dp,norm
       real(d), dimension(matdim)           :: vec0
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta
+
+      external matxvec
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -2152,7 +2154,11 @@
       q=lancvec(:,k1)
 
       ! alpha_1
-      call hxkryvec(ista,1,matdim,noffd,q,r)
+!      call hxkryvec(ista,1,matdim,noffd,q,r)
+      call matxvec(matdim,q,r)
+      r=-r
+      nmult=nmult+1
+      
       alpha(1)=dot_product(q,r)
       
       ! beta_1
@@ -2172,7 +2178,11 @@
 
          lancvec(:,j)=q
 
-         call hxkryvec(ista,j1,matdim,noffd,q,r)
+         !call hxkryvec(ista,j1,matdim,noffd,q,r)
+         call matxvec(matdim,q,r)
+         r=-r
+         nmult=nmult+1
+
          r=r-beta(j1-1)*v
          alpha(j1)=dot_product(q,r)
          r=r-alpha(j1)*q
@@ -2517,6 +2527,8 @@
       real(d), dimension(:), allocatable :: hpsi,resvec
       real(d)                            :: energy,residual
 
+      external matxvec
+      
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -2527,8 +2539,10 @@
 ! Calculate the residual r = || H |Psi> - E |Psi> ||
 !-----------------------------------------------------------------------
       ! H |Psi>
-      call hxpsi_1vec(matdim,noffd,vecprop,hpsi)
-
+      !call hxpsi_1vec(matdim,noffd,vecprop,hpsi)
+      call matxvec(matdim,vecprop,hpsi)
+      hpsi=-hpsi
+      
       ! Energy, <Psi| H |Psi>
       energy=dot_product(vecprop,hpsi)
 
