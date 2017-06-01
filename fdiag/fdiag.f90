@@ -1003,7 +1003,7 @@ contains
        
        tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
 
-       error(i)=sqrt(tmpmat(i,i))
+       error(i)=sqrt(abs(tmpmat(i,i)))
 
     enddo
     
