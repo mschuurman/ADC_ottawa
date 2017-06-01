@@ -23,7 +23,7 @@ module filtermod
   ! Hamiltonian and overlap matrices
   integer                               :: nrbas
   real(d), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas,&
-                                           h2fbas,h2rbas,ubar,&
+                                           h2fbas,h2rbas,&
                                            transmat,normfac,&
                                            rvec
   real(d), dimension(:), allocatable    :: rener
@@ -31,6 +31,10 @@ module filtermod
   
   ! Intensities
   real(d), dimension(:), allocatable    :: dvec,avec,intens
+
+  ! Error estimates
+  real(d), dimension(:), allocatable    :: error
+  real(d), parameter                    :: errthrsh=1e-2_d
   
   ! Unit conversion factors
   real(d), parameter                    :: fs2au=41.3413745758d0

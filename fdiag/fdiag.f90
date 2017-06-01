@@ -23,21 +23,12 @@ program fdiag
 ! Read the autocorrelation function files
 !----------------------------------------------------------------------
   call rdauto
-
+  
 !----------------------------------------------------------------------
 ! Calculate the Hamiltonian and overlap matrix elements in the basis
 ! of the filter states
 !----------------------------------------------------------------------
   call calc_matrices_fstatebas
-
-!!----------------------------------------------------------------------
-!! Perform the canonical orthogonalisation of the filter state basis
-!! to yield a reduced basis of linearly independent functions
-!!
-!! Note that also we project the Hamiltonian and H^2 matrices onto the
-!! reduced basis here.
-!!----------------------------------------------------------------------
-!  call reduce_fstatebas
 
 !----------------------------------------------------------------------
 ! Calculate the energies
@@ -53,6 +44,11 @@ program fdiag
 ! Calculate the error estimates for the energies and intensities
 !----------------------------------------------------------------------
   call calc_errors
+
+!----------------------------------------------------------------------
+! Write the calculated energies and intensities to file
+!----------------------------------------------------------------------
+  call wrout
   
 !----------------------------------------------------------------------
 ! Finalisation and deallocation of arrays
@@ -297,7 +293,7 @@ contains
        ntauto=ntauto+1
        goto 5
     endif
-
+    
     ! No. timesteps in the wavepacket propagation (assuming that
     ! the t/2 trick was used)
     ntprop=(ntauto-1)/2+1
@@ -446,6 +442,7 @@ contains
 
     ! Loop over the elements of the lower triangle of Hfbas and Sfbas
     do j=1,L
+       
        do i=j,L
           
           ! Delta E index
@@ -638,107 +635,6 @@ contains
   end function dsinc
 
 !######################################################################
-
-  subroutine reduce_fstatebas
-
-    use constants
-    use iomod
-    use filtermod
-
-    implicit none
-
-    integer                            :: L,error,workdim,i,j
-    real(d), parameter                 :: thrsh=1e-8_d
-    real(d), dimension(nener,nener)    :: eigvec
-    real(d), dimension(nener)          :: eigval
-    real(d), dimension(:), allocatable :: work
-    
-    L=nener
-
-!----------------------------------------------------------------------
-! Diagonalise the filter state overlap matrix, Sfbas
-!----------------------------------------------------------------------
-    workdim=3*L
-    allocate(work(workdim))
-    
-    eigvec=sfbas
-
-    call dsyev('V','U',L,eigvec,L,eigval,work,workdim,error)
-
-    if (error.ne.0) then
-       errmsg='Diagonalisation of the filter state overlap matrix &
-            failed in subroutine reduce_fstatebas'
-       call error_control
-    endif
-
-    deallocate(work)
-    
-!----------------------------------------------------------------------
-! Construct the transformation matrix
-!----------------------------------------------------------------------
-    !************************************************
-    ! WHY ISN'T Sfbas POSITIVE SEMIDEFINITE?
-    !************************************************
-    
-    ! Number of eigenvectors orthogonal to the null space
-    nrbas=0
-    do i=1,L
-       if (eigval(i).gt.thrsh) nrbas=nrbas+1
-    enddo
-
-    ! Truncated eigenvector matrix
-    allocate(ubar(L,nrbas))
-    ubar(:,1:nrbas)=eigvec(:,L-nrbas+1:L)
-    
-    ! Normalisation factors
-    allocate(normfac(nrbas,nrbas))
-    normfac=0.0d0
-    do i=1,nrbas
-       normfac(i,i)=sqrt(1.0d0/eigval(L-nrbas+i))
-    enddo
-    
-    ! Transformation matrix
-    allocate(transmat(L,nrbas))
-    transmat=matmul(ubar,normfac)
-    
-!----------------------------------------------------------------------
-! Hamiltonian matrices projected onto the space spanned by the
-! reduced basis
-!----------------------------------------------------------------------
-    ! < psi_i | H | psi_j >
-    allocate(hrbas(nrbas,nrbas))
-    hrbas=matmul(transpose(transmat),matmul(hfbas,transmat))
-
-    ! < psi_i | H^2 | psi_j >
-    allocate(h2rbas(nrbas,nrbas))
-    h2rbas=matmul(transpose(transmat),matmul(h2fbas,transmat))
-
-!----------------------------------------------------------------------
-! Diagonalise the reduced space Hamiltonian matrix
-!----------------------------------------------------------------------
-    ! Allocate the arrays holding the eigenvectors and eigenvalues
-    ! of the reduced space hamiltonian
-    allocate(rvec(nrbas,nrbas))
-    allocate(rener(nrbas))
-
-    ! Diagonalise the reduced space Hamiltonian
-    workdim=3*nrbas
-    allocate(work(workdim))
-    rvec=hrbas
-    call dsyev('V','U',nrbas,rvec,nrbas,rener,work,workdim,error)
-    deallocate(work)
-    
-    if (error.ne.0) then
-       errmsg='Diagonalisation of the reduced space Hamiltonian &
-            failed in subroutine reduce_fstatebas'
-       call error_control
-    endif
-
-    return
-
-  end subroutine reduce_fstatebas
-
-!######################################################################
 ! calc_ener: calculates the energies using various variational principles
 !######################################################################
   
@@ -760,11 +656,6 @@ contains
 !----------------------------------------------------------------------
     call solve_geneig(hfbas,sfbas,rvec,rener,transmat,nener,nrbas)
 
-    do i=1,nrbas
-       print*,i,rener(i)*eh2ev
-    enddo
-    STOP
-    
 !!----------------------------------------------------------------------
 !! Variational principle II:
 !!----------------------------------------------------------------------
@@ -785,6 +676,18 @@ contains
 !    !enddo
 !    print*,"SORT THIS OUT!"
 !    STOP
+
+!----------------------------------------------------------------------
+! Representation of H^n in th reduced state basis
+!----------------------------------------------------------------------
+    ! < psi_i | H | psi_j >
+    allocate(hrbas(nrbas,nrbas))
+    hrbas=matmul(transpose(transmat),matmul(hfbas,transmat))
+
+    ! < psi_i | H^2 | psi_j >
+    allocate(h2rbas(nrbas,nrbas))
+    h2rbas=matmul(transpose(transmat),matmul(h2fbas,transmat))
+
     
     return
     
@@ -932,10 +835,12 @@ contains
     avec=matmul(transpose(rvec),matmul(transpose(transmat),dvec))
 
 !----------------------------------------------------------------------
-! Calculate the intensities, I_j = a_j**2
+! Calculate the intensities, I_j = E_j a_j**2
+! Note that this differs from the definition in the Beck-Meyer
+! paper as we account for the dependence on the excitation energy
 !----------------------------------------------------------------------
     do j=1,nrbas
-       intens(j)=avec(j)**2
+       intens(j)=rener(j)*avec(j)**2
     enddo
        
     return
@@ -1067,9 +972,7 @@ contains
     
 !######################################################################
 ! calc_errors: calculation of error estimates for the computed
-!              energies and intensities. We here use the error
-!              estimate III in the Beck-Meyer scheme (See J. Chem.
-!              Phys., 109, 3730 (1998)).
+!              energies.
 !######################################################################
   
   subroutine calc_errors
@@ -1079,13 +982,89 @@ contains
     
     implicit none
 
+    integer                         :: i,j
+    real(d), dimension(nrbas,nrbas) :: tmpmat
+    real(d), dimension(nrbas,nrbas) :: e2diag
+
 !----------------------------------------------------------------------
-!
+! Allocate arrays
 !----------------------------------------------------------------------
+    allocate(error(nrbas))
+
+!----------------------------------------------------------------------
+! Calculate the error estimates
+!----------------------------------------------------------------------
+    do i=1,nrbas
+        
+       e2diag=0.0d0
+       do j=1,nrbas
+          e2diag(j,j)=rener(i)**2
+       enddo
+       
+       tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
+
+       error(i)=sqrt(tmpmat(i,i))
+
+    enddo
     
     return
     
   end subroutine calc_errors
+
+!######################################################################
+
+  subroutine wrout
+
+    use channels
+    use iomod
+    use constants
+    use filtermod
+    
+    implicit none
+
+    integer          :: i,j,iout
+    character(len=1) :: atmp
+    
+!----------------------------------------------------------------------
+! Write all calculated energies, intensities and errors to the log
+! file
+!----------------------------------------------------------------------
+    write(ilog,'(/,55a)') ('#',i=1,55)
+    write(ilog,'(a)') '# j    E_j (eV)     I_j        &
+         Error        Spurious?'
+    write(ilog,'(55a)') ('#',i=1,55)
+
+    do j=1,nrbas
+
+       if (error(j).lt.errthrsh) then
+          atmp='N'
+       else
+          atmp='Y'
+       endif
+          
+       write(ilog,'(1x,i3,2x,F9.4,2x,F9.4,5x,E11.5,6x,a1)') j,&
+            rener(j)*eh2ev,intens(j),error(j),atmp
+    enddo
+
+!----------------------------------------------------------------------
+! Write the non-spurious energies and intensities to file
+!----------------------------------------------------------------------
+    call freeunit(iout)
+    open(iout,file='fdiag_eig.dat',form='formatted',status='unknown')
+
+    write(iout,'(33a)') ('#',i=1,33)
+    write(iout,'(a)') '#  Energy      Intensity'
+    write(iout,'(33a)') ('#',i=1,33)
+    do j=1,nrbas
+       if (error(j).lt.errthrsh) &
+            write(iout,'(2(2x,F10.7))') rener(j)*eh2ev,intens(j)
+    enddo
+    
+    close(iout)
+    
+    return
+    
+  end subroutine wrout
     
 !######################################################################
   
@@ -1106,13 +1085,13 @@ contains
     deallocate(h2fbas)
     deallocate(sfbas)
     deallocate(hrbas)
-    deallocate(ubar)
     deallocate(transmat)
     deallocate(rvec)
     deallocate(rener)
     deallocate(dvec)
     deallocate(avec)
     deallocate(intens)
+    deallocate(error)
     
 !----------------------------------------------------------------------
 ! Close files
