@@ -17,7 +17,7 @@ module filtermod
   ! Autocorrelation functions
   integer                               :: ntauto,ntprop
   real(d)                               :: t0,dt,proptime,&
-                                           autotime
+                                           autotime,tcutoff
   complex(d), dimension(:), allocatable :: auto,auto1,auto2
 
   ! Hamiltonian and overlap matrices

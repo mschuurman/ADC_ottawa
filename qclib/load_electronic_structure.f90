@@ -30,7 +30,6 @@
   real(d)                       :: two = 2.
   real(d)                       :: orbener(5)
   character(len=144)            :: line,scr
-
   character(len=3)              :: pntgroup
 
   inquire(file='gamess.log',exist=gexist)
@@ -45,6 +44,7 @@
   ncen   = -1
   orbfnd = 0
   orbsym = 0
+  symlab=''
 
   scan_lines: do while (orbfnd==0)
    call read_gamess_line(gamess,line)
@@ -63,6 +63,7 @@
    if(index(line,'TOTAL NUMBER OF ATOMS').ne.0)then
      read(line,'(a47,i5)')scr,ncen
    endif
+
 
    ! read in orbital symmetry information
    if(index(line,'DIMENSIONS OF THE SYMMETRY SUBSPACES ARE').ne.0)then

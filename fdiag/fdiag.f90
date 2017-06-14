@@ -123,6 +123,9 @@ contains
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
+    ! Timestep cutofff
+    tcutoff=0.0d0
+
     ! Energy window
     ebound=-999.0d0
     nener=0
@@ -212,6 +215,14 @@ contains
              goto 100
           endif
           
+       else if (keyword(i).eq.'tcutoff') then
+          if (keyword(i+1).eq.'=') then
+             i=i+2
+             read(keyword(i),*) tcutoff
+          else
+             goto 100
+          endif
+
        else
           ! Exit if the keyword is not recognised
           errmsg='Unknown keyword: '//trim(keyword(i))
@@ -234,7 +245,7 @@ contains
     endif
 
 !----------------------------------------------------------------------
-! Check that all the required information has been given
+! Checks on the user supplied input
 !----------------------------------------------------------------------
     if (ebound(1).eq.-999.0d0) then
        errmsg='The energy window has not been given'
@@ -305,10 +316,15 @@ contains
        goto 5
     endif
     
+    ! Truncation the autocorrelation functions
+    if (tcutoff.gt.0.0d0.and.tcutoff.lt.(ntauto-1)*dt) then
+       ntauto=int(tcutoff/dt)+1
+    endif
+
     ! No. timesteps in the wavepacket propagation (assuming that
     ! the t/2 trick was used)
     ntprop=(ntauto-1)/2+1
-    
+        
     close(iauto)
     
 !----------------------------------------------------------------------
@@ -331,7 +347,7 @@ contains
        read(keyword(2),*) re
        read(keyword(3),*) im
        auto(n)=dcmplx(re,im)
-       goto 10
+       if (n.lt.ntauto) goto 10
     endif
 
     close(iauto)
@@ -349,7 +365,7 @@ contains
        read(keyword(2),*) re
        read(keyword(3),*) im
        auto1(n)=dcmplx(re,im)
-       goto 15
+       if (n.lt.ntauto) goto 15
     endif
     
     close(iauto)
@@ -367,7 +383,7 @@ contains
        read(keyword(2),*) re
        read(keyword(3),*) im
        auto2(n)=dcmplx(re,im)
-       goto 20
+       if (n.lt.ntauto) goto 20
     endif
     
     close(iauto)

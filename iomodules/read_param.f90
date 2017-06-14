@@ -3,13 +3,13 @@ module read_param
   use constants
   use parameters
   use channels
+  use iomod, only: error_control,errmsg
 
   implicit none
   
   contains
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!#######################################################################
 
 subroutine load_gamess(chkpt_file,log_file,gamess_info)
   use accuracy
@@ -26,15 +26,20 @@ subroutine load_gamess(chkpt_file,log_file,gamess_info)
   call accuracyInitialize
   call gamess_load_orbitals(file=trim(chkpt_file),structure=gamess_info)
   write (ilog,"(/'Loaded GAMESS checkpoint file ',a/)") trim(chkpt_file)
-
   nBas  = gamess_info%nvectors
   naos  = gamess_info%nbasis
 
+  ! check whether the MOs were successfully found in the GAMESS 
+  ! checkpoint file
+  if (nBas.eq.0) then
+     errmsg='It looks like no MOs were found in the GAMESS checkpoint file...'
+     call error_control
+  endif
+
+  ! allocate arrays
   allocate(orbSym(nBas),e(nBas))
 
   ! determine various electronic structure variables
-!  call read_gamess_output(nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
-
   call read_gamess_output(naos,nBas,nelec,nCen,nIrr,e,orbSym,labSym,pntgroup)
 
   write (ilog,"(/'Loaded GAMESS log file ',a/)") trim(log_file)
@@ -55,9 +60,7 @@ subroutine load_gamess(chkpt_file,log_file,gamess_info)
 102 FORMAT(/,3("-"),A30,5x,F16.10,1x,A4)
 end subroutine load_gamess
 
-!-----------------------------------------------------------------
-
-!------------------------------------------------------------------
+!#######################################################################
 
 subroutine rearrange_occ()
 
@@ -107,7 +110,7 @@ subroutine rearrange_occ()
   
 end subroutine rearrange_occ
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!#######################################################################
 
 subroutine rdorbsym
 
@@ -143,7 +146,7 @@ subroutine rdorbsym
   return
 
 end subroutine rdorbsym
-  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!#######################################################################
 
 end module read_param

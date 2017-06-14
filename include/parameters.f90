@@ -139,7 +139,7 @@ module parameters
   integer, parameter                   :: nhcentre=40
   integer, dimension(0:nhcentre)       :: hcentre
   real(d)                              :: mspacewi,mspacewf
-  real(d), parameter                   :: minc=1d-11
+  real(d), parameter                   :: minc=1e-12_d
   real(d)                              :: dlim
   integer, dimension(:), allocatable   :: roccnum
   integer, dimension(8,8)              :: MT
