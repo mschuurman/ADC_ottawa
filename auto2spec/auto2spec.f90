@@ -10,8 +10,9 @@ module auto2specmod
   real(d), dimension(:,:), allocatable  :: sp
   real(d), parameter                    :: eh2ev=27.2113845d0
   real(d), parameter                    :: fs2au=41.3413745758d0
-  complex(d), dimension(:), allocatable :: auto
+  complex(d), dimension(:), allocatable :: auto,avec,bvec
   character(len=70)                     :: outfile
+  logical                               :: lpade
   
 end module auto2specmod
 
@@ -74,6 +75,9 @@ contains
     ! Name of the output file
     outfile=''
 
+    ! Pade approximant of the Fourier transform
+    lpade=.false.
+    
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -108,6 +112,8 @@ contains
        ! Name of the output file
        i=i+1
        call getarg(i,outfile)
+    else if (string1.eq.'-pade') then
+       lpade=.true.
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -184,6 +190,10 @@ contains
     allocate(auto(maxtp))
     auto=czero
 
+    ! If we are calculating the pade approximant of the Fourier
+    ! transform, then make sure that iauto is even.
+    if (lpade.and.mod(iauto,2).ne.0) iauto=iauto-1
+    
 !----------------------------------------------------------------------
 ! Read the autocorrelation function
 !----------------------------------------------------------------------
@@ -219,7 +229,12 @@ contains
 !----------------------------------------------------------------------
 ! Allocate the spectrum arrays
 !----------------------------------------------------------------------
-    allocate(sp(0:epoints,0:3))
+    allocate(sp(0:epoints,0:4))
+    
+!----------------------------------------------------------------------
+! Calculate the Pade approximant coefficients
+!----------------------------------------------------------------------    
+    if (lpade) call pade_coeff
     
 !----------------------------------------------------------------------
 ! Calculate the spectrum
@@ -234,11 +249,12 @@ contains
        ! Current energy
        eau=emin+j*dele
 
+       ! Initialisation of the finite Fourier transforms
        sum0=0.5d0*a0
        sum1=0.5d0*a0
        sum2=0.5d0*a0
        sum3=0.5d0*a0
-       
+
        ! Loop over timesteps
        do i=1,iauto
 
@@ -253,19 +269,191 @@ contains
 
        enddo
 
+       ! Windowed Fourier transforms
        sp(j,0)=eau*sum0*dt/pi
        sp(j,1)=eau*sum1*dt/pi
        sp(j,2)=eau*sum2*dt/pi          
        sp(j,3)=eau*sum3*dt/pi
-          
+       
+       ! Pade approximant
+       if (lpade) sp(j,4)=eau*padespec(eau)
+
     enddo
 
     return
     
   end subroutine calc_spectrum
+
+!######################################################################
+! pade_coeff: the notation used here is the same as that used in
+!             Equations 29-35 in Bruner et. al., JCTC, 12, 3741 (2016)
+!######################################################################
+  
+  subroutine pade_coeff
+
+    use auto2specmod
+    
+    implicit none
+
+    integer                                 :: k,m,n
+    complex(d), dimension(:), allocatable   :: cvec,dvec
+    complex(d), dimension(:,:), allocatable :: gmat,invgmat
+
+!----------------------------------------------------------------------
+! Allocate and initialisae arrays
+!----------------------------------------------------------------------
+    n=iauto/2
+
+    allocate(avec(0:n))
+    avec=0.0d0
+    allocate(bvec(0:n))
+    bvec=0.0d0
+    allocate(cvec(0:iauto))
+    cvec=0.0d0
+    allocate(dvec(n))
+    dvec=0.0d0
+    allocate(gmat(n,n))
+    gmat=0.0d0
+    allocate(invgmat(n,n))
+    invgmat=0.0d0
+
+!----------------------------------------------------------------------
+! c-coefficients
+!----------------------------------------------------------------------
+    cvec(0)=dcmplx(a0,b0)
+
+    do k=1,iauto
+       cvec(k)=auto(k)*exp(-(k*dt)/tau)
+    enddo
+       
+!----------------------------------------------------------------------
+! Construct the d-vector
+!----------------------------------------------------------------------
+    do k=1,n
+       dvec(k)=-cvec(n+k)
+    enddo
+
+!----------------------------------------------------------------------
+! Construct the G-matrix
+!----------------------------------------------------------------------
+    do k=1,n
+       do m=1,n
+          gmat(k,m)=cvec(n-m+k)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the b-coefficients: b = G^-1 . d
+! N.B., we use the usual convention for diagonal Pade approximant
+! schemes and set b0=1
+!----------------------------------------------------------------------
+    call pseudoinverse_cmplx(gmat,invgmat,n)
+
+    bvec(0)=cone
+
+    bvec(1:n)=matmul(invgmat,dvec)
+
+!----------------------------------------------------------------------
+! Calculate the a-coefficients
+!----------------------------------------------------------------------
+    avec(0)=cvec(0)
+    
+    do k=1,n
+       do m=0,k
+          avec(k)=avec(k)+bvec(m)*cvec(k-m)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(cvec,dvec,gmat,invgmat)
+    
+    return
+    
+  end subroutine pade_coeff
     
 !######################################################################
 
+  subroutine pseudoinverse_cmplx(mat,invmat,n)
+
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer                    :: n,lwork,info,i,j
+    real(d), dimension(n)      :: sigma
+    real(d), dimension(5*n)    :: rwork
+    real(d), parameter         :: thrsh=1e-10_d
+    complex(d), dimension(n,n) :: mat,invmat,u,vt,tmpmat,smat
+    complex(d), dimension(3*n) :: work
+    
+!-----------------------------------------------------------------------
+! SVD of the matrix to be inverted
+!-----------------------------------------------------------------------
+    lwork=3*n
+    tmpmat=mat
+    call zgesvd('A','A',n,n,tmpmat,n,sigma,u,n,vt,n,work,lwork,rwork,info)
+
+    if (info.ne.0) then
+       write(6,'(/,2x,a)') &
+            'SVD failure in subroutine pseudoinverse_cmplx'
+       STOP
+    endif
+    
+!-----------------------------------------------------------------------
+! Pseudo-inverse
+!-----------------------------------------------------------------------
+    smat=0.0d0
+    do i=1,n
+       if (abs(sigma(i)).lt.thrsh) then
+          smat(i,i)=0.0d0
+       else
+          smat(i,i)=1.0d0/sigma(i)
+       endif
+    enddo
+
+    vt=conjg(vt)
+    vt=transpose(vt)
+    u=conjg(u)
+    u=transpose(u)
+    
+    invmat=matmul(vt,matmul(smat,u))
+
+    return
+
+  end subroutine pseudoinverse_cmplx
+
+!######################################################################
+
+  function padespec(e) result(func)
+
+    use auto2specmod
+    
+    implicit none
+
+    integer    :: k
+    real(d)    :: e,func
+    complex(d) :: z,numer,denom
+    
+    z=exp(ci*e*dt)
+    
+    numer=czero
+    denom=czero
+    do k=0,iauto/2
+       numer=numer+avec(k)*(z**k)
+       denom=denom+bvec(k)*(z**k)      
+    enddo
+    
+    func=2.0d0*real(numer/denom)
+
+    return
+    
+  end function padespec
+    
+!######################################################################
+  
   subroutine wrspectrum
 
     use auto2specmod
@@ -275,7 +463,7 @@ contains
     implicit none
 
     integer :: i,iout
-    real(d) :: e
+    real(d) :: e,sup
 
 !----------------------------------------------------------------------
 ! Open the spectrum file
@@ -284,19 +472,42 @@ contains
     open(iout,file=outfile,form='formatted',status='unknown')
 
 !----------------------------------------------------------------------
+! Normalise the spectra
+!----------------------------------------------------------------------
+    do i=0,3
+       sp(:,i)=sp(:,i)/maxval(sp(:,i))
+    enddo
+    if (lpade) sp(:,4)=sp(:,4)/maxval(sp(:,4))
+    
+!----------------------------------------------------------------------
 ! Write the spectra to file
 !----------------------------------------------------------------------
     write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
-    write(iout,'(/,84a)') ('#',i=1,84)
-    write(iout,'(a)') '#  Energy (eV)      cos^2 filter     &
-         cos filter       Gaussian filter  no filter'
-    write(iout,'(84a)') ('#',i=1,84)
 
-    do i=0,epoints
-       e=(emin+i*dele)*eh2ev
-       write(iout,'(5(ES15.6,2x))') e,sp(i,2),sp(i,1),sp(i,3),sp(i,0)
-    enddo
-    
+    if (lpade) then
+       write(iout,'(/,100a)') ('#',i=1,100)
+       write(iout,'(a)') '#  Energy (eV)      Pade             &
+            cos^2 filter     cos filter       Gaussian filter  &
+            no filter'
+       write(iout,'(100a)') ('#',i=1,100)
+       do i=0,epoints
+          e=(emin+i*dele)*eh2ev
+          write(iout,'(6(ES15.6,2x))') e,abs(sp(i,4)),sp(i,2),&
+               sp(i,1),sp(i,3),sp(i,0)
+       enddo
+    else
+       write(iout,'(/,84a)') ('#',i=1,84)
+       write(iout,'(a)') '#  Energy (eV)      cos^2 filter     &
+            cos filter       Gaussian filter  no filter'
+       write(iout,'(84a)') ('#',i=1,84)
+       
+       do i=0,epoints
+          e=(emin+i*dele)*eh2ev
+          write(iout,'(5(ES15.6,2x))') e,sp(i,2),sp(i,1),sp(i,3),&
+               sp(i,0)
+       enddo
+    endif
+       
 !----------------------------------------------------------------------
 ! Close the spectrum file
 !----------------------------------------------------------------------
