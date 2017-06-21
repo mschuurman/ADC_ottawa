@@ -1059,11 +1059,11 @@ contains
     open(iout,file='fdiag_eig.dat',form='formatted',status='unknown')
 
     write(iout,'(33a)') ('#',i=1,33)
-    write(iout,'(a)') '#  Energy      Intensity'
+    write(iout,'(a)') '#  Energy        Intensity'
     write(iout,'(33a)') ('#',i=1,33)
     do j=1,nrbas
        if (error(j).lt.errthrsh) &
-            write(iout,'(2(2x,F10.7))') rener(j)*eh2ev,intens(j)
+            write(iout,'(2(2x,F12.7))') rener(j)*eh2ev,intens(j)
     enddo
     
     close(iout)

@@ -6,7 +6,7 @@ module auto2specmod
 
   integer                               :: maxtp,iauto,epoints
   real(d)                               :: dt,t0,emin,emax,tau,sigma,&
-                                           dele,a0,b0
+                                           dele,a0,b0,tcutoff
   real(d), dimension(:,:), allocatable  :: sp
   real(d), parameter                    :: eh2ev=27.2113845d0
   real(d), parameter                    :: fs2au=41.3413745758d0
@@ -77,6 +77,9 @@ contains
 
     ! Pade approximant of the Fourier transform
     lpade=.false.
+
+    ! Timestep cutofff
+    tcutoff=1e+10_d
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -92,6 +95,7 @@ contains
        ! Convert to tau in au
        sigma=sigma/eh2ev
        tau=2.0d0/sigma
+
     else if (string1.eq.'-e') then
        ! Energy range in eV
        i=i+1
@@ -103,17 +107,29 @@ contains
        ! Convert to au
        emin=emin/eh2ev
        emax=emax/eh2ev
+
     else if (string1.eq.'-np') then
        ! No. energy points
        i=i+1
        call getarg(i,string2)
        read(string2,*) epoints
+
     else if (string1.eq.'-o') then
        ! Name of the output file
        i=i+1
        call getarg(i,outfile)
+
     else if (string1.eq.'-pade') then
+       ! Pade approximant of the Fourier transform
        lpade=.true.
+
+    else if (string1.eq.'-tcut') then
+       ! Time cutoff
+       i=i+1
+       call getarg(i,string2)
+       read(string2,*) tcutoff
+!       tcutoff=tcutoff*fs2au
+       
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -180,10 +196,12 @@ contains
 
     ! Determine the number of timesteps
     maxtp=2
-5   read(iin,*,end=10)
-    maxtp=maxtp+1
-    goto 5
-10 continue
+5   read(iin,*,end=10) t
+    if (t.lt.tcutoff) then
+       maxtp=maxtp+1
+       goto 5
+    endif
+10  continue
     iauto=maxtp-1
 
     ! Allocate arrays
@@ -205,7 +223,7 @@ contains
        read(iin,*) t,re,im
        auto(i)=dcmplx(re,im)
     enddo
-       
+    
 !----------------------------------------------------------------------
 ! Close the autocorrelation function file
 !----------------------------------------------------------------------

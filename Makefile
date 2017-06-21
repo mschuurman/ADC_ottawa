@@ -210,10 +210,10 @@ STIELTJES_AP = mpfun/second.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	stieltjes_ap/pythag.o \
-	stieltjes_ap/tql2.o \
-        stieltjes_ap/simod.o \
-        stieltjes_ap/stieltjes_ap.o 
+	analysis/stieltjes_ap/pythag.o \
+	analysis/stieltjes_ap/tql2.o \
+        analysis/stieltjes_ap/simod.o \
+        analysis/stieltjes_ap/stieltjes_ap.o 
 
 STIELTJES_AP_OBJ = second.o \
 	mpfuna.o \
@@ -239,8 +239,8 @@ MCSPLINE = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	stieltjes_ap/mcspmod.o \
-	stieltjes_ap/mcspline.o
+	analysis/mcspline/mcspmod.o \
+	analysis/mcspline/mcspline.o
 
 MCSPLINE_OBJ = constants.o \
 	channels.o \
@@ -256,10 +256,10 @@ NUMHESS = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	numhess/hessmod.o \
-	numhess/prepmod.o \
-	numhess/calcmod.o \
-	numhess/numhess.o
+	analysis/numhess/hessmod.o \
+	analysis/numhess/prepmod.o \
+	analysis/numhess/calcmod.o \
+	analysis/numhess/numhess.o
 
 NUMHESS_OBJ = constants.o \
 	channels.o \
@@ -277,8 +277,8 @@ RIXSPLT = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	rixsplt/rixsmod.o \
-	rixsplt/rixsplt.o
+	analysis/rixsplt/rixsmod.o \
+	analysis/rixsplt/rixsplt.o
 
 RIXSPLT_OBJ = constants.o \
 	channels.o \
@@ -294,7 +294,7 @@ AUTO2SPEC = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	auto2spec/auto2spec.o
+	analysis/auto2spec/auto2spec.o
 
 AUTO2SPEC_OBJ = constants.o \
 	channels.o \
@@ -309,8 +309,8 @@ FDIAG = include/constants.o \
 	include/channels.o \
 	iomodules/iomod.o \
 	iomodules/parsemod.o \
-	fdiag/filtermod.o \
-	fdiag/fdiag.o
+	analysis/fdiag/filtermod.o \
+	analysis/fdiag/fdiag.o
 
 FDIAG_OBJ = constants.o \
 	channels.o \
