@@ -38,82 +38,82 @@ LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 ########################################################################
 # ADC code
 ########################################################################
-MULTI = multi/accuracy.o \
-	multi/printing.o \
-	multi/timer.o \
-	multi/lapack.o \
-	multi/dgefa.o \
-	multi/dgedi.o \
-	multi/math.o \
-	multi/matrix_tools.o \
-	multi/os_integral_operators.o \
-	multi/gamess_internal.o \
-	multi/import_gamess.o \
-	multi/integral_tools.o \
-	multi/integrals_mo2e.o \
-        multi/diis.o \
-        multi/sort_tools.o \
-        multi/block_diag.o \
-        multi/biorthogonal_tools.o \
-        multi/scf_tools.o \
-        multi/fock_tools.o 
+MULTI = source/multi/accuracy.o \
+	source/multi/printing.o \
+	source/multi/timer.o \
+	source/multi/lapack.o \
+	source/multi/dgefa.o \
+	source/multi/dgedi.o \
+	source/multi/math.o \
+	source/multi/matrix_tools.o \
+	source/multi/os_integral_operators.o \
+	source/multi/gamess_internal.o \
+	source/multi/import_gamess.o \
+	source/multi/integral_tools.o \
+	source/multi/integrals_mo2e.o \
+        source/multi/diis.o \
+        source/multi/sort_tools.o \
+        source/multi/block_diag.o \
+        source/multi/biorthogonal_tools.o \
+        source/multi/scf_tools.o \
+        source/multi/fock_tools.o 
 
-INCLUDE=include/constants.o \
-	include/parameters.o \
-	include/channels.o \
+INCLUDE=source/include/constants.o \
+	source/include/parameters.o \
+	source/include/channels.o \
 
-UTILITIES=utilities/timingmod.o \
-	utilities/misc.o \
+UTILITIES=source/utilities/timingmod.o \
+	source/utilities/misc.o \
 
-IOMODULES=iomodules/iomod.o \
-	iomodules/parsemod.o \
-	iomodules/rdinput.o \
-	iomodules/read_param.o \
+IOMODULES=source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/iomodules/rdinput.o \
+	source/iomodules/read_param.o \
 
-QCLIB=	qclib/vpqrsmod.o \
-	qclib/rungamess.o \
-	qclib/load_electronic_structure.o \
-	qclib/scf_electronic_structure.o 
+QCLIB=	source/qclib/vpqrsmod.o \
+	source/qclib/rungamess.o \
+	source/qclib/load_electronic_structure.o \
+	source/qclib/scf_electronic_structure.o 
 
-EIGEN=  eigen/matvecmul.o \
-	eigen/expokit.o \
-	eigen/sillib.o \
-	eigen/block_davidson.o \
-	eigen/relaxation.o \
-	eigen/fvecprop.o \
-	eigen/diagmod.o \
-	eigen/block_lanczos.o 
+EIGEN=  source/eigen/matvecmul.o \
+	source/eigen/expokit.o \
+	source/eigen/sillib.o \
+	source/eigen/block_davidson.o \
+	source/eigen/relaxation.o \
+	source/eigen/fvecprop.o \
+	source/eigen/diagmod.o \
+	source/eigen/block_lanczos.o 
 
-ADCLIB= adclib/defaults.o \
-	adclib/orbindx.o \
-	adclib/filetools.o \
-	adclib/adc_ph.o \
-	adclib/dipole_ph.o \
-	adclib/D_matrix.o \
-	adclib/sym_allowed_exc.o \
-	adclib/select_fano.o \
-	adclib/get_matrix.o \
-	adclib/get_matrix_dipole_complete.o \
-	adclib/get_moment.o \
-	adclib/fspacetrial.o \
-	adclib/fspace2.o \
-        adclib/guessvecs.o \
-	adclib/photoionisation.o \
-	adclib/Propagate.o \
-	adclib/dyson_calc.o \
-	adclib/dyson_io.o \
-	adclib/target_matching.o \
-	adclib/mp2.o \
-	adclib/adc2common.o 
+ADCLIB= source/adclib/defaults.o \
+	source/adclib/orbindx.o \
+	source/adclib/filetools.o \
+	source/adclib/adc_ph.o \
+	source/adclib/dipole_ph.o \
+	source/adclib/D_matrix.o \
+	source/adclib/sym_allowed_exc.o \
+	source/adclib/select_fano.o \
+	source/adclib/get_matrix.o \
+	source/adclib/get_matrix_dipole_complete.o \
+	source/adclib/get_moment.o \
+	source/adclib/fspacetrial.o \
+	source/adclib/fspace2.o \
+        source/adclib/guessvecs.o \
+	source/adclib/photoionisation.o \
+	source/adclib/Propagate.o \
+	source/adclib/dyson_calc.o \
+	source/adclib/dyson_io.o \
+	source/adclib/target_matching.o \
+	source/adclib/mp2.o \
+	source/adclib/adc2common.o 
 
-ADC_MAIN=adc/adc1_opa.o \
-	adc/adc2_opa.o \
-	adc/adc2_ener.o \
-	adc/adc2_dyson.o \
-	adc/adc2_rixs.o \
-	adc/adc2_tpa.o \
-	adc/adc2_autospec.o \
-	adc/adc.o
+ADC_MAIN=source/adc/adc1_opa.o \
+	source/adc/adc2_opa.o \
+	source/adc/adc2_ener.o \
+	source/adc/adc2_dyson.o \
+	source/adc/adc2_rixs.o \
+	source/adc/adc2_tpa.o \
+	source/adc/adc2_autospec.o \
+	source/adc/adc.o
 
 ADC =   $(INCLUDE) \
 	$(IOMODULES) \
@@ -198,22 +198,22 @@ ADC_OBJ=accuracy.o \
 ########################################################################
 # Stieltjes imaging code
 ########################################################################
-STIELTJES_AP = mpfun/second.o \
-	mpfun/mpfuna.o \
-	mpfun/mpfunbq.o \
-	mpfun/mpfunc.o \
-	mpfun/mpfund.o \
-	mpfun/mpfune.o \
-	mpfun/mpfunfq1.o \
-	mpfun/mpmodule.o \
-	include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/stieltjes_ap/pythag.o \
-	analysis/stieltjes_ap/tql2.o \
-        analysis/stieltjes_ap/simod.o \
-        analysis/stieltjes_ap/stieltjes_ap.o 
+STIELTJES_AP = source/mpfun/second.o \
+	source/mpfun/mpfuna.o \
+	source/mpfun/mpfunbq.o \
+	source/mpfun/mpfunc.o \
+	source/mpfun/mpfund.o \
+	source/mpfun/mpfune.o \
+	source/mpfun/mpfunfq1.o \
+	source/mpfun/mpmodule.o \
+	source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/stieltjes_ap/pythag.o \
+	source/analysis/stieltjes_ap/tql2.o \
+        source/analysis/stieltjes_ap/simod.o \
+        source/analysis/stieltjes_ap/stieltjes_ap.o 
 
 STIELTJES_AP_OBJ = second.o \
 	mpfuna.o \
@@ -235,12 +235,12 @@ STIELTJES_AP_OBJ = second.o \
 ########################################################################
 # Monotonicity-constrained spline interpolation code
 ########################################################################
-MCSPLINE = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/mcspline/mcspmod.o \
-	analysis/mcspline/mcspline.o
+MCSPLINE = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/mcspline/mcspmod.o \
+	source/analysis/mcspline/mcspline.o
 
 MCSPLINE_OBJ = constants.o \
 	channels.o \
@@ -252,14 +252,14 @@ MCSPLINE_OBJ = constants.o \
 ########################################################################
 # Numerical Hessian code
 ########################################################################
-NUMHESS = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/numhess/hessmod.o \
-	analysis/numhess/prepmod.o \
-	analysis/numhess/calcmod.o \
-	analysis/numhess/numhess.o
+NUMHESS = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/numhess/hessmod.o \
+	source/analysis/numhess/prepmod.o \
+	source/analysis/numhess/calcmod.o \
+	source/analysis/numhess/numhess.o
 
 NUMHESS_OBJ = constants.o \
 	channels.o \
@@ -273,12 +273,12 @@ NUMHESS_OBJ = constants.o \
 ########################################################################
 # RIXS plotting code
 ########################################################################
-RIXSPLT = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/rixsplt/rixsmod.o \
-	analysis/rixsplt/rixsplt.o
+RIXSPLT = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/rixsplt/rixsmod.o \
+	source/analysis/rixsplt/rixsplt.o
 
 RIXSPLT_OBJ = constants.o \
 	channels.o \
@@ -290,11 +290,11 @@ RIXSPLT_OBJ = constants.o \
 ########################################################################
 # Autocorrelation function-to-spectrum code
 ########################################################################
-AUTO2SPEC = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/auto2spec/auto2spec.o
+AUTO2SPEC = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/auto2spec/auto2spec.o
 
 AUTO2SPEC_OBJ = constants.o \
 	channels.o \
@@ -305,12 +305,12 @@ AUTO2SPEC_OBJ = constants.o \
 ########################################################################
 # Filter diagonalisation code
 ########################################################################
-FDIAG = include/constants.o \
-	include/channels.o \
-	iomodules/iomod.o \
-	iomodules/parsemod.o \
-	analysis/fdiag/filtermod.o \
-	analysis/fdiag/fdiag.o
+FDIAG = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/fdiag/filtermod.o \
+	source/analysis/fdiag/fdiag.o
 
 FDIAG_OBJ = constants.o \
 	channels.o \
@@ -323,31 +323,31 @@ FDIAG_OBJ = constants.o \
 # Rules to create the programs
 #-----------------------------------------------------------------------
 adc: $(OBJECTS)
-	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) -o adc.x 
+	$(F90) $(F90OPTS) $(ADC_OBJ) $(LIBS) -o bin/adc.x 
 	rm -f *.o *~ *.mod 2>/dev/null
 
 stieltjes_ap: $(STIELTJES_AP)
-	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) $(LIBS) -o stieltjes_ap.x
+	$(F90) $(F90OPTS) $(STIELTJES_AP_OBJ) $(LIBS) -o bin/stieltjes_ap.x
 	rm -f *.o *~ *.mod
 
 mcspline: $(MCSPLINE)
-	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o mcspline.x
+	$(F90) $(F90OPTS) $(MCSPLINE_OBJ) -o bin/mcspline.x
 	rm -f *.o *~ *.mod
 
 numhess: $(NUMHESS)
-	$(F90) $(F90OPTS) $(NUMHESS_OBJ) $(LIBS) -o numhess.x
+	$(F90) $(F90OPTS) $(NUMHESS_OBJ) $(LIBS) -o bin/numhess.x
 	rm -f *.o *~ *.mod
 
 rixsplt: $(RIXSPLT)
-	$(F90) $(F90OPTS) $(RIXSPLT_OBJ) $(LIBS) -o rixsplt.x
+	$(F90) $(F90OPTS) $(RIXSPLT_OBJ) $(LIBS) -o bin/rixsplt.x
 	rm -f *.o *~ *.mod
 
 auto2spec: $(AUTO2SPEC)
-	$(F90) $(F90OPTS) $(AUTO2SPEC_OBJ) $(LIBS) -o auto2spec.x
+	$(F90) $(F90OPTS) $(AUTO2SPEC_OBJ) $(LIBS) -o bin/auto2spec.x
 	rm -f *.o *~ *.mod
 
 fdiag: $(FDIAG)
-	$(F90) $(F90OPTS) $(FDIAG_OBJ) $(LIBS) -o fdiag.x
+	$(F90) $(F90OPTS) $(FDIAG_OBJ) $(LIBS) -o bin/fdiag.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
