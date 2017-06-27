@@ -992,6 +992,8 @@ contains
     real(d), dimension(nrbas,nrbas) :: tmpmat
     real(d), dimension(nrbas,nrbas) :: e2diag
 
+    real(d), dimension(nrbas)       :: tmpvec
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
@@ -1001,16 +1003,24 @@ contains
 ! Calculate the error estimates
 !----------------------------------------------------------------------
     do i=1,nrbas
-        
-       e2diag=0.0d0
-       do j=1,nrbas
-          e2diag(j,j)=rener(i)**2
-       enddo
+
+       ! OLD: Original estimation suggested by Neuhauser
+       !e2diag=0.0d0
+       !do j=1,nrbas
+       !   e2diag(j,j)=rener(i)**2
+       !enddo
+       !
+       !tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
+       !
+       !error(i)=sqrt(abs(tmpmat(i,i)))
+
+       ! NEW: Estimation suggested in:
+       ! Equation 9, Werner and Cary, J. Comp. Phys., 227, 5200 (2008)
+       tmpvec=matmul(hrbas,rvec(:,i))-rener(i)*rvec(:,i)
+       error(i)=sqrt(dot_product(tmpvec,tmpvec))
+       tmpvec=matmul(hrbas,rvec(:,i))
+       error(i)=error(i)/sqrt(dot_product(tmpvec,tmpvec))
        
-       tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
-
-       error(i)=sqrt(abs(tmpmat(i,i)))
-
     enddo
     
     return
@@ -1029,43 +1039,62 @@ contains
     implicit none
 
     integer          :: i,j,iout
+    real(d)          :: maxi
     character(len=1) :: atmp
     
 !----------------------------------------------------------------------
 ! Write all calculated energies, intensities and errors to the log
 ! file
 !----------------------------------------------------------------------
-    write(ilog,'(/,55a)') ('#',i=1,55)
-    write(ilog,'(a)') '# j    E_j (eV)     I_j        &
-         Error        Spurious?'
-    write(ilog,'(55a)') ('#',i=1,55)
+    write(ilog,'(/,61a)') ('#',i=1,61)
+    write(ilog,'(a)') '# j    E_j (eV)        I_j        &
+         Error            Spurious?'
+    write(ilog,'(61a)') ('#',i=1,61)
 
     do j=1,nrbas
-
+       
        if (error(j).lt.errthrsh) then
           atmp='N'
        else
           atmp='Y'
        endif
           
-       write(ilog,'(1x,i3,2x,F9.4,2x,F9.4,5x,E11.5,6x,a1)') j,&
+       write(ilog,'(1x,i3,2x,F12.7,2x,F12.7,2x,E11.5,6x,a1)') j,&
             rener(j)*eh2ev,intens(j),error(j),atmp
     enddo
 
 !----------------------------------------------------------------------
 ! Write the non-spurious energies and intensities to file
 !----------------------------------------------------------------------
+    ! Maximum intensity in the energy range of interest
+    maxi=0.0d0
+    do j=1,nrbas
+       if (rener(j).lt.ebound(1).or.rener(j).gt.ebound(2)) cycle
+       if (intens(j).gt.maxi) maxi=intens(j)
+    enddo
+
+    ! Open the output file
     call freeunit(iout)
     open(iout,file='fdiag_eig.dat',form='formatted',status='unknown')
 
+    ! Table header
     write(iout,'(33a)') ('#',i=1,33)
-    write(iout,'(a)') '#  Energy        Intensity'
+    write(iout,'(a)') '#  Energy        Intensity        &
+         Normalised Intensity'
     write(iout,'(33a)') ('#',i=1,33)
+
+    ! Output the energies, intensities and normalised intensities
+    ! for the non-spurious states in the energy range of interest
     do j=1,nrbas
+
+       if (rener(j).lt.ebound(1).or.rener(j).gt.ebound(2)) cycle
+
        if (error(j).lt.errthrsh) &
-            write(iout,'(2(2x,F12.7))') rener(j)*eh2ev,intens(j)
+            write(iout,'(3(2x,F12.7))') rener(j)*eh2ev,intens(j),&
+            intens(j)/maxi
     enddo
-    
+
+    ! Close the output file
     close(iout)
     
     return
