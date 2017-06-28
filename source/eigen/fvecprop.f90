@@ -1,3 +1,7 @@
+!######################################################################
+! fvecprop: Routines for the real-time propagation of the f-vector
+!           f_J = < Psi_J | D | Psi_0 >
+!######################################################################
 module fvecprop
 
   use constants
@@ -9,7 +13,7 @@ module fvecprop
   implicit none
 
   integer                               :: matdim,iout0,iout1,iout2
-  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0  
+  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
   complex(d), dimension(:), allocatable :: psi0
 
 contains
@@ -66,7 +70,7 @@ contains
 !----------------------------------------------------------------------
     call times(tw2,tc2)
     write(ilog,'(70a)') ('+',k=1,70)
-    write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"  
+    write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
     
 !----------------------------------------------------------------------
 ! Finalisation and deallocation
@@ -358,7 +362,7 @@ contains
     intperiod=0.5d0*tout
 
     ! Set the initial wavepacket
-    psi=psi0    
+    psi=psi0
 
     ! Loop over the timesteps at which we want the autocorrelation
     ! function

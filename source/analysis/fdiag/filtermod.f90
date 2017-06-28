@@ -41,5 +41,9 @@ module filtermod
   real(d), parameter                    :: au2fs=0.02418884254d0
   real(d), parameter                    :: ev2eh=0.0367493d0
   real(d), parameter                    :: eh2ev=27.2113845d0
+
+  ! Output
+  integer                               :: idat
+  character(len=120)                    :: adat
   
 end module filtermod

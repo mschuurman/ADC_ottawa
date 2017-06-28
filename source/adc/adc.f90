@@ -141,6 +141,12 @@ program adc
 
            ! ADC(2) autocorrelation function calculation
            call adc2_autospec(gamess_info)
+
+        else if (lfdstates) then
+
+           ! ADC(2) filter diagonalisation state calculation
+           print*,"HERE"
+           STOP
            
         else
 

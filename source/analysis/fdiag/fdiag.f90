@@ -49,6 +49,13 @@ program fdiag
 ! Write the calculated energies and intensities to file
 !----------------------------------------------------------------------
   call wrout
+
+!----------------------------------------------------------------------
+! Write the transormation matrix to file. This is required if the
+! filter diagonalisation states are to be computed in a further
+! wavepacket propagation calculation.
+!----------------------------------------------------------------------
+  call wrdatfile
   
 !----------------------------------------------------------------------
 ! Finalisation and deallocation of arrays
@@ -64,6 +71,7 @@ contains
     use constants
     use channels
     use iomod
+    use filtermod
     
     implicit none
 
@@ -91,6 +99,12 @@ contains
     alog=ain(1:k)//'.log'
 
 !----------------------------------------------------------------------
+! Data file name
+!----------------------------------------------------------------------
+    k=index(ain,'.inp')-1
+    adat=ain(1:k)//'.dat'
+    
+!----------------------------------------------------------------------
 ! Open the input file
 !----------------------------------------------------------------------
     call freeunit(iin)
@@ -101,6 +115,12 @@ contains
 !----------------------------------------------------------------------
     call freeunit(ilog)
     open(ilog,file=alog,form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Open the data file
+!----------------------------------------------------------------------
+    call freeunit(idat)
+    open(idat,file=adat,form='unformatted',status='unknown')
     
     return
     
@@ -123,7 +143,7 @@ contains
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
-    ! Timestep cutofff
+    ! Timestep cutofff (in a.u.)
     tcutoff=0.0d0
 
     ! Energy window
@@ -684,7 +704,7 @@ contains
     call solve_geneig(hfbas,sfbas,rvec,rener,transmat,nener,nrbas)
 
 !----------------------------------------------------------------------
-! Representation of H and H^2 in th reduced state basis
+! Representation of H and H^2 in the reduced state basis
 !----------------------------------------------------------------------
     ! < psi_i | H | psi_j >
     allocate(hrbas(nrbas,nrbas))
@@ -693,7 +713,6 @@ contains
     ! < psi_i | H^2 | psi_j >
     allocate(h2rbas(nrbas,nrbas))
     h2rbas=matmul(transpose(transmat),matmul(h2fbas,transmat))
-
     
     return
     
@@ -836,7 +855,7 @@ contains
 
 !----------------------------------------------------------------------
 ! Calculate the a-vector, a_j = < psi(0) | varphi_j >, where psi(0)
-! is the intitial wavefunction, and varphi_j is the jth filter state
+! is the intitial wavefunction, and varphi_j is the jth eigenstate
 !----------------------------------------------------------------------
     avec=matmul(transpose(rvec),matmul(transpose(transmat),dvec))
 
@@ -1047,20 +1066,21 @@ contains
 ! file
 !----------------------------------------------------------------------
     write(ilog,'(/,61a)') ('#',i=1,61)
-    write(ilog,'(a)') '# j    E_j (eV)        I_j        &
+    write(ilog,'(a)') '# j    E_j (eV)      I_j        &
          Error            Spurious?'
     write(ilog,'(61a)') ('#',i=1,61)
 
     do j=1,nrbas
-       
+
        if (error(j).lt.errthrsh) then
           atmp='N'
        else
           atmp='Y'
-       endif
-          
-       write(ilog,'(1x,i3,2x,F12.7,2x,F12.7,2x,E11.5,6x,a1)') j,&
+       endif         
+
+       write(ilog,'(1x,i3,2x,F12.7,2x,F10.7,2x,E11.5,6x,a1)') j,&
             rener(j)*eh2ev,intens(j),error(j),atmp
+
     enddo
 
 !----------------------------------------------------------------------
@@ -1078,10 +1098,10 @@ contains
     open(iout,file='fdiag_eig.dat',form='formatted',status='unknown')
 
     ! Table header
-    write(iout,'(33a)') ('#',i=1,33)
-    write(iout,'(a)') '#  Energy        Intensity        &
+    write(iout,'(54a)') ('#',i=1,54)
+    write(iout,'(a)') '#  Energy          Intensity     &
          Normalised Intensity'
-    write(iout,'(33a)') ('#',i=1,33)
+    write(iout,'(54a)') ('#',i=1,54)
 
     ! Output the energies, intensities and normalised intensities
     ! for the non-spurious states in the energy range of interest
@@ -1100,7 +1120,85 @@ contains
     return
     
   end subroutine wrout
+
+!######################################################################
+
+  subroutine wrdatfile
+
+    use constants
+    use filtermod
     
+    implicit none
+
+    integer                              :: j,k,nactual
+    integer, dimension(nrbas)            :: imap
+    real(d), dimension(nrbas,nener)      :: fullmat
+    real(d), dimension(:,:), allocatable :: redmat
+    
+!----------------------------------------------------------------------
+! Number of non-spurious states that fall within the energy window
+! of interest.
+!----------------------------------------------------------------------
+    imap=0
+    nactual=0
+    do j=1,nrbas
+
+       if (rener(j).ge.ebound(1).and.rener(j).le.ebound(2) &
+            .and.error(j).lt.errthrsh) then
+
+          nactual=nactual+1
+
+          imap(nactual)=j
+          
+       endif
+
+    enddo
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(redmat(nactual,nener))
+    redmat=0.0d0
+    
+!----------------------------------------------------------------------
+! Basis dimensions
+!----------------------------------------------------------------------
+    ! Dimension of the filter state basis
+    write(idat) nener
+    
+    ! No. of non-spurious states within the energy window of interest
+    write(idat) nactual
+
+!----------------------------------------------------------------------
+! Coefficients of the filter diagonalisation eigenstates in the
+! filter state basis.
+!
+! Note that we only include the non-spurious states that fall within
+! the energy window of interest.
+!---------------------------------------------------------------------- 
+    ! Full set of coefficients
+    fullmat=matmul(transpose(rvec),transpose(transmat))
+
+    ! Coefficients for the non-spurious states within the energy
+    ! window of interest
+    do j=1,nactual
+       redmat(j,:)=fullmat(imap(j),:)
+    enddo
+
+!----------------------------------------------------------------------
+! Write the coefficients to file
+!----------------------------------------------------------------------
+    write(idat) redmat
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(redmat)
+    
+    return
+    
+  end subroutine wrdatfile
+      
 !######################################################################
   
   subroutine fdiag_finalise
@@ -1133,6 +1231,7 @@ contains
 !----------------------------------------------------------------------
     close(iin)
     close(ilog)
+    close(idat)
     
     return
     

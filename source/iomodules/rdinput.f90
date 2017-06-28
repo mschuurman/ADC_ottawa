@@ -303,6 +303,13 @@
             if (keyword(1).ne.'end-autospec_section') goto 55
             i=inkw
 
+         else if (keyword(i).eq.'fdstates_section') then
+            lfdstates=.true.
+60          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-fdstates_section') goto 60
+            i=inkw
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -329,64 +336,69 @@
 !-----------------------------------------------------------------------
 ! Set CVS flags
 !-----------------------------------------------------------------------
-        if (iscvs) then
-           if (energyonly) then
-              lcvs=.true.
-           else
-              lcvsfinal=.true.
-           endif
-        endif
-
-        if (lrixs) lcvsfinal=.true.
+      if (iscvs) then
+         if (energyonly) then
+            lcvs=.true.
+         else
+            lcvsfinal=.true.
+         endif
+      endif
+      
+      if (lrixs) lcvsfinal=.true.
 
 !-----------------------------------------------------------------------
 ! If an energy-only calculation has been requested, reset method
 ! accordingly
 !-----------------------------------------------------------------------
-        if (energyonly) method=-method
+      if (energyonly) method=-method
 
 !-----------------------------------------------------------------------
 ! Final space method.
 ! Default: same as the initial space method.
 !-----------------------------------------------------------------------
-        if (method_f.eq.0) method_f=method
+      if (method_f.eq.0) method_f=method
 
 !-----------------------------------------------------------------------
 ! Read the Davidson section(s)
 !-----------------------------------------------------------------------
-        if (ldiag) call rddiaginp
+      if (ldiag) call rddiaginp
 
-        if (ldiagfinal)  call rddiagfinalinp
+      if (ldiagfinal)  call rddiagfinalinp
 
 !-----------------------------------------------------------------------
 ! Read the Lanczos section
 !-----------------------------------------------------------------------
-        if (llanc) call rdlancinp
+      if (llanc) call rdlancinp
 
 !-----------------------------------------------------------------------
 ! Read the Dyson section
 !-----------------------------------------------------------------------
-        if (ldyson) call rddysoninp
+      if (ldyson) call rddysoninp
 
 !-----------------------------------------------------------------------
 ! Read the target state section
 !-----------------------------------------------------------------------
-        if (ltarg) call rdtargetinp
+      if (ltarg) call rdtargetinp
 
 !-----------------------------------------------------------------------
 ! Read the autospec section
 !-----------------------------------------------------------------------
-        if (lautospec) call rdautospecinp
+      if (lautospec) call rdautospecinp
+
+!-----------------------------------------------------------------------
+! Read the filter diagonalisation states section
+!-----------------------------------------------------------------------
+      if (lfdstates) call rdfdstatesinp
         
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
-        call checkinp(ldiag,llanc,energyonly)
-
+      call checkinp(ldiag,llanc,energyonly)
+        
 !-----------------------------------------------------------------------
 ! Read the geometry section if necessary
 !-----------------------------------------------------------------------
-        if (lrungamess) call rdgeometry
+      if (lrungamess) call rdgeometry
 
       return
 
@@ -518,9 +530,13 @@
 ! a block-Lanczos-RIXS or block-Lanczos-TPA calculation
 !-----------------------------------------------------------------------
       ! Photoionisation cross-section calculation
-      if (.not.energyonly.and..not.ldiagfinal&
-           .and..not.ldyson.and..not.lrixs&
-           .and..not.ltpa.and..not.lautospec) then
+      if (.not.energyonly &
+           .and..not.ldiagfinal &
+           .and..not.ldyson &
+           .and..not.lrixs &
+           .and..not.ltpa &
+           .and..not.lautospec &
+           .and..not.lfdstates) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -673,6 +689,46 @@
             goto 999
          endif
 
+      endif
+
+!-----------------------------------------------------------------------
+! Filter diagonalisation states section
+!-----------------------------------------------------------------------
+      if (lfdstates) then
+
+         ! State number: currently only excitation from S0
+         ! is supported
+         if (statenumber.ne.0) then
+            msg='Currently only excitation from S0 is supported &
+                 in a filter diagonalisation states calculation'
+            goto 999
+         endif
+
+         ! Final propagation time
+         if (tfinal.eq.0.0d0) then
+            msg='The final propagation time has not been given'
+            goto 999
+         endif
+
+         ! Timestep
+         if (tout.eq.0.0d0) then
+            msg='The timestep has not been given'
+            goto 999
+         endif
+
+         ! fdiag data file
+         if (fdiagdat.eq.'') then
+            msg='The name of the fdiag data filehas not been given'
+            goto 999
+         endif
+         
+         ! State selection file
+         if (fdiagsel.eq.'') then
+            msg='The name of the fdiag state selection file has &
+                 not been given'
+            goto 999
+         endif
+         
       endif
       
       return
@@ -1551,7 +1607,7 @@
       if (keyword(1).ne.'autospec_section') goto 1
 
 !-----------------------------------------------------------------------
-! Read the target state matching parameters
+! Read the autospec parameters
 !-----------------------------------------------------------------------
 5     call rdinp(iin)
       
@@ -1626,6 +1682,104 @@
       return
       
     end subroutine rdautospecinp
+
+!#######################################################################
+
+    subroutine rdfdstatesinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+
+!-----------------------------------------------------------------------
+! Read to the fdstates section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'fdstates_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the fdstates parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-fdstates_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'tfinal') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) tfinal
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'tout') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) tout
+            else
+               goto 100
+            endif         
+
+         else if (keyword(i).eq.'krydim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'data') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               fdiagdat=keyword(i)
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'selection') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               fdiagsel=keyword(i)
+            else
+               goto 100
+            endif
+            
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+
+      return
+      
+    end subroutine rdfdstatesinp
       
 !#######################################################################
 

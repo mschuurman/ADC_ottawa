@@ -89,24 +89,33 @@
       eigentype=1
 
 !-----------------------------------------------------------------------
-! Relaxation parameters
+! Wavepacket propagation parameters common to multiple calculation
+! types
 !-----------------------------------------------------------------------
+      tfinal=0.0d0
+      tout=0.0d0
+
       ! Initial space
       kdim=10
-      stepsize=10.0d0      
-      lnoise=.false.
-      lsubdiag=.false.
-      rlxortho=2
+      stepsize=10.0d0
       siltol=1e-5_d
-      rlxtype=1
       
       ! Final space
       kdim_f=10
       stepsize_f=10.0d0
-      lnoise_f=.false.
-      lsubdiag_f=.false.
-      rlxortho_f=2
       siltol_f=1e-5_d
+      
+!-----------------------------------------------------------------------
+! Relaxation parameters
+!-----------------------------------------------------------------------
+      ! Initial space
+      lnoise=.false.
+      rlxortho=2
+      rlxtype=1
+      
+      ! Final space
+      lnoise_f=.false.
+      rlxortho_f=2
       rlxtype_f=1
       
 !-----------------------------------------------------------------------
@@ -134,11 +143,16 @@
 ! Autospec parameters
 !-----------------------------------------------------------------------
       lautospec=.false.
-      tfinal=0.0d0
-      tout=0.0d0
       autotol=1e-5_d
       autoord=0
 
+!-----------------------------------------------------------------------
+! Filter diagonalisation state calculation parameters
+!-----------------------------------------------------------------------
+      fdiagdat=''
+      fdiagsel=''
+      lfdstates=.false.
+      
 !-----------------------------------------------------------------------
 ! I/O channels
 !-----------------------------------------------------------------------

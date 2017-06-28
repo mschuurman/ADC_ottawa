@@ -78,7 +78,7 @@ contains
     ! Pade approximant of the Fourier transform
     lpade=.false.
 
-    ! Timestep cutofff
+    ! Timestep cutofff (in fs)
     tcutoff=1e+10_d
     
 !----------------------------------------------------------------------
