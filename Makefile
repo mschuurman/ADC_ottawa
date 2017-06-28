@@ -81,6 +81,7 @@ EIGEN=  source/eigen/matvecmul.o \
 	source/eigen/block_davidson.o \
 	source/eigen/relaxation.o \
 	source/eigen/fvecprop.o \
+	source/eigen/fdstates.o \
 	source/eigen/diagmod.o \
 	source/eigen/block_lanczos.o 
 
@@ -113,6 +114,7 @@ ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_rixs.o \
 	source/adc/adc2_tpa.o \
 	source/adc/adc2_autospec.o \
+	source/adc/adc2_fdstates.o \
 	source/adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -176,6 +178,7 @@ ADC_OBJ=accuracy.o \
 	sillib.o \
 	relaxation.o \
 	fvecprop.o \
+	fdstates.o \
 	diagmod.o \
 	block_lanczos.o \
 	photoionisation.o \
@@ -193,6 +196,7 @@ ADC_OBJ=accuracy.o \
 	adc2_rixs.o \
 	adc2_tpa.o \
 	adc2_autospec.o \
+	adc2_fdstates.o \
 	adc.o
 
 ########################################################################

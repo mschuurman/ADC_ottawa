@@ -313,6 +313,10 @@ logical                               :: lautospec
 !!$**********Filter Diagonalisation State**********
 !!$******************Calculations******************
 !!$************************************************
+integer                               :: nfbas,neig,&
+                                         nsel
+integer, dimension(:), allocatable    :: isel
+real(d), dimension(:,:), allocatable  :: fbas2eig
 character(len=60)                     :: fdiagdat,&
                                          fdiagsel
 logical                               :: lfdstates

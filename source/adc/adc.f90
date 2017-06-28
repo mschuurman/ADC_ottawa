@@ -11,6 +11,7 @@ program adc
   use adc2rixsmod
   use adc2tpamod
   use adc2automod
+  use adc2fdstatesmod
   use rdinput
   use orbindx
   use defaults
@@ -145,8 +146,7 @@ program adc
         else if (lfdstates) then
 
            ! ADC(2) filter diagonalisation state calculation
-           print*,"HERE"
-           STOP
+           call adc2_fdstates(gamess_info)
            
         else
 
