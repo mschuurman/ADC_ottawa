@@ -1,3 +1,8 @@
+!#######################################################################
+! block_davidson: Routine for the calculation of the lowest-lying
+!                 eigenvectors of the ADC Hamiltonian matrix using
+!                 the block Davidson method.
+!#######################################################################
   module block_davidson
 
     use constants

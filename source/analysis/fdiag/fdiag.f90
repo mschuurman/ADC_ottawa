@@ -51,9 +51,9 @@ program fdiag
   call wrout
 
 !----------------------------------------------------------------------
-! Write the transormation matrix to file. This is required if the
-! filter diagonalisation states are to be computed in a further
-! wavepacket propagation calculation.
+! For use in subsequent eigenstate calculations, output the
+! filter state-to-eigenstate transformation matrix, the window
+! function type and the energy window
 !----------------------------------------------------------------------
   call wrdatfile
   
@@ -1189,6 +1189,16 @@ contains
 ! Write the coefficients to file
 !----------------------------------------------------------------------
     write(idat) redmat
+
+!----------------------------------------------------------------------
+! Window function
+!----------------------------------------------------------------------
+    write(idat) iwfunc
+
+!----------------------------------------------------------------------
+! Energy window
+!----------------------------------------------------------------------    
+    write(idat) ebound
     
 !----------------------------------------------------------------------
 ! Deallocate arrays

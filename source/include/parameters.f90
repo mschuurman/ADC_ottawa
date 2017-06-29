@@ -314,9 +314,10 @@ logical                               :: lautospec
 !!$******************Calculations******************
 !!$************************************************
 integer                               :: nfbas,neig,&
-                                         nsel
+                                         nsel,iwfunc
 integer, dimension(:), allocatable    :: isel
 real(d), dimension(:,:), allocatable  :: fbas2eig
+real(d), dimension(2)                 :: ebound
 character(len=60)                     :: fdiagdat,&
                                          fdiagsel
 logical                               :: lfdstates

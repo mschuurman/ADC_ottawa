@@ -60,9 +60,10 @@ contains
     call calc_hamiltonian(ndimf,kpqf,noffdf)
 
 !-----------------------------------------------------------------------
-! Read the filter state-to-eigenstate transformation matrix from file
+! Read the filter state-to-eigenstate transformation matrix, the
+! window function type and the energy window from the fdiag dat file
 !-----------------------------------------------------------------------
-    call rdtransmat
+    call rddatfile
 
 !-----------------------------------------------------------------------
 ! Read the eigenstate selection file
@@ -149,7 +150,7 @@ contains
 
 !#######################################################################
 
-  subroutine rdtransmat
+  subroutine rddatfile
 
     use constants
     use parameters
@@ -182,7 +183,17 @@ contains
 ! Read the filter state-to-eigenstate transformation matrix
 !-----------------------------------------------------------------------
     read(unit) fbas2eig
-    
+
+!-----------------------------------------------------------------------
+! Window function type
+!-----------------------------------------------------------------------
+    read(unit) iwfunc
+
+!----------------------------------------------------------------------
+! Energy window (in a.u.)
+!----------------------------------------------------------------------
+    read(unit) ebound
+
 !-----------------------------------------------------------------------
 ! Close the fdiag data file
 !-----------------------------------------------------------------------
@@ -190,7 +201,7 @@ contains
     
     return
     
-  end subroutine rdtransmat
+  end subroutine rddatfile
     
 !#######################################################################
 

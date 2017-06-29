@@ -248,14 +248,14 @@ contains
     
     implicit none
 
-    integer                               :: i
-    real(d)                               :: norm
-    real(d), parameter                    :: tiny=1e-9_d
-    complex(d), dimension(:), allocatable :: psi,dtpsi
-    complex(d), dimension(:), allocatable :: hpsi,h2psi
-    complex(d)                            :: auto0,auto1,auto2
+    integer                                 :: i
+    real(d)                                 :: norm
+    real(d), parameter                      :: tiny=1e-9_d
+    complex(d), dimension(:), allocatable   :: psi,dtpsi
+    complex(d), dimension(:), allocatable   :: hpsi,h2psi
+    complex(d)                              :: auto0,auto1,auto2
     
-    ! SIL
+    ! SIL arrays and variables
     integer                                 :: steps,trueorder,&
                                                errorcode
     real(d)                                 :: intperiod,stepsize,&
