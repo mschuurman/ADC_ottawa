@@ -18,10 +18,9 @@ contains
     use adc2common
     use fspace
     use misc
-    use guessvecs
     use mp2
-    use targetmatching
     use fdstates
+    use import_gamess
     
     implicit none
     
@@ -77,6 +76,11 @@ contains
     hamflag='f'
     call calc_fdstates(fvec,ndimf)
 
+!-----------------------------------------------------------------------
+! Output the results of the calculation
+!-----------------------------------------------------------------------
+    call wrfdstates(kpqf,ndimf)
+    
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -267,6 +271,70 @@ contains
     return
     
   end subroutine rdselfile
+
+!#######################################################################
+
+  subroutine wrfdstates(kpqf,ndimf)
+
+    use constants
+    use parameters
+    use misc
+    use iomod
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf,unit,i,k,itmp
+    real(d), dimension(:,:), allocatable      :: fdstates
+    real(d), dimension(nsel)                  :: ener,tmp1,tmp2
+    character(len=1), dimension(2)            :: am
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(fdstates(ndimf,nsel))
+    fdstates=0.0d0
+    
+!----------------------------------------------------------------------
+! Read the filter diagonalisation eigenstates from file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit=unit,file='SCRATCH/fdstates',status='unknown',&
+            access='sequential',form='unformatted')
+    do i=1,nsel
+       read(unit) k,ener(k),fdstates(:,k)
+    enddo
+    close(unit)
+
+!----------------------------------------------------------------------
+! Write the filter diagonalisation eigenstate information to file
+!----------------------------------------------------------------------
+    am(1:2)=(/ 's','x' /)
+    
+    write(ilog,'(/,70a)') ('*',i=1,70)
+    write(ilog,'(2x,a)') &
+         'Initial space ADC(2)-'//am(abs(method)-1)&
+         //' excitation energies'
+    write(ilog,'(70a)') ('*',i=1,70)
+
+    ! Temporary zero arrays standing in for osc and travec
+    tmp1=0.0d0
+    tmp2=0.0d0
+    
+    itmp=1+nBas**2*4*nOcc**2
+    call table2(ndimf,nsel,ener(1:nsel),fdstates(:,1:nsel),tmp1,&
+         tmp2,kpqf,itmp,'i')
+    
+    write(ilog,'(/,70a,/)') ('*',i=1,70)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(fdstates)
+    
+    return
+    
+  end subroutine wrfdstates
     
 !#######################################################################
   

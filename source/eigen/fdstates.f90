@@ -16,6 +16,8 @@ module fdstates
   integer                               :: matdim,fsunit
   integer*8                             :: buffsize,reclength
   real(d), dimension(:,:), allocatable  :: buffer
+  real(d), dimension(:,:), allocatable  :: eigvec
+  real(d), dimension(:), allocatable    :: eigval
   complex(d), dimension(:), allocatable :: psi0
   logical                               :: fsincore
   
@@ -209,7 +211,7 @@ contains
 ! that will hold the filter states
 !----------------------------------------------------------------------
     ! Allocate the buffer array
-    allocate(buffer(buffsize,matdim))
+    allocate(buffer(matdim,buffsize))
     
     ! Open the scratch file
     if (.not.fsincore) then
@@ -439,7 +441,7 @@ contains
           
           ! Contribution of the current timestep to the current filter
           ! state
-          buffer(j,:)=buffer(j,:)+fac*dt*gk*real(exp(ci*ej*t)*psi)
+          buffer(:,j)=buffer(:,j)+fac*dt*gk*real(exp(ci*ej*t)*psi)
           
        enddo
 
@@ -492,8 +494,72 @@ contains
 
     implicit none
 
-    print*,"WRITE THE calc_eigenstates SUBROUTINE!"
-    STOP
+    integer                            :: i,j,unit
+    real(d)                            :: norm
+    real(d), dimension(:), allocatable :: hpsi
+
+    external matxvec
+
+!----------------------------------------------------------------------
+! Calculation of the eigensates of interest
+!----------------------------------------------------------------------
+    if (fsincore) then
+       !
+       ! In-core calculation of the eigenstates of interest
+       !
+
+       ! Allocate arrays
+       allocate(eigvec(matdim,nsel))
+       eigvec=0.0d0
+       allocate(eigval(nsel))
+       eigval=0.0d0
+       allocate(hpsi(matdim))
+       hpsi=0.0d0
+       
+       ! Calculation of the eigenstates of interest
+       do i=1,nsel
+          do j=1,nfbas
+             eigvec(:,i)=eigvec(:,i)+fbas2eig(isel(i),j)*buffer(:,j)
+          enddo
+       enddo
+       
+       ! Normalisation
+       do i=1,nsel
+          norm=sqrt(dot_product(eigvec(:,i),eigvec(:,i)))
+          eigvec(:,i)=eigvec(:,i)/norm
+       enddo
+       
+       ! Calculation of energies
+       do i=1,nsel
+          call matxvec(matdim,eigvec(:,i),hpsi)
+          hpsi=-hpsi
+          eigval(i)=dot_product(eigvec(:,i),hpsi)
+       enddo
+       
+       ! Write the eigenstates to file
+       call freeunit(unit)
+       open(unit=unit,file='SCRATCH/fdstates',status='unknown',&
+            access='sequential',form='unformatted')
+       do i=1,nsel
+          write(unit) i,eigval(i),eigvec(:,i)
+       enddo
+       close(unit)
+       
+       ! Deallocate arrays
+       deallocate(eigvec)
+       deallocate(eigval)
+       deallocate(hpsi)
+       
+    else
+       !
+       ! Out-of-core calculation of the eigenstates
+       !
+       print*,
+       print*,"THE OUT-OF-CORE CODE NEEDS WRITING..."
+       print*,
+       STOP
+
+    endif
     
     return
     
