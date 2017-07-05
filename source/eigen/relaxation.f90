@@ -1,17 +1,6 @@
 !#######################################################################
-! Experimental block-relaxation algorithm for the calculation of the
-! N lowest eigenpairs of the Hamiltonian matrix.
-!
-! A collection of N trial vectors are taken as a set of initial
-! time-dependent electronic wavefunctions and propagated in negative
-! imaginary time using the short iterative Lanczos algorithm.
-!
-! It is not clear yet whether this will be more effective than the
-! block Davidson method.
-!
-! One possibility is to run the relaxation calculation for one or two
-! iterations and then use the resulting vectors as guesses for a
-! block Davidson calculation.
+! Routines for the calcuation of eigenstates of the ADC(2) Hamiltonian
+! via imaginary time wavepacket propagations
 !#######################################################################
 
   module relaxmod
@@ -401,6 +390,8 @@
 
     subroutine relaxation_expokit(matdim,noffd)
 
+      use tdsemod
+      
       implicit none
 
       integer                            :: s,i,n
@@ -414,7 +405,7 @@
       integer, dimension(:), allocatable :: iwsp
       real(d), dimension(:), allocatable :: wsp
 
-      external matxvec
+!      external matxvec
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -716,7 +707,7 @@
     subroutine isincore(matdim,noffd)
 
       use constants
-      use parameters, only: maxmem
+      use parameters
 
       implicit none
 
@@ -726,6 +717,12 @@
 
       mem=0.0d0
 
+      ! Two-electron integrals held in-core
+      mem=mem+8.0d0*(nbas**4)/1024.0d0**2
+
+      ! kpq
+      mem=mem+8.0d0*7.0d0*(1+nbas**2*4*nocc**2)/1024.0d0**2
+      
       ! On-diagonal Hamiltonian matrix elements
       mem=mem+8.0d0*matdim/1024.0d0**2
 
@@ -2112,6 +2109,8 @@
 !#######################################################################
 
     subroutine get_lancvecs_current(ista,istep,matdim,noffd,vec0)
+
+      use tdsemod
       
       implicit none
 
@@ -2122,7 +2121,7 @@
       real(d), dimension(matdim)           :: vec0
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta
 
-      external matxvec
+!      external matxvec
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -2155,7 +2154,7 @@
 
       ! alpha_1
 !      call hxkryvec(ista,1,matdim,noffd,q,r)
-      call matxvec(matdim,q,r)
+      call matxvec(matdim,noffd,q,r)
       r=-r
       nmult=nmult+1
       
@@ -2179,7 +2178,7 @@
          lancvec(:,j)=q
 
          !call hxkryvec(ista,j1,matdim,noffd,q,r)
-         call matxvec(matdim,q,r)
+         call matxvec(matdim,noffd,q,r)
          r=-r
          nmult=nmult+1
 
@@ -2519,6 +2518,8 @@
 
     subroutine residual_1vec(vecprop,matdim,noffd,energy,residual)
 
+      use tdsemod
+      
       implicit none
 
       integer, intent(in)                :: matdim
@@ -2527,7 +2528,7 @@
       real(d), dimension(:), allocatable :: hpsi,resvec
       real(d)                            :: energy,residual
 
-      external matxvec
+!      external matxvec
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -2540,7 +2541,7 @@
 !-----------------------------------------------------------------------
       ! H |Psi>
       !call hxpsi_1vec(matdim,noffd,vecprop,hpsi)
-      call matxvec(matdim,vecprop,hpsi)
+      call matxvec(matdim,noffd,vecprop,hpsi)
       hpsi=-hpsi
       
       ! Energy, <Psi| H |Psi>

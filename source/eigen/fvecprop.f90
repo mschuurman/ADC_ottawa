@@ -13,6 +13,7 @@ module fvecprop
   implicit none
 
   integer                               :: matdim,iout0,iout1,iout2
+  integer*8                             :: noffdiag
   real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
   complex(d), dimension(:), allocatable :: psi0
 
@@ -20,11 +21,14 @@ contains
 
 !######################################################################
 
-  subroutine propagate_fvec(fvec,ndimf)
+  subroutine propagate_fvec(fvec,ndimf,noffdf)
 
+    use tdsemod
+    
     implicit none
 
     integer, intent(in)                   :: ndimf
+    integer*8, intent(in)                 :: noffdf
     integer                               :: k
     real(d), dimension(ndimf), intent(in) :: fvec
     real(d)                               :: tw1,tw2,tc1,tc2
@@ -33,22 +37,34 @@ contains
 ! Start timing
 !----------------------------------------------------------------------
     call times(tw1,tc1)
-    
-!----------------------------------------------------------------------
-! Output where we are at and what we are doing
-!----------------------------------------------------------------------
-    call wrinfo
 
 !----------------------------------------------------------------------
 ! Initialisation and allocatation
 !----------------------------------------------------------------------
-    call initialise(ndimf)
+    call initialise(ndimf,noffdf)
+
+!----------------------------------------------------------------------
+! Determine what can be held in memory
+!----------------------------------------------------------------------
+    call memory_managment
+
+!----------------------------------------------------------------------
+! Output where we are at and what we are doing
+!----------------------------------------------------------------------
+    call wrinfo
     
 !----------------------------------------------------------------------
 ! Normalise the F-vector to form |Psi(t=0)>
 !----------------------------------------------------------------------
     call init_wavepacket(fvec)
 
+!----------------------------------------------------------------------
+! Loading of the non-zero elements of the Hamiltonian matrix into
+! memory
+!----------------------------------------------------------------------
+    if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
+         'SCRATCH/hmlt.offc',matdim,noffdf)
+    
 !----------------------------------------------------------------------
 ! Open the autocorrelation function output files and write the file
 ! headers
@@ -85,6 +101,8 @@ contains
 
   subroutine wrinfo
 
+    use tdsemod
+    
     implicit none
 
     integer :: k
@@ -114,22 +132,37 @@ contains
          the SIL method'
     write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
          kdim
-    write(ilog,'(2x,a,x,ES15.8,/)') 'Error tolerance:',autotol
+    write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',autotol
 
+!----------------------------------------------------------------------
+! Matrix-vector multiplication algorithm
+!----------------------------------------------------------------------
+    if (hincore) then
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed in-core'
+    else
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed out-of-core'
+    endif
+    
     return
 
   end subroutine wrinfo
 
 !######################################################################
 
-  subroutine initialise(ndimf)
+  subroutine initialise(ndimf,noffdf)
 
     implicit none
 
-    integer, intent(in) :: ndimf
+    integer, intent(in)   :: ndimf
+    integer*8, intent(in) :: noffdf
     
     ! Hamiltonian matrix dimension
     matdim=ndimf
+
+    ! No. non-zero off-diagonal matrix elements
+    noffdiag=noffdf
     
     ! Psi(t=0)
     allocate(psi0(matdim))
@@ -141,11 +174,83 @@ contains
 
 !######################################################################
 
-  subroutine finalise
+  subroutine memory_managment
 
+    use tdsemod
+    use omp_lib
+    
     implicit none
 
+    integer*8 :: maxrecl,reqmem
+    integer   :: nthreads
+    real(d)   :: memavail
+
+!----------------------------------------------------------------------
+! Available memory
+!----------------------------------------------------------------------
+    ! Maximum memory requested to be used by the user
+    memavail=maxmem
+
+    ! Two-electron integrals held in-core
+    memavail=memavail-8.0d0*(nbas**4)/1024.0d0**2
+
+    ! kpq
+    memavail=memavail-8.0d0*7.0d0*(1+nbas**2*4*nocc**2)/1024.0d0**2
+    
+    ! Psi(0) and Psi(t)
+    memavail=memavail-2.0d0*8.0d0*matdim/1024.0d0**2
+    
+    ! Lanczos vectors used in the SIL propagation method
+    memavail=memavail-(kdim-1)*8.0d0*matdim/1024.0d0**2
+
+    ! Be cautious and only use say 90% of the available memory
+    memavail=memavail*0.9d0 
+
+!----------------------------------------------------------------------
+! Determine whether or not we can hold the non-zero Hamiltonian
+! matrix elements in-core
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+    reqmem=0.0d0
+    
+    ! Parallelised matrix-vector multiplication
+    reqmem=reqmem+8.0d0*nthreads*matdim/1024.0d0**2
+
+    ! Non-zero off-diagonal Hamiltonian matrix elements and their
+    ! indices
+    reqmem=reqmem+8.0d0*2.0d0*noffdiag/1024.0d0**2
+
+    ! On-diagonal Hamiltonian matrix elements
+    reqmem=reqmem+8.0d0*matdim/1024.0d0**2
+
+    ! Set the hincore flag controling whether the matrix-vector
+    ! multiplication proceeds in-core
+    if (reqmem.lt.memavail) then
+       hincore=.true.
+    else
+       hincore=.false.
+    endif
+    
+    return
+    
+  end subroutine memory_managment
+    
+!######################################################################
+
+  subroutine finalise
+
+    use tdsemod
+    
+    implicit none
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
     deallocate(psi0)
+    if (hincore) call deallocate_hamiltonian
     
     return
     
@@ -245,6 +350,7 @@ contains
   subroutine propagate_sillib
 
     use sillib
+    use tdsemod
     
     implicit none
 
@@ -268,7 +374,7 @@ contains
     complex(d), dimension(:,:), allocatable :: krylov
     logical(kind=4)                         :: restart,relax,stdform
     
-    external matxvec_treal
+!    external matxvec_treal
 
 !----------------------------------------------------------------------
 ! sillib variables
@@ -337,7 +443,7 @@ contains
     
     ! First-order autocorrelation functions at time t=0
     if (autoord.ge.1) then
-       call matxvec_treal(matdim,psi0,hpsi)
+       call matxvec_treal(matdim,noffdiag,psi0,hpsi)
        hpsi=hpsi*ci
        auto1=dot_product(psi0,hpsi)
        call wrauto(iout1,auto1,0.0d0)
@@ -345,7 +451,7 @@ contains
     
     ! Second-order autocorrelation functions at time t=0
     if (autoord.eq.2) then
-       call matxvec_treal(matdim,hpsi,h2psi)
+       call matxvec_treal(matdim,noffdiag,hpsi,h2psi)
        h2psi=h2psi*ci
        auto2=dot_product(psi0,h2psi)
        call wrauto(iout2,auto2,0.0d0)
@@ -376,10 +482,10 @@ contains
        stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
-       call matxvec_treal(matdim,psi,dtpsi)
+       call matxvec_treal(matdim,noffdiag,psi,dtpsi)
     
        ! Take one step using the SIL algorithm
-       call silstep(psi,dtpsi,matdim,stepsize,kdim,autotol,relax,&
+       call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,autotol,relax,&
             restart,stdform,steps,krylov,truestepsize,trueorder,&
             errorcode,time,matxvec_treal,eigenvector,eigenval,&
             diagonal,offdg2,offdiag)
@@ -402,7 +508,7 @@ contains
        ! Calculate and output the first-order autocorrelation
        ! at the current timestep
        if (autoord.ge.1) then
-          call matxvec_treal(matdim,psi,hpsi)
+          call matxvec_treal(matdim,noffdiag,psi,hpsi)
           hpsi=hpsi*ci
           auto1=dot_product(conjg(psi),hpsi)
           call wrauto(iout1,auto1,i*intperiod*2.0d0)
@@ -411,7 +517,7 @@ contains
        ! Calculate and output the second-order autocorrelation
        ! at the current timestep
        if (autoord.eq.2) then
-          call matxvec_treal(matdim,hpsi,h2psi)
+          call matxvec_treal(matdim,noffdiag,hpsi,h2psi)
           h2psi=h2psi*ci
           auto2=dot_product(conjg(psi),h2psi)
           call wrauto(iout2,auto2,i*intperiod*2.0d0)

@@ -48,7 +48,11 @@
 ! *   Psi:       The (complex) initial-value vector.                   *
 ! *   DtPsi:     Action of Hamiltonian on the initial-value vector,    *
 ! *              i.e. H|Psi> or -i H|Psi>, depending on "StdForm".     *
-! *   PsiDim     Length of Psi and DtPsi vectors.                      *
+! *   PsiDim:    Length of Psi and DtPsi vectors.                      *
+! *   Noffd:     No. non-zero off-diagonal Hamiltonian matrix          *
+! *              elements. This shouldn't really be here, but this     *
+! *              number has to be passed to the matrix-vector          *
+! *              multiplication routine.
 ! *   IntPeriod: Length of time interval to be integrated.             *
 ! *   IntOrder:  Maximum integration order.                            *
 ! *   TolError:  Maximum error that is tolerated.                      *
@@ -101,9 +105,9 @@
 ! *                 Eigenvector-space now dynamically allocated.       *
 ! **********************************************************************
 
-      Subroutine SILStep(Psi,DtPsi,PsiDim,IntPeriod,IntOrder,TolError,&
-                         Relax,Restart,StdForm,Steps,Krylov,Stepsize,&
-                         TrueOrder,ErrorCode,Time,Func,&
+      Subroutine SILStep(Psi,DtPsi,PsiDim,Noffd,IntPeriod,IntOrder,&
+                         TolError,Relax,Restart,StdForm,Steps,Krylov,&
+                         Stepsize,TrueOrder,ErrorCode,Time,Func,&
                          EigenVector,EigenVal,Diagonal,OffDg2,OffDiag)
 
 !use wrintegrat, only: writestep
@@ -116,6 +120,7 @@
       Integer, intent(inout)                                    :: Steps
       Integer, intent(out)                                      :: TrueOrder,ErrorCode
       Integer, intent(in)                                       :: PsiDim,IntOrder
+      Integer*8, intent(in)                                     :: Noffd
       Real(dop), intent(out)                                    :: Stepsize
       Real(dop), intent(in)                                     :: IntPeriod,TolError,Time
       Complex(dop), dimension(PsiDim), intent(inout)            :: Psi,DtPsi
@@ -247,9 +252,9 @@
 ! --- EVALUATE FUNCTION WITH LAST BASIS VECTOR ---
 
       If (TrueOrder .Eq. 2) Then
-         Call Func(PsiDim,DtPsi,Krylov(1,2))
+         Call Func(PsiDim,Noffd,DtPsi,Krylov(1,2))
       Else
-         Call Func(PsiDim,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
+         Call Func(PsiDim,Noffd,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
       EndIf
 
 ! --- COMPUTE DIAGONAL ELEMENT ---

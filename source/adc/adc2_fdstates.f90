@@ -74,7 +74,7 @@ contains
 ! filter diagonalisation eigenstates
 !-----------------------------------------------------------------------
     hamflag='f'
-    call calc_fdstates(fvec,ndimf)
+    call calc_fdstates(fvec,ndimf,noffdf)
 
 !-----------------------------------------------------------------------
 ! Output the results of the calculation
@@ -284,54 +284,30 @@ contains
     implicit none
 
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-    integer                                   :: ndimf,unit,i,k,itmp
-    real(d), dimension(:,:), allocatable      :: fdstates
-    real(d), dimension(nsel)                  :: ener,tmp1,tmp2
+    integer                                   :: ndimf,i,itmp
     character(len=1), dimension(2)            :: am
+    character(len=36)                         :: filename
 
 !----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-    allocate(fdstates(ndimf,nsel))
-    fdstates=0.0d0
-    
-!----------------------------------------------------------------------
-! Read the filter diagonalisation eigenstates from file
-!----------------------------------------------------------------------
-    call freeunit(unit)
-    open(unit=unit,file='SCRATCH/fdstates',status='unknown',&
-            access='sequential',form='unformatted')
-    do i=1,nsel
-       read(unit) k,ener(k),fdstates(:,k)
-    enddo
-    close(unit)
-
-!----------------------------------------------------------------------
-! Write the filter diagonalisation eigenstate information to file
+! Write the filter diagonalisation eigenstate information to the
+! log file
 !----------------------------------------------------------------------
     am(1:2)=(/ 's','x' /)
     
     write(ilog,'(/,70a)') ('*',i=1,70)
     write(ilog,'(2x,a)') &
-         'Initial space ADC(2)-'//am(abs(method)-1)&
+         'Filter diagonalisation ADC(2)-'//am(abs(method)-1)&
          //' excitation energies'
     write(ilog,'(70a)') ('*',i=1,70)
-
-    ! Temporary zero arrays standing in for osc and travec
-    tmp1=0.0d0
-    tmp2=0.0d0
     
     itmp=1+nBas**2*4*nOcc**2
-    call table2(ndimf,nsel,ener(1:nsel),fdstates(:,1:nsel),tmp1,&
-         tmp2,kpqf,itmp,'i')
+
+    filename='SCRATCH/fdstates'
+
+    call wrstateinfo_neutral(ndimf,kpqf,itmp,filename,nsel)
     
     write(ilog,'(/,70a,/)') ('*',i=1,70)
 
-!----------------------------------------------------------------------
-! Deallocate arrays
-!----------------------------------------------------------------------
-    deallocate(fdstates)
-    
     return
     
   end subroutine wrfdstates

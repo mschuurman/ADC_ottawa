@@ -201,7 +201,7 @@ module parameters
                  ndavcalls,eigentype,solver,solver_f,&
                  precon,precon_f,maxsubdim,maxsubdim_f
   real(d)     :: davtarg
-  character*1 :: hamflag
+  
   logical     :: lextdiag,ldfl,ldfl_f
 
 !!$************************************************
@@ -210,6 +210,8 @@ module parameters
   integer :: kdim,kdim_f,rlxortho,rlxortho_f,rlxtype,&
              rlxtype_f,guessdim,guessdim_f
   real(d) :: stepsize,stepsize_f,siltol,siltol_f
+
+
   
   character*3 :: POLARIZATION
 
@@ -331,5 +333,10 @@ real(d), dimension(:), allocatable          :: xcoo
 real(d), dimension(:,:,:,:), allocatable    :: fvpqrs
 character(len=2), dimension(:), allocatable :: aatm
 character(len=3)                            :: pntgroup
+
+!!$************************************************
+!!$**********Hamiltonian matrices******************
+!!$************************************************
+character*1 :: hamflag
 
 end module parameters

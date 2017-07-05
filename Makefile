@@ -75,7 +75,7 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-EIGEN=  source/eigen/matvecmul.o \
+EIGEN=  source/eigen/tdselib.o \
 	source/eigen/expokit.o \
 	source/eigen/sillib.o \
 	source/eigen/block_davidson.o \
@@ -173,7 +173,7 @@ ADC_OBJ=accuracy.o \
 	fspacetrial.o \
 	fspace2.o \
 	block_davidson.o \
-	matvecmul.o \
+	tdselib.o \
 	expokit.o \
 	sillib.o \
 	relaxation.o \

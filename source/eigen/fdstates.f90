@@ -14,7 +14,7 @@ module fdstates
   implicit none
 
   integer                               :: matdim,fsunit
-  integer*8                             :: buffsize,reclength
+  integer*8                             :: noffdiag,buffsize,reclength
   real(d), dimension(:,:), allocatable  :: buffer
   real(d), dimension(:,:), allocatable  :: eigvec
   real(d), dimension(:), allocatable    :: eigval
@@ -25,11 +25,14 @@ contains
 
 !######################################################################
 
-  subroutine calc_fdstates(fvec,ndimf)
+  subroutine calc_fdstates(fvec,ndimf,noffdf)
 
+    use tdsemod
+    
     implicit none
-
+    
     integer, intent(in)                   :: ndimf
+    integer*8, intent(in)                 :: noffdf
     integer                               :: k
     real(d), dimension(ndimf), intent(in) :: fvec
     real(d)                               :: tw1,tw2,tc1,tc2
@@ -40,19 +43,19 @@ contains
     call times(tw1,tc1)
 
 !----------------------------------------------------------------------
-! Output where we are at and what we are doing
-!----------------------------------------------------------------------
-    call wrinfo
-
-!----------------------------------------------------------------------
 ! Initialisation and allocatation
 !----------------------------------------------------------------------
-    call initialise(ndimf)
+    call initialise(ndimf,noffdf)
 
 !----------------------------------------------------------------------
 ! Determine what can be held in memory
 !----------------------------------------------------------------------
     call memory_managment
+
+!----------------------------------------------------------------------
+! Output where we are at and what we are doing
+!----------------------------------------------------------------------
+    call wrinfo
     
 !----------------------------------------------------------------------
 ! Normalise the F-vector to form |Psi(t=0)>
@@ -60,9 +63,16 @@ contains
     call init_wavepacket(fvec)
 
 !----------------------------------------------------------------------
+! Loading of the non-zero elements of the Hamiltonian matrix into
+! memory
+!----------------------------------------------------------------------
+    if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
+         'SCRATCH/hmlt.offc',matdim,noffdf)
+    
+!----------------------------------------------------------------------
 ! Calculation of the filter states |Psi_Ej> via wavepacket propagation
 !----------------------------------------------------------------------
-    call calc_filterstates
+    call calc_filterstates(noffdf)
 
 !----------------------------------------------------------------------
 ! Calculation of the eigenstates of interest
@@ -89,6 +99,8 @@ contains
 
   subroutine wrinfo
 
+    use tdsemod
+    
     implicit none
 
     integer :: k
@@ -108,22 +120,37 @@ contains
          the SIL method'
     write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
          kdim
-    write(ilog,'(2x,a,x,ES15.8,/)') 'Error tolerance:',autotol
+    write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',autotol
 
+!----------------------------------------------------------------------
+! Matrix-vector multiplication algorithm
+!----------------------------------------------------------------------
+    if (hincore) then
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed in-core'
+    else
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed out-of-core'
+    endif
+    
     return
 
   end subroutine wrinfo
   
 !######################################################################
 
-  subroutine initialise(ndimf)
+  subroutine initialise(ndimf,noffdf)
 
     implicit none
 
-    integer, intent(in) :: ndimf
+    integer, intent(in)   :: ndimf
+    integer*8, intent(in) :: noffdf
     
     ! Hamiltonian matrix dimension
     matdim=ndimf
+
+    ! No. non-zero off-diagonal matrix elements
+    noffdiag=noffdf
     
     ! Psi(t=0)
     allocate(psi0(matdim))
@@ -137,15 +164,14 @@ contains
 
   subroutine memory_managment
 
+    use tdsemod
+    use omp_lib
+    
     implicit none
 
     integer*8 :: maxrecl,reqmem
+    integer   :: nthreads
     real(d)   :: memavail
-    
-    !*****************************************************************
-    ! Note that here we are assuming that the matrix-vector
-    ! multiplication is going to occur out-of-core
-    !*****************************************************************
 
 !----------------------------------------------------------------------
 ! Available memory
@@ -167,6 +193,42 @@ contains
 
     ! Be cautious and only use say 90% of the available memory
     memavail=memavail*0.9d0
+
+!----------------------------------------------------------------------
+! Determine whether or not we can hold the non-zero Hamiltonian
+! matrix elements in-core
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+    reqmem=0.0d0
+    
+    ! Parallelised matrix-vector multiplication
+    reqmem=reqmem+8.0d0*nthreads*matdim/1024.0d0**2
+
+    ! Non-zero off-diagonal Hamiltonian matrix elements and their
+    ! indices
+    reqmem=reqmem+8.0d0*2.0d0*noffdiag/1024.0d0**2
+
+    ! On-diagonal Hamiltonian matrix elements
+    reqmem=reqmem+8.0d0*matdim/1024.0d0**2
+
+    ! Set the hincore flag controling whether the matrix-vector
+    ! multiplication proceeds in-core
+    if (reqmem.lt.memavail) then
+       hincore=.true.
+    else
+       hincore=.false.
+    endif
+
+    ! If the non-zero Hamiltonian matrix elements are to be held
+    ! in-core, then update memavail
+    if (hincore) then
+       memavail=memavail-8.0d0*nthreads*matdim/1024.0d0**2 &
+            -8.0d0*2.0d0*noffdiag/1024.0d0**2 &
+            -8.0d0*matdim/1024.0d0**2
+    endif
     
 !----------------------------------------------------------------------
 ! Determine whether or not we can store the filter states in-core
@@ -175,7 +237,7 @@ contains
     ! filter states
     reqmem=8.0d0*nfbas*matdim/1024.0d0**2
 
-    ! Set the fsicore flag
+    ! Set the fsincore flag
     if (memavail.ge.reqmem) then
        fsincore=.true.
     else
@@ -250,12 +312,14 @@ contains
 
 !######################################################################
 
-  subroutine calc_filterstates
+  subroutine calc_filterstates(noffdf)
 
     use sillib
+    use tdsemod
     
     implicit none
 
+    integer*8, intent(in)                   :: noffdf
     integer                                 :: i
     real(d)                                 :: norm
     real(d), parameter                      :: tiny=1e-9_d
@@ -274,8 +338,6 @@ contains
     complex(d), dimension(:,:), allocatable :: krylov
     logical(kind=4)                         :: restart,relax,stdform
     
-    external matxvec_treal
-
 !----------------------------------------------------------------------
 ! sillib variables
 !----------------------------------------------------------------------
@@ -352,11 +414,11 @@ contains
        stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
-       call matxvec_treal(matdim,psi,dtpsi)
+       call matxvec_treal(matdim,noffdiag,psi,dtpsi)
     
        ! Take one step using the SIL algorithm
-       call silstep(psi,dtpsi,matdim,stepsize,kdim,autotol,relax,&
-            restart,stdform,steps,krylov,truestepsize,trueorder,&
+       call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,autotol,&
+            relax,restart,stdform,steps,krylov,truestepsize,trueorder,&
             errorcode,time,matxvec_treal,eigenvector,eigenval,&
             diagonal,offdg2,offdiag)
 
@@ -492,13 +554,15 @@ contains
 
   subroutine calc_eigenstates
 
+    use tdsemod
+    
     implicit none
 
     integer                            :: i,j,unit
     real(d)                            :: norm
     real(d), dimension(:), allocatable :: hpsi
 
-    external matxvec
+!    external matxvec
 
 !----------------------------------------------------------------------
 ! Calculation of the eigensates of interest
@@ -531,7 +595,7 @@ contains
        
        ! Calculation of energies
        do i=1,nsel
-          call matxvec(matdim,eigvec(:,i),hpsi)
+          call matxvec(matdim,noffdiag,eigvec(:,i),hpsi)
           hpsi=-hpsi
           eigval(i)=dot_product(eigvec(:,i),hpsi)
        enddo
@@ -569,6 +633,8 @@ contains
 
   subroutine finalise
 
+    use tdsemod
+    
     implicit none
 
 !----------------------------------------------------------------------
@@ -581,6 +647,11 @@ contains
 ! Close scratch files
 !----------------------------------------------------------------------
     if (.not.fsincore) close(fsunit)
+    
+!----------------------------------------------------------------------
+! Deallocation of Hamiltonian arrays
+!----------------------------------------------------------------------
+    if (hincore) call deallocate_hamiltonian
     
     return
     

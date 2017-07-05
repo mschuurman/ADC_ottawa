@@ -418,7 +418,7 @@ contains
 !!$-----------------------------------------------------------------------------------------
 !!$----------------------------------------------------------------------
 
-  subroutine write_fspace_adc2e_1(ndim,kpq,noffdel,chr) 
+  subroutine write_fspace_adc2e_1(ndim,kpq,noffdel,chr)
 
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq

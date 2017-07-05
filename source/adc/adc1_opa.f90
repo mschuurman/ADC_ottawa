@@ -20,7 +20,6 @@
         integer                              :: i,ndim,ndims,ndimsf,&
                                                 nout,ndimf,ndimd,&
                                                 noutf,itmp
-        integer*8                            :: noffd,noffdf
         real(d)                              :: time
         real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
         real(d), dimension(:), allocatable   :: travec

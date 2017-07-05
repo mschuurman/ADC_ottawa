@@ -456,10 +456,14 @@ contains
 
   subroutine table2(ndim1,ndim2,en,vspace,tmvec,osc_str,&
        kpq,kpqdim2,flag)
+
+    use iomod, only: freeunit
+
+    implicit none
     
     integer, intent(in)                         :: ndim1,ndim2
     integer, dimension(:), allocatable          :: indx
-    integer                                     :: i,j,nlim,k
+    integer                                     :: i,j,k
     integer                                     :: kpqdim2,iout
     integer, dimension(7,0:kpqdim2-1)           :: kpq
     real(d), dimension(ndim2), intent(in)       :: en,tmvec,osc_str
@@ -467,17 +471,16 @@ contains
     real(d), dimension(:), allocatable          :: coeff
     character(len=1)                            :: flag
     character(len=70)                           :: filename
-    
-100 FORMAT(60("-"),/)
-101 FORMAT(4(A10,2x),/)
-102 FORMAT(I10,x,"|",4(F10.5,2x),"|",x,5(F8.6,"(",I7,")",1x)) 
-    
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
     allocate(coeff(ndim1),indx(ndim1))
-    
-    nlim=5
-    if (nlim .gt. ndim1) nlim=ndim1
-  
-    iout=127
+
+!----------------------------------------------------------------------
+! Open the davstates file
+!----------------------------------------------------------------------
+    call freeunit(iout)
 
     if (flag.eq.'i') then
        filename='davstates.dat'
@@ -487,21 +490,38 @@ contains
 
     open(iout,file=filename,form='formatted',status='unknown')
 
+!----------------------------------------------------------------------
+! Output the excited state information to the log and davstate files
+!----------------------------------------------------------------------    
+    ! MP2 energy
     write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
     write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
 
+    ! ADC state information
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
        call dsortindxa1('D',ndim1,coeff(:),indx(:))
        coeff(:)=vspace(:,i)
        call wrstateinfo(i,indx,coeff,kpq,kpqdim2,en(i),tmvec(i),&
             osc_str(i),ndim1,iout,flag)
-    end do
+    enddo
 
+!----------------------------------------------------------------------
+! Close the davstates file
+!----------------------------------------------------------------------
     close(iout)
-    
-    deallocate(coeff,indx)
 
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(coeff,indx)
+    
+100 format(60("-"),/)
+101 format(4(A10,2x),/)
+102 format(I10,x,"|",4(F10.5,2x),"|",x,5(F8.6,"(",I7,")",1x)) 
+
+    return
+    
   end subroutine table2
 
 !#######################################################################

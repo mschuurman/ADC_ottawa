@@ -13,22 +13,22 @@ scf_iter=100
 mem=900
 
 diag_section
- nstates = 10
- block_size = 10
+ nstates = 3
+ block_size = 3
  method=relaxation_liu
  timestep = 200.0
  krydim = 20
  maxit = 1000
  siltol=1e-5
  maxvec=100
- guess = subdiag,1100
+ guess = subdiag,800
  tol=1d-6
 end-diag_section
 
 diag_final_section
- nstates = 10
- block_size = 15
- maxvec=45
+ nstates = 3
+ block_size = 5
+ maxvec=15
  tol=1d-6
  maxit=200
  guess=adc1

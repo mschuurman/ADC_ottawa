@@ -65,7 +65,7 @@ contains
 ! calculation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_fvec(fvec,ndimf)
+    call propagate_fvec(fvec,ndimf,noffdf)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
