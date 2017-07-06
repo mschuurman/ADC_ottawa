@@ -508,9 +508,7 @@ contains
        enddo
 
     else
-       print*,
        print*,"THE OUT-OF-CORE CODE NEEDS WRITING..."
-       print*,
        STOP
     endif
     
@@ -618,9 +616,7 @@ contains
        !
        ! Out-of-core calculation of the eigenstates
        !
-       print*,
        print*,"THE OUT-OF-CORE CODE NEEDS WRITING..."
-       print*,
        STOP
 
     endif
