@@ -1,4 +1,4 @@
-method=adc2-s,adc2-x
+method=adc2-s,adc2-s
 
 initial_state=1
 istate_symm = 1
@@ -6,20 +6,19 @@ istate_symm = 1
 dipole_component = x
 dipole_symm = 1
 
-frozen_core=initial
+frozen_core=initial,final
 
 scf_iter=100
 
-mem=900
+mem=2000
 
 diag_section
  nstates = 3
  block_size = 3
- method=relaxation_liu
+ method=relaxation
  timestep = 200.0
  krydim = 20
  maxit = 1000
- siltol=1e-5
  maxvec=100
  guess = subdiag,800
  tol=1d-6
@@ -31,7 +30,7 @@ diag_final_section
  maxvec=15
  tol=1d-6
  maxit=200
- guess=adc1
+ guess = subdiag,800
  nodfl
 end-diag_final_section
 

@@ -842,13 +842,6 @@
                   solver=1
                else if (keyword(i).eq.'relaxation') then
                   solver=2
-                  rlxtype=1
-               else if (keyword(i).eq.'relaxation_liu') then
-                  solver=2
-                  rlxtype=2
-               else if (keyword(i).eq.'relaxation_expo') then
-                  solver=2
-                  rlxtype=3
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -911,21 +904,6 @@
                goto 100
             endif
             
-         else if (keyword(i).eq.'ortho') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               if (keyword(i).eq.'unmodified') then
-                  rlxortho=1
-               else if (keyword(i).eq.'modified') then
-                  rlxortho=2
-               else
-                  errmsg='Unknown keyword: '//trim(keyword(i))
-                  call error_control
-               endif
-            else
-               goto 100
-            endif
-
          else if (keyword(i).eq.'siltol') then
             if (keyword(i+1).eq.'=') then
                i=i+2
@@ -1062,13 +1040,6 @@
                   solver_f=1
                else if (keyword(i).eq.'relaxation') then
                   solver_f=2
-                  rlxtype_f=1
-               else if (keyword(i).eq.'relaxation_liu') then
-                  solver_f=2
-                  rlxtype_f=2
-               else if (keyword(i).eq.'relaxation_expo') then
-                  solver_f=2
-                  rlxtype_f=3
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -1131,21 +1102,6 @@
                goto 100
             endif
             
-         else if (keyword(i).eq.'ortho') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               if (keyword(i).eq.'unmodified') then
-                  rlxortho_f=1
-               else if (keyword(i).eq.'modified') then
-                  rlxortho_f=2
-               else
-                  errmsg='Unknown keyword: '//trim(keyword(i))
-                  call error_control
-               endif
-            else
-               goto 100
-            endif
-
          else if (keyword(i).eq.'siltol') then
             if (keyword(i+1).eq.'=') then
                i=i+2

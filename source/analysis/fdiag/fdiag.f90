@@ -1024,21 +1024,21 @@ contains
     do i=1,nrbas
 
        ! OLD: Original estimation suggested by Neuhauser
-       !e2diag=0.0d0
-       !do j=1,nrbas
-       !   e2diag(j,j)=rener(i)**2
-       !enddo
-       !
-       !tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
-       !
-       !error(i)=sqrt(abs(tmpmat(i,i)))
+       e2diag=0.0d0
+       do j=1,nrbas
+          e2diag(j,j)=rener(i)**2
+       enddo
+       
+       tmpmat=matmul(transpose(rvec),matmul(h2rbas-e2diag,rvec))
+       
+       error(i)=sqrt(abs(tmpmat(i,i)))
 
-       ! NEW: Estimation suggested in:
-       ! Equation 9, Werner and Cary, J. Comp. Phys., 227, 5200 (2008)
-       tmpvec=matmul(hrbas,rvec(:,i))-rener(i)*rvec(:,i)
-       error(i)=sqrt(dot_product(tmpvec,tmpvec))
-       tmpvec=matmul(hrbas,rvec(:,i))
-       error(i)=error(i)/sqrt(dot_product(tmpvec,tmpvec))
+       !! NEW: Estimation suggested in:
+       !! Equation 9, Werner and Cary, J. Comp. Phys., 227, 5200 (2008)
+       !tmpvec=matmul(hrbas,rvec(:,i))-rener(i)*rvec(:,i)
+       !error(i)=sqrt(dot_product(tmpvec,tmpvec))
+       !tmpvec=matmul(hrbas,rvec(:,i))
+       !error(i)=error(i)/sqrt(dot_product(tmpvec,tmpvec))
        
     enddo
     

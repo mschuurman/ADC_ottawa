@@ -562,8 +562,6 @@ contains
     real(d)                            :: norm
     real(d), dimension(:), allocatable :: hpsi
 
-!    external matxvec
-
 !----------------------------------------------------------------------
 ! Calculation of the eigensates of interest
 !----------------------------------------------------------------------

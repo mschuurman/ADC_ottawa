@@ -8342,7 +8342,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     do i=1,nthreads
        nsaved(i)=mod(count_omp(i),buf_size)
     enddo
-    n=nsaved(1)    
+    n=nsaved(1)
     file_offdiag(1:n)=file_offdiag_omp(1,1:n)
     oi(1:n)=oi_omp(1,1:n)
     oj(1:n)=oj_omp(1,1:n)

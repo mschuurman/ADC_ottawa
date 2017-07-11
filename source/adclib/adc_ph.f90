@@ -60,57 +60,6 @@ contains
     integer :: c,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
     real(d) :: DA,eijc,term
 
-!!$ Faster version (taking symmetries into account)
-
-!!$ i|=j 
-
-!!$    CA_ph_ph=0._d
-!!$   
-!!$    do c=nOcc+1,nBas
-!!$       do i=1,nOcc
-!!$          do j=i+1,nOcc
-!!$             
-!!$             term=0._d
-!!$
-!!$             eijc=e(roccnum(i))+e(roccnum(j))-e(roccnum(c))
-!!$             DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
-!!$
-!!$             term=term+vpqrs(a,i,c,j)*(2._d*vpqrs(i,a1,j,c)-vpqrs(i,c,j,a1))
-!!$             term=term+vpqrs(a,j,c,i)*(2._d*vpqrs(i,c,j,a1)-vpqrs(i,a1,j,c))
-!!$             term=DA*term
-!!$             
-!!$             CA_ph_ph=CA_ph_ph+term
-!!$             
-!!$          end do
-!!$       end do
-!!$    end do
-!!$    
-!!$    CA_ph_ph=2._d*CA_ph_ph
-    
-!!$ i=j
-    
-!!$    do c=nOcc+1,nBas
-!!$       do i=1,nOcc
-!!$          
-!!$          term=0._d
-!!$          
-!!$          eijc=2._d*e(roccnum(i))-e(roccnum(c))
-!!$          DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
-!!$          
-!!$          term=term+2.0_d*vpqrs(a,i,c,i)*vpqrs(a1,i,c,i)
-!!$          term=DA*term
-!!$          
-!!$          CA_ph_ph=CA_ph_ph+term
-!!$        
-!!$       end do
-!!$    end do
-    
-    
-!!$    CA_ph_ph=-0.5_d*CA_ph_ph
-
-!!$ Dumbed down version
-
-
     CA_ph_ph=0._d
     cnt=0
     do c=nOcc+1,nBas
@@ -128,8 +77,6 @@ contains
              if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
                 
                 cnt=cnt+1
-!!$                write(ilog,*) a,a1,orbSym(a),orbSym(a1)
-!!$                write(ilog,*) u,v,r,orbSym(u),orbSym(v),orbSym(r)
                 term=0._d
 
                 eijc=e(u)+e(v)-e(r)
@@ -137,9 +84,7 @@ contains
 
                 term=term+vpqrs(a,u,r,v)*(2._d*vpqrs(u,a1,v,r)-vpqrs(u,r,v,a1))
                 term=term+vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r)) 
-!!$
-!!$                term=term+vpqrs(a,i,c,j)*(vpqrs(i,a1,j,c)-2._d*vpqrs(i,c,j,a1))
-!!$                term=term+vpqrs(a,j,c,i)*(vpqrs(i,c,j,a1)-2._d*vpqrs(i,a1,j,c))
+
                 term=DA*term
                 
                 CA_ph_ph=CA_ph_ph+term
@@ -317,19 +262,6 @@ contains
     
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
     real(d)             :: func
-
-!    C1_ph_2p2h=0._d
-!    
-!    if(kdelta(a,apr) .eq. 1)& 
-!         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
-!    if(kdelta(a,bpr) .eq. 1)&
-!         C1_ph_2p2h=C1_ph_2p2h-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
-!    if(kdelta(k,lpr) .eq. 1)&
-!         C1_ph_2p2h=C1_ph_2p2h+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
-!     
-!    C1_ph_2p2h=C1_ph_2p2h/sqrt(2._d)
  
     func=0.0d0
 
@@ -356,19 +288,6 @@ contains
     integer, intent(in) :: a,k,apr,bpr,kpr,lpr
     real(d)             :: func
 
-!    C2_ph_2p2h=0._d 
-!    
-!    if(kdelta(a,apr) .eq. 1)&
-!         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(kpr,k,lpr,bpr)-vpqrs(kpr,bpr,lpr,k))
-!    if(kdelta(a,bpr) .eq. 1)&
-!         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(kpr,k,lpr,apr)-vpqrs(kpr,apr,lpr,k))
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C2_ph_2p2h=C2_ph_2p2h+(vpqrs(a,apr,lpr,bpr)-vpqrs(a,bpr,lpr,apr))
-!    if(kdelta(k,lpr) .eq. 1)&
-!         C2_ph_2p2h=C2_ph_2p2h-(vpqrs(a,apr,kpr,bpr)-vpqrs(a,bpr,kpr,apr))
-!
-!    C2_ph_2p2h=sqrt(3._d)*C2_ph_2p2h/sqrt(2._d)
- 
     func=0.0d0
 
     if (a.eq.apr) func=func-(vpqrs(kpr,k,lpr,bpr)-vpqrs(kpr,bpr,lpr,k))
@@ -392,15 +311,6 @@ contains
     integer, intent(in) :: j,k,ipr,kpr,lpr
     real(d)             :: func
 
-!    C3_ph_2p2h=0._d
-!    
-!    if(kdelta(j,ipr) .eq. 1)&
-!         C3_ph_2p2h=C3_ph_2p2h-(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,lpr,ipr)
-!    if(kdelta(k,lpr) .eq. 1)&
-!         C3_ph_2p2h=C3_ph_2p2h+vpqrs(j,ipr,kpr,ipr)
-
     func=0.0d0
     
     if (j.eq.ipr) func=func-(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
@@ -420,15 +330,6 @@ contains
     integer, intent(in) :: a,k,apr,bpr,kpr
     real(d)             :: func
   
-!    C4_ph_2p2h=0._d
-!
-!    if(kdelta(a,apr) .eq. 1)&
-!         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,bpr)
-!    if(kdelta(a,bpr) .eq. 1)&
-!         C4_ph_2p2h=C4_ph_2p2h+vpqrs(kpr,k,kpr,apr)
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C4_ph_2p2h=C4_ph_2p2h-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
-
     func=0.0d0
 
     if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,bpr)
@@ -448,15 +349,6 @@ contains
     integer, intent(in) :: a,k,apr,kpr
     real(d)             :: func
 
-!    C5_ph_2p2h=0._d
-!     
-!    if(kdelta(a,apr) .eq. 1)&
-!         C5_ph_2p2h=C5_ph_2p2h+vpqrs(kpr,apr,kpr,k)
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C5_ph_2p2h=C5_ph_2p2h-vpqrs(a,apr,kpr,apr)
-!    
-!    C5_ph_2p2h=sqrt(2._d)*C5_ph_2p2h
- 
     func=0.0d0
      
     if (a.eq.apr) func=func+vpqrs(kpr,apr,kpr,k)
@@ -499,15 +391,6 @@ contains
     integer, intent(in) :: a,k,apr,kpr
     real(d)             :: func
     
-!    C_1_1=0._d
-!    
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C_1_1=C_1_1+vpqrs(a,apr,a,apr)
-!    if(kdelta(a,apr) .eq. 1)&
-!         C_1_1=C_1_1+vpqrs(kpr,k,kpr,k)
-!    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
-!         C_1_1=C_1_1-2._d*(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
-
     func=0.0d0
     
     if (k.eq.kpr) func=func+vpqrs(a,apr,a,apr)
@@ -526,19 +409,6 @@ contains
     
     integer, intent(in) :: a,b,k,apr,kpr
     real(d)             :: func
-
-!    C_2_1=0._d
-!    
-!    if(kdelta(k,kpr) .eq. 1)&
-!         C_2_1=C_2_1+vpqrs(a,apr,b,apr)
-!    if(kdelta(a,apr)*kdelta(b,apr) .eq. 1)&
-!         C_2_1=C_2_1+0.5_d*vpqrs(kpr,k,kpr,k)
-!    if(kdelta(b,apr)*kdelta(k,kpr) .eq. 1)&
-!         C_2_1=C_2_1-(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
-!    if(kdelta(a,apr)*kdelta(k,kpr) .eq.1)&
-!         C_2_1=C_2_1-(2._d*vpqrs(b,apr,kpr,k)-vpqrs(b,k,kpr,apr))
-!    
-!    C_2_1=C_2_1*sqrt(2._d)
 
     func=0.0d0
     
@@ -563,19 +433,6 @@ contains
     integer, intent(in) :: a,k,l,apr,kpr
     real(d)             :: func
     
-!    C_3_1=0._d
-!    
-!    if(kdelta(k,kpr)*kdelta(l,kpr) .eq. 1)&
-!         C_3_1=C_3_1-0.5_d*vpqrs(a,apr,a,apr)
-!    if(kdelta(a,apr) .eq. 1)&
-!         C_3_1=C_3_1-vpqrs(kpr,k,kpr,l)
-!    if(kdelta(a,apr)*kdelta(l,kpr) .eq. 1)&
-!         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,k)-vpqrs(a,k,kpr,apr))
-!    if(kdelta(a,apr)*kdelta(k,kpr) .eq. 1)&
-!         C_3_1=C_3_1+(2._d*vpqrs(a,apr,kpr,l)-vpqrs(a,l,kpr,apr))
-!    
-!    C_3_1=C_3_1*sqrt(2._d)
- 
     func=0.0d0
     
     if (k.eq.kpr.and.l.eq.kpr) func=func-0.5_d*vpqrs(a,apr,a,apr)

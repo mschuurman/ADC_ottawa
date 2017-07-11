@@ -117,6 +117,125 @@ contains
   
     implicit none
 
+    integer                    :: matdim
+    integer*8                  :: noffdiag
+    real(d), dimension(matdim) :: v1,v2
+
+    if (hincore) then
+       call matxvec_incore(matdim,noffdiag,v1,v2)
+    else
+       call matxvec_ext(matdim,noffdiag,v1,v2)
+    endif
+    
+    return
+    
+  end subroutine matxvec
+
+!#######################################################################
+! matxvec_incore: calculates v2 = -H.v1 using a Hamiltonian stored
+!                 in-core
+!#######################################################################
+
+  subroutine matxvec_incore(matdim,noffdiag,v1,v2)
+
+    use constants
+    use parameters
+    use iomod
+    use channels
+    use omp_lib
+    
+    implicit none
+
+    integer                                :: matdim,maxbl,nrec,nlim,&
+                                              ion,i,j,k,l,nthreads,tid
+    integer*8                              :: noffdiag,npt
+    integer*8, dimension(:,:), allocatable :: irange
+    real(d), dimension(matdim)             :: v1,v2
+    real(d), dimension(:,:), allocatable   :: tmpvec
+    character(len=70)                      :: fileon,fileoff
+
+!-----------------------------------------------------------------------
+! Number of threads
+!-----------------------------------------------------------------------  
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(irange(nthreads,2))
+    allocate(tmpvec(matdim,nthreads))
+
+!-----------------------------------------------------------------------
+! Partitioning of the off-diagonal elements: one chunk per thread
+!-----------------------------------------------------------------------
+    npt=int(floor(real(noffdiag)/real(nthreads)))
+    
+    do i=1,nthreads-1
+       irange(i,1)=(i-1)*npt+1
+       irange(i,2)=i*npt
+    enddo
+
+    irange(nthreads,1)=(nthreads-1)*npt+1
+    irange(nthreads,2)=noffdiag
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements
+!-----------------------------------------------------------------------
+    do k=1,matdim
+       v2(k)=-hon(k)*v1(k)
+    enddo
+
+!-----------------------------------------------------------------------
+! Contributoion from the off-diagonal elements
+!-----------------------------------------------------------------------
+    tmpvec=czero
+
+    !$omp parallel do &
+    !$omp& private(i,k,tid) &
+    !$omp& shared(tmpvec,v1)
+    do i=1,nthreads
+       
+       tid=1+omp_get_thread_num()
+
+       do k=irange(tid,1),irange(tid,2)
+          tmpvec(iindx(k),tid)=tmpvec(iindx(k),tid)&
+               -hoff(k)*v1(jindx(k))
+          tmpvec(jindx(k),tid)=tmpvec(jindx(k),tid)&
+               -hoff(k)*v1(iindx(k))
+       enddo
+          
+    enddo
+    !$omp end parallel do
+
+    do i=1,nthreads
+       v2=v2+tmpvec(:,i)
+    enddo
+       
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(irange)
+    deallocate(tmpvec)
+    
+    return
+    
+  end subroutine matxvec_incore
+  
+!#######################################################################
+! matxvec_ext: calculates v2 = -H.v1 using an externally stored
+!              Hamiltonian
+!#######################################################################
+  
+  subroutine matxvec_ext(matdim,noffdiag,v1,v2)
+
+    use constants
+    use parameters
+    use iomod
+  
+    implicit none
+
     integer                            :: matdim,maxbl,nrec,nlim,&
                                           ion,ioff,k,l
     integer*8                          :: noffdiag
@@ -191,7 +310,7 @@ contains
     
     return
     
-  end subroutine matxvec
+  end subroutine matxvec_ext
 
 !#######################################################################
 ! matxvec_treal: calculates v2 = -iH.v1 

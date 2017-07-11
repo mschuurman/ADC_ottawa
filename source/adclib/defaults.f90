@@ -110,13 +110,9 @@
 !-----------------------------------------------------------------------
       ! Initial space
       lnoise=.false.
-      rlxortho=2
-      rlxtype=1
       
       ! Final space
       lnoise_f=.false.
-      rlxortho_f=2
-      rlxtype_f=1
       
 !-----------------------------------------------------------------------
 ! Lanczos parameters

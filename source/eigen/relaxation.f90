@@ -1,6 +1,7 @@
 !#######################################################################
 ! Routines for the calcuation of eigenstates of the ADC(2) Hamiltonian
-! via imaginary time wavepacket propagations
+! via imaginary time wavepacket propagations using the XSIL
+! algorithm.
 !#######################################################################
 
   module relaxmod
@@ -15,16 +16,17 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,&
-                                            iortho,algor,subdim,nmult
+                                            subdim,nmult
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
     real(d)                              :: step,eps,toler
-    character(len=36)                    :: vecfile
+    character(len=36)                    :: vecfile 
+    character(len=60)                    :: fileon,fileoff
     logical, dimension(:), allocatable   :: lconv
-    logical                              :: lincore,lrdadc1,lrandom,lsub
+    logical                              :: lrdadc1,lrandom,lsub
 
-    ! Lanczos-Liu arrays
+    ! XSIL arrays
     integer                              :: maxvec,maxdim,nlin
     real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
                                             vec_conv,alphamat,betamat
@@ -35,6 +37,8 @@
 
     subroutine relaxation(matdim,noffd)
 
+      use tdsemod
+      
       implicit none
 
       integer, intent(in)      :: matdim
@@ -64,8 +68,8 @@
 !-----------------------------------------------------------------------
 ! Allocatation and initialisation of arrays
 !-----------------------------------------------------------------------
-      call initialise(matdim)      
-
+      call initialise(matdim)
+      
 !-----------------------------------------------------------------------
 ! Determine whether or not we can perform the matrix-vector
 ! multiplication in-core
@@ -73,35 +77,21 @@
       call isincore(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! Read the on-diagonal elements of the Hamiltonian matrix from disk
-!-----------------------------------------------------------------------
-      call rdham_on(matdim)
-      
-!-----------------------------------------------------------------------
 ! If the matrix-vector multiplication is to proceed in-core, then
-! read the off-diagonal Hamiltonian matrix from disk
+! load the non-zero elements of the Hamiltonian matrix into memory
 !-----------------------------------------------------------------------
-      if (lincore) call rdham_off(noffd)
+      if (hincore) call load_hamiltonian(fileon,fileoff,matdim,noffd)
 
 !-----------------------------------------------------------------------
 ! Set the initial vectors
 !-----------------------------------------------------------------------
       call initvec(matdim,noffd)
-      
-!-----------------------------------------------------------------------
-! Perform the block-relaxation calculation
-!-----------------------------------------------------------------------
-      if (algor.eq.1) then
-         ! Traditional SIL algorithm
-         call relaxation_sil(matdim,noffd)
-      else if (algor.eq.2) then
-         ! Basis reuse algorithm of Liu
-         call relaxation_liu(matdim,noffd)
-      else if (algor.eq.3) then
-         ! External expokit libraries
-         call relaxation_expokit(matdim,noffd)
-      endif
 
+!-----------------------------------------------------------------------
+! Perform the relaxation calculation using the XSIL algorithm
+!-----------------------------------------------------------------------
+      call xsil_rlx(matdim,noffd)
+      
 !-----------------------------------------------------------------------
 ! Exit here if not all states have converged
 !-----------------------------------------------------------------------
@@ -135,86 +125,7 @@
 
 !#######################################################################
 
-    subroutine relaxation_sil(matdim,noffd)
-
-      implicit none
-
-      integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
-      integer               :: n,k
-
-!-----------------------------------------------------------------------
-! Initialisation
-!-----------------------------------------------------------------------
-      nmult=0
-
-!-----------------------------------------------------------------------
-! Output some information about the relaxation calculation
-!-----------------------------------------------------------------------
-      write(ilog,'(2x,a,/)') 'Algorithm: Block short iterative Lanczos'
-      write(ilog,'(2x,a,F12.7,/)') 'Max. timestep:',step
-      write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
-           krydim
-
-!-----------------------------------------------------------------------
-! Output the initial energies and convergence information
-!-----------------------------------------------------------------------
-      vec_new=vec_old
-      call getener(matdim,noffd)
-      call check_conv(matdim,noffd)
-      call wrtable(0)
-
-!-----------------------------------------------------------------------
-! Perform the relaxation calculation
-!-----------------------------------------------------------------------
-      ! Loop over timesteps
-      do n=1,niter
-
-         ! Propagate the wavefunctions to the next timestep using
-         ! the SIL algorithm    
-         do k=1,nblock
-            if (lconv(k).and.iortho.eq.2) then
-               vec_new(:,k)=vec_old(:,k)
-            else
-               call modified_silstep(k,matdim,noffd,vec_old(:,k),vec_new(:,k))
-            endif
-         enddo
-         
-         ! If the unmodified SIL algorithm is being used, then
-         ! orthogonalise the propagated wavefunctions amongst 
-         ! themselves
-         if (iortho.eq.1) call orthowf(matdim)
-         
-         ! Calculate the energies
-         call getener(matdim,noffd)
-         
-         ! Sort the wavefunctions by energy
-         call sortwf(matdim)
-         
-         ! Check convergence
-         call check_conv(matdim,noffd)
-
-         ! Output the energies and convergence information
-         call wrtable(n)
-         
-         ! Exit if all wavefunctions have converged
-         if (nconv.ge.nstates) then
-            write(ilog,'(/,2x,a,/)') 'All states have converged'
-            exit
-         endif
-            
-         ! Set the initial wavefunctions for the next step
-         vec_old=vec_new
-         
-      enddo
-      
-      return
-
-    end subroutine relaxation_sil
-
-!#######################################################################
-
-    subroutine relaxation_liu(matdim,noffd)
+    subroutine xsil_rlx(matdim,noffd)
 
       implicit none
 
@@ -384,240 +295,8 @@
       
       return
       
-    end subroutine relaxation_liu
+    end subroutine xsil_rlx
 
-!#######################################################################
-
-    subroutine relaxation_expokit(matdim,noffd)
-
-      use tdsemod
-      
-      implicit none
-
-      integer                            :: s,i,n
-      integer, intent(in)                :: matdim
-      integer*8, intent(in)              :: noffd
-      real(d)                            :: hnorm,energy,residual
-      real(d), dimension(:), allocatable :: vec0,vecprop
-      
-      ! Expokit
-      integer                            :: lwsp,liwsp,itrace,iflag
-      integer, dimension(:), allocatable :: iwsp
-      real(d), dimension(:), allocatable :: wsp
-
-!      external matxvec
-
-!-----------------------------------------------------------------------
-! Initialisation
-!-----------------------------------------------------------------------
-      ! |Psi(0)>
-      allocate(vec0(matdim))
-      vec0=0.0d0
-
-      ! |Psi(dt)>
-      allocate(vecprop(matdim))
-      vecprop=0.0d0
-
-      ! Expokit work arrays
-      lwsp=2*(matdim*(krydim+1)+matdim+(krydim+2)**2+4*(krydim+2)**2+7)
-      liwsp=2*(krydim+2)
-      allocate(wsp(lwsp))
-      allocate(iwsp(liwsp))
-
-      ! Expokit flags: supress output
-      itrace=0
-
-      ! No. converged states
-      nconv=0
-
-      ! No. matrix-vector multiplications
-      nmult=0
-
-!-----------------------------------------------------------------------
-! Output some information about the relaxation calculation
-!-----------------------------------------------------------------------
-      write(ilog,'(2x,a,/)') 'Algorithm: Short iterative Lanczos'
-      write(ilog,'(2x,a,F12.7,/)') 'Timestep:',step
-      write(ilog,'(2x,a,i3,/)') 'Max. Krylov subspace dimension:',&
-           krydim
-      
-!-----------------------------------------------------------------------
-! Calculate the infinity norm of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      call infnorm(hnorm,matdim)
-
-!-----------------------------------------------------------------------
-! Perform the relaxation calculations using the external Expokit
-! libraries
-!-----------------------------------------------------------------------
-      ! Loop over states
-      do s=1,nstates
-
-         ! |Psi(0)>
-         vec0=vec_old(:,s)
-
-         ! Write the table header for the current state
-         call wrheader_1vec(s)
-
-         ! Output the initial energy and residual
-         call residual_1vec(vec0,matdim,noffd,energy,residual)
-         call wrtable_1vec(0,energy,residual)
-
-         ! Loop over timesteps
-         do n=1,niter
-
-            ! Orthogonalisation no. 1
-            do i=1,s-1
-               vec0=vec0-dot_product(vec0,vec_new(:,s))*vec_new(:,s)
-            enddo
-               
-            ! Take one step using the Expokit Lanczos code
-            call dsexpv(matdim,krydim,step,vec0,vecprop,&
-                 toler,hnorm,wsp,lwsp,iwsp,liwsp,matxvec,&
-                 itrace,iflag)
-
-            ! Orthogonalisation no. 2
-            do i=1,s-1
-               vecprop=vecprop&
-                    -dot_product(vecprop,vec_new(:,s))*vec_new(:,s)
-            enddo
-            
-            ! Renormalisation
-            vecprop=vecprop/sqrt(dot_product(vecprop,vecprop))
-            
-            ! Calculate the residual
-            call residual_1vec(vecprop,matdim,noffd,energy,residual)
-
-            ! Reset |Psi(0)>
-            vec0=vecprop
-
-            ! Output the residual and energy for the current iteration
-            call wrtable_1vec(n,energy,residual)
-
-            ! Update nmult
-            nmult=nmult+iwsp(1)
-            
-            ! Exit if convergence has been reached
-            if (residual.le.eps) then
-               ! Update the number of converged states
-               nconv=nconv+1
-               ! Save the converged state and energy
-               vec_new(:,s)=vecprop
-               ener(s)=energy
-               ! Output some things
-               write(ilog,'(/,2x,a)') 'Converged'
-               write(ilog,'(2x,a,2x,i3,/)') &
-                    'No. matrix-vector multiplications:',nmult
-               ! Terminate the relaxation for the current state
-               exit
-            endif
-               
-         enddo
-
-         ! Quit here if convergence was not reached for the
-         ! current state
-         if (residual.gt.eps) then
-            write(errmsg,'(a,x,i2)')&
-                 'Convergence not reached for state:',s
-            call error_control
-         endif
-         
-      enddo
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-      deallocate(wsp)
-      deallocate(iwsp)
-      deallocate(vec0)
-      deallocate(vecprop)
-      
-      return
-      
-    end subroutine relaxation_expokit
-
-!#######################################################################
-
-    subroutine infnorm(norm,matdim)
-
-      use misc, only: dsortindxa1
-      
-      implicit none
-
-      integer                            :: k,l,iham,nlim
-      integer, intent(in)                :: matdim
-      integer, dimension(:), allocatable :: rindx
-      real(d)                            :: norm
-      real(d), dimension(:), allocatable :: rsum
-      character(len=70)                  :: filename
-      
-!----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-      allocate(rsum(matdim))
-      rsum=0.0d0
-
-      allocate(rindx(matdim))
-      rindx=0
-      
-!----------------------------------------------------------------------
-! Contribution from the on-diagonal elements
-!----------------------------------------------------------------------
-      rsum=abs(hii)
-      
-!----------------------------------------------------------------------
-! Contribution from the off-diagonal elements
-!----------------------------------------------------------------------
-      if (lincore) then
-
-         ! In core storage of the Hamiltonian
-         do k=1,nrec
-            rsum(indxi(k))=rsum(indxi(k))+abs(hij(k))
-         enddo
-         
-      else
-
-         ! Out-of-core storage of the Hamiltonian
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-      
-         if (hamflag.eq.'i') then
-            filename='SCRATCH/hmlt.offi'
-         else if (hamflag.eq.'f') then
-            filename='SCRATCH/hmlt.offc'
-         endif
-
-         open(iham,file=filename,status='old',access='sequential',&
-              form='unformatted')
-
-         do k=1,nrec
-            read(iham) hij(:),indxi(:),indxj(:),nlim
-            do l=1,nlim
-               rsum(indxi(l))=rsum(indxi(l))+abs(hij(l))
-            enddo
-         enddo
-         
-         close(iham)
-         
-         deallocate(hij,indxi,indxj)
-         
-      endif
-
-!----------------------------------------------------------------------
-! Determination of the infinity norm of the Hamiltonian matrix
-!----------------------------------------------------------------------
-      call dsortindxa1('D',matdim,rsum,rindx)
-      norm=rsum(rindx(1))
-      
-!----------------------------------------------------------------------
-! Deallocate arrays
-!----------------------------------------------------------------------
-      deallocate(rsum)
-      deallocate(rindx)
-      
-      return
-      
-    end subroutine infnorm
-      
 !#######################################################################
 
     subroutine initialise(matdim)
@@ -637,9 +316,7 @@
          step=stepsize
          eps=davtol
          niter=maxiter
-         iortho=rlxortho
          toler=siltol
-         algor=rlxtype
          maxdim=maxsubdim
          subdim=guessdim
       else if (hamflag.eq.'f') then
@@ -650,22 +327,25 @@
          step=stepsize_f
          eps=davtol_f
          niter=maxiter_f
-         iortho=rlxortho_f
          toler=siltol_f
-         algor=rlxtype_f
          maxdim=maxsubdim
          subdim=guessdim_f
       endif
 
-      if (algor.eq.2) iortho=3
+!-----------------------------------------------------------------------
+! Files holding the non-zero elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+      if (hamflag.eq.'i') then
+         fileon='SCRATCH/hmlt.diai'
+         fileoff='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         fileon='SCRATCH/hmlt.diac'
+         fileoff='SCRATCH/hmlt.offc'
+      endif
       
 !-----------------------------------------------------------------------
 ! Allocation of arays
 !-----------------------------------------------------------------------
-      ! On-diagonal elements of the Hamiltonian matrix
-      allocate(hii(matdim))
-      hii=0.0d0
-
       ! |Psi_n(t)>
       allocate(vec_old(matdim,nblock))
       vec_old=0.0d0
@@ -708,7 +388,8 @@
 
       use constants
       use parameters
-
+      use tdsemod
+      
       implicit none
 
       integer, intent(in)   :: matdim
@@ -746,11 +427,11 @@
       
       ! Determine whether we can hold the Hamiltonian matrix in-core
       if (mem.lt.maxmem) then
-         lincore=.true.
+         hincore=.true.
          write(ilog,'(2x,a,/)') 'Matrix-vector multiplication will &
               proceed in-core'
       else
-         lincore=.false.
+         hincore=.false.
          write(ilog,'(2x,a,/)') 'Matrix-vector multiplication will &
               proceed out-of-core'
       endif
@@ -872,7 +553,6 @@
       integer, intent(in)                :: matdim
       integer                            :: iham,i,k
       integer, dimension(:), allocatable :: indx_hii
-      real(d), dimension(:), allocatable :: hii
       character(len=70)                  :: filename
 
 !-----------------------------------------------------------------------
@@ -981,6 +661,7 @@
     subroutine initvec_subdiag(matdim,noffd)
 
       use misc, only: dsortindxa1
+      use tdsemod
       
       implicit none
 
@@ -999,6 +680,27 @@
 !-----------------------------------------------------------------------
       write(ilog,'(2x,a,/)') 'Generating guess vectors by &
            diagonalising a subspace Hamiltonian...'
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal elements from file
+!-----------------------------------------------------------------------
+      allocate(hii(matdim))
+
+      call freeunit(iham)
+      
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.diai'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.diac'
+      endif
+
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      read(iham) maxbl,nrec
+      read(iham) hii
+
+      close(iham)
       
 !-----------------------------------------------------------------------
 ! Sort the on-diagonal Hamiltonian matrix elements in order of
@@ -1041,67 +743,54 @@
 !-----------------------------------------------------------------------
       hsub=0.0d0
 
-      ! On-diagonal elements
+      ! (i) On-diagonal elements
       do i=1,subdim
          k=sub2full(i)
          hsub(i,i)=hii(k)
       enddo
 
-      ! Off-diagonal elements
-      if (lincore) then
-         ! Loop over all off-diagonal elements of the full space
-         ! Hamiltonian
-         do k=1,noffd
+      ! (ii) Off-diagonal elements
+      !
+      ! Open the off-diagonal element file
+      call freeunit(iham)
+
+
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.offc'
+      endif
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+
+
+      ! Allocate arrays
+      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      ! Loop over records
+      do k=1,nrec
+         read(iham) hij(:),indxi(:),indxj(:),nlim
+         ! Loop over the non-zero elements of the full space
+         ! Hamiltonian in the current record
+         do l=1,nlim
             ! Indices of the current off-diagonal element of the
             ! full space Hamiltonian
-            i=indxi(k)
-            j=indxj(k)
+            i=indxi(l)
+            j=indxj(l)
             ! If both indices correspond to subspace ISs, then
             ! add the element to subspace Hamiltonian
             if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
                i1=full2sub(i)
                j1=full2sub(j)
-               hsub(i1,j1)=hij(k)               
+               hsub(i1,j1)=hij(l)
                hsub(j1,i1)=hsub(i1,j1)
             endif
          enddo
-      else
-         ! Open the off-diagonal element file
-         call freeunit(iham)
-         if (hamflag.eq.'i') then
-            filename='SCRATCH/hmlt.offi'
-         else if (hamflag.eq.'f') then
-            filename='SCRATCH/hmlt.offc'
-         endif
-         open(iham,file=filename,status='old',access='sequential',&
-              form='unformatted')
-         ! Allocate arrays
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-         ! Loop over records
-         do k=1,nrec
-            read(iham) hij(:),indxi(:),indxj(:),nlim
-            ! Loop over the non-zero elements of the full space
-            ! Hamiltonian in the current record
-            do l=1,nlim
-               ! Indices of the current off-diagonal element of the
-               ! full space Hamiltonian
-               i=indxi(l)
-               j=indxj(l)
-               ! If both indices correspond to subspace ISs, then
-               ! add the element to subspace Hamiltonian
-               if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
-                  i1=full2sub(i)
-                  j1=full2sub(j)
-                  hsub(i1,j1)=hij(l)
-                  hsub(j1,i1)=hsub(i1,j1)
-               endif
-            enddo
-         enddo
-         ! Close the off-diagonal element file
-         close(iham)
-         ! Deallocate arrays
-         deallocate(hij,indxi,indxj)
-      endif
+      enddo
+      ! Close the off-diagonal element file
+      close(iham)
+      ! Deallocate arrays
+      deallocate(hij,indxi,indxj)
 
 !-----------------------------------------------------------------------
 ! Diagonalise the subspace Hamiltonian
@@ -1126,10 +815,11 @@
             vec_old(k,i)=hsub(j,i)            
          enddo
       enddo
-
+      
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
+      deallocate(hii)
       deallocate(indxhii)
       deallocate(full2sub)
       deallocate(sub2full)
@@ -1143,927 +833,6 @@
       
 !#######################################################################
     
-    subroutine rdham_on(matdim)
-
-      use iomod, only: freeunit
-      use constants
-      use parameters
-
-      implicit none
-
-      integer, intent(in) :: matdim
-      integer             :: iham
-      character(len=70)   :: filename
-
-!-----------------------------------------------------------------------
-! On-diagonal elements
-!-----------------------------------------------------------------------
-      call freeunit(iham)
-
-      if (hamflag.eq.'i') then
-         filename='SCRATCH/hmlt.diai'
-      else if (hamflag.eq.'f') then
-         filename='SCRATCH/hmlt.diac'
-      endif
-
-      open(iham,file=filename,status='old',access='sequential',&
-           form='unformatted')
-
-      read(iham) maxbl,nrec
-      read(iham) hii
-
-      close(iham)
-
-      return
-
-    end subroutine rdham_on
-
-!#######################################################################
-    
-    subroutine rdham_off(noffd)
-
-      use iomod, only: freeunit
-      use constants
-      use parameters
-      
-      implicit none
-      
-      integer*8, intent(in)              :: noffd
-      integer                            :: iham,count,k,nlim
-      integer, dimension(:), allocatable :: itmp1,itmp2
-      real(d), dimension(:), allocatable :: ftmp
-      character(len=70)                  :: filename
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-      allocate(hij(noffd))
-      allocate(indxi(noffd))
-      allocate(indxj(noffd))
-
-!-----------------------------------------------------------------------
-! Off-diagonal elements
-!-----------------------------------------------------------------------
-      allocate(ftmp(maxbl))
-      allocate(itmp1(maxbl))
-      allocate(itmp2(maxbl))
-
-      if (hamflag.eq.'i') then
-         filename='SCRATCH/hmlt.offi'
-      else if (hamflag.eq.'f') then
-         filename='SCRATCH/hmlt.offc'
-      endif
-
-      open(iham,file=filename,status='old',access='sequential',&
-           form='unformatted')
-
-      count=0
-      do k=1,nrec
-         read(iham) ftmp(:),itmp1(:),itmp2(:),nlim
-         hij(count+1:count+nlim)=ftmp(1:nlim)
-         indxi(count+1:count+nlim)=itmp1(1:nlim)
-         indxj(count+1:count+nlim)=itmp2(1:nlim)
-         count=count+nlim
-      enddo
-
-      deallocate(ftmp,itmp1,itmp2)
-
-      close(iham)
-
-      return
-
-    end subroutine rdham_off
-
-!#######################################################################
-
-    subroutine orthowf(matdim)
-
-      implicit none
-      
-      integer, intent(in) :: matdim
-      integer             :: i,j
-      real(d)             :: dp
-
-      ! Double modified Gram-Schmidt orthogonalisation
-      do i=1,nblock
-         do j=1,i-1
-            dp=dot_product(vec_new(:,i),vec_new(:,j))
-            vec_new(:,i)=vec_new(:,i)-dp*vec_new(:,j)
-         enddo
-      enddo
-      do i=1,nblock
-         do j=1,i-1
-            dp=dot_product(vec_new(:,i),vec_new(:,j))
-            vec_new(:,i)=vec_new(:,i)-dp*vec_new(:,j)
-         enddo
-      enddo
-
-      ! Normalisation
-      do i=1,nblock
-         dp=dot_product(vec_new(:,i),vec_new(:,i))
-         vec_new(:,i)=vec_new(:,i)/sqrt(dp)
-      enddo
-
-      return
-
-    end subroutine orthowf
-
-!#######################################################################
-
-    subroutine getener(matdim,noffd)
-
-      implicit none
-
-      integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
-      integer               :: k
-
-      call hxpsi_all(matdim,noffd,vec_new,hxvec)
-
-      do k=1,nblock
-         ener(k)=dot_product(vec_new(:,k),hxvec(:,k))
-      enddo
-      
-      return
-      
-    end subroutine getener
-      
-!#######################################################################
-
-    subroutine hxpsi_all(matdim,noffd,vecin,vecout)
-
-      use iomod, only: freeunit
-      use constants
-      use parameters
-      
-      implicit none
-
-      integer, intent(in)               :: matdim
-      integer*8, intent(in)             :: noffd
-      integer                           :: iham,nlim,i,j,k,l,m,n
-      real(d), dimension(matdim,nblock) :: vecin,vecout
-      character(len=70)                 :: filename
-
-!-----------------------------------------------------------------------
-! Contribution from the on-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      vecout=0.0d0
-      do m=1,nblock
-         do n=1,matdim
-            vecout(n,m)=hii(n)*vecin(n,m)
-         enddo
-      enddo
-
-!-----------------------------------------------------------------------
-! Contribution from the off-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      if (.not.lincore) then
-         
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-         if (hamflag.eq.'i') then
-            filename='SCRATCH/hmlt.offi'
-         else if (hamflag.eq.'f') then
-            filename='SCRATCH/hmlt.offc'
-         endif
-
-         open(iham,file=filename,status='old',access='sequential',&
-              form='unformatted')
-         
-         do k=1,nrec
-            read(iham) hij(:),indxi(:),indxj(:),nlim
-            do l=1,nlim
-               do m=1,nblock
-                  vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
-                  vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
-               enddo
-            enddo
-         enddo
-         
-         close(iham)
-
-         deallocate(hij,indxi,indxj)
-      
-      else        
-
-         do m=1,nblock
-            do l=1,noffd
-               vecout(indxi(l),m)=vecout(indxi(l),m)+hij(l)*vecin(indxj(l),m)
-               vecout(indxj(l),m)=vecout(indxj(l),m)+hij(l)*vecin(indxi(l),m)
-            enddo
-         enddo
-
-      endif
-
-      return
-      
-    end subroutine hxpsi_all
-
-!#######################################################################
-
-    subroutine hxpsi_1vec(matdim,noffd,vecin,vecout)
-      
-      use iomod, only: freeunit
-      use constants
-      use parameters
-      
-      implicit none
-
-      integer, intent(in)        :: matdim
-      integer*8, intent(in)      :: noffd
-      integer                    :: iham,nlim,i,j,k,l,m,n
-      real(d), dimension(matdim) :: vecin,vecout
-      character(len=70)          :: filename
-
-!-----------------------------------------------------------------------
-! Contribution from the on-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      vecout=0.0d0
-      do n=1,matdim
-         vecout(n)=hii(n)*vecin(n)
-      enddo
-
-!-----------------------------------------------------------------------
-! Contribution from the off-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      if (.not.lincore) then
-         
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-         if (hamflag.eq.'i') then
-            filename='SCRATCH/hmlt.offi'
-         else if (hamflag.eq.'f') then
-            filename='SCRATCH/hmlt.offc'
-         endif
-
-         open(iham,file=filename,status='old',access='sequential',&
-              form='unformatted')
-         
-         do k=1,nrec
-            read(iham) hij(:),indxi(:),indxj(:),nlim
-            do l=1,nlim
-               vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
-               vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
-            enddo
-         enddo
-         
-         close(iham)
-
-         deallocate(hij,indxi,indxj)
-
-      else
-
-         do l=1,noffd
-            vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
-            vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
-         enddo
-         
-      endif
-
-      return
-
-    end subroutine hxpsi_1vec
-
-!#######################################################################
-! silstep: propagates the wavefunction vector vec0 forward by a
-!          single timestep using the short iterative Lanczos 
-!          algorithm to yield the wavefunction vector vecprop
-!#######################################################################
-
-    subroutine silstep(ista,matdim,noffd,vec0,vecprop)
-
-      use iomod
-
-      implicit none
-
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: ista,i,j,n,info,truedim
-      real(d), dimension(matdim)           :: vec0,vecprop
-      real(d), dimension(:,:), allocatable :: qmat,eigvec
-      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,&
-                                              eigval,work,a,tmparr
-      real(d)                              :: dp,norm,err,dtau
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-      allocate(qmat(matdim,krydim))
-      allocate(r(matdim))
-      allocate(q(matdim))
-      allocate(v(matdim))
-      allocate(alpha(krydim))
-      allocate(beta(krydim))
-      allocate(eigvec(krydim,krydim))
-      allocate(eigval(krydim))
-      allocate(tmparr(krydim))
-      allocate(a(krydim))
-      
-!-----------------------------------------------------------------------
-! Generate the Lanczos vectors
-!-----------------------------------------------------------------------
-      qmat=0.0d0
-
-      ! The first vector is either |Psi_n(t)> (unmodified algorithm) 
-      ! or |Psi_n(t)> orthogonalised against the already propagated 
-      ! wavefunctions and then renormalised (modified algorithm)
-      if (iortho.eq.2) then
-         do i=1,ista-1
-            dp=dot_product(vec_new(:,i),vec0)
-            vec0=vec0-dp*vec_new(:,i)
-         enddo
-         dp=dot_product(vec0,vec0)
-         vec0=vec0/sqrt(dp)
-      endif
-
-      q=vec0
-      qmat(:,1)=q
-
-      ! alpha_1
-      call hxkryvec(ista,1,matdim,noffd,q,r)
-      alpha(1)=dot_product(q,r)
-
-      ! beta_1
-      r=r-alpha(1)*q
-      beta(1)=sqrt(dot_product(r,r))
-
-      truedim=1
-      
-      ! Remaining vectors
-      do j=2,krydim
-                 
-         truedim=truedim+1
-
-         ! Compute the next vector and pair of matrix elements
-         v=q
-         q=r/beta(j-1)
-         qmat(:,j)=q
-         call hxkryvec(ista,j,matdim,noffd,q,r)
-         r=r-beta(j-1)*v
-         alpha(j)=dot_product(q,r)
-         r=r-alpha(j)*q
-         beta(j)=sqrt(dot_product(r,r))
-
-         ! Calculate the expansion of the propagated wavefunction in the
-         ! current Lanczos state basis.
-         ! If the error is below threshold, then exit here.
-         ! Else, carry on and compute the next Lanczos vector.
-         if (j.gt.2) then
-
-            ! Diagonalise the Lanczos state representation of the
-            ! Hamiltonian
-            allocate(work((2*(truedim)-2)))
-            eigval=alpha
-            tmparr=beta
-            call dstev('V',truedim,eigval(1:truedim),tmparr(1:truedim-1),&
-                 eigvec(1:truedim,1:truedim),truedim,work,info)
-
-            ! Calculate the epansion coefficients for |Psi(t0_dt)> in
-            ! the Lanczos state basis
-            a=0.0d0
-            dtau=step
-            do i=1,truedim
-               do n=1,truedim
-                  a(i)=a(i)+eigvec(i,n)*exp(-eigval(n)*dtau)*eigvec(1,n)
-               enddo
-            enddo            
-            norm=sqrt(dot_product(a,a))
-            a=a/norm
-
-            ! Calcuate the error and exit if we are below
-            ! threshold
-            err=abs(a(truedim))
-            deallocate(work)
-            if (err.lt.toler) exit
-
-         endif
-         
-      enddo
-
-!-----------------------------------------------------------------------
-! Calculate the wavefunction at time t0+dt, with dt being determined
-! adaptively s.t. the estimated error in |Psi(t0+dt)> is below
-! threshold.
-!-----------------------------------------------------------------------
-      dtau=step
-
-10    continue
-      a=0.0d0
-      do j=1,truedim
-         do n=1,truedim
-            a(j)=a(j)+eigvec(j,n)*exp(-eigval(n)*dtau)*eigvec(1,n)
-         enddo
-      enddo
-      
-      ! OLD
-!      vecprop=0.0d0
-!      do j=1,truedim
-!         vecprop=vecprop+a(j)*qmat(:,j)
-!      enddo
-!      norm=sqrt(dot_product(vecprop,vecprop))      
-!      err=abs(a(truedim)/norm)
-!      if (err.gt.toler) then
-!         dtau=dtau/2.0d0
-!         goto 10
-!      endif
-!      vecprop=vecprop/norm
-      
-      ! NEW
-      ! For orthonormal Lanczos vectors, this holds true:
-      norm=sqrt(dot_product(a,a))
-      a=a/norm
-      err=abs(a(truedim))
-      if (err.gt.toler) then
-         dtau=dtau/2.0d0
-         goto 10
-      endif
-      vecprop=0.0d0
-      do j=1,truedim
-         vecprop=vecprop+a(j)*qmat(:,j)
-      enddo
-      
-!-----------------------------------------------------------------------
-! Update the propagation time for the current state
-!-----------------------------------------------------------------------
-      currtime(ista)=currtime(ista)+dtau
-
-!-----------------------------------------------------------------------
-! Save the Krylov subspace dimension that was used for the current
-! state in this iteration
-!-----------------------------------------------------------------------
-      sildim(ista)=truedim
-      
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-      deallocate(qmat)
-      deallocate(r)
-      deallocate(q)
-      deallocate(v)
-      deallocate(alpha)
-      deallocate(beta)
-      deallocate(eigvec)
-      deallocate(eigval)
-      deallocate(tmparr)
-      deallocate(a)
-      
-      return
-      
-    end subroutine silstep
-
-!#######################################################################
-! modified_silstep: propagates the wavefunction vector vec0 forward by
-!                   a single timestep using a modified short iterative
-!                   Lanczos algorithm to yield the wavefunction vector
-!                   vecprop
-!
-!                   The modification to the original SIL algorithm is
-!                   that described in Appendix A of
-!                   Z. Phys. D, 42, 113 (1997)
-!#######################################################################
-    
-    subroutine modified_silstep(ista,matdim,noffd,vec0,vecprop)
-
-      use iomod
-
-      implicit none
-
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: ista,i,j,n,info,truedim
-      real(d), dimension(matdim)           :: vec0,vecprop
-      real(d), dimension(:,:), allocatable :: qmat,eigvec
-      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta,&
-                                              eigval,work,a,tmparr
-      real(d)                              :: dp,norm,err,dtau
-
-
-      real(d), dimension(:), allocatable   :: eigval_mod,a_mod,diffvec
-      real(d), dimension(:,:), allocatable :: eigvec_mod
-
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-      allocate(qmat(matdim,krydim+1))
-      allocate(r(matdim))
-      allocate(q(matdim))
-      allocate(v(matdim))
-      allocate(alpha(krydim))
-      allocate(beta(krydim))
-      allocate(eigvec(krydim,krydim))
-      allocate(eigval(krydim))
-      allocate(tmparr(krydim))
-      allocate(a(krydim))
-      allocate(eigvec_mod(krydim+1,krydim+1))
-      allocate(eigval_mod(krydim+1))
-      allocate(a_mod(krydim+1))
-      allocate(diffvec(krydim+1))
-      
-!-----------------------------------------------------------------------
-! Generate the Lanczos vectors
-!-----------------------------------------------------------------------
-      qmat=0.0d0
-
-      ! The first vector is either |Psi_n(t)> (unmodified algorithm) 
-      ! or |Psi_n(t)> orthogonalised against the already propagated 
-      ! wavefunctions and then renormalised (modified algorithm)
-      if (iortho.eq.2) then
-         do i=1,ista-1
-            dp=dot_product(vec_new(:,i),vec0)
-            vec0=vec0-dp*vec_new(:,i)
-         enddo
-         dp=dot_product(vec0,vec0)
-         vec0=vec0/sqrt(dp)
-      endif
-
-      q=vec0
-      qmat(:,1)=q
-
-      ! alpha_1
-      call hxkryvec(ista,1,matdim,noffd,q,r)
-      alpha(1)=dot_product(q,r)
-
-      ! beta_1
-      r=r-alpha(1)*q
-      beta(1)=sqrt(dot_product(r,r))
-
-      truedim=1
-      
-      ! Remaining vectors
-      do j=2,krydim
-                 
-         truedim=truedim+1
-
-         ! Compute the next vector and pair of matrix elements
-         v=q
-         q=r/beta(j-1)
-         qmat(:,j)=q
-         call hxkryvec(ista,j,matdim,noffd,q,r)
-         r=r-beta(j-1)*v
-         alpha(j)=dot_product(q,r)
-         r=r-alpha(j)*q
-         beta(j)=sqrt(dot_product(r,r))
-
-         ! Calculate the expansion of the propagated wavefunction in the
-         ! current Lanczos state basis.
-         ! If the error is below threshold, then exit here.
-         ! Else, carry on and compute the next Lanczos vector.
-         if (j.gt.2) then
-
-            ! Diagonalise the UNMODIFIED Lanczos state representation
-            ! of the Hamiltonian
-            call sil_eigenpairs(truedim,alpha(1:truedim),beta(1:truedim-1),&
-                 eigval(1:truedim),eigvec(1:truedim,1:truedim))
-            
-            ! Calculate the UNMODIFIED epansion coefficients for |Psi(t0_dt)>
-            ! in the Lanczos state basis
-            a=0.0d0
-            call sil_expcoeff(truedim,a(1:truedim),eigval(1:truedim),&
-                 eigvec(1:truedim,1:truedim),step)
-
-            ! Diagonalise the MODIFIED Lanczos state representation
-            ! of the Hamiltonian
-            call modified_sil_eigenpairs(truedim,alpha(1:truedim),&
-                 beta(1:truedim),eigval_mod(1:truedim+1),&
-                 eigvec_mod(1:truedim+1,1:truedim+1))
-
-            ! Calculate the MODIFIED epansion coefficients for |Psi(t0_dt)>
-            ! in the Lanczos state basis
-            a_mod=0.0d0
-            call sil_expcoeff(truedim+1,a_mod(1:truedim+1),&
-                 eigval_mod(1:truedim+1),&
-                 eigvec_mod(1:truedim+1,1:truedim+1),step)
-            
-            ! Calcuate the error and exit if we are below
-            ! threshold
-            diffvec=a_mod
-            diffvec(1:truedim)=diffvec(1:truedim)-a(1:truedim)
-            err=sqrt(dot_product(diffvec,diffvec))
-            if (err.lt.toler) exit
-
-         endif
-
-      enddo
-
-!-----------------------------------------------------------------------      
-! Calculate the last Lanczos state vector
-!-----------------------------------------------------------------------
-      q=r/beta(truedim)
-      qmat(:,truedim+1)=q
-
-!-----------------------------------------------------------------------
-! Calculate the expansion coefficients, with dt being determined
-! adaptively s.t. the estimated error in |Psi(t0+dt)> is below
-! threshold.
-!-----------------------------------------------------------------------
-      dtau=step
-
-10    continue
-
-      ! Calculate the UNMODIFED expansion coefficients
-      a=0.0d0
-      call sil_expcoeff(truedim,a(1:truedim),eigval(1:truedim),&
-           eigvec(1:truedim,1:truedim),dtau)
-
-      ! Calculate the MODIFED expansion coefficients
-      a_mod=0.0d0
-      call sil_expcoeff(truedim+1,a_mod(1:truedim+1),&
-           eigval_mod(1:truedim+1),&
-           eigvec_mod(1:truedim+1,1:truedim+1),dtau)
-      
-      ! Calculate the error estimate
-      diffvec=a_mod
-      diffvec(1:truedim)=diffvec(1:truedim)-a(1:truedim)
-      err=sqrt(dot_product(diffvec,diffvec))
-
-      ! If the estimated error is above threshold, then reduce the
-      ! timestep and recalculate the coefficients
-      if (err.gt.toler) then
-         dtau=dtau/1.25d0
-         goto 10
-      endif
-
-!-----------------------------------------------------------------------
-! Calculate the wavefunction at time t0+dt
-!-----------------------------------------------------------------------      
-      vecprop=0.0d0
-      do j=1,truedim+1
-         vecprop=vecprop+a_mod(j)*qmat(:,j)
-      enddo
-      
-!-----------------------------------------------------------------------
-! Update the propagation time for the current state
-!-----------------------------------------------------------------------
-      currtime(ista)=currtime(ista)+dtau
-
-!-----------------------------------------------------------------------
-! Save the Krylov subspace dimension that was used for the current
-! state in this iteration
-!-----------------------------------------------------------------------
-      sildim(ista)=truedim+1
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-      deallocate(qmat)
-      deallocate(r)
-      deallocate(q)
-      deallocate(v)
-      deallocate(alpha)
-      deallocate(beta)
-      deallocate(eigvec)
-      deallocate(eigval)
-      deallocate(tmparr)
-      deallocate(a)
-      deallocate(eigvec_mod)
-      deallocate(eigval_mod)
-      deallocate(a_mod)
-      deallocate(diffvec)
-      
-      return
-      
-    end subroutine modified_silstep
-
-!#######################################################################
-
-    subroutine sil_eigenpairs(n,alpha,beta,eigval,eigvec)
-
-      use channels
-      use constants
-      use iomod
-      
-      implicit none
-
-      integer                            :: n,info
-      real(d), dimension(n)              :: alpha,eigval
-      real(d), dimension(n-1)            :: beta,tmparr
-      real(d), dimension(n,n)            :: eigvec
-      real(d), dimension(:), allocatable :: work
-
-!-----------------------------------------------------------------------
-! Allocate work arrays
-!-----------------------------------------------------------------------
-      allocate(work(2*n-2))
-
-!-----------------------------------------------------------------------
-! Diagonalise the Lanzcos state representation of the Hamiltonian
-!-----------------------------------------------------------------------
-      eigval=alpha
-      tmparr=beta
-      call dstev('V',n,eigval(1:n),tmparr(1:n-1),eigvec(1:n,1:n),n,&
-           work,info)
-
-!-----------------------------------------------------------------------
-! Check that the diagonalisation succeeded, and die here if not.
-!-----------------------------------------------------------------------
-      if (info.ne.0) then
-         errmsg='Diagonalisation of the Lanczos state representation &
-              of the Hamiltonian failed in subroutine sil_eigenpairs'
-         call error_control
-      endif
-      
-!-----------------------------------------------------------------------
-! Deallocate work arrays
-!-----------------------------------------------------------------------
-      deallocate(work)
-      
-      return
-      
-    end subroutine sil_eigenpairs
-
-!#######################################################################
-
-    subroutine modified_sil_eigenpairs(n,alpha,beta,eigval,eigvec)
-
-      use channels
-      use constants
-      use iomod
-      
-      implicit none
-
-      integer                            :: n,info
-      real(d), dimension(n)              :: alpha,beta
-      real(d), dimension(n+1)            :: eigval
-      real(d), dimension(n)              :: tmparr
-      real(d), dimension(n+1,n+1)        :: eigvec
-      real(d), dimension(:), allocatable :: work
-
-!-----------------------------------------------------------------------
-! Allocate work arrays
-!-----------------------------------------------------------------------
-      allocate(work(2*(n+1)-2))
-
-!-----------------------------------------------------------------------
-! Diagonalise the modified Lanzcos state representation of the
-! Hamiltonian
-!-----------------------------------------------------------------------
-      eigval(1:n)=alpha
-      eigval(n+1)=alpha(n)
-      tmparr=beta
-      call dstev('V',n+1,eigval(1:n+1),tmparr(1:n),eigvec(1:n+1,1:n+1),&
-           n+1,work,info)
-
-!-----------------------------------------------------------------------
-! Check that the diagonalisation succeeded, and die here if not.
-!-----------------------------------------------------------------------
-      if (info.ne.0) then
-         errmsg='Diagonalisation of the Lanczos state representation &
-              of the Hamiltonian failed in subroutine &
-              modified_sil_eigenpairs'
-         call error_control
-      endif
-      
-!-----------------------------------------------------------------------
-! Deallocate work arrays
-!-----------------------------------------------------------------------
-      deallocate(work)
-
-      return
-      
-    end subroutine modified_sil_eigenpairs
-      
-!#######################################################################
-
-    subroutine sil_expcoeff(n,coeff,eigval,eigvec,dtau)
-      
-      use constants
-      
-      implicit none
-
-      integer                 :: n,i,k
-      real(d), dimension(n)   :: coeff,eigval
-      real(d), dimension(n,n) :: eigvec
-      real(d)                 :: dtau,norm
-
-      coeff=0.0d0
-
-      do i=1,n
-         do k=1,n
-            coeff(i)=coeff(i)+eigvec(i,k)*exp(-eigval(k)*dtau)*eigvec(1,k)
-         enddo
-      enddo
-
-      norm=sqrt(dot_product(coeff,coeff))
-
-      coeff=coeff/norm
-      
-      return
-      
-    end subroutine sil_expcoeff
-    
-!#######################################################################
-    
-    subroutine hxkryvec(ista,krynum,matdim,noffd,vecin,vecout)
-
-      use iomod, only: freeunit
-      use constants
-      use parameters
-      
-      implicit none
-
-      integer, intent(in)        :: ista,matdim
-      integer*8, intent(in)      :: noffd
-      integer                    :: krynum,iham,nlim,i,j,k,l,m,n
-      real(d), dimension(matdim) :: vecin,vecout
-      real(d)                    :: dp
-      character(len=70)          :: filename
-
-      vecout=0.0d0
-
-!-----------------------------------------------------------------------
-! Update nmult
-!-----------------------------------------------------------------------
-      nmult=nmult+1
-
-!-----------------------------------------------------------------------
-! Q |Psi>
-!-----------------------------------------------------------------------
-      if (iortho.eq.2) then
-         ! SIL
-         if (krynum.eq.2) then
-            do i=1,ista-1
-               dp=dot_product(vec_new(:,i),vecin)
-               vecin=vecin-dp*vec_new(:,i)
-            enddo
-         endif
-      !else if (iortho.eq.3) then
-      !   ! SIL-Liu
-      !   do i=1,ista-1
-      !      dp=dot_product(vec_new(:,i),vecin)
-         !      vecin=vecin-dp*vec_new(:,i)
-      !   enddo
-      endif
-
-!-----------------------------------------------------------------------
-! H Q |Psi>
-!
-! Contribution from the on-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-      do n=1,matdim
-         vecout(n)=hii(n)*vecin(n)
-      enddo
-
-!-----------------------------------------------------------------------
-! H Q |Psi>
-!
-! Contribution from the off-diagonal elements of the Hamiltonian matrix
-!-----------------------------------------------------------------------
-
-      if (.not.lincore) then
-
-         allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
-      
-         if (hamflag.eq.'i') then
-            filename='SCRATCH/hmlt.offi'
-         else if (hamflag.eq.'f') then
-            filename='SCRATCH/hmlt.offc'
-         endif
-         
-         open(iham,file=filename,status='old',access='sequential',&
-              form='unformatted')
-         
-         do k=1,nrec
-            read(iham) hij(:),indxi(:),indxj(:),nlim
-            do l=1,nlim
-               vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
-               vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
-            enddo
-         enddo
-
-         close(iham)
-         
-         deallocate(hij,indxi,indxj)
-
-      else
-
-         do l=1,noffd
-            vecout(indxi(l))=vecout(indxi(l))+hij(l)*vecin(indxj(l))
-            vecout(indxj(l))=vecout(indxj(l))+hij(l)*vecin(indxi(l))
-         enddo
-
-      endif
-
-!-----------------------------------------------------------------------
-! Q H Q |Psi>
-!-----------------------------------------------------------------------
-      if (iortho.eq.2) then
-         ! SIL
-         do i=1,ista-1
-            dp=dot_product(vec_new(:,i),vecout)
-            vecout=vecout-dp*vec_new(:,i)
-         enddo
-      !else if (iortho.eq.3) then
-      !   ! SIL-liu
-      !   do i=1,ista-1
-      !      dp=dot_product(vec_new(:,i),vecin)
-      !      vecin=vecin-dp*vec_new(:,i)
-      !   enddo
-      endif
-
-      return
-      
-    end subroutine hxkryvec
-
-!#######################################################################
-
     subroutine collapse_subspace(matdim)
 
       implicit none
@@ -2121,8 +890,6 @@
       real(d), dimension(matdim)           :: vec0
       real(d), dimension(:), allocatable   :: r,q,v,alpha,beta
 
-!      external matxvec
-      
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -2153,7 +920,6 @@
       q=lancvec(:,k1)
 
       ! alpha_1
-!      call hxkryvec(ista,1,matdim,noffd,q,r)
       call matxvec(matdim,noffd,q,r)
       r=-r
       nmult=nmult+1
@@ -2177,7 +943,6 @@
 
          lancvec(:,j)=q
 
-         !call hxkryvec(ista,j1,matdim,noffd,q,r)
          call matxvec(matdim,noffd,q,r)
          r=-r
          nmult=nmult+1
@@ -2528,8 +1293,6 @@
       real(d), dimension(:), allocatable :: hpsi,resvec
       real(d)                            :: energy,residual
 
-!      external matxvec
-      
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -2540,7 +1303,6 @@
 ! Calculate the residual r = || H |Psi> - E |Psi> ||
 !-----------------------------------------------------------------------
       ! H |Psi>
-      !call hxpsi_1vec(matdim,noffd,vecprop,hpsi)
       call matxvec(matdim,noffd,vecprop,hpsi)
       hpsi=-hpsi
       
@@ -2561,154 +1323,6 @@
       return
 
     end subroutine residual_1vec
-
-!#######################################################################
-
-    subroutine check_conv(matdim,noffd)
-
-      implicit none
-
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: k
-      real(d), dimension(:,:), allocatable :: hpsi
-      real(d), dimension(:), allocatable   :: resvec
-      real(d), dimension(nblock)           :: hpsi2,h2psi
-      
-!-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-      allocate(hpsi(matdim,nblock))
-      allocate(resvec(matdim))
-
-!-----------------------------------------------------------------------
-! Residuals r_k=|| H |psi_k> - E_k |psi_k> ||
-!-----------------------------------------------------------------------      
-      call hxpsi_all(matdim,noffd,vec_new,hpsi)
-      do k=1,nblock
-         resvec=hpsi(:,k)-ener(k)*vec_new(:,k)
-         res(k)=dot_product(resvec,resvec)
-         res(k)=sqrt(res(k))
-         if (res(k).lt.eps) lconv(k)=.true.
-      enddo
-
-      ! No. converged states (N.B. this runs over nstates rather than
-      ! nblock as higher-lying states may converge before the lowest
-      ! nstates states of interest)
-      nconv=0
-      do k=1,nstates
-         if (res(k).lt.eps) nconv=nconv+1
-      enddo
-
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-      deallocate(hpsi)
-      deallocate(resvec)
-
-      return
-      
-    end subroutine check_conv
-
-!#######################################################################
-
-    subroutine sortwf(matdim)
-
-      use misc, only: dsortindxa1
-      
-      implicit none
-
-      integer, intent(in)                  :: matdim
-      integer                              :: i
-      integer, dimension(nblock)           :: indx,itmp
-      real(d), dimension(nblock)           :: tmpval
-      real(d), dimension(:,:), allocatable :: tmpvec
-
-      allocate(tmpvec(matdim,nblock))
-
-      call dsortindxa1('A',nblock,ener,indx)
-
-      ! Wavefunctions
-      do i=1,nblock
-         tmpvec(:,i)=vec_new(:,indx(i))
-      enddo
-      vec_new=tmpvec
-      
-      ! Energies
-      do i=1,nblock
-         tmpval(i)=ener(indx(i))
-      enddo
-      ener=tmpval
-
-      ! Residuals
-      do i=1,nblock
-         tmpval(i)=res(indx(i))
-      enddo
-      res=tmpval
-
-      ! Current times
-      do i=1,nblock
-         tmpval(i)=currtime(indx(i))
-      enddo
-      currtime=tmpval
-
-      ! Krylov subspace dimensions
-      do i=1,nblock
-         itmp(i)=sildim(indx(i))
-      enddo
-      sildim=itmp
-      
-      deallocate(tmpvec)
-      
-      return
-      
-    end subroutine sortwf
-      
-!#######################################################################
-
-    subroutine wrtable(k)
-      
-      use constants
-      use channels
-      use parameters
-
-      implicit none
-
-      integer          :: k,i,j
-      character(len=1) :: aconv
-
-!-----------------------------------------------------------------------
-! Table header
-!-----------------------------------------------------------------------
-      if (k.eq.0) then
-         write(ilog,'(64a)') ('*',j=1,64)
-         write(ilog,'(a)') 'Iteration   Time   Kdim    Energies    &
-              Residuals       Converged'         
-         write(ilog,'(64a)') ('*',j=1,64)
-      endif
-
-!-----------------------------------------------------------------------
-! Information from the current iteration
-!-----------------------------------------------------------------------
-      write(ilog,*)
-      do i=1,nstates
-         if (lconv(i)) then
-            aconv='y'
-         else
-            aconv='n'
-         endif         
-         if (i.eq.1) then
-            write(ilog,'(i4,3x,F10.3,2x,i3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 k,currtime(i),sildim(i),ener(i)*eh2ev,res(i),aconv
-         else
-            write(ilog,'(7x,F10.3,2x,i3,3x,F12.7,3x,E13.7,3x,a1)') &
-                 currtime(i),sildim(i),ener(i)*eh2ev,res(i),aconv
-         endif
-      enddo
-
-      return
-
-    end subroutine wrtable
 
 !#######################################################################
 
@@ -2780,9 +1394,10 @@
 
     subroutine finalise
 
+      use tdsemod
+      
       implicit none
 
-      deallocate(hii)
       deallocate(vec_old)
       deallocate(vec_new)
       deallocate(hxvec)
@@ -2792,6 +1407,7 @@
       if (allocated(hij)) deallocate(hij)
       if (allocated(indxi)) deallocate(indxi)
       if (allocated(indxj)) deallocate(indxj)
+      if (hincore) call deallocate_hamiltonian
       
       return
       

@@ -76,7 +76,6 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/scf_electronic_structure.o 
 
 EIGEN=  source/eigen/tdselib.o \
-	source/eigen/expokit.o \
 	source/eigen/sillib.o \
 	source/eigen/block_davidson.o \
 	source/eigen/relaxation.o \
@@ -174,7 +173,6 @@ ADC_OBJ=accuracy.o \
 	fspace2.o \
 	block_davidson.o \
 	tdselib.o \
-	expokit.o \
 	sillib.o \
 	relaxation.o \
 	fvecprop.o \
