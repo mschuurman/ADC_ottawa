@@ -103,7 +103,7 @@
 
       call freeunit(ibasfile)
 
-      open(ibasfile,file=trim(adcdir)//'/qclib/basis.dat',&
+      open(ibasfile,file=trim(adcdir)//'/source/qclib/basis.dat',&
            form='formatted',status='old')      
 
 !-----------------------------------------------------------------------
