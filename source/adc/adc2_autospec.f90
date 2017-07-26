@@ -1,7 +1,7 @@
 !#######################################################################
 ! Calculation of the electronic absorption spectrum from the Fourier
 ! transform of the autocorrelation function obtained by propagation
-! of |Psi(t=0)> = mu |Psi_0>
+! of |Psi(t=0)> = D |Psi_0>
 !#######################################################################
 
 module adc2automod
@@ -31,7 +31,7 @@ contains
                                             ndimsf,nout,noutf,ndimd
     integer*8                            :: noffd,noffdf
     real(d)                              :: e0,time
-    real(d), dimension(:), allocatable   :: fvec
+    real(d), dimension(:), allocatable   :: fvec,dpsi
     type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
@@ -49,14 +49,15 @@ contains
 ! Set MO representation of the dipole operator
 !-----------------------------------------------------------------------
     call set_dpl
-    
-!-----------------------------------------------------------------------
-! Calculate the f-vector, F_J = < Psi_J | D | Psi_0 >    
-!-----------------------------------------------------------------------
-    call fvector(fvec,ndimf,kpqf)
 
 !-----------------------------------------------------------------------
-! Calculate the Hamiltonian matrix
+! Contraction of the dipole operator with the initial state
+!-----------------------------------------------------------------------
+    call contract_dipole_initial_state(dpsi,ndim,ndims,ndimf,kpq,kpqf,&
+         noffd)
+    
+!-----------------------------------------------------------------------
+! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
     call calc_hamiltonian(ndimf,kpqf,noffdf)
     
@@ -65,44 +66,16 @@ contains
 ! calculation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_fvec(fvec,ndimf,noffdf)
+    call propagate_fvec(dpsi,ndimf,noffdf)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-    deallocate(fvec)
+    deallocate(dpsi)
 
     return
       
   end subroutine adc2_autospec
-
-!#######################################################################
-
-  subroutine fvector(fvec,ndimf,kpqf)
-
-    use constants
-    use parameters
-    use get_moment
-    
-    implicit none
-
-    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-    integer                                   :: ndimf
-    real(d), dimension(:), allocatable        :: fvec
-    
-!-----------------------------------------------------------------------
-! Allocate the F-vector array
-!-----------------------------------------------------------------------
-    allocate(fvec(ndimf))
-
-!-----------------------------------------------------------------------
-! Calculate the F-vector, F_J = < Psi_J | D | Psi_0 >
-!-----------------------------------------------------------------------
-    call get_modifiedtm_adc2(ndimf,kpqf(:,:),fvec(:),1)
-    
-    return
-    
-  end subroutine fvector
     
 !#######################################################################
 
@@ -138,6 +111,77 @@ contains
     
   end subroutine calc_hamiltonian
 
+!#######################################################################
+
+  subroutine contract_dipole_initial_state(dpsi,ndim,ndims,ndimf,&
+       kpq,kpqf,noffd)
+
+    use constants
+    use parameters
+    use get_moment
+    use adc2common
+    use get_matrix_dipole
+    use misc
+    use diagmod
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+    integer                                   :: i
+    integer                                   :: ndim,ndims,ndimf,itmp
+    integer*8                                 :: noffd
+    real(d), dimension(:), allocatable        :: dpsi,ener,mtm,tmvec,&
+                                                 osc_str
+    real(d), dimension(:,:), allocatable      :: rvec
+    real(d)                                   :: time
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(dpsi(ndimf))
+    
+!-----------------------------------------------------------------------
+! Initial state = | Psi_0 >
+! Calculate the f-vector, F_J = < Psi_J | D | Psi_0 >    
+!-----------------------------------------------------------------------
+    if (statenumber.eq.0) call get_modifiedtm_adc2(ndimf,kpqf(:,:),&
+         dpsi(:),1)
+
+!-----------------------------------------------------------------------
+! Excited initial state: diagonalisation in the initial space and
+! contraction of the D-matrix with the initial state vector
+!-----------------------------------------------------------------------
+    if (statenumber.gt.0) then
+
+       ! (1) Initial space diagonalisation
+       call initial_space_diag(time,kpq,ndim,ndims,noffd)
+       call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
+       
+       ! (2) Output the initial space state information
+       write(ilog,'(/,70a)') ('*',i=1,70)
+       write(ilog,'(2x,a)') &
+            'Initial space ADC(2)-s excitation energies'
+       write(ilog,'(70a)') ('*',i=1,70)
+       itmp=1+nBas**2*4*nOcc**2
+       call table2(ndim,davstates,ener(1:davstates),&
+            rvec(:,1:davstates),tmvec(1:davstates),&
+            osc_str(1:davstates),kpq,itmp,'i')
+       write(ilog,'(/,70a,/)') ('*',i=1,70)
+       
+       ! (3) Contraction of the D-matrix with the initial state vector
+       call get_dipole_initial_product(ndim,ndimf,kpq,kpqf,&
+            rvec(:,statenumber),dpsi)
+
+       ! Deallocate arrays that are no longer needed (N.B. these
+       ! are allocated in initial_space_tdm)
+       deallocate(ener,rvec,tmvec,osc_str)
+
+    endif
+    
+    return
+    
+  end subroutine contract_dipole_initial_state
+    
 !#######################################################################
   
 end module adc2automod

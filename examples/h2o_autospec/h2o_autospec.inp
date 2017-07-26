@@ -1,6 +1,6 @@
 method=adc2-s
 
-initial_state=0
+initial_state = 1
 istate_symm = 1
 
 dipole_component = x
@@ -10,7 +10,18 @@ frozen_core=initial
 
 scf_iter=100
 
+cvs
+
 mem=900
+
+diag_section
+nstates = 3
+block_size = 5
+maxvec=15
+tol=1d-6
+maxit=200
+guess = subdiag,800
+end-diag_section
 
 autospec_section
 tfinal=300.0

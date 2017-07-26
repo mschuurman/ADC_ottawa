@@ -70,7 +70,7 @@
         call set_dpl
 
 !-----------------------------------------------------------------------
-! Block-Davidson diagonalisation in the initial space
+! Diagonalisation in the initial space
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) &
              call initial_space_diag(time,kpq,ndim,ndims,noffd)
@@ -678,10 +678,6 @@
         return
 
       end subroutine final_space_tdm
-
-!#######################################################################
-
-
 
 !#######################################################################
 
