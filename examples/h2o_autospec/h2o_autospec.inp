@@ -1,0 +1,22 @@
+method=adc2-s
+
+initial_state=0
+istate_symm = 1
+
+dipole_component = x
+dipole_symm = 1
+
+frozen_core=initial
+
+scf_iter=100
+
+mem=900
+
+autospec_section
+tfinal=300.0
+tout=0.5
+krydim=7
+order=2
+end-autospec_section
+
+end-input
