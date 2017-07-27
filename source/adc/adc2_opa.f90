@@ -22,7 +22,7 @@
         use adc2common
         use fspace
         use misc
-        use guessvecs        
+        use guessvecs
         use mp2
         use targetmatching
 

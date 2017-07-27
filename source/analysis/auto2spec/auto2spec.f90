@@ -12,7 +12,7 @@ module auto2specmod
   real(d), parameter                    :: fs2au=41.3413745758d0
   complex(d), dimension(:), allocatable :: auto,avec,bvec
   character(len=70)                     :: outfile
-  logical                               :: lpade
+  logical                               :: lpade,lnormalise
   
 end module auto2specmod
 
@@ -80,6 +80,9 @@ contains
 
     ! Timestep cutofff (in fs)
     tcutoff=1e+10_d
+
+    ! Normalisation of the spectra
+    lnormalise=.false.
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -130,6 +133,10 @@ contains
        read(string2,*) tcutoff
 !       tcutoff=tcutoff*fs2au
        
+    else if (string1.eq.'-norm') then
+       ! Normalisation of the spectra
+       lnormalise=.true.
+
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -492,11 +499,13 @@ contains
 !----------------------------------------------------------------------
 ! Normalise the spectra
 !----------------------------------------------------------------------
-    do i=0,3
-       sp(:,i)=sp(:,i)/maxval(sp(:,i))
-    enddo
-    if (lpade) sp(:,4)=sp(:,4)/maxval(sp(:,4))
-    
+    if (lnormalise) then
+       do i=0,3
+          sp(:,i)=sp(:,i)/maxval(sp(:,i))
+       enddo
+       if (lpade) sp(:,4)=sp(:,4)/maxval(sp(:,4))
+    endif
+
 !----------------------------------------------------------------------
 ! Write the spectra to file
 !----------------------------------------------------------------------

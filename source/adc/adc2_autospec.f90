@@ -121,6 +121,7 @@ contains
     use get_moment
     use adc2common
     use get_matrix_dipole
+    use guessvecs
     use misc
     use diagmod
     
@@ -154,6 +155,7 @@ contains
     if (statenumber.gt.0) then
 
        ! (1) Initial space diagonalisation
+       if (ladc1guess) call adc1_guessvecs
        call initial_space_diag(time,kpq,ndim,ndims,noffd)
        call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
        
