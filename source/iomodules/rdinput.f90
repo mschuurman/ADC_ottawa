@@ -688,14 +688,6 @@
 !-----------------------------------------------------------------------
       if (lfdstates) then
 
-         ! State number: currently only excitation from S0
-         ! is supported
-         if (statenumber.ne.0) then
-            msg='Currently only excitation from S0 is supported &
-                 in a filter diagonalisation states calculation'
-            goto 999
-         endif
-
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
             msg='The final propagation time has not been given'

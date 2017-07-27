@@ -1090,6 +1090,7 @@ contains
     maxi=0.0d0
     do j=1,nrbas
        if (rener(j).lt.ebound(1).or.rener(j).gt.ebound(2)) cycle
+       if (error(j).gt.errthrsh) cycle       
        if (intens(j).gt.maxi) maxi=intens(j)
     enddo
 
@@ -1112,6 +1113,7 @@ contains
        if (error(j).lt.errthrsh) &
             write(iout,'(3(2x,F12.7))') rener(j)*eh2ev,intens(j),&
             intens(j)/maxi
+
     enddo
 
     ! Close the output file
