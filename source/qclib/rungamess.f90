@@ -1,5 +1,10 @@
   module rungamess
 
+    integer, external  :: getpid
+    integer*4          :: ipid
+    character(len=10)  :: apid
+    character(len=120) :: filestem,infile,logfile,datfile
+
   contains
 
 !#######################################################################
@@ -15,6 +20,22 @@
       integer            :: igms,k
       character(len=120) :: filename
 
+!-----------------------------------------------------------------------
+! Get the process ID: we will use this to uniquely label the GAMESS
+! files
+!-----------------------------------------------------------------------
+      ipid=getpid()
+      write(apid,'(i10)') ipid
+
+!-----------------------------------------------------------------------
+! GAMESS file names
+!-----------------------------------------------------------------------
+      k=(index(ain,'.inp'))
+      filestem=ain(1:k-1)//'_gamess.'//trim(adjustl(apid))
+      infile=trim(filestem)//'.inp'
+      logfile=trim(filestem)//'.log'
+      datfile=trim(filestem)//'.dat'
+      
 !-----------------------------------------------------------------------
 ! Read the AO basis from file
 !-----------------------------------------------------------------------
@@ -35,11 +56,9 @@
 !-----------------------------------------------------------------------
 ! Write the gamess input file
 !-----------------------------------------------------------------------      
-      k=(index(ain,'.inp'))
-      filename=ain(1:k-1)//'_gamess.inp'
       call freeunit(igms)
-      open(igms,file=filename,form='formatted',status='unknown')
-
+      open(igms,file=infile,form='formatted',status='unknown')
+      
       call wrgamessinp('inp',igms)
 
       close(igms)
@@ -730,11 +749,7 @@
          call error_control
       endif
 
-      ! Write the call to the run_gamess script
-      k=(index(ain,'.inp'))
-      stem=ain(1:k-1)
-
-      command=trim(adcdir)//'/run_gamess '//trim(stem)//'_gamess '&
+      command=trim(adcdir)//'/run_gamess '//trim(filestem)//' '&
            //trim(workdir)
 
       k=len_trim(command)
@@ -752,8 +767,10 @@
 !-----------------------------------------------------------------------
       call freeunit(unit)
 
-      filename=trim(stem)//'_gamess.log'
-      open(unit,file=filename,form='formatted',status='old')
+      !filename=trim(stem)//'_gamess.log'
+      !open(unit,file=filename,form='formatted',status='old')
+
+      open(unit,file=logfile,form='formatted',status='old')
 
       targ='EXECUTION OF GAMESS TERMINATED NORMALLY'
       found=.false.
@@ -776,12 +793,10 @@
 ! Rename the log and dat files to be consitent with the rest of the
 ! program
 !-----------------------------------------------------------------------
-      filename=trim(stem)//'_gamess.log'
-      command='mv '//trim(filename)//' gamess.log'
+      command='mv '//trim(logfile)//' gamess.log'
       call system(command)
 
-      filename=trim(stem)//'_gamess.dat'
-      command='mv '//trim(filename)//' gamess.dat'
+      command='mv '//trim(datfile)//' gamess.dat'
       call system(command)
 
       return

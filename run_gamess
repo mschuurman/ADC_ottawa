@@ -24,7 +24,7 @@ mkdir $GSCR
 
 SCRATCH=$TMP1/$STEM.$$
 
-echo "Scratch directory: " $SCRATCH
+echo "Scratch directory - " $SCRATCH
 mkdir $SCRATCH
 
 ##########################################
