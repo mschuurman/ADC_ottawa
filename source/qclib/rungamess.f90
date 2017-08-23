@@ -1,6 +1,6 @@
   module rungamess
 
-    integer, external  :: getpid
+!    integer, external  :: getpid
     integer*4          :: ipid
     character(len=10)  :: apid
     character(len=120) :: filestem,infile,logfile,datfile
@@ -17,16 +17,25 @@
       
       implicit none
       
-      integer            :: igms,k
+      integer            :: igms,k,unit
       character(len=120) :: filename
 
 !-----------------------------------------------------------------------
 ! Get the process ID: we will use this to uniquely label the GAMESS
 ! files
 !-----------------------------------------------------------------------
-      ipid=getpid()
-      write(apid,'(i10)') ipid
+!      ipid=getpid()
+!      write(apid,'(i10)') ipid
 
+      call system('echo $$ >id.id')
+      call freeunit(unit)
+      open(unit,file='id.id',form='formatted',status='old')
+      read(unit,*) ipid
+      close(unit)
+      call system('rm id.id')
+
+      write(apid,'(i10)') ipid
+      
 !-----------------------------------------------------------------------
 ! GAMESS file names
 !-----------------------------------------------------------------------

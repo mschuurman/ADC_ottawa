@@ -29,7 +29,7 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
+LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS} lib/libnumgrid.so
 
 #-----------------------------------------------------------------------
 # Define object files
@@ -104,7 +104,8 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
 	source/adclib/mp2.o \
-	source/adclib/adc2common.o 
+	source/adclib/adc2common.o \
+	source/adclib/cap_mobas.o \
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_opa.o \
@@ -114,6 +115,7 @@ ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_tpa.o \
 	source/adc/adc2_autospec.o \
 	source/adc/adc2_fdstates.o \
+	source/adc/adc2_cap.o \
 	source/adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -186,7 +188,8 @@ ADC_OBJ=accuracy.o \
 	target_matching.o \
 	mp2.o \
 	adc2common.o \
-        guessvecs.o \
+	cap_mobas.o \
+	guessvecs.o \
 	adc1_opa.o \
 	adc2_opa.o \
 	adc2_ener.o \
@@ -195,6 +198,7 @@ ADC_OBJ=accuracy.o \
 	adc2_tpa.o \
 	adc2_autospec.o \
 	adc2_fdstates.o \
+	adc2_cap.o \
 	adc.o
 
 ########################################################################

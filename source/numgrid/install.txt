@@ -1,0 +1,9 @@
+gfortran -c numgrid.f90
+
+g++ -fPIC -c *.cpp
+
+g++ -shared -Wl,-soname,libnumgrid.so -o libnumgrid.so *.o
+
+gfortran -o test test.f90 libnumgrid.so
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:'PATH TO LIBRARY'

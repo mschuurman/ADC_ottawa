@@ -309,6 +309,13 @@
             call rdinp(iin)
             if (keyword(1).ne.'end-fdstates_section') goto 60
             i=inkw
+
+         else if (keyword(i).eq.'cap_section') then
+            lcap=.true.
+65          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-cap_section') goto 65
+            i=inkw
             
          else
             ! Exit if the keyword is not recognised
@@ -389,7 +396,12 @@
 ! Read the filter diagonalisation states section
 !-----------------------------------------------------------------------
       if (lfdstates) call rdfdstatesinp
-        
+
+!-----------------------------------------------------------------------
+! Read the CAP section
+!-----------------------------------------------------------------------
+      if (lcap) call rdcapinp
+      
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
@@ -536,7 +548,8 @@
            .and..not.lrixs &
            .and..not.ltpa &
            .and..not.lautospec &
-           .and..not.lfdstates) then
+           .and..not.lfdstates &
+           .and..not.lcap) then
 
          if (.not.llanc) then
             msg='No Lanczos section has been found'
@@ -710,6 +723,19 @@
          if (fdiagsel.eq.'') then
             msg='The name of the fdiag state selection file has &
                  not been given'
+            goto 999
+         endif
+         
+      endif
+
+!-----------------------------------------------------------------------
+! CAP section
+!-----------------------------------------------------------------------
+      if (lcap) then
+
+         ! CAP type
+         if (icap.eq.0) then
+            msg='The CAP type has not been given'
             goto 999
          endif
          
@@ -1720,6 +1746,77 @@
       return
       
     end subroutine rdfdstatesinp
+
+!#######################################################################
+
+    subroutine rdcapinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+      
+!-----------------------------------------------------------------------
+! Read to the CAP section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'cap_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read to the CAP parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-cap_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'cap_type') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'sigmoidal') then
+                  icap=1
+               else
+                  errmsg='Unknown CAP type: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+
+      return
+      
+    end subroutine rdcapinp
       
 !#######################################################################
 

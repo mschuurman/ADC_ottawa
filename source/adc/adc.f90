@@ -12,6 +12,7 @@ program adc
   use adc2tpamod
   use adc2automod
   use adc2fdstatesmod
+  use adc2capmod
   use rdinput
   use orbindx
   use defaults
@@ -147,6 +148,11 @@ program adc
 
            ! ADC(2) filter diagonalisation state calculation
            call adc2_fdstates(gamess_info)
+
+        else if (lcap) then
+
+           ! CAP-TD-ADC(2) calculation of ionisation probabilities
+           call adc2_cap(gamess_info)
            
         else
 

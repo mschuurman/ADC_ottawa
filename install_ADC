@@ -68,6 +68,21 @@ echo "LIB_BLAS=$blasflag" >>ADC.CONFIG
 echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 
 #-----------------------------------------------------------------------
+# Compilation of external libraries
+#-----------------------------------------------------------------------
+if [ "$target" == 'adc' ] || [ -z $target ]; then
+    # Numgrid
+    cd source/numgrid
+    gfortran -c numgrid.f90
+    g++ -fPIC -c *.cpp
+    g++ -shared -Wl,-soname,libnumgrid.so -o libnumgrid.so *.o
+    mv libnumgrid.so ../../lib
+    cp numgrid.mod ../../
+    rm *.o *.mod
+    cd ../../
+fi
+
+#-----------------------------------------------------------------------
 # Calls to make
 #-----------------------------------------------------------------------
 list=(clean_all adc stieltjes_ap mcspline numhess rixsplt auto2spec \
@@ -93,7 +108,8 @@ rm *.aux *.log
 cd ..
 
 #-----------------------------------------------------------------------
-# Set the ADC_DIR variable
+# Set the ADC_DIR variable and update LD_LIBRARY_PATH s.t. we can
+# see the shared libraries
 #-----------------------------------------------------------------------
 star40='****************************************'
 star20='********************'
@@ -107,6 +123,7 @@ sed -e '/^\#\*ADC\*A\*/,/^\#\*ADC\*B\*/d' tmpf$$ >| $file
 echo "#*ADC*A***********$star40$star20" >> $file
 echo '# Following lines written by install_ADC.  '"$(date)" >> $file
 echo 'export ADC_DIR='`pwd` >> $file
+echo 'export LD_LIBRARY_PATH=$ADC_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}' >> $file
 echo "#*ADC*B***********$star40$star20" >> $file
 
 echo
