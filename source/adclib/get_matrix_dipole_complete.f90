@@ -14321,7 +14321,7 @@ ar_offdiag_ij = 0.
 !-----------------------------------------------------------------------
 ! Assemble the complete dipole matrix file
 !-----------------------------------------------------------------------
-    write(ilog,*) "Dipole matrix assembly..."
+    write(ilog,'(2x,a)') "Dipole matrix assembly..."
     
     ! Total no. non-zero elements
     count=0
@@ -14401,7 +14401,7 @@ ar_offdiag_ij = 0.
     !   call system('rm -rf '//trim(hamfile(i)))
     !enddo
 
-    write(ilog,*) 'rec_counts',nbuf
+    write(ilog,*) ' rec_counts',nbuf
     write(ilog,*) count,' off-diagonal elements saved in file ',filename
 
 !-----------------------------------------------------------------------

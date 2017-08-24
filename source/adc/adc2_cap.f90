@@ -55,15 +55,21 @@ contains
     call cap_mobas(gam,cap_mo)
 
 !-----------------------------------------------------------------------
-! Calculate the IS representation of the CAP operator
+! Calculate the matrix elements needed to represent the CAP operator
+! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
-    call cap_isbas(cap_mo)
+    call cap_isbas(cap_mo,kpqf,ndimf)
+
+!-----------------------------------------------------------------------
+! Calculate the dipole matrices
+!-----------------------------------------------------------------------
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------    
     deallocate(kpq,kpqf,kpqd)
     deallocate(cap_mo)
+    deallocate(w0j)
     
     return
     
@@ -71,28 +77,77 @@ contains
 
 !#######################################################################
 
-  subroutine cap_isbas(cap_mo)
+  subroutine cap_isbas(cap_mo,kpqf,ndimf)
 
     use constants
     use parameters
     use mp2
     use get_matrix_dipole
+    use get_moment
     
     implicit none
 
-    real(d), dimension(nbas,nbas) :: cap_mo
-    real(d), dimension(nbas,nbas) :: rho0
-    
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf
+    integer                                   :: p,q,k
+    real(d), dimension(nbas,nbas)             :: cap_mo
+    real(d), dimension(nbas,nbas)             :: rho0
+    real(d), dimension(nbas,nbas)             :: dpl_orig
+    character(len=60)                         :: filename
+
 !----------------------------------------------------------------------
 ! Calculate the ground state density matrix
 !----------------------------------------------------------------------
     call rhogs(rho0)
 
 !----------------------------------------------------------------------
-! Calculate the IS representation of the shifted CAP operator
+! Calculate the CAP matrix element W_00 = < Psi_0 | W | Psi_0 >
 !----------------------------------------------------------------------
-!    call get_adc2_dipole_improved_omp(ndim,ndim,kpq,kpq,&
-!         nbuf_vv(c),nel_vv(c),filename)
+    w00=0.0d0
+    do p=1,nbas
+       do q=1,nbas
+          w00=w00+rho0(p,q)*cap_mo(p,q)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! In the following, we calculate CAP matrix elements using the shifted
+! dipole code (D-matrix and f-vector code) by simply temporarily
+! copying the MO CAP matrix into the dpl array.
+!----------------------------------------------------------------------
+    dpl_orig(1:nbas,1:nbas)=dpl(1:nbas,1:nbas)
+    dpl(1:nbas,1:nbas)=cap_mo(1:nbas,1:nbas)
+    
+!----------------------------------------------------------------------
+! Calculate the IS representation of the shifted CAP operator W-W_00
+!----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the IS representation of the &
+         shifted CAP operator'
+    write(ilog,'(72a,/)') ('-',k=1,72)
+    
+    filename='SCRATCH/cap_isr'
+    
+    call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+         nbuf_cap,nel_cap,filename)
+
+!----------------------------------------------------------------------
+! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
+!----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the vector &
+         W_0J = < Psi_0 | W | Psi_J >'
+    write(ilog,'(72a)') ('-',k=1,72) 
+
+    allocate(w0j(ndimf))
+    w0j=0.0d0
+    
+    call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
+    
+!----------------------------------------------------------------------
+! Reset the dpl array
+!----------------------------------------------------------------------
+    dpl(1:nbas,1:nbas)=dpl_orig(1:nbas,1:nbas)
     
     return
     

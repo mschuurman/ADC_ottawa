@@ -326,9 +326,13 @@ logical                               :: lfdstates
 !!$************************************************
 !!$**********CAP-TD-ADC Calculations***************
 !!$************************************************
-integer :: icap
-real(d) :: capstr,capwid
-logical :: lcap
+integer              :: icap
+integer*8            :: nel_cap
+integer              :: nbuf_cap
+real(d)              :: capstr,capwid
+real(d)              :: w00
+real(d), allocatable :: w0j(:)
+logical              :: lcap
 
 !!$************************************************
 !!$**********Other Parameters**********************

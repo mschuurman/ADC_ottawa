@@ -272,7 +272,7 @@ contains
     integer*8, dimension(3)                   :: nel_cv,nel_cc,&
                                                  nel_vv
     integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
-                                                  nbuf_vv
+                                                 nbuf_vv
     integer                                   :: dim,error,ivecs
     real(d), dimension(:,:), allocatable      :: veci,vecf,mtm_v,&
                                                  mtm_c
