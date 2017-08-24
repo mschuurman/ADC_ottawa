@@ -41,6 +41,9 @@ module capmod
   real(dp), allocatable :: center_coordinates(:)
   real(dp), pointer     :: grid(:)
   type(c_ptr)           :: context
+
+  ! CAP arrays
+  real(d), allocatable  :: cap(:)
   
 contains
   
@@ -78,6 +81,11 @@ contains
 !----------------------------------------------------------------------
     call initialise_intgrid(gam)
 
+!----------------------------------------------------------------------
+! Precalculation of the CAP at the grid points
+!----------------------------------------------------------------------
+    call precalc_cap(gam)
+    
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !----------------------------------------------------------------------
@@ -236,6 +244,35 @@ contains
 
 !######################################################################
 
+  subroutine precalc_cap(gam)
+
+    use channels
+    use constants
+    use parameters
+    use import_gamess
+    use gamess_internal
+
+    implicit none
+
+    type(gam_structure) :: gam
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(cap(num_points))
+    
+!----------------------------------------------------------------------
+! Calculate the CAP values at the grid points
+!----------------------------------------------------------------------
+    print*,"WRITE THE CAP PRECALCULATION CODE!"
+    STOP
+    
+    return
+    
+  end subroutine precalc_cap
+    
+!######################################################################
+  
   subroutine mo_cap_matrix(gam)
 
     use channels
@@ -252,7 +289,7 @@ contains
                                              inx,iny,inz,ipos,&
                                              jnx,jny,jnz,jpos
     real(dp)                              :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
-                                             aoi,aoj,ic,jc
+                                             aoi,aoj,iangc,jangc
     real(dp), dimension(:,:), allocatable :: sao,sao_grid
     type(gam_structure)                   :: gam
 
@@ -281,15 +318,14 @@ contains
 
              bra=bra+1                 ! Bra counter
 
-
-             ipos=ang_loc(il)+icomp-1  ! Position of the current AO in the ang_n*
-                                       ! arrays
+             ipos=ang_loc(il)+icomp-1  ! Position of the current AO in
+                                       ! the ang_n* arrays
 
              inx=ang_nx(ipos)          ! nx
              iny=ang_ny(ipos)          ! ny
              inz=ang_nz(ipos)          ! nz
 
-             ic=ang_c(ipos)
+             iangc=ang_c(ipos)
              
              ! Loop over ket AOs
              ket=0
@@ -302,15 +338,14 @@ contains
 
                       ket=ket+1                 ! Ket counter
 
-
-                      jpos=ang_loc(jl)+jcomp-1  ! Position of the current AO in the ang_n*
-                                                ! arrays
+                      jpos=ang_loc(jl)+jcomp-1  ! Position of the current AO in
+                                                ! the ang_n* arrays
 
                       jnx=ang_nx(jpos)          ! nx
                       jny=ang_ny(jpos)          ! ny
                       jnz=ang_nz(jpos)          ! nz
 
-                      jc=ang_c(jpos)
+                      jangc=ang_c(jpos)
                       
                       ! Calculation of the current integral
                       do k=1,num_points
@@ -332,8 +367,8 @@ contains
                          jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
                          
                          ! AO values
-                         aoi=aoval(ix,iy,iz,inx,iny,inz,ic,iatm,ish,gam)
-                         aoj=aoval(jx,jy,jz,jnx,jny,jnz,jc,jatm,jsh,gam)
+                         aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
+                         aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
 
                          ! Contribution to the integral
                          sao_grid(bra,ket)=sao_grid(bra,ket)+w*aoi*aoj
@@ -346,20 +381,17 @@ contains
              
           enddo
        enddo
-    enddo
-    
+    enddo    
 
-!    ! CHECK AO overlaps
+!    ! CHECK: AO overlaps
 !    print*,
 !    do i=1,nao
 !       do j=i,nao
-!          print*,i,j,sao(i,j),sao_grid(i,j)
+!          print*,i,j,sao(i,j),sao_grid(i,j),abs(sao(i,j)-sao_grid(i,j))
 !       enddo
 !    enddo
 !    print*,
-!    
-!    STOP
-    
+   
     return
     
   end subroutine mo_cap_matrix
@@ -406,13 +438,7 @@ contains
        coeff=gam%atoms(iatom)%p_c(iprim)
        
        ! Contribution of the current primitive to the AO
-       aoval=aoval &
-            + coeff &
-            * angc &
-            * x**nx &
-            * y**ny &
-            * z**nz &
-            * exp(-zeta*rsq)
+       aoval=aoval+coeff*angc*(x**nx)*(y**ny)*(z**nz)*exp(-zeta*rsq)
         
     enddo
 
@@ -432,8 +458,11 @@ contains
     deallocate(shell_l_quantum_numbers)
     deallocate(shell_num_primitives)
     deallocate(primitive_exponents)
+    deallocate(cap)
     
     call numgrid_free_context(context)
+
+    return
     
   end subroutine finalise_intgrid
     
