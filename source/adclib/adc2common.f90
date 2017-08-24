@@ -58,10 +58,9 @@
       CHECK_dip = nirrep2
 
 !-----------------------------------------------------------------------
-! If we are performing a non-linear spectroscopy calculation, then set
-! up the total dipole matrix array
+! If needed, then set up the total dipole matrix array
 !-----------------------------------------------------------------------
-      if (lrixs.or.ltpa) then
+      if (lrixs.or.ltpa.or.lcap) then
          allocate(dpl_all(3,nbas,nbas))
          dpl_all(1,:,:)=x_dipole(:,:)
          dpl_all(2,:,:)=y_dipole(:,:)

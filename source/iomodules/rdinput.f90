@@ -750,6 +750,12 @@
             msg='The CAP width has not been given'
             goto 999
          endif
+
+         ! Laser orientation
+         if (sum(abs(pulse_vec)).eq.0.0d0) then
+            msg='The laser pulse orientation has not been given'
+            goto 999
+         endif
          
       endif
       
@@ -1832,6 +1838,28 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'pulse_vec') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) pulse_vec(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) pulse_vec(2)
+               else
+                  errmsg='Only one argument out of three was given &
+                       with the pulse_vec keyword'
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) pulse_vec(3)
+               else
+                  errmsg='Only two arguments out of three was given &
+                       with the pulse_vec keyword'
+               endif
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

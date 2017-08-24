@@ -326,13 +326,18 @@ logical                               :: lfdstates
 !!$************************************************
 !!$**********CAP-TD-ADC Calculations***************
 !!$************************************************
-integer              :: icap
-integer*8            :: nel_cap
-integer              :: nbuf_cap
-real(d)              :: capstr,capwid
-real(d)              :: w00
-real(d), allocatable :: w0j(:)
-logical              :: lcap
+integer                 :: icap
+integer*8               :: nel_cap
+integer*8, dimension(3) :: nel_dip
+integer                 :: nbuf_cap
+integer, dimension(3)   :: nbuf_dip
+real(d)                 :: capstr,capwid
+real(d)                 :: w00
+real(d), allocatable    :: w0j(:)
+real(d), dimension(3)   :: d00
+real(d), allocatable    :: d0j(:,:)
+real(d), dimension(3)   :: pulse_vec
+logical                 :: lcap
 
 !!$************************************************
 !!$**********Other Parameters**********************
