@@ -7,7 +7,6 @@
 
 module capmod
 
-  use constants
   use numgrid
   use, intrinsic :: iso_c_binding, only: c_ptr
   
@@ -43,25 +42,28 @@ module capmod
   type(c_ptr)           :: context
 
   ! CAP arrays
-  real(d), allocatable  :: cap(:)
+  real(dp), allocatable :: cap(:)
+  real(dp), allocatable :: cap_ao(:,:)
+  real(dp), allocatable :: vdwr(:)
+  real(dp), parameter   :: dscale=3.5d0
   
 contains
   
 !######################################################################
 
-  subroutine cap_mobas(gam)
+  subroutine cap_mobas(gam,cap_mo)
 
     use channels
-    use constants
     use parameters
     use timingmod
     use import_gamess
     
     implicit none
 
-    integer             :: k
-    real(dp)            :: tw1,tw2,tc1,tc2
-    type(gam_structure) :: gam
+    integer                               :: k
+    real(dp)                              :: tw1,tw2,tc1,tc2
+    real(dp), dimension(:,:), allocatable :: cap_mo
+    type(gam_structure)                   :: gam
 
 !----------------------------------------------------------------------
 ! Ouput what we are doing
@@ -75,6 +77,11 @@ contains
 ! Start timing
 !----------------------------------------------------------------------
     call times(tw1,tc1)
+
+!----------------------------------------------------------------------
+! Fill in the van der Waals radius array
+!----------------------------------------------------------------------
+    call get_vdwr(gam)
     
 !----------------------------------------------------------------------
 ! Set up the integration grid
@@ -89,13 +96,13 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !----------------------------------------------------------------------
-    call mo_cap_matrix(gam)
+    call mo_cap_matrix(gam,cap_mo)
 
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
     call times(tw2,tc2)
-    write(ilog,'(2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
+    write(ilog,'(/,2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
     
 !----------------------------------------------------------------------
 ! Deallocate arrays and destroy the grid context
@@ -108,10 +115,188 @@ contains
 
 !######################################################################
 
+  subroutine get_vdwr(gam)
+
+    use channels
+    use parameters
+    use iomod
+    use import_gamess
+    
+    implicit none
+
+    integer             :: natom,i
+    character(len=20)   :: name
+    type(gam_structure) :: gam
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------   
+    natom=gam%natoms
+    allocate(vdwr(natom))
+    vdwr=0.0d0
+
+!----------------------------------------------------------------------
+! Fill in the van der Waals radius array (units of Bohr)
+! Van der Waals radii taken from Mantina et al., JPCA, 113, 5806 (2009)
+!----------------------------------------------------------------------
+    ! Van der Waals radii in Angstrom
+    do i=1,natom
+
+       name=gam%atoms(i)%name
+       
+       if (name.eq.'H') then
+          vdwr(i)=1.10d0
+
+       else if (name.eq.'He') then
+          vdwr(i)=1.40d0
+
+       else if (name.eq.'Li') then
+          vdwr(i)=1.81d0
+
+       else if (name.eq.'Be') then
+          vdwr(i)=1.53d0
+
+       else if (name.eq.'B') then
+          vdwr(i)=1.92d0
+
+       else if (name.eq.'C') then
+          vdwr(i)=1.70d0
+
+       else if (name.eq.'N') then
+          vdwr(i)=1.55d0
+
+       else if (name.eq.'O') then
+          vdwr(i)=1.52d0
+
+       else if (name.eq.'F') then
+          vdwr(i)=1.47d0
+                    
+       else if (name.eq.'Ne') then
+          vdwr(i)=1.54d0
+
+       else if (name.eq.'Na') then
+          vdwr(i)=2.27d0
+
+       else if (name.eq.'Mg') then
+          vdwr(i)=1.73d0
+
+       else if (name.eq.'Al') then
+          vdwr(i)=1.84d0
+
+       else if (name.eq.'Si') then
+          vdwr(i)=2.10d0
+
+       else if (name.eq.'P') then
+          vdwr(i)=1.80d0
+
+       else if (name.eq.'S') then
+          vdwr(i)=1.80d0
+
+       else if (name.eq.'Cl') then
+          vdwr(i)=1.75d0
+
+       else if (name.eq.'Ar') then
+          vdwr(i)=1.88d0
+
+       else if (name.eq.'K') then
+          vdwr(i)=2.75d0
+
+       else if (name.eq.'Ca') then
+          vdwr(i)=2.31d0
+
+       else if (name.eq.'Ga') then
+          vdwr(i)=1.87d0
+
+       else if (name.eq.'Ge') then
+          vdwr(i)=2.11d0
+
+       else if (name.eq.'As') then
+          vdwr(i)=1.85d0
+
+       else if (name.eq.'Se') then
+          vdwr(i)=1.90d0
+
+       else if (name.eq.'Br') then
+          vdwr(i)=1.83d0
+
+       else if (name.eq.'Kr') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'Rb') then
+          vdwr(i)=3.03d0
+
+       else if (name.eq.'Sr') then
+          vdwr(i)=2.49d0
+
+       else if (name.eq.'In') then
+          vdwr(i)=1.93d0
+
+       else if (name.eq.'Sn') then
+          vdwr(i)=2.17d0
+
+       else if (name.eq.'Sb') then
+          vdwr(i)=2.06d0
+
+       else if (name.eq.'Te') then
+          vdwr(i)=2.06d0
+
+       else if (name.eq.'I') then
+          vdwr(i)=1.98d0
+
+       else if (name.eq.'Xe') then
+          vdwr(i)=2.16d0
+
+       else if (name.eq.'Cs') then
+          vdwr(i)=3.43d0
+
+       else if (name.eq.'Ba') then
+          vdwr(i)=2.68d0
+
+       else if (name.eq.'Tl') then
+          vdwr(i)=1.96d0
+
+       else if (name.eq.'Pb') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'Bi') then
+          vdwr(i)=2.07d0
+
+       else if (name.eq.'Po') then
+          vdwr(i)=1.97d0
+
+       else if (name.eq.'At') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'Rn') then
+          vdwr(i)=2.20d0
+
+       else if (name.eq.'Fr') then
+          vdwr(i)=3.48d0
+
+       else if (name.eq.'Ra') then
+          vdwr(i)=2.83d0
+
+       else
+          errmsg='Currently CAPs are not supported for the element '&
+               //trim(name)
+          call error_control
+          
+       endif
+       
+    enddo
+
+    ! Convert to Bohr
+    vdwr=vdwr*ang2bohr
+
+    return
+    
+  end subroutine get_vdwr
+  
+!######################################################################
+
   subroutine initialise_intgrid(gam)
 
     use channels
-    use constants
     use parameters
     use import_gamess
     
@@ -124,7 +309,7 @@ contains
 ! Grid parameters
 !----------------------------------------------------------------------
     ! Grid parameters
-    radial_precision=1.0d-14
+    radial_precision=1.0e-20_d
     min_num_angular_points=170
     max_num_angular_points=350
 
@@ -247,7 +432,6 @@ contains
   subroutine precalc_cap(gam)
 
     use channels
-    use constants
     use parameters
     use import_gamess
     use gamess_internal
@@ -260,23 +444,118 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     allocate(cap(num_points))
+    cap=0.0d0
     
 !----------------------------------------------------------------------
 ! Calculate the CAP values at the grid points
 !----------------------------------------------------------------------
-    print*,"WRITE THE CAP PRECALCULATION CODE!"
-    STOP
+    select case(icap)
+
+    case(1) ! Sigmoidal CAP
+
+       call precalc_cap_sigmoidal(gam)
+       
+    end select
     
     return
     
   end subroutine precalc_cap
+
+!######################################################################
+! precalc_cap_sigmoidal: Calculation of a sigmoidal-type CAP at the
+!                        grid points. The form of the CAP is given in
+!                        equations 6 and 7 in JCP, 145, 094105 (2016).
+!                        We choose the starting positions, R0, of the
+!                        individual atom-centred CAPs to be 3.5 times
+!                        the van der Waals radius of the atom. This
+!                        value can be changed by altering the
+!                        parameter dscale.
+!######################################################################
+  
+  subroutine precalc_cap_sigmoidal(gam)
+
+    use channels
+    use parameters
+    use import_gamess
+    use gamess_internal
+
+    implicit none
+
+    integer                             :: natom,i,n
+    real(dp)                            :: x,y,z,xa,ya,za,r,r0,&
+                                           capval,capa
+    real(dp)                            :: pival
+    real(dp), dimension(:), allocatable :: acoo
+    type(gam_structure)                 :: gam
+
+    pival=4.0d0*atan(1.0d0)
+    
+!----------------------------------------------------------------------
+! Atomic coordinates (in Bohr)
+!----------------------------------------------------------------------
+    natom=gam%natoms
+
+    allocate(acoo(3*natom))
+    acoo=0.0d0
+
+    do n=1,natom
+       do i=1,3
+          acoo(n*3-3+i)=gam%atoms(n)%xyz(i)*ang2bohr
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! Evaluate the sigmoidal CAP value at each grid point
+!----------------------------------------------------------------------
+    ! Loop over grid points
+    do i=1,num_points
+
+       ! Cartesian coordinates of the current grid point
+       x=grid(i*4-3)
+       y=grid(i*4-2)
+       z=grid(i*4-1)
+
+       ! Loop over atoms
+       capval=1e+12
+       do n=1,natom
+
+          ! Atomic coordinates
+          xa=acoo(n*3-2)
+          ya=acoo(n*3-1)
+          za=acoo(n*3)
+
+          ! Distance from the current grid point to the current atom
+          r=sqrt((x-xa)**2+(y-ya)**2+(z-za)**2)
+          
+          ! CAP starting position
+          r0=vdwr(n)*dscale
+
+          ! Contribution to the total CAP value
+          if (r.le.r0) then
+             capa=0.0d0
+          else if (r.gt.r0.and.r.lt.r0+capwid) then
+             capa=capstr*(sin(pival*(r-r0)/(2.0d0*capwid)))**2
+          else
+             capa=capstr
+          endif
+
+          if (capa.lt.capval) capval=capa
+          
+       enddo
+
+       cap(i)=capval
+       
+    enddo
+
+    return
+    
+  end subroutine precalc_cap_sigmoidal
     
 !######################################################################
   
-  subroutine mo_cap_matrix(gam)
+  subroutine mo_cap_matrix(gam,cap_mo)
 
     use channels
-    use constants
     use parameters
     use import_gamess
     use gamess_internal
@@ -289,29 +568,65 @@ contains
                                              inx,iny,inz,ipos,&
                                              jnx,jny,jnz,jpos
     real(dp)                              :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
-                                             aoi,aoj,iangc,jangc
-    real(dp), dimension(:,:), allocatable :: sao,sao_grid
+                                             aoi,aoj,iangc,jangc,&
+                                             maxdiff,avdiff
+    real(dp), dimension(:,:), allocatable :: sao,sao_grid,cap_mo,&
+                                             sao_diff
     type(gam_structure)                   :: gam
 
 !----------------------------------------------------------------------
-! TEST: AO overlaps
+! Allocate arrays
 !----------------------------------------------------------------------
+    ! No. AOs
     nao=gam%nbasis
 
+    ! AO-to-MO transformation matrix
+    if (.not.allocated(ao2mo)) then
+       allocate(ao2mo(nao,nbas))
+    endif
+    ao2mo=0.0d0
+    
+    ! AO representation of the CAP operator
+    allocate(cap_ao(nao,nao))
+    cap_ao=0.0d0
+
+    ! MO representation of the CAP operator
+    allocate(cap_mo(nbas,nbas))
+    cap_mo=0.0d0
+    
     ! Analytic AO overlap matrix
     allocate(sao(nao,nao))
-    call gamess_1e_integrals('AO OVERLAP',sao,gam,gam)
+    sao=0.0d0
 
     ! Numerical AO overlap matrix
-    !
     allocate(sao_grid(nao,nao))
     sao_grid=0.0d0
+
+    ! Difference between the analytic and numerical AO overlap
+    ! matrices
+    allocate(sao_diff(nao,nao))
+    sao_diff=0.0d0
     
+!----------------------------------------------------------------------
+! Analytic AO overlaps
+!----------------------------------------------------------------------
+    call gamess_1e_integrals('AO OVERLAP',sao,gam,gam)
+    
+!----------------------------------------------------------------------
+! Calculate the AO representation of the CAP operator.
+!
+! For checking purposes, we also calculate the AO overlaps numerically
+! and compare them to their analytic values. This way we can get some
+! information about the quality of the integration grid.
+!----------------------------------------------------------------------
     ! Loop over bra AOs
     bra=0
     do iatm=1,gam%natoms               ! Loop over atoms
+
        do ish=1,gam%atoms(iatm)%nshell ! Loop over shells
+
           il=gam%atoms(iatm)%sh_l(ish) ! Angular momentum quantum no., l
+
           do icomp=1,gam_orbcnt(il)    ! Loop over components
                                        ! ({x,y,z},{xx,yy,...},etc) for
                                        ! the current l value
@@ -330,8 +645,11 @@ contains
              ! Loop over ket AOs
              ket=0
              do jatm=1,gam%natoms               ! Loop over atoms
+
                 do jsh=1,gam%atoms(jatm)%nshell ! Loop over shells
+
                    jl=gam%atoms(jatm)%sh_l(jsh) ! Angular momentum quantum no., l
+
                    do jcomp=1,gam_orbcnt(jl)    ! Loop over components
                                                 ! ({x,y,z},{xx,yy,...},etc) for
                                                 ! the current l value
@@ -370,8 +688,11 @@ contains
                          aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
                          aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
 
-                         ! Contribution to the integral
+                         ! Contribution to the AO overlap integral
                          sao_grid(bra,ket)=sao_grid(bra,ket)+w*aoi*aoj
+
+                         ! Contribution to the AO CAP matrix element
+                         cap_ao(bra,ket)=cap_ao(bra,ket)+w*aoi*aoj*cap(k)
                          
                       enddo
 
@@ -383,15 +704,38 @@ contains
        enddo
     enddo    
 
-!    ! CHECK: AO overlaps
-!    print*,
-!    do i=1,nao
-!       do j=i,nao
-!          print*,i,j,sao(i,j),sao_grid(i,j),abs(sao(i,j)-sao_grid(i,j))
-!       enddo
-!    enddo
-!    print*,
-   
+!----------------------------------------------------------------------
+! Calculate the MO representation of the CAP operator
+!----------------------------------------------------------------------
+    ! Retrieve the AO-to-MO transformation matrix
+    ao2mo=gam%vectors(1:nao,1:nbas)
+
+    ! Similarity transform the AO CAP matrix to yield the MO CAP matrix
+    cap_mo=matmul(transpose(ao2mo),matmul(cap_ao,ao2mo))
+
+!----------------------------------------------------------------------
+! For checking purposes, output some information about the difference
+! between the numerical and analytic AO overlap matrices
+!----------------------------------------------------------------------
+    sao_diff=abs(sao-sao_grid)
+
+    ! Maximum difference
+    maxdiff=maxval(sao_diff)
+
+    ! Average difference
+    avdiff=0.0d0
+    do i=1,nao
+       do j=1,nao
+          avdiff=avdiff+sao_diff(i,j)
+       enddo
+    enddo
+    avdiff=avdiff/(nao**2)
+
+    write(ilog,'(/,2x,a)') 'AO overlap differences &
+         (analytical - numerical):'
+    write(ilog,'(2x,a,2x,E15.7)') 'Maximum:',maxdiff
+    write(ilog,'(2x,a,2x,E15.7)') 'Average:',avdiff
+    
     return
     
   end subroutine mo_cap_matrix
@@ -400,7 +744,6 @@ contains
 
   function aoval(x,y,z,nx,ny,nz,angc,iatom,ishell,gam)
 
-    use constants
     use import_gamess
     use gamess_internal
     

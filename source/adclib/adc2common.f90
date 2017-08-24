@@ -292,7 +292,7 @@
       use diagmod, only: readdavvc
       use get_matrix_dipole
       use misc
-      use dyson_calc
+      use mp2
       use timingmod
 
       implicit none
@@ -345,34 +345,7 @@
       if (.not.allocated(density)) allocate(density(nbas,nbas))
       density=0.0d0
 
-      ! Occupied-occupied block: 0th-order contribution
-      do i=1,nocc
-         density(i,i)=2.0d0
-      enddo
-
-      ! Occupied-occupied block: 2nd-order contribution
-      do i=1,nocc
-         do j=i,nocc
-            density(i,j)=density(i,j)+rhogs2_oo(i,j)
-            density(j,i)=density(i,j)
-         enddo
-      enddo
-
-      ! Unoccupied-unoccupied block: 2nd-order contribution
-      do a=nocc+1,nbas
-         do b=a,nbas
-            density(a,b)=rhogs2_uu(a,b)
-            density(b,a)=density(a,b)
-         enddo
-      enddo
-
-      ! Occupied-unoccupied block: 2nd-order contribution
-      do i=1,nocc
-         do a=nocc+1,nbas
-            density(i,a)=rhogs2_ou(i,a)
-            density(a,i)=density(i,a)
-         enddo
-      enddo
+      call rhogs(density)
 
 !-----------------------------------------------------------------------
 ! Ground state electronic dipole moment
@@ -463,7 +436,7 @@
       use diagmod, only: readdavvc
       use get_matrix_dipole
       use misc
-      use dyson_calc
+      use mp2
       use timingmod
 
       implicit none
@@ -514,35 +487,8 @@
       if (.not.allocated(density)) allocate(density(nbas,nbas))
       density=0.0d0
 
-      ! Occupied-occupied block: 0th-order contribution
-      do i=1,nocc
-         density(i,i)=2.0d0
-      enddo
-
-      ! Occupied-occupied block: 2nd-order contribution
-      do i=1,nocc
-         do j=i,nocc
-            density(i,j)=density(i,j)+rhogs2_oo(i,j)
-            density(j,i)=density(i,j)
-         enddo
-      enddo
+      call rhogs(density)
       
-      ! Unoccupied-unoccupied block: 2nd-order contribution
-      do a=nocc+1,nbas
-         do b=a,nbas
-            density(a,b)=rhogs2_uu(a,b)
-            density(b,a)=density(a,b)
-         enddo
-      enddo
-
-      ! Occupied-unoccupied block: 2nd-order contribution
-      do i=1,nocc
-         do a=nocc+1,nbas
-            density(i,a)=rhogs2_ou(i,a)
-            density(a,i)=density(i,a)
-         enddo
-      enddo
-
 !-----------------------------------------------------------------------
 ! Ground state electronic dipole moment
 !-----------------------------------------------------------------------

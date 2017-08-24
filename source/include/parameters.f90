@@ -327,6 +327,7 @@ logical                               :: lfdstates
 !!$**********CAP-TD-ADC Calculations***************
 !!$************************************************
 integer :: icap
+real(d) :: capstr,capwid
 logical :: lcap
 
 !!$************************************************

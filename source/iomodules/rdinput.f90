@@ -738,6 +738,18 @@
             msg='The CAP type has not been given'
             goto 999
          endif
+
+         ! CAP strength
+         if (capstr.eq.0.0d0) then
+            msg='The CAP strength has not been given'
+            goto 999
+         endif
+
+         ! CAP width
+         if (capwid.eq.0.0d0) then
+            msg='The CAP width has not been given'
+            goto 999
+         endif
          
       endif
       
@@ -1788,6 +1800,33 @@
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'cap_strength') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) capstr
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'cap_width') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) capwid
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  if (keyword(i).eq.'angstrom') then
+                     capwid=capwid*1.889725989d0
+                  else if (keyword(i).eq.'bohr') then
+                     ! Do nothing, this is the unit that we will work with
+                  else
+                     errmsg='Unknown length unit: '//trim(keyword(i))
+                     call error_control
+                  endif
                endif
             else
                goto 100

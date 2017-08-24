@@ -100,10 +100,10 @@ ADCLIB= source/adclib/defaults.o \
         source/adclib/guessvecs.o \
 	source/adclib/photoionisation.o \
 	source/adclib/Propagate.o \
+	source/adclib/mp2.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
-	source/adclib/mp2.o \
 	source/adclib/adc2common.o \
 	source/adclib/cap_mobas.o \
 
@@ -183,10 +183,10 @@ ADC_OBJ=accuracy.o \
 	block_lanczos.o \
 	photoionisation.o \
 	Propagate.o \
-        dyson_calc.o \
+	mp2.o \
+	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \
-	mp2.o \
 	adc2common.o \
 	cap_mobas.o \
 	guessvecs.o \

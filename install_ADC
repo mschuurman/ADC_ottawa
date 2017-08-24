@@ -92,7 +92,7 @@ if [ "$target" == 'adc' ] || [ -z $target ]; then
 	g++ -shared -Wl,-soname,libnumgrid.so -o libnumgrid.so *.o
     fi	
     mv libnumgrid.so ../../lib
-    cp numgrid.mod ../../
+    mv numgrid.mod ../../
     rm *.o *.mod
     cd ../../
 fi
