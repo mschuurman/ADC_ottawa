@@ -374,8 +374,6 @@ contains
     complex(d), dimension(:,:), allocatable :: krylov
     logical(kind=4)                         :: restart,relax,stdform
     
-!    external matxvec_treal
-
 !----------------------------------------------------------------------
 ! sillib variables
 !----------------------------------------------------------------------

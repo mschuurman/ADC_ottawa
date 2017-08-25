@@ -15,8 +15,7 @@
       use misc
       use fspace2
       use get_matrix
-      use get_matrix_DIPOLE
-      use propagate_prepare
+      use get_matrix_dipole
       use guessvecs
       use channels
       use mp2

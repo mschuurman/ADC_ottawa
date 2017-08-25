@@ -316,6 +316,13 @@
             call rdinp(iin)
             if (keyword(1).ne.'end-cap_section') goto 65
             i=inkw
+
+         else if (keyword(i).eq.'propagation_section') then
+            lpropagation=.true.
+70          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-propagation_section') goto 70
+            i=inkw
             
          else
             ! Exit if the keyword is not recognised
@@ -401,6 +408,11 @@
 ! Read the CAP section
 !-----------------------------------------------------------------------
       if (lcap) call rdcapinp
+
+!-----------------------------------------------------------------------
+! Read the propagation section
+!-----------------------------------------------------------------------
+      if (lpropagation) call rdpropagationinp
       
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
@@ -549,6 +561,7 @@
            .and..not.ltpa &
            .and..not.lautospec &
            .and..not.lfdstates &
+           .and..not.lpropagation &
            .and..not.lcap) then
 
          if (.not.llanc) then
@@ -749,16 +762,41 @@
          if (capwid.eq.0.0d0) then
             msg='The CAP width has not been given'
             goto 999
-         endif
+         endif         
 
-         ! Laser orientation
-         if (sum(abs(pulse_vec)).eq.0.0d0) then
-            msg='The laser pulse orientation has not been given'
+         ! Propagation section
+         if (.not.lpropagation) then
+            msg='The propagation sesction has not been given'
             goto 999
          endif
          
       endif
-      
+
+!-----------------------------------------------------------------------
+! Propagation section
+!-----------------------------------------------------------------------
+      if (lpropagation) then
+
+         ! Laser-molecule orientation
+         if (sum(abs(pulse_vec)).eq.0.0d0) then
+            msg='The laser pulse orientation has not been given'
+            goto 999
+         endif
+
+         ! Final propagation time
+         if (tfinal.eq.0.0d0) then
+            msg='The final propagation time has not been given'
+            goto 999
+         endif
+
+         ! Timestep
+         if (tout.eq.0.0d0) then
+            msg='The timestep has not been given'
+            goto 999
+         endif
+         
+      endif
+         
       return
 
 999   continue
@@ -1837,28 +1875,6 @@
             else
                goto 100
             endif
-
-         else if (keyword(i).eq.'pulse_vec') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) pulse_vec(1)
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  read(keyword(i),*) pulse_vec(2)
-               else
-                  errmsg='Only one argument out of three was given &
-                       with the pulse_vec keyword'
-               endif
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  read(keyword(i),*) pulse_vec(3)
-               else
-                  errmsg='Only two arguments out of three was given &
-                       with the pulse_vec keyword'
-               endif
-            else
-               goto 100
-            endif
             
          else
             ! Exit if the keyword is not recognised
@@ -1884,6 +1900,118 @@
       return
       
     end subroutine rdcapinp
+
+!#######################################################################
+
+    subroutine rdpropagationinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i
+      
+!-----------------------------------------------------------------------
+! Read to the propagation section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'propagation_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read to the popagation parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-propagation_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'pulse_vec') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) pulse_vec(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) pulse_vec(2)
+               else
+                  errmsg='Only one argument out of three was given &
+                       with the pulse_vec keyword'
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) pulse_vec(3)
+               else
+                  errmsg='Only two arguments out of three was given &
+                       with the pulse_vec keyword'
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'tfinal') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) tfinal
+            else
+               goto 100
+            endif
+            
+         else if (keyword(i).eq.'tout') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) tout
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'tol') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) proptol
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'krydim') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+            
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+            
+      return
+      
+    end subroutine rdpropagationinp
       
 !#######################################################################
 

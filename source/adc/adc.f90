@@ -12,7 +12,7 @@ program adc
   use adc2tpamod
   use adc2automod
   use adc2fdstatesmod
-  use adc2capmod
+  use adc2propmod
   use rdinput
   use orbindx
   use defaults
@@ -149,10 +149,10 @@ program adc
            ! ADC(2) filter diagonalisation state calculation
            call adc2_fdstates(gamess_info)
 
-        else if (lcap) then
+        else if (lpropagation) then
 
-           ! CAP-TD-ADC(2) calculation of ionisation probabilities
-           call adc2_cap(gamess_info)
+           ! TD-ADC(2) wavepacket propagation
+           call adc2_propagate(gamess_info)
            
         else
 
@@ -179,7 +179,5 @@ program adc
   write(ilog,'(a,1x,F9.2,1x,a)') 'Final cpu time: ',tc2-tc1," s"
   write(ilog,'(70a)') ('*',i=1,70)
 
-  STOP
-  
 end program adc
 

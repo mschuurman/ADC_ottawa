@@ -1,9 +1,9 @@
 !#######################################################################
-! Calculation of ionisation probabilities using the CAP-TD-ADC(2)
-! method.
+! TD-ADC(2) wavepacket propagation including the interaction with an
+! applied laser pulse
 !#######################################################################
 
-module adc2capmod
+module adc2propmod
 
   use channels
 
@@ -11,7 +11,7 @@ contains
 
 !#######################################################################
 
-  subroutine adc2_cap(gam)
+  subroutine adc2_propagate(gam)
 
     use constants
     use parameters
@@ -22,6 +22,7 @@ contains
     use mp2
     use targetmatching
     use capmod
+    use propagate
     
     implicit none
 
@@ -52,31 +53,36 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !-----------------------------------------------------------------------
-    call cap_mobas(gam,cap_mo)
+    if (lcap) call cap_mobas(gam,cap_mo)
 
 !-----------------------------------------------------------------------
 ! Calculate the matrix elements needed to represent the CAP operator
 ! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
-    call cap_isbas(cap_mo,kpqf,ndimf)
+    if (lcap) call cap_isbas(cap_mo,kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! Calculate the dipole matrices
 !-----------------------------------------------------------------------
     call dipole_isbas(kpqf,ndimf)
+
+!-----------------------------------------------------------------------
+! Perform the wavepacket propagation
+!-----------------------------------------------------------------------
+    call propagate_laser(ndimf,noffdf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------    
     deallocate(kpq,kpqf,kpqd)
-    deallocate(cap_mo)
-    deallocate(w0j)
+    if (allocated(cap_mo)) deallocate(cap_mo)
+    if (allocated(w0j)) deallocate(w0j)
     deallocate(d0j)
     deallocate(dpl_all)
     
     return
     
-  end subroutine adc2_cap
+  end subroutine adc2_propagate
 
 !#######################################################################
 
@@ -244,4 +250,4 @@ contains
     
 !#######################################################################
   
-end module adc2capmod
+end module adc2propmod

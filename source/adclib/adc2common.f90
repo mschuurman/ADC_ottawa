@@ -58,15 +58,13 @@
       CHECK_dip = nirrep2
 
 !-----------------------------------------------------------------------
-! If needed, then set up the total dipole matrix array
+! Set up the total dipole matrix array
 !-----------------------------------------------------------------------
-      if (lrixs.or.ltpa.or.lcap) then
-         allocate(dpl_all(3,nbas,nbas))
-         dpl_all(1,:,:)=x_dipole(:,:)
-         dpl_all(2,:,:)=y_dipole(:,:)
-         dpl_all(3,:,:)=z_dipole(:,:)
-      endif
-        
+      allocate(dpl_all(3,nbas,nbas))
+      dpl_all(1,:,:)=x_dipole(:,:)
+      dpl_all(2,:,:)=y_dipole(:,:)
+      dpl_all(3,:,:)=z_dipole(:,:)
+
       return
       
     end subroutine set_dpl

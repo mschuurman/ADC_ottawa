@@ -75,14 +75,16 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-EIGEN=  source/eigen/tdselib.o \
-	source/eigen/sillib.o \
-	source/eigen/block_davidson.o \
-	source/eigen/relaxation.o \
-	source/eigen/fvecprop.o \
-	source/eigen/fdstates.o \
+EIGEN=  source/eigen/block_davidson.o \
 	source/eigen/diagmod.o \
 	source/eigen/block_lanczos.o 
+
+PROPAGATION= source/propagation/tdselib.o \
+	source/propagation/sillib.o \
+	source/propagation/relaxation.o \
+	source/propagation/fvecprop.o \
+	source/propagation/fdstates.o \
+	source/propagation/propagate.o
 
 ADCLIB= source/adclib/defaults.o \
 	source/adclib/orbindx.o \
@@ -99,7 +101,6 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/fspace2.o \
         source/adclib/guessvecs.o \
 	source/adclib/photoionisation.o \
-	source/adclib/Propagate.o \
 	source/adclib/mp2.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
@@ -115,13 +116,14 @@ ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_tpa.o \
 	source/adc/adc2_autospec.o \
 	source/adc/adc2_fdstates.o \
-	source/adc/adc2_cap.o \
+	source/adc/adc2_propagate.o \
 	source/adc/adc.o
 
 ADC =   $(INCLUDE) \
 	$(IOMODULES) \
 	$(UTILITIES) \
 	$(QCLIB) \
+	$(PROPAGATION) \
 	$(EIGEN) \
 	$(ADCLIB) \
 	$(ADC_MAIN)
@@ -179,10 +181,10 @@ ADC_OBJ=accuracy.o \
 	relaxation.o \
 	fvecprop.o \
 	fdstates.o \
+	propagate.o \
 	diagmod.o \
 	block_lanczos.o \
 	photoionisation.o \
-	Propagate.o \
 	mp2.o \
 	dyson_calc.o \
 	dyson_io.o \
@@ -198,7 +200,7 @@ ADC_OBJ=accuracy.o \
 	adc2_tpa.o \
 	adc2_autospec.o \
 	adc2_fdstates.o \
-	adc2_cap.o \
+	adc2_propagate.o \
 	adc.o
 
 ########################################################################
