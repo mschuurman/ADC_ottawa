@@ -100,7 +100,6 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/fspacetrial.o \
 	source/adclib/fspace2.o \
         source/adclib/guessvecs.o \
-	source/adclib/photoionisation.o \
 	source/adclib/mp2.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
@@ -184,7 +183,6 @@ ADC_OBJ=accuracy.o \
 	propagate.o \
 	diagmod.o \
 	block_lanczos.o \
-	photoionisation.o \
 	mp2.o \
 	dyson_calc.o \
 	dyson_io.o \
