@@ -60,15 +60,17 @@ MULTI = source/multi/accuracy.o \
 
 INCLUDE=source/include/constants.o \
 	source/include/parameters.o \
-	source/include/channels.o \
+	source/include/channels.o
 
 UTILITIES=source/utilities/timingmod.o \
 	source/utilities/misc.o \
+	source/utilities/lineq.o \
+	source/utilities/eigchess.o
 
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
 	source/iomodules/rdinput.o \
-	source/iomodules/read_param.o \
+	source/iomodules/read_param.o
 
 QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/rungamess.o \
@@ -81,6 +83,7 @@ EIGEN=  source/eigen/block_davidson.o \
 
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
+	source/propagation/csillib.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
 	source/propagation/fdstates.o \
@@ -152,6 +155,8 @@ ADC_OBJ=accuracy.o \
 	parameters.o \
 	channels.o \
 	misc.o \
+	lineq.o \
+	eigchess.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
@@ -177,6 +182,7 @@ ADC_OBJ=accuracy.o \
 	block_davidson.o \
 	tdselib.o \
 	sillib.o \
+	csillib.o \
 	relaxation.o \
 	fvecprop.o \
 	fdstates.o \

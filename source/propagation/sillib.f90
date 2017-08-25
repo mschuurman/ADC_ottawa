@@ -414,7 +414,7 @@
 
       Implicit None
 
-      Integer, intent(in)          :: Error
+      Integer, intent(in)           :: Error
       Character(len=*), intent(out) :: Msg
 
 ! --- GENERATE ERROR MESSAGE ---

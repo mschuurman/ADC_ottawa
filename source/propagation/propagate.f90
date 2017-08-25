@@ -14,7 +14,8 @@ module propagate
 
   save
 
-  integer                               :: wpdim
+  integer                               :: matdim
+  integer*8                             :: noffdiag
   complex(d), dimension(:), allocatable :: psi
   
 contains
@@ -55,13 +56,21 @@ contains
 !----------------------------------------------------------------------
 ! Set up the initial wavefunction vector
 !----------------------------------------------------------------------
-    call init_wavefunction(ndimf)
+    call initialise(ndimf,noffdf)
 
+!----------------------------------------------------------------------
+! Determine what can be held in memory
+!----------------------------------------------------------------------
+    call memory_managment
+
+    print*,hincore
+
+    STOP
+    
 !----------------------------------------------------------------------
 ! Peform the wavepacket propagation
 !----------------------------------------------------------------------
-    errmsg='Finish writing the wavepacket propagation code!'
-    call error_control
+    call propagate_wavepacket
     
 !----------------------------------------------------------------------
 ! Finalise and deallocate arrays
@@ -127,21 +136,27 @@ contains
 
 !#######################################################################
 
-  subroutine init_wavefunction(ndimf)
+  subroutine initialise(ndimf,noffdf)
 
     implicit none
 
-    integer :: ndimf
+    integer   :: ndimf
+    integer*8 :: noffdf
+
+!----------------------------------------------------------------------
+! No. non-zero off-diagonal matrix elements
+!----------------------------------------------------------------------
+    noffdiag=noffdf
     
 !----------------------------------------------------------------------
 ! Wavepacket dimension: IS basis plus the ground state
 !----------------------------------------------------------------------
-    wpdim=ndimf+1
+    matdim=ndimf+1
 
 !----------------------------------------------------------------------
 ! Allocate the wavepacket array
 !----------------------------------------------------------------------
-    allocate(psi(wpdim))
+    allocate(psi(matdim))
     psi=0.0d0
     
 !----------------------------------------------------------------------
@@ -151,12 +166,93 @@ contains
 ! state, corresponding to the vector (0,...,0,1)^T
 !----------------------------------------------------------------------
     psi=0.0d0
-    psi(wpdim)=cone
+    psi(matdim)=cone
     
     return
     
-  end subroutine init_wavefunction
+  end subroutine initialise
 
+!#######################################################################
+
+  subroutine memory_managment
+
+    use tdsemod
+    use omp_lib
+    
+    implicit none
+
+    integer*8 :: maxrecl,reqmem
+    integer   :: nthreads
+    real(d)   :: memavail
+    
+!----------------------------------------------------------------------
+! Available memory
+!----------------------------------------------------------------------
+    ! Maximum memory requested to be used by the user
+    memavail=maxmem
+
+    ! Two-electron integrals held in-core
+    memavail=memavail-8.0d0*(nbas**4)/1024.0d0**2
+
+    ! kpq
+    memavail=memavail-8.0d0*7.0d0*(1+nbas**2*4*nocc**2)/1024.0d0**2
+    
+    ! Psi
+    memavail=memavail-8.0d0*matdim/1024.0d0**2
+    
+    ! Lanczos vectors used in the SIL propagation method
+    memavail=memavail-(kdim-1)*8.0d0*matdim/1024.0d0**2
+
+    ! Be cautious and only use say 90% of the available memory
+    memavail=memavail*0.9d0 
+
+!----------------------------------------------------------------------
+! Determine whether or not we can hold the non-zero Hamiltonian
+! matrix elements in-core
+!----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+    reqmem=0.0d0
+    
+    ! Parallelised matrix-vector multiplication
+    reqmem=reqmem+8.0d0*nthreads*matdim/1024.0d0**2
+
+    ! Non-zero off-diagonal Hamiltonian matrix elements and their
+    ! indices
+    reqmem=reqmem+8.0d0*2.0d0*noffdiag/1024.0d0**2
+
+    ! On-diagonal Hamiltonian matrix elements
+    reqmem=reqmem+8.0d0*matdim/1024.0d0**2
+
+    ! Set the hincore flag controling whether the matrix-vector
+    ! multiplication proceeds in-core
+    if (reqmem.lt.memavail) then
+       hincore=.true.
+    else
+       hincore=.false.
+    endif
+    
+    return
+
+  end subroutine memory_managment
+    
+!#######################################################################
+
+  subroutine propagate_wavepacket
+
+    use sillib
+    use csillib
+    
+    implicit none
+
+    
+    
+    return
+    
+  end subroutine propagate_wavepacket
+    
 !#######################################################################
 
   subroutine finalise
