@@ -321,9 +321,11 @@ contains
 
     use constants
 
+    implicit none
+    
     integer                       :: matdim
     integer*8                     :: noffdiag
-    complex*16, dimension(matdim) :: v1,v2
+    complex(d), dimension(matdim) :: v1,v2
 
     if (hincore) then
        call matxvec_treal_incore(matdim,noffdiag,v1,v2)
@@ -354,8 +356,8 @@ contains
                                                ion,i,j,k,l,nthreads,tid
     integer*8                               :: noffdiag,npt
     integer*8, dimension(:,:), allocatable  :: irange
-    complex*16, dimension(matdim)           :: v1,v2
-    complex*16, dimension(:,:), allocatable :: tmpvec
+    complex(d), dimension(matdim)           :: v1,v2
+    complex(d), dimension(:,:), allocatable :: tmpvec
     character(len=70)                       :: fileon,fileoff
 
 !-----------------------------------------------------------------------
@@ -447,8 +449,8 @@ contains
     integer*8                               :: noffdiag
     integer, dimension(:), allocatable      :: indxi,indxj,ioff
     real(d), dimension(:), allocatable      :: hii,hij
-    complex*16, dimension(matdim)           :: v1,v2
-    complex*16, dimension(:,:), allocatable :: tmpvec
+    complex(d), dimension(matdim)           :: v1,v2
+    complex(d), dimension(:,:), allocatable :: tmpvec
     character(len=70)                       :: fileon,fileoff
 
 !-----------------------------------------------------------------------
@@ -555,6 +557,39 @@ contains
 
   end subroutine matxvec_treal_ext
 
+!#######################################################################
+
+  subroutine matxvec_treal_laser(time,matdim,noffdiag,v1,v2)
+
+    use constants
+
+    implicit none
+    
+    integer                       :: matdim
+    integer*8                     :: noffdiag
+    real(d)                       :: time
+    complex(d), dimension(matdim) :: v1,v2
+
+    print*,"WRITE THE MATXVEC_TREAL_LASER CODE!"
+    stop
+
+!----------------------------------------------------------------------
+! (1) -i * H * v1
+!----------------------------------------------------------------------
+!    if (hincore) then
+!       call matxvec_treal_incore(matdim,noffdiag,v1,v2)
+!    else
+!       call matxvec_treal_ext(matdim,noffdiag,v1,v2)
+!    endif
+
+!----------------------------------------------------------------------
+! (2) -i * -mu.E(t) * v1
+!----------------------------------------------------------------------
+    
+    return
+    
+  end subroutine matxvec_treal_laser
+    
 !#######################################################################
 
 end module tdsemod

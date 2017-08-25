@@ -51,6 +51,11 @@ contains
     call set_dpl
 
 !-----------------------------------------------------------------------
+! Calculate the final space Hamiltonian matrix
+!-----------------------------------------------------------------------
+    call calc_hamiltonian(ndimf,kpqf,noffdf)
+    
+!-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !-----------------------------------------------------------------------
     if (lcap) call cap_mobas(gam,cap_mo)
@@ -69,6 +74,7 @@ contains
 !-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
+    hamflag='f'
     call propagate_laser(ndimf,noffdf)
     
 !-----------------------------------------------------------------------
@@ -84,6 +90,40 @@ contains
     
   end subroutine adc2_propagate
 
+!#######################################################################
+
+  subroutine calc_hamiltonian(ndimf,kpqf,noffdf)
+
+    use fspace
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf
+    integer*8                                 :: noffdf
+    
+    write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
+    
+    if (method.eq.2) then
+       ! ADC(2)-s
+       if (lcvsfinal) then
+          call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
+       else
+          call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
+       endif
+    else if (method.eq.3) then
+       ! ADC(2)-x
+       if (lcvsfinal) then
+          call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
+       else
+          call write_fspace_adc2e_1(ndimf,kpqf(:,:),noffdf,'c')
+       endif
+    endif
+    
+    return
+    
+  end subroutine calc_hamiltonian
+  
 !#######################################################################
 
   subroutine cap_isbas(cap_mo,kpqf,ndimf)

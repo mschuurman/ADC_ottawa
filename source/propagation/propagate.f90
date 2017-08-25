@@ -47,11 +47,6 @@ contains
 ! Start timing
 !----------------------------------------------------------------------
     call times(tw1,tc1)
-    
-!----------------------------------------------------------------------
-! Output some information about the calculation to be performed
-!----------------------------------------------------------------------
-    call wrinfo
 
 !----------------------------------------------------------------------
 ! Set up the initial wavefunction vector
@@ -63,9 +58,17 @@ contains
 !----------------------------------------------------------------------
     call memory_managment
 
-    print*,hincore
+!----------------------------------------------------------------------
+! Output some information about the calculation to be performed
+!----------------------------------------------------------------------
+    call wrinfo
 
-    STOP
+!----------------------------------------------------------------------
+! Loading of the non-zero elements of the Hamiltonian matrix into
+! memory
+!----------------------------------------------------------------------
+    if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
+         'SCRATCH/hmlt.offc',ndimf,noffdf)
     
 !----------------------------------------------------------------------
 ! Peform the wavepacket propagation
@@ -92,6 +95,8 @@ contains
 
   subroutine wrinfo
 
+    use tdsemod
+    
     implicit none
 
     integer :: k
@@ -117,18 +122,18 @@ contains
     write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
          kdim
 
-!    write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',autotol
+    write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',proptol
 
-!!----------------------------------------------------------------------
-!! Matrix-vector multiplication algorithm
-!!----------------------------------------------------------------------
-!    if (hincore) then
-!       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
-!            will proceed in-core'
-!    else
-!       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
-!            will proceed out-of-core'
-!    endif
+!----------------------------------------------------------------------
+! Matrix-vector multiplication algorithm
+!----------------------------------------------------------------------
+    if (hincore) then
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed in-core'
+    else
+       write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
+            will proceed out-of-core'
+    endif
     
     return
     
@@ -240,26 +245,152 @@ contains
     
 !#######################################################################
 
-  subroutine propagate_wavepacket
+  subroutine propagate_wavepacket    
+    
+    implicit none
 
+    if (lcap) then
+       ! Propagation using the short iterative Lanczos-Arnoldi
+       ! algorithm
+       errmsg='Propagation using a non-Hermitian Hamiltonian is &
+            not yet supported'
+       call error_control
+       ! call propagate_wavepacket_csil
+    else
+       ! Propagation using the short iterative Lanczos algorithm
+       call propagate_wavepacket_sil
+    endif
+       
+    return
+    
+  end subroutine propagate_wavepacket
+
+!#######################################################################
+
+  subroutine propagate_wavepacket_sil
+
+    use tdsemod
     use sillib
     use csillib
     
     implicit none
 
+    integer                                 :: i
+    real(d)                                 :: norm
+    real(d), parameter                      :: tiny=1e-9_d
+    complex(d), dimension(:), allocatable   :: dtpsi
     
+    ! SIL arrays and variables
+    integer                                 :: steps,trueorder,&
+                                               errorcode
+    real(d)                                 :: intperiod,stepsize,&
+                                               truestepsize,time,&
+                                               inttime
+    real(d), dimension(:,:), allocatable    :: eigenvector
+    real(d), dimension(:), allocatable      :: diagonal,eigenval
+    real(d), dimension(:), allocatable      :: offdiag
+    real(d), dimension(:), allocatable      :: offdg2    
+    complex(d), dimension(:,:), allocatable :: krylov
+    logical(kind=4)                         :: restart,relax,stdform
+
+!----------------------------------------------------------------------
+! sillib variables
+!----------------------------------------------------------------------
+    ! This is not a relaxation calculation
+    relax=.false.
+
+    ! func <-> -iH|Psi>
+    stdform=.true.
+
+    ! No. steps taken
+    steps=0
+
+    ! Time
+    time=0.0d0
+
+    ! Restart flag - if true, the Krylov space is built up
+    ! before propagation, else the old Krylov vectors are used.       
+    restart=.true.
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! Wavefunction arrays
+    allocate(dtpsi(matdim))
+    dtpsi=czero
+
+    ! sillib arrays
+    allocate(krylov(matdim,kdim-1))
+    krylov=czero
+
+    allocate(eigenvector(kdim+1,kdim+3))
+    eigenvector=0.0d0
+
+    allocate(eigenval(kdim+1))
+    eigenval=0.0d0
+
+    allocate(diagonal(kdim+1))
+    diagonal=0.0d0
+
+    allocate(offdg2(kdim+1))
+    offdg2=0.0d0
+
+    allocate(offdiag(kdim))
+    offdiag=0.0d0
+
+!----------------------------------------------------------------------
+! Propagate forwards in time with the light-matter interaction
+! Hamiltonian, H - mu.E(t), using the Quantics sillib libraries
+!----------------------------------------------------------------------
+    ! Integration period
+    intperiod=tout
+
+    ! Loop over the timesteps
+    do i=1,int(tfinal/intperiod)
+
+       ! Time at the start of the current timestep
+       time=(i-1)*intperiod
+
+       ! Propagate forwards one timestep
+       inttime=0.0d0
+100    continue
+
+       ! Update the required stepsize
+       stepsize=intperiod-inttime
+
+       ! dtpsi = -iH(t)|Psi>
+       call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
+           
+    enddo
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(dtpsi)
+    deallocate(krylov)
+    deallocate(eigenvector)
+    deallocate(eigenval)
+    deallocate(diagonal)
+    deallocate(offdg2)
+    deallocate(offdiag)
     
     return
     
-  end subroutine propagate_wavepacket
+  end subroutine propagate_wavepacket_sil
     
 !#######################################################################
 
   subroutine finalise
 
+    use tdsemod
+    
     implicit none
 
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
     deallocate(psi)
+    if (hincore) call deallocate_hamiltonian
     
     return
     
