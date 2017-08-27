@@ -226,7 +226,7 @@
 ! --- COMPUTE ERROR ESTIMATE ---
 
       Error = Abs(Beta*Stepsize)
-
+      
 ! --- WRITE STEPSIZE AND ERROR IF DESIRED ---
 
 !      Call WriteStep(Steps,TrueOrder,Stepsize,Error,Time)
@@ -252,9 +252,9 @@
 ! --- EVALUATE FUNCTION WITH LAST BASIS VECTOR ---
 
       If (TrueOrder .Eq. 2) Then
-         Call Func(PsiDim,Noffd,DtPsi,Krylov(1,2))
+         Call Func(Time,PsiDim,Noffd,DtPsi,Krylov(1,2))
       Else
-         Call Func(PsiDim,Noffd,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
+         Call Func(Time,PsiDim,Noffd,Krylov(1,TrueOrder-1),Krylov(1,TrueOrder))
       EndIf
 
 ! --- COMPUTE DIAGONAL ELEMENT ---
@@ -388,7 +388,7 @@
             EndDo
          EndIf
       EndDo
-         
+
       Return
       End Subroutine SILStep
 

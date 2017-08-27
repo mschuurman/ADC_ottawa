@@ -317,7 +317,7 @@ contains
 !                (used in real time wavepacket propagations)
 !#######################################################################
 
-  subroutine matxvec_treal(matdim,noffdiag,v1,v2)
+  subroutine matxvec_treal(time,matdim,noffdiag,v1,v2)
 
     use constants
 
@@ -325,6 +325,7 @@ contains
     
     integer                       :: matdim
     integer*8                     :: noffdiag
+    real(d)                       :: time
     complex(d), dimension(matdim) :: v1,v2
 
     if (hincore) then
@@ -565,26 +566,83 @@ contains
 
     implicit none
     
-    integer                       :: matdim
-    integer*8                     :: noffdiag
-    real(d)                       :: time
-    complex(d), dimension(matdim) :: v1,v2
+    integer                               :: matdim
+    integer*8                             :: noffdiag
+    real(d)                               :: time
+    complex(d), dimension(matdim)         :: v1,v2
+    complex(d), dimension(:), allocatable :: opxv1
 
     print*,"WRITE THE MATXVEC_TREAL_LASER CODE!"
+    print*,"(FIGURE OUT HOW TO DEAL WITH THE EXTRA (GROUND STATE) &
+         BASIS FUNCTION)"
     stop
 
 !----------------------------------------------------------------------
-! (1) -i * H * v1
+! Initialisation
 !----------------------------------------------------------------------
-!    if (hincore) then
-!       call matxvec_treal_incore(matdim,noffdiag,v1,v2)
-!    else
-!       call matxvec_treal_ext(matdim,noffdiag,v1,v2)
-!    endif
+    v2=czero
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(opxv1(matdim))
+    opxv1=czero
+    
+!----------------------------------------------------------------------
+! (1) Molecular Hamiltonian contribution: -i * H * v1
+!
+! Note that: (i)  < Psi0 | H | Psi_J > = 0 for all J (by definition
+!                 of the intermediate state basis).
+!
+!            (ii) < Psi0 | H | Psi0 > = 0 (as we are dealing with
+!                 ground state energy-shifted Hamiltonian)
+!
+!----------------------------------------------------------------------
+    ! Note that here matdim is the no. intermediate states + 1
+    ! (where the extra basis function is the ground state)
+    !
+    ! Therefore the functions matxvec_treal_* will have to be passed
+    ! matdim-1, as this is the dimension of the IS representation of the
+    ! hamiltonian.
+    !
+    ! For the same reasons, and acknowledging that the last basis function
+    ! corresponds to the ground state, we have to pass v1(1:matdim-1)
+    ! and v2(1:matdim-1) to the functions matxvec_treal_*.
+    !
+    ! noffdiag, however, is fine as is.
+    
+    if (hincore) then
+       call matxvec_treal_incore(matdim-1,noffdiag,v1(1:matdim-1),&
+            opxv1(1:matdim-1))
+    else
+       call matxvec_treal_ext(matdim-1,noffdiag,v1(1:matdim-1),&
+            opxv1(1:matdim-1))
+    endif
+
+    ! Contribution to v2=dt|Psi>
+    v2=v2+opxv1
+    
+!----------------------------------------------------------------------
+! (2) Dipole-laser contribution: -i * -mu.E(t) * v1
+!----------------------------------------------------------------------
+    ! Three pieces: (1) IS representation of the dipole operator, D_IJ.
+    !               (2) Ground state dipole matrix element, D_00.
+    !               (3) Off-diagonal elements between the ground state
+    !                   and the intermediate states, D_0J.
+
+    
+!----------------------------------------------------------------------
+! (3) CAP contribution: -i * -i * W * v1
+!----------------------------------------------------------------------
+    ! Three pieces: (1) IS representation of the CAP operator, W_IJ.
+    !               (2) Ground state CAP matrix element, W_00.
+    !               (3) Off-diagonal elements between the ground state
+    !                   and the intermediate states, W_0J.
 
 !----------------------------------------------------------------------
-! (2) -i * -mu.E(t) * v1
+! Deallocate arrays
 !----------------------------------------------------------------------
+    deallocate(opxv1)
     
     return
     

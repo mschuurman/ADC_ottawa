@@ -441,7 +441,7 @@ contains
     
     ! First-order autocorrelation functions at time t=0
     if (autoord.ge.1) then
-       call matxvec_treal(matdim,noffdiag,psi0,hpsi)
+       call matxvec_treal(time,matdim,noffdiag,psi0,hpsi)
        hpsi=hpsi*ci
        auto1=dot_product(psi0,hpsi)
        call wrauto(iout1,auto1,0.0d0)
@@ -449,7 +449,7 @@ contains
     
     ! Second-order autocorrelation functions at time t=0
     if (autoord.eq.2) then
-       call matxvec_treal(matdim,noffdiag,hpsi,h2psi)
+       call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
        h2psi=h2psi*ci
        auto2=dot_product(psi0,h2psi)
        call wrauto(iout2,auto2,0.0d0)
@@ -480,7 +480,7 @@ contains
        stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
-       call matxvec_treal(matdim,noffdiag,psi,dtpsi)
+       call matxvec_treal(time,matdim,noffdiag,psi,dtpsi)
     
        ! Take one step using the SIL algorithm
        call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,autotol,relax,&
@@ -494,6 +494,9 @@ contains
           call error_control
        endif
 
+       ! Updtate the propagation time
+       time=time+truestepsize
+       
        ! Check whether the integration is complete
        inttime=inttime+truestepsize
        if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
@@ -506,7 +509,7 @@ contains
        ! Calculate and output the first-order autocorrelation
        ! at the current timestep
        if (autoord.ge.1) then
-          call matxvec_treal(matdim,noffdiag,psi,hpsi)
+          call matxvec_treal(time,matdim,noffdiag,psi,hpsi)
           hpsi=hpsi*ci
           auto1=dot_product(conjg(psi),hpsi)
           call wrauto(iout1,auto1,i*intperiod*2.0d0)
@@ -515,7 +518,7 @@ contains
        ! Calculate and output the second-order autocorrelation
        ! at the current timestep
        if (autoord.eq.2) then
-          call matxvec_treal(matdim,noffdiag,hpsi,h2psi)
+          call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
           h2psi=h2psi*ci
           auto2=dot_product(conjg(psi),h2psi)
           call wrauto(iout2,auto2,i*intperiod*2.0d0)

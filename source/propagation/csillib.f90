@@ -363,9 +363,9 @@
 !       --- COMPUTE NEXT KRYLOV VECTOR ---
 
             If (TrueOrder .Eq. 1) Then
-               Call Func(PsiDim,Noffd,DtPsi,Krylov(1,2))
+               Call Func(Time,PsiDim,Noffd,DtPsi,Krylov(1,2))
             Else
-               Call Func(PsiDim,Noffd,Krylov(1,TrueOrder),Krylov(1,TrueOrder+1))
+               Call Func(Time,PsiDim,Noffd,Krylov(1,TrueOrder),Krylov(1,TrueOrder+1))
             EndIf
 
             Goto 100
@@ -473,9 +473,9 @@
 !       --- COMPUTE NEXT KRYLOV VECTOR ---
 
             If (TrueOrder .Eq. 1) Then
-               Call Func(Time,DtPsi,Krylov(1,2))
+               Call Func(Time,PsiDim,Noffd,DtPsi,Krylov(1,2))
             Else
-               Call Func(Time,Krylov(1,TrueOrder),Krylov(1,TrueOrder+1))
+               Call Func(Time,PsiDim,Noffd,Krylov(1,TrueOrder),Krylov(1,TrueOrder+1))
             EndIf
 
             Goto 100

@@ -348,9 +348,6 @@ contains
     ! Loop over the timesteps
     do i=1,int(tfinal/intperiod)
 
-       ! Time at the start of the current timestep
-       time=(i-1)*intperiod
-
        ! Propagate forwards one timestep
        inttime=0.0d0
 100    continue
@@ -358,9 +355,33 @@ contains
        ! Update the required stepsize
        stepsize=intperiod-inttime
 
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       ! NOTE THAT IN THIS MODULE MATDIM = NO. ISs + 1
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
-           
+
+       ! Take one step using the SIL algorithm
+       call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,proptol,relax,&
+            restart,stdform,steps,krylov,truestepsize,trueorder,&
+            errorcode,time,matxvec_treal_laser,eigenvector,eigenval,&
+            diagonal,offdg2,offdiag)
+       
+       ! Exit if the SIL integration failed
+       if (errorcode.ne.0) then
+          call silerrormsg (errorcode,errmsg)
+          call error_control
+       endif
+
+       ! Updtate the propagation time
+       time=time+truestepsize
+
+!       print*,truestepsize,time
+       
+       ! Check whether the integration is complete
+       inttime=inttime+truestepsize
+       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
     enddo
     
 !----------------------------------------------------------------------

@@ -414,20 +414,23 @@ contains
        stepsize=intperiod-inttime
        
        ! dtpsi = -iH|Psi>
-       call matxvec_treal(matdim,noffdiag,psi,dtpsi)
+       call matxvec_treal(time,matdim,noffdiag,psi,dtpsi)
     
        ! Take one step using the SIL algorithm
        call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,autotol,&
             relax,restart,stdform,steps,krylov,truestepsize,trueorder,&
             errorcode,time,matxvec_treal,eigenvector,eigenval,&
             diagonal,offdg2,offdiag)
-
+       
        ! Exit if the SIL integration failed
        if (errorcode.ne.0) then
           call silerrormsg (errorcode,errmsg)
           call error_control
        endif
 
+       ! Updtate the propagation time
+       time=time+truestepsize
+       
        ! Check whether the integration is complete
        inttime=inttime+truestepsize
        if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
