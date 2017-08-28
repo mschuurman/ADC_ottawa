@@ -783,6 +783,30 @@
             goto 999
          endif
 
+         ! Laser frequency
+         if (freq.eq.0.0d0) then
+            msg='The laser frequency has not been given'
+            goto 999
+         endif
+
+         ! Laser FWHM
+         if (fwhm.eq.0.0d0) then
+            msg='The laser FWHM has not been given'
+            goto 999
+         endif
+
+         ! Laser strength
+         if (strength.eq.0.0d0) then
+            msg='The laser strength has not been given'
+            goto 999
+         endif
+
+         ! Laser t0
+         if (t0.eq.1e+12_d) then
+            msg='The laser t0 has not been given'
+            goto 999
+         endif
+         
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
             msg='The final propagation time has not been given'
@@ -1984,6 +2008,38 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) kdim
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_freq') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) freq
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_fwhm') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) fwhm
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_t0') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) t0
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_strength') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) strength
             else
                goto 100
             endif

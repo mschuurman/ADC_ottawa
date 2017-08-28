@@ -570,8 +570,13 @@ contains
     integer                               :: matdim,i
     integer*8                             :: noffdiag
     real(d)                               :: time
+    real(d), dimension(3)                 :: Et
     complex(d), dimension(matdim)         :: v1,v2
     complex(d), dimension(:), allocatable :: opxv1
+     character(len=70)                    :: filename
+    character(len=1), dimension(3)        :: acomp
+
+    acomp=(/ 'x','y','z' /)
     
 !----------------------------------------------------------------------
 ! Initialisation
@@ -594,18 +599,19 @@ contains
 !                 ground state energy-shifted Hamiltonian)
 !
 !----------------------------------------------------------------------
-    ! Note that here matdim is the no. intermediate states + 1
-    ! (where the extra basis function is the ground state)
-    !
-    ! Therefore the functions matxvec_treal_* will have to be passed
-    ! matdim-1, as this is the dimension of the IS representation of the
-    ! hamiltonian.
-    !
-    ! For the same reasons, and acknowledging that the last basis function
-    ! corresponds to the ground state, we have to pass v1(1:matdim-1)
-    ! and v2(1:matdim-1) to the functions matxvec_treal_*.
-    !
-    ! noffdiag, however, is fine as is
+! Note that here matdim is the no. intermediate states + 1
+! (where the extra basis function is the ground state)
+!
+! Therefore the functions matxvec_treal_* will have to be passed
+! matdim-1, as this is the dimension of the IS representation of the
+! hamiltonian.
+!
+! For the same reasons, and acknowledging that the last basis function
+! corresponds to the ground state, we have to pass v1(1:matdim-1)
+! and v2(1:matdim-1) to the functions matxvec_treal_*.
+!
+! noffdiag, however, is fine as is
+!----------------------------------------------------------------------
     
     if (hincore) then
        call matxvec_treal_incore(matdim-1,noffdiag,v1(1:matdim-1),&
@@ -619,45 +625,99 @@ contains
     v2=v2+opxv1
     
 !----------------------------------------------------------------------
-! (2) Dipole-laser contribution: -i * -mu.E(t) * v1
+! (2) Dipole-laser contribution: -i * -mu.E(t) * v1 = +i * mu.E(t) * v1
 !----------------------------------------------------------------------
-    ! Three pieces: (a) IS representation of the dipole operator, D_IJ.
-    !               (b) Ground state dipole matrix element, D_00.
-    !               (c) Off-diagonal elements between the ground state
-    !                   and the intermediate states, D_0J.
-
+! Three pieces: (a) IS representation of the dipole operator, D_IJ.
+!               (b) Ground state dipole matrix element, D_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, D_0J.
+!----------------------------------------------------------------------
+    
+    ! External electric field
+    Et=efield(time)
+    
     ! (a) IS-IS block
     !
     ! Loop over components of the dipole operator
     do i=1,3
-
-       print*,"REMEMBER THAT THE D-MATRIX CODE CALCULATES THE &
-            IS REPRESENTATION OF A ***SHIFTED*** OPERATOR! "
-       print*,"i.e, WE NEED TO ADD D00*UNIT-MATRIX..."
-       print*,"ALSO, WE NEED TO WRITE THE LASER PULSE CODE..."
        
        ! Cycle if the 
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Calculate -i*Dc*v1
-       call dxvec_treal_ext(matdim-1,v1(1:matdim-1),&
-            opxv1(1:matdim-1),i)
+       filename='SCRATCH/dipole_'//acomp(i)
+       call opxvec_treal_ext(matdim-1,v1(1:matdim-1),&
+            opxv1(1:matdim-1),filename,nbuf_dip(i))
 
        ! Contribution to v2=dt|Psi>
-       v2=v2-opxv1
+       v2=v2-opxv1(1:matdim-1)*Et(i) + ci*d00(i)*Et(i)*v1(1:matdim-1)
+
+    enddo
+    
+    ! (b) Ground state-ground state element
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
+       
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
 
     enddo
 
-    stop
-    
-!----------------------------------------------------------------------
-! (3) CAP contribution: -i * -i * W * v1
-!----------------------------------------------------------------------
-    ! Three pieces: (a) IS representation of the CAP operator, W_IJ.
-    !               (b) Ground state CAP matrix element, W_00.
-    !               (c) Off-diagonal elements between the ground state
-    !                   and the intermediate states, W_0J.
+    ! (c) Ground state-IS block
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
 
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)+&
+            ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
+       v2(1:matdim-1)=v2(1:matdim-1)+&
+            ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
+       
+    enddo
+       
+!----------------------------------------------------------------------
+! (3) CAP contribution: -i * -i * W * v1 = + W * v1
+!----------------------------------------------------------------------
+! Three pieces: (a) IS representation of the CAP operator, W_IJ.
+!               (b) Ground state CAP matrix element, W_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, W_0J.
+!----------------------------------------------------------------------
+    if (lcap) then
+
+       ! (a) IS-IS block
+       !
+       ! Calculate -i*Wc*v1
+       filename='SCRATCH/cap'
+       call opxvec_treal_ext(matdim-1,v1(1:matdim-1),&
+            opxv1(1:matdim-1),filename,nbuf_cap)
+       
+       ! Contribution to v2=dt|Psi>
+       v2=v2-ci*opxv1(1:matdim-1) + w00*v1(1:matdim-1)
+
+       ! (b) Ground state-ground state element
+       !
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim) + w00*v1(matdim)
+
+       ! (c) Ground state-IS block
+       !
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)+&
+            dot_product(w0j(1:matdim-1),v1(1:matdim-1))
+       v2(1:matdim-1)=v2(1:matdim-1)+&
+            w0j(1:matdim-1)*v1(matdim)
+       
+    endif
+       
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -668,41 +728,152 @@ contains
   end subroutine matxvec_treal_laser
 
 !#######################################################################
-! dxvec_treal_ext: calculates v2 = -iDc.v1 using an externally
-!                  stored dipole matrix for a single component
-!                  c = x, y or z
+! efield: calculates the value of the applied external electric field
+!         at the current time
 !#######################################################################
 
-  subroutine dxvec_treal_ext(matdim,v1,v2,c)
+  function efield(t)
+
+    use constants
+    use parameters
+    
+    implicit none
+
+    real(d), dimension(3) :: efield
+    real(d)               :: t
+
+    !******************************************************************
+    ! At the moment, we will assume a cosine squared laser pulse
+    !******************************************************************
+    
+    if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
+       efield(1:3)=pulse_vec(1:3) &
+                   *strength &
+                   *(cos(pi*(t-t0)/(2.0d0*fwhm)))**2 &
+                   *cos(freq*(t-t0))
+    else
+       efield=0.0d0
+    endif
+    
+    return
+
+  end function efield
+    
+!#######################################################################
+! opxvec_treal_ext: calculates v2 = -i * O * v1 using an externally
+!                   stored operator matrix O
+!#######################################################################
+
+  subroutine opxvec_treal_ext(matdim,v1,v2,filename,nrec)
 
     use constants
     use parameters
     use iomod
     use channels
     use omp_lib
-  
+    
     implicit none
 
-    integer                                 :: c
-    integer                                 :: matdim,maxbl,nrec,nlim,&
-                                               ion,i,j,k,l,nthreads,tid
+    integer                                 :: matdim,nrec,nlim,&
+                                               unit,i,k,n,nthreads,&
+                                               tid,npt,tmp
     integer*8                               :: noffdiag
-    integer, dimension(:), allocatable      :: indxi,indxj,ioff
-    real(d), dimension(:), allocatable      :: hii,hij
+    integer, dimension(:), allocatable      :: indxi,indxj
+    integer*8, dimension(:,:), allocatable  :: irange
+    real(d), dimension(:), allocatable      :: oij
     complex(d), dimension(matdim)           :: v1,v2
     complex(d), dimension(:,:), allocatable :: tmpvec
     character(len=70)                       :: filename
-    character(len=1), dimension(3)          :: acomp
-
-    acomp=(/ 'x','y','z' /)
     
-    filename='SCRATCH/dipole_'//acomp(c)
+!-----------------------------------------------------------------------
+! Number of threads
+!-----------------------------------------------------------------------  
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
 
-    print*,filename
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(irange(nthreads,2))
+    allocate(tmpvec(matdim,nthreads))
+    allocate(oij(buf_size))
+    allocate(indxi(buf_size))
+    allocate(indxj(buf_size))
+
+!-----------------------------------------------------------------------
+! Open the operator matrix file
+!-----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file=filename,status='old',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Matrix-vector product
+!-----------------------------------------------------------------------
+    ! Initialisation
+    v2=czero
+    tmpvec=czero    
+
+    ! Read past the buffer size, which we already know
+    read(unit) tmp
+    
+    ! Loop over records
+    do n=1,nrec
+
+       ! Read the current record
+       read(unit) oij(:),indxi(:),indxj(:),nlim
+       
+       ! Partitioning of the operator matrix elements: one chunk per
+       ! thread
+       npt=int(floor(real(nlim)/real(nthreads)))       
+       do i=1,nthreads-1
+          irange(i,1)=(i-1)*npt+1
+          irange(i,2)=i*npt
+       enddo
+       irange(nthreads,1)=(nthreads-1)*npt+1
+       irange(nthreads,2)=nlim
+
+       ! Contribution of the current record to the matrix-vector
+       ! product
+       !
+       !$omp parallel do &
+       !$omp& private(i,k,tid) &
+       !$omp& shared(tmpvec,v1)
+       do i=1,nthreads
+          tid=1+omp_get_thread_num()
+          do k=irange(tid,1),irange(tid,2)
+             tmpvec(indxi(k),tid)=tmpvec(indxi(k),tid)&
+                  -ci*oij(k)*v1(indxj(k))
+             tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
+                  -ci*oij(k)*v1(indxi(k))
+          enddo
+       enddo
+       !$omp end parallel do
+       
+    enddo
+
+    do i=1,nthreads
+       v2=v2+tmpvec(:,i)
+    enddo
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(irange)
+    deallocate(tmpvec)
+    deallocate(oij)
+    deallocate(indxi)
+    deallocate(indxj)
+    
+!-----------------------------------------------------------------------
+! Close the operator matrix file
+!-----------------------------------------------------------------------
+    close(unit)
     
     return
     
-  end subroutine dxvec_treal_ext
+  end subroutine opxvec_treal_ext
     
 !#######################################################################
 

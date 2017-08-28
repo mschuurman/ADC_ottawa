@@ -332,6 +332,10 @@ real(d), dimension(3)   :: d00
 real(d), allocatable    :: d0j(:,:)
 real(d), dimension(3)   :: pulse_vec
 real(d)                 :: proptol
+real(d)                 :: freq
+real(d)                 :: fwhm
+real(d)                 :: strength
+real(d)                 :: t0
 logical                 :: lpropagation
 
 !!$************************************************
@@ -358,6 +362,18 @@ character(len=3)                            :: pntgroup
 !!$************************************************
 !!$**********Hamiltonian matrices******************
 !!$************************************************
-character*1 :: hamflag
+character*1        :: hamflag
+
+!!$************************************************
+!!$*******Record size for disk-based storage*******
+!!$************************************************
+! 10 Mb per record
+integer, parameter :: buf_size=655360
+
+! 1 Mb per record
+!integer, parameter :: buf_size=65536
+
+! 128 Kb per record
+!integer, parameter :: buf_size=8192
 
 end module parameters

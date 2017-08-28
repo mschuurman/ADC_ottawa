@@ -243,13 +243,13 @@
    use integral_tools
    use import_gamess
    implicit none
-   type(gam_structure),intent(in)  :: gam ! gamess info (orbitals, geom, etc.) 
-   character(clen),intent(in)      :: int_type
-   integer(ik),intent(in)          :: nbas,nmo
-   real(xrk),intent(out)            :: int_dipole(nmo,nmo)
-   real(xrk),intent(in)             :: mos(nbas,nmo)
-   real(xrk),allocatable            :: dao(:,:),dao_spin(:,:)
-   integer(ik)                     :: nao,nao_spin
+   type(gam_structure),intent(in) :: gam ! gamess info (orbitals, geom, etc.) 
+   character(clen),intent(in)     :: int_type
+   integer(ik),intent(in)         :: nbas,nmo
+   real(xrk),intent(out)          :: int_dipole(nmo,nmo)
+   real(xrk),intent(in)           :: mos(nbas,nmo)
+   real(xrk),allocatable          :: dao(:,:),dao_spin(:,:)
+   integer(ik)                    :: nao,nao_spin
 
    nao      = gam%nbasis
    nao_spin = 2*nao
@@ -264,7 +264,7 @@
     case ('AO DIPOLE Z')
       call gamess_1e_integrals('AO DIPOLE Z',dao,bra=gam,ket=gam  )
    end select
-
+   
    if(nbas == nao_spin) then
      dao_spin                       = 0._xrk
      dao_spin(1:nao    , 1:nao)     = dao

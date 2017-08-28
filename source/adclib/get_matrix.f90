@@ -9,18 +9,6 @@ module get_matrix
 
   implicit none
 
-  ! 100 Mb per record
-!  integer, parameter :: buf_size=6553600
-
-  ! 10 Mb per record
-  integer, parameter :: buf_size=655360
-
-  ! 1 Mb per record
-!  integer, parameter :: buf_size=65536
-
-  ! 128 Kb per record
-!  integer, parameter :: buf_size=8192
-
 contains
   
 !!$*******************************************************************************

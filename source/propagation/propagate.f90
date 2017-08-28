@@ -252,10 +252,7 @@ contains
     if (lcap) then
        ! Propagation using the short iterative Lanczos-Arnoldi
        ! algorithm
-       errmsg='Propagation using a non-Hermitian Hamiltonian is &
-            not yet supported'
-       call error_control
-       ! call propagate_wavepacket_csil
+        call propagate_wavepacket_csil
     else
        ! Propagation using the short iterative Lanczos algorithm
        call propagate_wavepacket_sil
@@ -271,14 +268,13 @@ contains
 
     use tdsemod
     use sillib
-    use csillib
     
     implicit none
 
     integer                                 :: i
     real(d)                                 :: norm
     real(d), parameter                      :: tiny=1e-9_d
-    complex(d), dimension(:), allocatable   :: dtpsi
+    complex(d), dimension(:), allocatable   :: dtpsi,hpsi
     
     ! SIL arrays and variables
     integer                                 :: steps,trueorder,&
@@ -319,6 +315,9 @@ contains
     allocate(dtpsi(matdim))
     dtpsi=czero
 
+    allocate(hpsi(matdim))
+    hpsi=czero
+    
     ! sillib arrays
     allocate(krylov(matdim,kdim-1))
     krylov=czero
@@ -369,19 +368,21 @@ contains
        
        ! Exit if the SIL integration failed
        if (errorcode.ne.0) then
-          call silerrormsg (errorcode,errmsg)
+          call silerrormsg(errorcode,errmsg)
           call error_control
        endif
 
        ! Updtate the propagation time
        time=time+truestepsize
 
-!       print*,truestepsize,time
-       
        ! Check whether the integration is complete
        inttime=inttime+truestepsize
        if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
 
+       ! Output some information about our progress
+       norm=real(sqrt(dot_product(psi,psi)))
+       call wrprogress(time,norm)
+       
     enddo
     
 !----------------------------------------------------------------------
@@ -398,7 +399,175 @@ contains
     return
     
   end subroutine propagate_wavepacket_sil
+
+!######################################################################
+
+  subroutine propagate_wavepacket_csil
+
+    use tdsemod
+    use csillib
     
+    implicit none
+
+    integer                                 :: i
+    real(d)                                 :: norm
+    real(d), parameter                      :: tiny=1e-9_d
+    complex(d), dimension(:), allocatable   :: dtpsi,hpsi
+    
+    ! CSIL arrays and variables
+    integer                                 :: steps,trueorder,&
+                                               errorcode
+    real(d)                                 :: intperiod,stepsize,&
+                                               truestepsize,time,&
+                                               inttime,macheps
+    real(d), dimension(:,:), allocatable    :: eigenvector
+    real(d), dimension(:), allocatable      :: diagonal,eigenval
+    real(d), dimension(:), allocatable      :: offdiag
+    real(d), dimension(:), allocatable      :: offdg2
+    complex(d), dimension(:,:), allocatable :: krylov
+    complex(d), dimension(0:kdim,0:kdim)    :: hessenberg,eigvec,&
+                                               auxmat
+    logical(kind=4)                         :: restart,relax,stdform,&
+                                               olderrcri
+
+!----------------------------------------------------------------------
+! Machine epsilon
+!----------------------------------------------------------------------
+    macheps=epsilon(macheps)
+    
+!----------------------------------------------------------------------
+! csillib variables
+!----------------------------------------------------------------------
+    ! This is not a relaxation calculation
+    relax=.false.
+
+    ! func <-> -iH|Psi>
+    stdform=.true.
+
+    ! No. steps taken
+    steps=0
+
+    ! Time
+    time=0.0d0
+
+    ! Restart flag - if true, the Krylov space is built up
+    ! before propagation, else the old Krylov vectors are used.       
+    restart=.true.
+
+    ! Error criterion - if false, the improved error criterion is used
+    olderrcri=.false.
+    
+!----------------------------------------------------------------------
+! Allocate and initialise arrays
+!----------------------------------------------------------------------
+    ! Wavefunction arrays
+    allocate(dtpsi(matdim))
+    dtpsi=czero
+
+    allocate(hpsi(matdim))
+    hpsi=czero
+    
+    ! sillib arrays
+    allocate(krylov(matdim,kdim-1))
+    krylov=czero   
+
+    hessenberg=czero
+    
+!----------------------------------------------------------------------
+! Propagate forwards in time with the CAP-augmented light-matter
+! interaction Hamiltonian, H - mu.E(t) - i*W_CAP, using the Quantics
+! csillib libraries
+!----------------------------------------------------------------------
+    ! Integration period
+    intperiod=tout
+
+    ! Loop over the timesteps
+    do i=1,int(tfinal/intperiod)
+
+       ! Propagate forwards one timestep
+       inttime=0.0d0
+100    continue
+
+       ! Update the required stepsize
+       stepsize=intperiod-inttime
+
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       ! NOTE THAT IN THIS MODULE MATDIM = NO. ISs + 1
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
+       ! dtpsi = -iH(t)|Psi>
+       call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
+
+       ! Take one step using the SIL algorithm
+       call csilstep(psi,&
+                     dtpsi,&
+                     matdim,&
+                     noffdiag,&
+                     stepsize,&
+                     kdim,&
+                     proptol,&
+                     relax,&
+                     restart,&
+                     stdform,&
+                     olderrcri,&
+                     steps,&
+                     truestepsize,&
+                     trueorder,&
+                     errorcode,&
+                     time,&
+                     macheps,&
+                     matxvec_treal_laser,&
+                     hessenberg,&
+                     eigvec,&
+                     krylov,&
+                     auxmat)
+                     
+       ! Exit if the CSIL integration failed
+       if (errorcode.ne.0) then
+          call csilerrormsg(errorcode,errmsg)
+          call error_control
+       endif
+
+       ! Updtate the propagation time
+       time=time+truestepsize
+
+       ! Check whether the integration is complete
+       inttime=inttime+truestepsize
+       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+       ! Output some information about our progress
+       norm=real(sqrt(dot_product(psi,psi)))
+       call wrprogress(time,norm)
+       
+    enddo
+       
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(dtpsi)
+    deallocate(hpsi)
+    deallocate(krylov)    
+    
+    return
+    
+  end subroutine propagate_wavepacket_csil
+    
+!######################################################################
+
+  subroutine wrprogress(t,norm)
+
+    implicit none
+
+    integer :: k
+    real(d) :: t,norm
+
+    write(ilog,'(70a)') ('+',k=1,70)
+    write(ilog,'(a,x,F10.4)') 'Time:',t
+    write(ilog,'(a,x,F8.6)') 'Norm',norm
+    
+    return
+    
+  end subroutine wrprogress
+
 !#######################################################################
 
   subroutine finalise

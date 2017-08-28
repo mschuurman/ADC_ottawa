@@ -11,16 +11,6 @@
     use omp_lib
 
     implicit none
-
-    ! Record size for disk-based dipole matrix storage
-    ! 100 Mb per record
-    ! integer, parameter :: buf_size=6553600
-    ! 10 Mb per record
-    integer, parameter :: buf_size=655360
-    ! 1 Mb per record
-    !integer, parameter :: buf_size=65536
-    ! 128 Kb per record
-    !integer, parameter :: buf_size=8192
     
     integer                                  :: nthreads
     real(d), parameter                       :: vectol=1e-8_d
