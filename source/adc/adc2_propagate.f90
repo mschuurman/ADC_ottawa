@@ -75,7 +75,7 @@ contains
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_laser(ndimf,noffdf)
+    call propagate_laser(ndimf,noffdf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
