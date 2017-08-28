@@ -563,20 +563,16 @@ contains
   subroutine matxvec_treal_laser(time,matdim,noffdiag,v1,v2)
 
     use constants
-
+    use parameters
+    
     implicit none
     
-    integer                               :: matdim
+    integer                               :: matdim,i
     integer*8                             :: noffdiag
     real(d)                               :: time
     complex(d), dimension(matdim)         :: v1,v2
     complex(d), dimension(:), allocatable :: opxv1
-
-    print*,"WRITE THE MATXVEC_TREAL_LASER CODE!"
-    print*,"(FIGURE OUT HOW TO DEAL WITH THE EXTRA (GROUND STATE) &
-         BASIS FUNCTION)"
-    stop
-
+    
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
@@ -609,7 +605,7 @@ contains
     ! corresponds to the ground state, we have to pass v1(1:matdim-1)
     ! and v2(1:matdim-1) to the functions matxvec_treal_*.
     !
-    ! noffdiag, however, is fine as is.
+    ! noffdiag, however, is fine as is
     
     if (hincore) then
        call matxvec_treal_incore(matdim-1,noffdiag,v1(1:matdim-1),&
@@ -625,18 +621,41 @@ contains
 !----------------------------------------------------------------------
 ! (2) Dipole-laser contribution: -i * -mu.E(t) * v1
 !----------------------------------------------------------------------
-    ! Three pieces: (1) IS representation of the dipole operator, D_IJ.
-    !               (2) Ground state dipole matrix element, D_00.
-    !               (3) Off-diagonal elements between the ground state
+    ! Three pieces: (a) IS representation of the dipole operator, D_IJ.
+    !               (b) Ground state dipole matrix element, D_00.
+    !               (c) Off-diagonal elements between the ground state
     !                   and the intermediate states, D_0J.
 
+    ! (a) IS-IS block
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
+
+       print*,"REMEMBER THAT THE D-MATRIX CODE CALCULATES THE &
+            IS REPRESENTATION OF A ***SHIFTED*** OPERATOR! "
+       print*,"i.e, WE NEED TO ADD D00*UNIT-MATRIX..."
+       print*,"ALSO, WE NEED TO WRITE THE LASER PULSE CODE..."
+       
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Calculate -i*Dc*v1
+       call dxvec_treal_ext(matdim-1,v1(1:matdim-1),&
+            opxv1(1:matdim-1),i)
+
+       ! Contribution to v2=dt|Psi>
+       v2=v2-opxv1
+
+    enddo
+
+    stop
     
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1
 !----------------------------------------------------------------------
-    ! Three pieces: (1) IS representation of the CAP operator, W_IJ.
-    !               (2) Ground state CAP matrix element, W_00.
-    !               (3) Off-diagonal elements between the ground state
+    ! Three pieces: (a) IS representation of the CAP operator, W_IJ.
+    !               (b) Ground state CAP matrix element, W_00.
+    !               (c) Off-diagonal elements between the ground state
     !                   and the intermediate states, W_0J.
 
 !----------------------------------------------------------------------
@@ -647,6 +666,43 @@ contains
     return
     
   end subroutine matxvec_treal_laser
+
+!#######################################################################
+! dxvec_treal_ext: calculates v2 = -iDc.v1 using an externally
+!                  stored dipole matrix for a single component
+!                  c = x, y or z
+!#######################################################################
+
+  subroutine dxvec_treal_ext(matdim,v1,v2,c)
+
+    use constants
+    use parameters
+    use iomod
+    use channels
+    use omp_lib
+  
+    implicit none
+
+    integer                                 :: c
+    integer                                 :: matdim,maxbl,nrec,nlim,&
+                                               ion,i,j,k,l,nthreads,tid
+    integer*8                               :: noffdiag
+    integer, dimension(:), allocatable      :: indxi,indxj,ioff
+    real(d), dimension(:), allocatable      :: hii,hij
+    complex(d), dimension(matdim)           :: v1,v2
+    complex(d), dimension(:,:), allocatable :: tmpvec
+    character(len=70)                       :: filename
+    character(len=1), dimension(3)          :: acomp
+
+    acomp=(/ 'x','y','z' /)
+    
+    filename='SCRATCH/dipole_'//acomp(c)
+
+    print*,filename
+    
+    return
+    
+  end subroutine dxvec_treal_ext
     
 !#######################################################################
 
