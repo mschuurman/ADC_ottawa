@@ -13,6 +13,7 @@ program adc
   use adc2automod
   use adc2fdstatesmod
   use adc2propmod
+  use adc1propmod
   use rdinput
   use orbindx
   use defaults
@@ -111,58 +112,55 @@ program adc
 ! Perform the ADC calculation
 !-----------------------------------------------------------------------
   if (ldyson) then
-     
+
      ! Approximate ADC(2) Dyson orbital calculation
      call adc2_dyson(gamess_info)
-
-  else 
      
-     select case(method)
+  else if (lrixs) then
+
+     ! ADC(2) RIXS spectrum calculation
+     call adc2_rixs(gamess_info)
+
+  else if (ltpa) then
+
+     ! ADC(2) TPA spectrum calculation
+     call adc2_tpa(gamess_info)
+
+  else if (lautospec) then
+
+     ! ADC(2) autocorrelation function calculation
+     call adc2_autospec(gamess_info)
+
+  else if (lfdstates) then
+
+     ! ADC(2) filter diagonalisation state calculation
+     call adc2_fdstates(gamess_info)
+
+  else if (lpropagation) then
+
+     if (method.eq.1) then
+        ! TD-ADC(1) wavepacket propagation calculation
+        call adc1_propagate(gamess_info)
+     else if (method.eq.2.or.method.eq.3) then
+        ! TD-ADC(2) wavepacket propagation calculation
+        call adc2_propagate(gamess_info)
+     endif
         
-     case(-3:-2) ! ADC(2)-s or ADC(2)-x, energy calculation
+  else if (method.eq.-2.or.method.eq.-3) then
 
-        call adc2_ener()
+     ! ADC(2) energy calculation
+     call adc2_ener()
 
-     case(1) ! ADC(1) OPA spectrum, full diagonalisation
-           
-        call adc1_spec()
-        
-     case (2:3) ! ADC(2)-s or ADC(2)-x, spectrum calculation
+  else if (method.eq.1) then
 
-        if (lrixs) then
+     ! ADC(1) OPA spectrum calculation
+     call adc1_spec()
 
-           ! ADC(2) RIXS spectrum
-           call adc2_rixs(gamess_info)
-
-        else if (ltpa) then
-
-           ! ADC(2) TPA spectrum
-           call adc2_tpa(gamess_info)
-
-        else if (lautospec) then
-
-           ! ADC(2) autocorrelation function calculation
-           call adc2_autospec(gamess_info)
-
-        else if (lfdstates) then
-
-           ! ADC(2) filter diagonalisation state calculation
-           call adc2_fdstates(gamess_info)
-
-        else if (lpropagation) then
-
-           ! TD-ADC(2) wavepacket propagation
-           call adc2_propagate(gamess_info)
-           
-        else
-
-           ! ADC(2) OPA spectrum
-           call adc2_spec(gamess_info)
-
-        endif
-
-     end select
+  else if (method.eq.2.or.method.eq.3) then
      
+     ! ADC(2) OPA spectrum calculation
+     call adc2_spec(gamess_info)
+
   endif
 
 !-----------------------------------------------------------------------    

@@ -64,12 +64,12 @@ contains
 ! Calculate the matrix elements needed to represent the CAP operator
 ! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
-    if (lcap) call cap_isbas(cap_mo,kpqf,ndimf)
+    if (lcap) call cap_isbas_adc2(cap_mo,kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! Calculate the dipole matrices
 !-----------------------------------------------------------------------
-    call dipole_isbas(kpqf,ndimf)
+    call dipole_isbas_adc2(kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
@@ -126,7 +126,7 @@ contains
   
 !#######################################################################
 
-  subroutine cap_isbas(cap_mo,kpqf,ndimf)
+  subroutine cap_isbas_adc2(cap_mo,kpqf,ndimf)
 
     use constants
     use parameters
@@ -147,7 +147,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the ground state density matrix
 !----------------------------------------------------------------------
-    call rhogs(rho0)
+    call rho_mp2(rho0)
 
 !----------------------------------------------------------------------
 ! Calculate the CAP matrix element W_00 = < Psi_0 | W | Psi_0 >
@@ -200,11 +200,11 @@ contains
     
     return
     
-  end subroutine cap_isbas
+  end subroutine cap_isbas_adc2
     
 !#######################################################################
 
-  subroutine dipole_isbas(kpqf,ndimf)
+  subroutine dipole_isbas_adc2(kpqf,ndimf)
 
     use constants
     use parameters
@@ -226,7 +226,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the ground state density matrix
 !----------------------------------------------------------------------
-    call rhogs(rho0)
+    call rho_mp2(rho0)
 
 !----------------------------------------------------------------------
 ! Calculate the dipole matrix elements Dc_00 = < Psi_0 | Dc | Psi_0 >
@@ -286,7 +286,7 @@ contains
 
     return
     
-  end subroutine dipole_isbas
+  end subroutine dipole_isbas_adc2
     
 !#######################################################################
   

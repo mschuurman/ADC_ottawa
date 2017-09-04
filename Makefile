@@ -119,6 +119,7 @@ ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_autospec.o \
 	source/adc/adc2_fdstates.o \
 	source/adc/adc2_propagate.o \
+	source/adc/adc1_propagate.o \
 	source/adc/adc.o
 
 ADC =   $(INCLUDE) \
@@ -205,6 +206,7 @@ ADC_OBJ=accuracy.o \
 	adc2_autospec.o \
 	adc2_fdstates.o \
 	adc2_propagate.o \
+	adc1_propagate.o \
 	adc.o
 
 ########################################################################

@@ -19,13 +19,14 @@
       implicit none
 
 !-----------------------------------------------------------------------
-! If we are performing a non-linear spectroscopy calculation, then
-! then symmetry is NOT supported
+! Symmetry is not supported for some types of calculation.
+! Check here that everything is OK in this regard.
 !-----------------------------------------------------------------------
-      if (lrixs.or.ltpa) then
+      if (lrixs.or.ltpa.or.lpropagation) then
          if (pntgroup.ne.'C1') then
             errmsg='Symmetry is NOT supported in RIXS or TPA &
                  calculations'
+            call error_control
          endif
       endif
     
@@ -143,6 +144,74 @@
 
     end subroutine get_subspaces
 
+!#######################################################################
+
+    subroutine get_subspaces_adc1(kpq,kpqf,kpqd,ndim,ndimf,ndimd,nout,&
+         noutf)
+
+      use parameters
+      use iomod
+      use select_fano
+
+      implicit none
+
+      integer                              :: ndim,ndimf,ndimd,nout,&
+                                              noutf,ndims,ndimsf
+      integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
+
+!-----------------------------------------------------------------------
+! Allocate and initialise arrays
+!-----------------------------------------------------------------------
+      allocate(kpq(7,0:nBas**2*4*nOcc**2))
+      kpq=0
+
+      allocate(kpqd(7,0:nBas**2*4*nOcc**2))
+      kpqd=0
+
+      allocate(kpqf(7,0:nBas**2*4*nOcc**2))
+      kpqf=0
+      
+!-----------------------------------------------------------------------
+! Determine the initial, final and total subspaces
+!-----------------------------------------------------------------------
+      ! Initial subspace
+      kpq(:,:)=-1
+      call select_atom_is(kpq(:,:))
+      
+      ! Final subspace
+      kpqf(:,:)=-1
+      if (lcvsfinal) then
+         call select_atom_isf_cvs(kpqf(:,:))
+      else
+         call select_atom_isf(kpqf(:,:))
+      endif
+           
+      ! Total subspace
+      kpqd(:,:)=-1
+      call select_atom_ist(kpqd(:,:))
+
+!-----------------------------------------------------------------------
+! Determine the various subspace dimensions
+!-----------------------------------------------------------------------
+      ndim=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+2*kpq(5,0)
+      ndimf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+2*kpqf(5,0)
+      ndimd=kpqd(1,0)+kpqd(2,0)+kpqd(3,0)+kpqd(4,0)+2*kpqd(5,0)
+
+      nout=ndim
+      noutf=ndimf
+
+!-----------------------------------------------------------------------
+! Output the subspace information
+!-----------------------------------------------------------------------
+      write(ilog,'(/)')
+      write(ilog,*) 'ADC(1) INITIAL Space dim',ndim
+      write(ilog,*) 'ADC(1) FINAL Space dim',ndimf
+      write(ilog,*) 'ADC(1) TOTAL Space dim WITHOUT GROUND STATE',ndimd
+      
+      return
+      
+    end subroutine get_subspaces_adc1
+      
 !#######################################################################
 
     subroutine initial_space_diag(time,kpq,ndim,ndims,noffd)
@@ -342,7 +411,7 @@
       if (.not.allocated(density)) allocate(density(nbas,nbas))
       density=0.0d0
 
-      call rhogs(density)
+      call rho_mp2(density)
 
 !-----------------------------------------------------------------------
 ! Ground state electronic dipole moment
@@ -484,7 +553,7 @@
       if (.not.allocated(density)) allocate(density(nbas,nbas))
       density=0.0d0
 
-      call rhogs(density)
+      call rho_mp2(density)
       
 !-----------------------------------------------------------------------
 ! Ground state electronic dipole moment

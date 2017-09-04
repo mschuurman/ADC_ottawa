@@ -17,10 +17,10 @@ contains
 
 !!!!!!!!! DIPOLE MATRIX ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!!$----------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_adc2_DIPOLE_direct(ndim,kpq,autvec,arrd,travec) 
-
+    
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
@@ -64,10 +64,9 @@ contains
 !    call vdiagonalise(ndim,arr(:,:),evector(:))
 
   end subroutine get_fspace_adc2_DIPOLE_direct
-
-
-!!$----------------------------------------------------------
-
+  
+!######################################################################
+  
   subroutine get_fspace_tda_DIPOLE_direct(ndim,kpq,autvec,arrd,travec) 
 
     integer, intent(in) :: ndim
@@ -113,9 +112,7 @@ contains
 
   end subroutine get_fspace_tda_DIPOLE_direct
 
-!
-!!$----------------------------------------------------------------------
-!!$----------------------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_tda_DIPOLE_direct_OK(ndim,ndimf,kpq,kpqf,autvec,arrd,travec) 
 
@@ -162,9 +159,7 @@ contains
 
   end subroutine get_fspace_tda_DIPOLE_direct_OK
 
-
-
-!!$----------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_adc2_DIPOLE_direct_OK(ndim,ndimf,kpq,kpqf,autvec,arrd,travec) 
 
@@ -214,11 +209,10 @@ contains
 
   end subroutine get_fspace_adc2_DIPOLE_direct_OK
 
+!######################################################################
 
-
-!!$----------------------------------------------------------
-
-  subroutine get_fspace_adc2_DIPOLE_direct_second(ndim,ndimf,kpq,kpqf,autvec,arrd,travec) 
+  subroutine get_fspace_adc2_DIPOLE_direct_second(ndim,ndimf,kpq,&
+       kpqf,autvec,arrd,travec) 
 
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
@@ -311,12 +305,7 @@ contains
 
   end subroutine get_fspace_adc2_DIPOLE_direct_second
 
-!!$----------------------------------------------------------------------
-!!$----------------------------------------------------------------------
-
-
-!!$----------------------------------------------------------------------
-!!$----------------------------------------------------------------------
+!######################################################################
 
   subroutine write_fspace_adc2_DIPOLE(ndim,kpq,noffdel,chr) 
 
@@ -335,32 +324,17 @@ contains
     
   end subroutine write_fspace_adc2_DIPOLE
 
-!!$-----------------------------------------------------------------------------------------
-!!$----------------------------------------------------------------------
-
-
-
+!######################################################################
+  
 !!!!!!!!!! END DIPOLE MATRIX ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
 
 
 !!!!!!!!!!!!!!!!!!! HAMILTONIAN ROUTINES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-
-
-
 !!!!!!!!!!!!!!!!!!! ADC2 EXTENDED !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-
-
-
-!!$----------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_adc2e_direct(ndim,kpq,arr,evector) 
 
@@ -395,8 +369,7 @@ contains
 
   end subroutine get_fspace_adc2e_direct
 
-!!$----------------------------------------------------------------------
-!!$----------------------------------------------------------------------
+!######################################################################
 
   subroutine write_fspace_adc2e(ndim,kpq,chr) 
 
@@ -415,9 +388,8 @@ contains
     
   end subroutine write_fspace_adc2e
 
-!!$-----------------------------------------------------------------------------------------
-!!$----------------------------------------------------------------------
-
+!######################################################################
+  
   subroutine write_fspace_adc2e_1(ndim,kpq,noffdel,chr)
 
     integer, intent(in)                                 :: ndim
@@ -451,10 +423,10 @@ contains
 
   end subroutine write_fspace_adc2e_1
 
-!!$-----------------------------------------------------------------------------------------
-
+!######################################################################
+  
     subroutine write_fspace_adc2e_1_cvs(ndim,kpq,noffdel,chr) 
-
+      
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in)                            :: chr
@@ -486,8 +458,8 @@ contains
 
   end subroutine write_fspace_adc2e_1_cvs
 
-!!$-----------------------------------------------------------------------------------------
-
+!######################################################################
+ 
   subroutine write_fspace_adc2e_1_MIO(ndim,kpq,noffdel,indx,chr) 
 
     integer, intent(in) :: ndim
@@ -508,11 +480,10 @@ contains
   end subroutine write_fspace_adc2e_1_MIO
 
 
-
-
-
 !!!!!!!!!!!!!!!! ADC2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!######################################################################
+  
   subroutine get_fspace_adc2_direct(ndim,kpq,arr,evector)
     
     integer :: ndim
@@ -547,8 +518,7 @@ contains
     
   end subroutine get_fspace_adc2_direct
 
-!!$-----------------------------------------------------------------------------
-!!$-----------------------------------------------------------------------------
+!######################################################################
 
   subroutine write_fspace_adc2(ndim,kpq,chr) 
 
@@ -567,8 +537,7 @@ contains
     
   end subroutine write_fspace_adc2
 
-!!$-----------------------------------------------------------------------------
-!!$-----------------------------------------------------------------------------
+!######################################################################
 
   subroutine write_fspace_adc2_1(ndim,kpq,noffdel,chr) 
 
@@ -656,81 +625,97 @@ contains
   end subroutine write_fspace_adc2_1_MIO
 
 
-
-
-
 !!!!!!!!!!!!!!!!!  ADC1 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-
-
-!!$------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_tda_direct(ndim,kpq,arr,evector) 
 
-    integer, intent(in) :: ndim
+    implicit none
+    
+    integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer                                             :: nbuf,i
+    real(d), dimension(ndim), intent(out)               :: evector
+    real(d), dimension(ndim,ndim), intent(inout)        :: arr
+    real(d), dimension(:), allocatable                  :: ar_diag
+    real(d), dimension(:,:), allocatable                :: ar_offdiag
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
-
-    integer :: nbuf,i
-    
-    real(d), dimension(:), allocatable :: ar_diag
-    real(d), dimension(:,:), allocatable :: ar_offdiag
-    
+!------------------------------------------------------------------
+! Allocate arrays
+!------------------------------------------------------------------
     allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
+
+!------------------------------------------------------------------
+! Calculate and save the ADC(1) Hamiltonian matrix elements
+!------------------------------------------------------------------
     call get_offdiag_tda_direct(ndim,kpq(:,:),ar_offdiag(:,:))
     call get_diag_tda_direct(ndim,kpq(:,:),ar_diag(:))
-    
-    
+
     arr(:,:)=ar_offdiag(:,:)
-    
     do i=1,ndim
        arr(i,i)=ar_diag(i)
     end do
-    
+
+!------------------------------------------------------------------
+! Deallocate arrays
+!------------------------------------------------------------------
     deallocate(ar_diag,ar_offdiag)
-    
+
+!------------------------------------------------------------------
+! Diagonalise the ADC(1) Hamiltonian matrix
+!------------------------------------------------------------------
     call vdiagonalise(ndim,arr(:,:),evector(:))
+
+    return
     
   end subroutine get_fspace_tda_direct
 
-!!$------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_fspace_tda_direct_cvs(ndim,kpq,arr,evector) 
 
-    integer, intent(in) :: ndim
+    implicit none
+    
+    integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer                                             :: nbuf,i
+    real(d), dimension(ndim), intent(out)               :: evector
+    real(d), dimension(ndim,ndim), intent(inout)        :: arr
+    real(d), dimension(:), allocatable                  :: ar_diag
+    real(d), dimension(:,:), allocatable                :: ar_offdiag
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
-
-    integer :: nbuf,i
-    
-    real(d), dimension(:), allocatable :: ar_diag
-    real(d), dimension(:,:), allocatable :: ar_offdiag
-    
+!------------------------------------------------------------------
+! Allocate arrays
+!------------------------------------------------------------------
     allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
+
+!------------------------------------------------------------------
+! Calculate and save the CVS-ADC(1) Hamiltonian matrix elements
+!------------------------------------------------------------------
     call get_offdiag_tda_direct_cvs(ndim,kpq(:,:),ar_offdiag(:,:))
     call get_diag_tda_direct_cvs(ndim,kpq(:,:),ar_diag(:))
     
-    
     arr(:,:)=ar_offdiag(:,:)
-    
     do i=1,ndim
        arr(i,i)=ar_diag(i)
     end do
-    
+
+!------------------------------------------------------------------
+! Deallocate arrays
+!------------------------------------------------------------------
     deallocate(ar_diag,ar_offdiag)
-    
+
+!------------------------------------------------------------------
+! Diagonalise the CVS-ADC(1) Hamiltonian matrix
+!------------------------------------------------------------------
     call vdiagonalise(ndim,arr(:,:),evector(:))
+
+    return
     
   end subroutine get_fspace_tda_direct_cvs
 
-!!$-----------------------------------------------------------------------------
-!!$-----------------------------------------------------------------------------
+!######################################################################
 
   subroutine write_fspace_tda(ndim,kpq,chr) 
 
@@ -745,15 +730,11 @@ contains
     
   end subroutine write_fspace_tda
   
-!!$--------------------------------------------------------------------------
-
-
+!######################################################################
 
 !!!!!!!!!!!!!!!!!!!! STATES ROUTINES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-!!$--------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_fstates_direct(ndim,kpq,fspace,fen,nstate,chflag1,chflag2)
     
@@ -829,7 +810,8 @@ contains
     deallocate(evec,arr,nisri,temp)
     
   end subroutine get_fstates_direct
-!!$--------------------------------------------------------------
+
+!######################################################################
 
   subroutine load_fstates_weight(ndim,negvc,kpq,fspace,fen,nstate,name,chflag)
 
@@ -913,8 +895,8 @@ contains
     deallocate(ener,arr,nisri,temp,ener_ryd,indx)
 
   end subroutine load_fstates_weight
-  
-!!$--------------------------------------------------------------------------------
+
+!######################################################################
   
   subroutine get_bound(ndim,negvc,kpq,fspace,fen,nstate)
     
@@ -975,12 +957,9 @@ contains
     deallocate(ener,arr,nisri,temp,ener_ryd,indx)
 
   end subroutine get_bound
-    
-!!$--------------------------------------------------------------
 
-
-
-
+!######################################################################
+  
 !!!!!!!!!!!!!!  GET TRANSITION MOMENTS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   subroutine get_tranmom_1(ndim,negvc,name,mtm,nstate,fen,tmvec,ndims)
@@ -1065,208 +1044,7 @@ contains
        
   end subroutine get_tranmom_1
 
-!!$---------------------------------------------------------
-
-
-
-!  subroutine get_tranmom_2(ndim,kpq,negvc,name,arrd,nstate,fen,travec,ndims)
-    
-!    integer, intent(in) :: ndim,negvc,ndims
-!    integer, intent(out) :: nstate
-!    real(d), dimension(ndim,ndim), intent(in) :: arrd
-!    real(d), dimension(negvc), intent(out) :: travec
-!    real(d), intent(out) :: fen   
-!    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    
-!    character(36), intent(in) :: name
-
-!    integer :: i,j,num
-!    real(d) :: enr,cntr
-!    real(d), dimension(:), allocatable :: vec 
-!    logical :: log1
-
-!    INQUIRE(file=name,exist=log1)
-    
-!    if(.not. log1) then
-!       write(ilog,*) 'The file ', name,' does not exist'
-!       stop
-!    end if
-    
-!    allocate(vec(ndim))
-!    nstate=0
-!    cntr=0.0
-
-!    if(dlim.lt.0.0) then
-
-!    write(ilog,*) 'Take all states with 2h2p part greater than',-dlim
-
-!    OPEN(unit=78,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-!    do i=1,negvc
-
-!       read(78,END=78) num,enr,vec(:)
-
-!       write(ilog,*) 'Read vector',num,enr
-
-!        do j=1,ndims
-!          cntr=cntr+vec(j)**2
-!        end do
-
-
-!      if(i.eq.statenumber) then
-
-!       if(cntr.lt.-dlim) then
-!        write(ilog,*) 'State',num,'taken'
-!        fen=enr
-!        call   get_fspace_adc2_DIPOLE_direct(ndim,kpq,vec(:),arrd(:,:),travec(:))
-!        travec(nstate)=tm(ndim,vec(:),mtm(:))
-!       end if
-!      end if
-
-!       cntr=0.0
-!    end do
-!78  CLOSE(78)
-!    write(ilog,*) 'There is the ', statenumber,' energy and tran. moment'
-
-
-!    else
-
-!    write(ilog,*) 'Take all states with 1h1p part greater than',dlim
-    
-!    OPEN(unit=77,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-!    do i=1,negvc
-
-!       read(77,END=77) num,enr,vec(:)
-
-!       write(ilog,*) 'Read vector',num,enr
-
-
-!        do j=1,ndims
-!          cntr=cntr+vec(j)**2
-!        end do
-
-
-
-!      if(i.eq.statenumber) then
-
-
-!       if(cntr.gt.dlim) then
-!        write(ilog,*) 'State',num,'taken'
-!        nstate=nstate+1   
-!        fen=enr
-!        call   get_fspace_adc2_DIPOLE_direct(ndim,kpq,vec(:),arrd(:,:),travec(:))
-!        travec(nstate)=tm(ndim,vec(:),mtm(:))
-!       end if
-!      end if
-
-!       cntr=0.0
-!    end do
-!77  CLOSE(77)
-!    write(ilog,*) 'There is the ',statenumber,' energy and tran. moment'
-    
-!    end if 
-    
-       
-!  end subroutine get_tranmom_2
-
-
-
-
-
-
-!  subroutine get_tranmom_3(ndim,negvc,name,mtm,nstate,fen,tmvec,ndims)
-    
-!    integer, intent(in) :: ndim,negvc,ndims
-!    integer, intent(out) :: nstate
-!    real(d), dimension(ndim), intent(in) :: mtm 
-!    real(d), dimension(negvc-statenumber), intent(out) :: fen,tmvec
-    
-!    character(36), intent(in) :: name
-
-!    integer :: i,j,num
-!    real(d) :: enr,cntr
-!    real(d), dimension(:), allocatable :: vec 
-!    logical :: log1
-
-!    INQUIRE(file=name,exist=log1)
-    
-!    if(.not. log1) then
-!       write(ilog,*) 'The file ', name,' does not exist'
-!       stop
-!    end if
-    
-!    allocate(vec(ndim))
-!    nstate=0
-!    cntr=0.0
-
-!    if(dlim.lt.0.0) then
-
-!    write(ilog,*) 'Take all states with 2h2p part greater than',-dlim
-
-!    OPEN(unit=78,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-!    do i=1,negvc
-
-!       read(78,END=78) num,enr,vec(:)
-
-!       write(ilog,*) 'Read vector',num,enr
-!      if (i.gt.statenumber) then
-     
-
-!        do j=1,ndims
-!          cntr=cntr+vec(j)**2
-!        end do
-
-!       if(cntr.lt.-dlim) then
-!        write(ilog,*) 'State',num,'taken'
-!        nstate=nstate+1
-!        fen(nstate)=enr
-!        tmvec(nstate)=tm(ndim,vec(:),mtm(:))
-!       end if
-
-!    end if
-
-!       cntr=0.0
-!    end do
-!78  CLOSE(78)
-!    write(ilog,*) 'There are ',nstate,' energies and tran. moments'
-
-
-!    else
-
-!    write(ilog,*) 'Take all states with 1h1p part greater than',dlim
-    
-!    OPEN(unit=77,file=name,status='OLD',access='SEQUENTIAL',form='UNFORMATTED')
-!    do i=1,negvc
-
-!       read(77,END=77) num,enr,vec(:)
-
-!       write(ilog,*) 'Read vector',num,enr
-
-!      if (i.gt.statenumber) then
- 
-!        do j=1,ndims
-!          cntr=cntr+vec(j)**2
-!        end do
-
-!       if(cntr.gt.dlim) then
-!        write(ilog,*) 'State',num,'taken'
-!        nstate=nstate+1   
-!        fen(nstate)=enr
-!        tmvec(nstate)=tm(ndim,vec(:),mtm(:))
-!       end if
-
-
-!     end if
-
-
-!       cntr=0.0
-!    end do
-!77  CLOSE(77)
-!    write(ilog,*) 'There are ',nstate,' energies and tran. moments'
-    
-!    end if 
-    
-       
-!  end subroutine get_tranmom_3
+!######################################################################
 
 !!$---------------------------------------------------------
 !!$ N.B., here ndim is the no. states
@@ -1310,6 +1088,8 @@ contains
 
   end subroutine get_sigma
 
+!######################################################################
+  
 !!$--------------------------------------------------------
 !!$ N.B., here ndim is the no. states
 !!$---------------------------------------------------------
@@ -1358,7 +1138,8 @@ contains
     enddo
    
   end subroutine get_sums
-!!$---------------------------------------------------------
+
+!######################################################################
 
   subroutine fill_stvc(ndim,vctr)
     
@@ -1377,7 +1158,7 @@ contains
     
   end subroutine fill_stvc
 
-!----------------------------------------------------------------------
+!######################################################################
 
  subroutine test_ortho(ndim,nstate,arr)
 
@@ -1421,6 +1202,8 @@ contains
 
  end subroutine test_ortho
 
+!######################################################################
+ 
  subroutine show_vecs(ndim,nstate,arr)
 ! ndim=Anzahl Vecs, nstate=Länge Vecs, arr=Vecs
     integer, intent(in) :: ndim,nstate
@@ -1435,10 +1218,7 @@ contains
 
  end subroutine show_vecs
 
-
-
-
-
+!######################################################################
 
   subroutine get_fspace_adc2_direct_MIO(ndim,kpq,arr,evector,indx) 
     
@@ -1475,8 +1255,7 @@ contains
     
   end subroutine get_fspace_adc2_direct_MIO
 
-
-
+!######################################################################
 
   subroutine get_fspace_adc2e_direct_MIO(ndim,kpq,arr,evector,indx) 
 
@@ -1512,4 +1291,6 @@ contains
 
   end subroutine get_fspace_adc2e_direct_MIO
 
+!######################################################################
+  
 end module fspace

@@ -84,7 +84,7 @@ contains
                       
                       FA_ph=FA_ph-0.5_d*dpl(c,k)/e_lmba/e_lmbc*(&
                            vpqrs(a,l,b,m)*(2._d*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
-                           vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))                      
+                           vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
                    end if
                    
                 end do

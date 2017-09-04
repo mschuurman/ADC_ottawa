@@ -267,7 +267,7 @@
                   else if (keyword(i).eq.'gb') then
                      maxmem=maxmem*1024.0d0
                   else
-                     errmsg='Unknown unit: '//trim(keyword(i))
+                     errmsg='Unknown memory unit: '//trim(keyword(i))
                      call error_control
                   endif
                endif
@@ -283,7 +283,7 @@
             if (keyword(1).ne.'end-dyson_section') goto 45
             i=inkw
             
-         else if (keyword(i).eq.'target_section') then            
+         else if (keyword(i).eq.'target_section') then
             ltarg=.true.
 50          continue
             call rdinp(iin)

@@ -10,6 +10,8 @@ dipole_component = x
 
 mem=2000
 
+cvs
+
 # Relaxation
 diag_section
  method=relaxation_liu

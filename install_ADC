@@ -83,6 +83,9 @@ echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 #-----------------------------------------------------------------------
 if [ "$target" == 'adc' ] || [ -z $target ]; then
     # Numgrid
+    if [ -f lib/libnumgrid.so ]; then
+	rm lib/libnumgrid.so
+    fi
     cd source/numgrid
     gfortran -c numgrid.f90
     g++ -fPIC -c *.cpp

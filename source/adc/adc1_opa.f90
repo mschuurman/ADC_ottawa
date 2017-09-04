@@ -38,7 +38,7 @@
         call mp2_master(e0)
 
 !-----------------------------------------------------------------------
-! Determine the 1h1p and 2h2p subspaces
+! Determine the 1h1p subspace
 !-----------------------------------------------------------------------
         allocate(kpq(7,0:nBas**2*4*nOcc**2))
         allocate(kpqf(7,0:nBas**2*4*nOcc**2))

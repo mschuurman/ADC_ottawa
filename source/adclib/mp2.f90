@@ -277,10 +277,10 @@ contains
   end function t2amp
 
 !#######################################################################
-! rhogs: calculates the ground state density matrix
+! rho_mp2: calculates the MP2 ground state density matrix
 !#######################################################################
 
-  subroutine rhogs(rho)
+  subroutine rho_mp2(rho)
 
     use constants
     use parameters
@@ -327,7 +327,7 @@ contains
     
     return
     
-  end subroutine rhogs
+  end subroutine rho_mp2
   
 !#######################################################################
 ! rhogs2_uu: returns an element of the unoccupied-unoccupied block of
