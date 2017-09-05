@@ -197,6 +197,8 @@ contains
 !#######################################################################
 
   subroutine select_atom_isf(kpq)
+
+    implicit none
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(inout) :: kpq
     
@@ -204,18 +206,10 @@ contains
     integer               :: isym,isym2,a,cah,ic,targetsym
     integer, dimension(7) :: col
     
-    
-100 FORMAT(/,3("*"),A50,3x,I4)
-101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,/)
-102 FORMAT(("*"),3x,I3,3x,I3,3x,I3,3x,I3)
-103 FORMAT(/,60("-"))
-    
-!    write(ilog,*) 'Selecting FINAL  1h1p subspace'
-    
     kpq(1,0)=0
 
     targetsym=MT(nirrep,nirrep2)
-
+    
     if (lffrzcore) then
 
        do ap=nOcc+1,nBas
@@ -226,23 +220,23 @@ contains
              if (ic.eq.0) then
                 isym=MT(orbSym(cah),orbSym(a))
 
-                if(nirrep .eq. nirrep2) then
-                   if(isym .eq. 1) then
+                if(nirrep.eq.nirrep2) then
+                   if(isym.eq.1) then
                       kpq(1,0)=kpq(1,0)+1
                       call fill_indices(col(:),1,1,a,-1,cah,-1,0)
                       kpq(:,kpq(1,0))=col(:)
-                   end if
+                   endif
                 else
                    isym2=MT(nirrep,nirrep2)
-                   if(isym .eq. isym2) then
+                   if(isym.eq.isym2) then
                       kpq(1,0)=kpq(1,0)+1
                       call fill_indices(col(:),1,1,a,-1,cah,-1,0)
                       kpq(:,kpq(1,0))=col(:)
-                   end if
-                end if
+                   endif
+                endif
              endif
-          end do
-       end do
+          enddo
+       enddo
        
     else
 
@@ -253,26 +247,26 @@ contains
              
              isym=MT(orbSym(cah),orbSym(a))
 
-             if(nirrep .eq. nirrep2) then
-                if(isym .eq. 1) then
+             if(nirrep.eq.nirrep2) then
+                if(isym.eq.1) then
                    kpq(1,0)=kpq(1,0)+1
                    call fill_indices(col(:),1,1,a,-1,cah,-1,0)
                    kpq(:,kpq(1,0))=col(:)
-                end if
+                endif
              else
                 isym2=MT(nirrep,nirrep2)
-                if(isym .eq. isym2) then
+                if(isym.eq.isym2) then
                    kpq(1,0)=kpq(1,0)+1
                    call fill_indices(col(:),1,1,a,-1,cah,-1,0)
                    kpq(:,kpq(1,0))=col(:)
-                end if
-             end if
+                endif
+             endif
 
-          end do
-       end do
+          enddo
+       enddo
        
     endif
-
+    
   end subroutine select_atom_isf
 
 !#######################################################################

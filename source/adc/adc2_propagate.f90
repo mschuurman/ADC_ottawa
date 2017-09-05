@@ -22,7 +22,7 @@ contains
     use mp2
     use targetmatching
     use capmod
-    use propagate
+    use propagate_adc2
     
     implicit none
 
@@ -75,7 +75,7 @@ contains
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_laser(ndimf,noffdf,kpqf)
+    call propagate_laser_adc2(ndimf,noffdf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -279,6 +279,8 @@ contains
        
        filename='SCRATCH/dipole_'//acomp(c)
 
+       dpl(:,:)=dpl_all(c,:,:)
+       
        call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
             nbuf_dip(c),nel_dip(c),filename)
        

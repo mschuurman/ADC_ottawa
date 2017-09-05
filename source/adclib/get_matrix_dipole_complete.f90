@@ -2961,7 +2961,8 @@
 
   subroutine get_dipole_initial_product_tda(ndim,ndimf,kpq,kpqf,autvec,travec)
 
-!!$The difference from the earlier routine is that this routine returns the total number of saved els to a caller. 
+! The difference from the earlier routine is that this routine returns the total
+! number of saved els to a caller.
 
     integer, intent(in) :: ndim,ndimf
     real(d), dimension(ndim), intent(in) :: autvec
@@ -2978,8 +2979,6 @@
     integer :: k,k1,b,b1 
     
     write(ilog,*) "Writing the travec vector of ADC-DIPOLE matrix INITIAL-STATE product "
-
-
 
     travec(:)=0.0
 
@@ -3012,24 +3011,6 @@
     end do
     
   end subroutine get_dipole_initial_product_tda
-!!$-----------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3040,8 +3021,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 
 !!! CASE OF INITIAL AND FINAL SPACES OF DIFFERENT SYMMETRIES
 !!! CASE OF INITIAL AND FINAL SPACES OF DIFFERENT SYMMETRIES
@@ -3052,51 +3031,64 @@
 !!$------------------------------------ ADC1 ------------------------------------
 !!$------------------------------------------------------------------------------
 
-
   subroutine get_offdiag_tda_DIPOLE_direct_OK(ndim,ndimf,kpq,kpqf,ar_offdiagd)
 
-  integer, intent(in) :: ndim
-  integer, intent(in) :: ndimf
-  integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-  integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
-  real(d), dimension(ndimf,ndim), intent(out) :: ar_offdiagd
+    use timingmod
+    
+    implicit none
+    
+    integer, intent(in) :: ndim
+    integer, intent(in) :: ndimf
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+    integer                                             :: inda,indb,indk,indl,spin
+    integer                                             :: indapr,indbpr,indkpr,&
+                                                           indlpr,spinpr
+    integer                                             :: i,j,ndim1,ndim1f
+    real(d), dimension(ndimf,ndim), intent(out)         :: ar_offdiagd
+    real(d)                                             :: tw1,tw2,tc1,tc2
+
+!----------------------------------------------------------------------
+! Begin timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
+    
+!----------------------------------------------------------------------
+! Calculate the D-matrix
+!----------------------------------------------------------------------
+    ar_offdiagd(:,:)=0.0d0
+
+    ndim1=kpq(1,0)
+    ndim1f=kpqf(1,0)
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  
-  integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
-  integer :: lim1i,lim2i,lim1j,lim2j
+    do i= 1,ndim1f
 
-  ar_offdiagd(:,:)=0._d 
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
 
-!!$ Full diagonalization. Filling the lower half of the matrix
+       do j= 1,ndim1
 
-!!$ Filling the off-diagonal part of the ph-ph block
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+          
+          if(indk.eq.indkpr) then
+             ar_offdiagd(i,j)=ar_offdiagd(i,j)+D0_1_ph_ph(inda,indapr)
+          endif
+          
+          if(inda.eq.indapr) then
+             ar_offdiagd(i,j)=ar_offdiagd(i,j)+D0_2_ph_ph(indk,indkpr)
+          endif
 
-     ndim1=kpq(1,0)
-     ndim1f=kpqf(1,0)
-  
-     do i= 1,ndim1f
-        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
-        do j= 1,ndim1
-           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
-         
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if(indk .eq. indkpr) then
-                   ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_1_ph_ph(inda,indapr)
-    end if
+       enddo
+    enddo
 
-    if(inda .eq. indapr) then
-                   ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_2_ph_ph(indk,indkpr)
-    end if
+!----------------------------------------------------------------------
+! Finish timing and output the time taken
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
-
-   end do
-  end do
-
+    return
+    
   end subroutine get_offdiag_tda_DIPOLE_direct_OK
-
-
 
 !!$------------------------------------------------------------------------------
 !!$------------------------------------ ADC2 ------------------------------------
@@ -4004,16 +3996,6 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
 
   end subroutine get_offdiag_adc2_DIPOLE_direct_OK
 
-
-
-
-
-
-
-
-
-
-
 !!! CASE OF INITIAL AND FINAL SPACES OF THE SAME SYMMETRY
 !!! CASE OF INITIAL AND FINAL SPACES OF THE SAME SYMMETRY
 !!! CASE OF INITIAL AND FINAL SPACES OF THE SAME SYMMETRY
@@ -4023,12 +4005,12 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
 !!$------------------------------------ ADC1 ------------------------------------
 !!$------------------------------------------------------------------------------
 
-
-
 !!$------------------------------------------------------------------------------
 !!$-----------------------------  OFF-DIAGONAL PART  ----------------------------
 !!$------------------------------------------------------------------------------
   subroutine get_offdiag_tda_DIPOLE_direct(ndim,kpq,ar_offdiagd)
+
+    implicit none
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
@@ -4044,7 +4026,7 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
    
     integer :: lim1i,lim2i,lim1j,lim2j
  
-    ar_offdiagd(:,:)=0._d
+    ar_offdiagd(:,:)=0.0d0
     
 !!$ Full diagonalization. 
 
@@ -4056,31 +4038,31 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
        call get_indices(kpq(:,i),inda,indb,indk,indl,spin)
        do j=i+1,ndim1
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)             
+          
+          
+          if (indk .eq. indkpr) then
+             ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_1_ph_ph(inda,indapr)
+          endif
 
-
-    if (indk .eq. indkpr)   then
-                   ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_1_ph_ph(inda,indapr)
-    end if
-
-    if(inda .eq. indapr)    then
-                   ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_2_ph_ph(indk,indkpr)
-    end if
-
+          if(inda .eq. indapr) then
+             ar_offdiagd(i,j) = ar_offdiagd(i,j) + D0_2_ph_ph(indk,indkpr)
+          endif
+          
           ar_offdiagd(j,i) = ar_offdiagd(i,j)
-       end do
-    end do
+       enddo
+    enddo
 
+    return
 
-  end  subroutine get_offdiag_tda_DIPOLE_direct
- 
-
-
+  end subroutine get_offdiag_tda_DIPOLE_direct
 
 !!$------------------------------------------------------------------------------
 !!$---------------------------------  DIAGONAL PART  ----------------------------
 !!$------------------------------------------------------------------------------
   subroutine get_diag_tda_DIPOLE_direct(ndim1,kpq,ar_diagd)
-  
+
+    implicit none
+    
     integer, intent(in) :: ndim1
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     real(d), dimension(ndim1), intent(out) :: ar_diagd
@@ -4091,33 +4073,20 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     integer :: i,lim1,lim2
     
 !!$ Filling the ph-ph block
-   
-
-    ar_diagd(:)=0.0
+    
+    ar_diagd(:)=0.0d0
  
     do i= 1,ndim1
        call get_indices(kpq(:,i),inda,indb,indk,indl,spin)
 
- 
-                   ar_diagd(i) = ar_diagd(i) + D0_1_ph_ph(inda,inda)
-                   ar_diagd(i) = ar_diagd(i) + D0_2_ph_ph(indk,indk)
+       ar_diagd(i) = ar_diagd(i) + D0_1_ph_ph(inda,inda)
+       ar_diagd(i) = ar_diagd(i) + D0_2_ph_ph(indk,indk)
 
+    enddo
 
-!!!write(ilog,*) "D0_1",D0_1_ph_ph(inda,inda)            
-!!!write(ilog,*) "D0_2",D0_2_ph_ph(indk,indk)            
-!!!write(ilog,*) "Ddiag_ph_ph", ar_diagd(i)
- 
-   end do
-
+    return
+    
   end subroutine get_diag_tda_DIPOLE_direct
-
-
-
-
-
-
-
-
 
 !!$------------------------------------------------------------------------------
 !!$------------------------------------------------------------------------------
@@ -4128,7 +4097,6 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
 !!$------------------------------------------------------------------------------
 !!$------------------------------------------------------------------------------
 !!$------------------------------------------------------------------------------
- 
 
 
 !!$------------------------------------------------------------------------------

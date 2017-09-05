@@ -1,10 +1,10 @@
 !#######################################################################
-! molecule_laser: Routines to perform wavepacket propagations
+! propagate_adc2: Routines to perform ADC(2) wavepacket propagations
 !                 including the interaction of the molecule with a
 !                 laser pulse
 !#######################################################################
 
-module propagate
+module propagate_adc2
 
   use constants
   use parameters
@@ -21,18 +21,18 @@ module propagate
 contains
 
 !#######################################################################
-! propagate_laser: Wavepacket propagation including the molecule-laser
-!                  interaction.
-!                  The wavepacket is represented in a basis consisting
-!                  of the intermediate state basis plus the MP2 ground
-!                  state.
+! propagate_laser_adc2: ADC(2) wavepacket propagation including the
+!                       molecule-laser interaction.
+!                       The wavepacket is represented in a basis
+!                       consisting of the intermediate state basis plus
+!                       the MP2 ground state.
 !########################################################################
 ! IMPORTANT:       For ease of implementation of the Hamiltonian and
 !                  dipole matrix-vector products, the MP2 ground state
 !                  is taken to be the last basis function in the set.
 !#######################################################################
   
-  subroutine propagate_laser(ndimf,noffdf,kpqf)
+  subroutine propagate_laser_adc2(ndimf,noffdf,kpqf)
 
     use tdsemod
     
@@ -90,7 +90,7 @@ contains
     
     return
     
-  end subroutine propagate_laser
+  end subroutine propagate_laser_adc2
 
 !#######################################################################
 
@@ -674,4 +674,4 @@ contains
     
 !#######################################################################
   
-end module propagate
+end module propagate_adc2

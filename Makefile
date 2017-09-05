@@ -87,7 +87,8 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
 	source/propagation/fdstates.o \
-	source/propagation/propagate.o
+	source/propagation/proplib_adc2.o \
+	source/propagation/proplib_adc1.o
 
 ADCLIB= source/adclib/defaults.o \
 	source/adclib/orbindx.o \
@@ -187,7 +188,8 @@ ADC_OBJ=accuracy.o \
 	relaxation.o \
 	fvecprop.o \
 	fdstates.o \
-	propagate.o \
+	proplib_adc2.o \
+	proplib_adc1.o \
 	diagmod.o \
 	block_lanczos.o \
 	mp2.o \

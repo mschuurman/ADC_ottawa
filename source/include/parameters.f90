@@ -330,6 +330,7 @@ integer*8, dimension(3) :: nel_dip
 integer, dimension(3)   :: nbuf_dip
 real(d), dimension(3)   :: d00
 real(d), allocatable    :: d0j(:,:)
+real(d), allocatable    :: dij(:,:,:)
 real(d), dimension(3)   :: pulse_vec
 real(d)                 :: proptol
 real(d)                 :: freq
@@ -347,6 +348,7 @@ integer                 :: nbuf_cap
 real(d)                 :: capstr,capwid
 real(d)                 :: w00
 real(d), allocatable    :: w0j(:)
+real(d), allocatable    :: wij(:,:)
 logical                 :: lcap
 
 !!$************************************************

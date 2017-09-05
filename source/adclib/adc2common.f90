@@ -163,13 +163,8 @@
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
       allocate(kpq(7,0:nBas**2*4*nOcc**2))
-      kpq=0
-
       allocate(kpqd(7,0:nBas**2*4*nOcc**2))
-      kpqd=0
-
       allocate(kpqf(7,0:nBas**2*4*nOcc**2))
-      kpqf=0
       
 !-----------------------------------------------------------------------
 ! Determine the initial, final and total subspaces
@@ -177,7 +172,7 @@
       ! Initial subspace
       kpq(:,:)=-1
       call select_atom_is(kpq(:,:))
-      
+
       ! Final subspace
       kpqf(:,:)=-1
       if (lcvsfinal) then
@@ -185,7 +180,7 @@
       else
          call select_atom_isf(kpqf(:,:))
       endif
-           
+      
       ! Total subspace
       kpqd(:,:)=-1
       call select_atom_ist(kpqd(:,:))
@@ -193,9 +188,9 @@
 !-----------------------------------------------------------------------
 ! Determine the various subspace dimensions
 !-----------------------------------------------------------------------
-      ndim=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+2*kpq(5,0)
-      ndimf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+2*kpqf(5,0)
-      ndimd=kpqd(1,0)+kpqd(2,0)+kpqd(3,0)+kpqd(4,0)+2*kpqd(5,0)
+      ndim=kpq(1,0)
+      ndimf=kpqf(1,0)
+      ndimd=kpqd(1,0)
 
       nout=ndim
       noutf=ndimf
@@ -652,7 +647,7 @@
       integer, dimension(:), allocatable   :: indxi,indxj
       real(d), dimension(dim1)             :: vec
       real(d), dimension(dim2)             :: tvec
-      real(d), dimension(:), allocatable   :: dij
+      real(d), dimension(:), allocatable   :: buffer
       real(d), dimension(:,:), allocatable :: tmpvec
       character(len=60)                    :: filename
       character(len=1)                     :: cntrdir
@@ -672,7 +667,7 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-      allocate(dij(buffsize))
+      allocate(buffer(buffsize))
       allocate(indxi(buffsize))
       allocate(indxj(buffsize))
       
@@ -694,27 +689,27 @@
       
       if (cntrdir.eq.'r') then
          do k=1,nbuf
-            read(idpl) dij(:),indxi(:),indxj(:),nlim
+            read(idpl) buffer(:),indxi(:),indxj(:),nlim
             !$omp parallel do &
             !$omp& private(n) &
-            !$omp& shared(tmpvec,dij,vec,indxi,indxj)
+            !$omp& shared(tmpvec,buffer,vec,indxi,indxj)
             do n=1,nlim
                tid=1+omp_get_thread_num()
                tmpvec(indxi(n),tid)=tmpvec(indxi(n),tid)&
-                    +dij(n)*vec(indxj(n))
+                    +buffer(n)*vec(indxj(n))
             enddo
             !$omp end parallel do
          enddo
       else if (cntrdir.eq.'l') then
          do k=1,nbuf
-            read(idpl) dij(:),indxi(:),indxj(:),nlim
+            read(idpl) buffer(:),indxi(:),indxj(:),nlim
             !$omp parallel do &
             !$omp& private(n) &
-            !$omp& shared(tmpvec,dij,vec,indxi,indxj)
+            !$omp& shared(tmpvec,buffer,vec,indxi,indxj)
             do n=1,nlim
                tid=1+omp_get_thread_num()
                tmpvec(indxj(n),tid)=tmpvec(indxj(n),tid)&
-                    +dij(n)*vec(indxi(n))
+                    +buffer(n)*vec(indxi(n))
             enddo
             !$omp end parallel do
          enddo
@@ -732,7 +727,7 @@
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(dij)
+      deallocate(buffer)
       deallocate(indxi)
       deallocate(indxj)
       deallocate(tmpvec)

@@ -52,14 +52,9 @@ contains
 !!!    call dmatvec(ndim,autvec(:),arrd(:,:),travec(:))
     call mat_vec_multiply(ndim,ndim,arrd,autvec,travec)
 
-
-
-
 !!! up to this point I have the vector  TRAVEC to make the scalar product with all other
 !!! adc excited eigenstates, i.e. with the other eigenvectors of the hamiltonian
 !!! adc matrix
-
-
 
 !    call vdiagonalise(ndim,arr(:,:),evector(:))
 
@@ -69,17 +64,17 @@ contains
   
   subroutine get_fspace_tda_DIPOLE_direct(ndim,kpq,autvec,arrd,travec) 
 
-    integer, intent(in) :: ndim
-    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-
-    real(d), dimension(ndim), intent(out) :: travec
-    real(d), dimension(ndim,ndim), intent(inout) :: arrd
-    real(d), dimension(ndim), intent(in) :: autvec
-   
-    integer :: ndim1,ndim2,nbuf,i,j,k
+    implicit none
     
-    real(d), dimension(:), allocatable :: ar_diagd,temp
-    real(d), dimension(:,:), allocatable :: ar_offdiagd
+    integer, intent(in)                                 :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer                                             :: ndim1,ndim2,&
+                                                           nbuf,i,j,k
+    real(d), dimension(ndim), intent(out)               :: travec
+    real(d), dimension(ndim,ndim), intent(inout)        :: arrd
+    real(d), dimension(ndim), intent(in)                :: autvec
+    real(d), dimension(:), allocatable                  :: ar_diagd,temp
+    real(d), dimension(:,:), allocatable                :: ar_offdiagd
     
     ndim1=kpq(1,0)
     
@@ -96,11 +91,7 @@ contains
     
     deallocate(ar_diagd,ar_offdiagd)
 
-!!!    call dmatvec(ndim,autvec(:),arrd(:,:),travec(:))
     call mat_vec_multiply(ndim,ndim,arrd,autvec,travec)
-
-
-
 
 !!! up to this point I have the vector  TRAVEC to make the scalar product with all other
 !!! adc excited eigenstates, i.e. with the other eigenvectors of the hamiltonian

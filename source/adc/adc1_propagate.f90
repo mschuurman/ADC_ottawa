@@ -22,7 +22,7 @@ contains
     use mp2
     use targetmatching
     use capmod
-    use propagate
+    use propagate_adc1
     
     implicit none
 
@@ -64,6 +64,16 @@ contains
 ! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
     if (lcap) call cap_isbas_adc1(cap_mo,kpqf,ndimf)
+
+!-----------------------------------------------------------------------
+! Calculate the dipole matrices
+!-----------------------------------------------------------------------
+    call dipole_isbas_adc1(kpqf,ndimf)
+
+!-----------------------------------------------------------------------
+! Perform the wavepacket propagation
+!-----------------------------------------------------------------------
+    call propagate_laser_adc1(ndimf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -73,6 +83,9 @@ contains
     deallocate(eigvec)
     if (allocated(cap_mo)) deallocate(cap_mo)
     if (allocated(w0j)) deallocate(w0j)
+    if (allocated(wij)) deallocate(wij)
+    deallocate(d0j)
+    deallocate(dij)
     
     return
     
@@ -162,13 +175,144 @@ contains
        enddo
     enddo
 
-    print*,
-    print*,'WRITE THE REST OF THE ADC(1) CAP MATRIX CODE!'
-    print*,
+!----------------------------------------------------------------------
+! In the following, we calculate CAP matrix elements using the shifted
+! dipole code (D-matrix and f-vector code) by simply temporarily
+! copying the MO CAP matrix into the dpl array.
+!----------------------------------------------------------------------
+    dpl_orig(1:nbas,1:nbas)=dpl(1:nbas,1:nbas)
+    dpl(1:nbas,1:nbas)=cap_mo(1:nbas,1:nbas)
+
+!----------------------------------------------------------------------
+! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
+!----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the vector &
+         W_0J = < Psi_0 | W | Psi_J >'
+    write(ilog,'(72a)') ('-',k=1,72) 
+
+    allocate(w0j(ndimf))
+    w0j=0.0d0
+    
+    call get_modifiedtm_tda(ndimf,kpqf,w0j)
+
+!----------------------------------------------------------------------
+! Calculate the IS representation of the shifted CAP operator W-W_00
+!
+! Note that we are here assuming that the ADC(1) D-matrix is small
+! enough to fit into memory
+!----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the IS representation of the &
+         shifted CAP operator'
+    write(ilog,'(72a,/)') ('-',k=1,72)
+    
+    allocate(wij(ndimf,ndimf))
+
+    call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
+    
+!----------------------------------------------------------------------
+! Reset the dpl array
+!----------------------------------------------------------------------
+    dpl(1:nbas,1:nbas)=dpl_orig(1:nbas,1:nbas)
     
     return
 
   end subroutine cap_isbas_adc1
+
+!#######################################################################
+
+  subroutine dipole_isbas_adc1(kpqf,ndimf)
+
+    use constants
+    use parameters
+    use mp2
+    use get_matrix_dipole
+    use get_moment
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf
+    integer                                   :: i,p,q,k,c
+    real(d), dimension(nbas,nbas)             :: rho0
+    character(len=60)                         :: filename
+    character(len=1), dimension(3)            :: acomp
+
+    acomp=(/ 'x','y','z' /)
+
+!----------------------------------------------------------------------
+! Ground state density matrix.
+! Note that the 1st-order correction is zero.
+!----------------------------------------------------------------------
+    rho0=0.0d0
+
+    ! Occupied-occupied block: 0th-order contribution
+    do i=1,nocc
+       rho0(i,i)=2.0d0
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the dipole matrix elements Dc_00 = < Psi_0 | Dc | Psi_0 >
+! for c=x,y,z
+!----------------------------------------------------------------------
+    d00=0.0d0
+    do p=1,nbas
+       do q=1,nbas
+          d00(1:3)=d00(1:3)+rho0(p,q)*dpl_all(1:3,p,q)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the vectors Dc_0J = < Psi_0 | D | Psi_J >, c=x,y,z
+!----------------------------------------------------------------------
+    allocate(d0j(3,ndimf))
+    d0j=0.0d0
+
+    ! Loop over the x, y, and z components
+    do c=1,3
+
+       ! Skip if the current component is not required
+       if (pulse_vec(c).eq.0.0d0) cycle
+       
+       write(ilog,'(/,72a)') ('-',k=1,72)
+       write(ilog,'(2x,a)') 'Calculating the vector D'//acomp(c)//&
+            '_0J = < Psi_0 | D'//acomp(c)//' | Psi_J >'
+       write(ilog,'(72a)') ('-',k=1,72)
+
+       dpl(:,:)=dpl_all(c,:,:)
+       
+       call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
+       
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the IS representations of the shifted dipole operators
+! Dc - Dc_0, c=x,y,z
+!----------------------------------------------------------------------
+    allocate(dij(3,ndimf,ndimf))
+
+    ! Loop over the x, y, and z components
+    do c=1,3
+
+       ! Skip if the current component is not required
+       if (pulse_vec(c).eq.0.0d0) cycle
+       
+       write(ilog,'(/,72a)') ('-',k=1,72)
+       write(ilog,'(2x,a)') 'Calculating the IS representation of &
+            the shifted dipole operator D'//acomp(c)
+       write(ilog,'(72a)') ('-',k=1,72)
+
+       dpl(:,:)=dpl_all(c,:,:)
+       
+       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
+            dij(c,:,:))
+       
+    enddo
+    
+    return
+    
+  end subroutine dipole_isbas_adc1
     
 !#######################################################################
   
