@@ -3061,11 +3061,11 @@
     ndim1=kpq(1,0)
     ndim1f=kpqf(1,0)
   
-    do i= 1,ndim1f
+    do i=1,ndim1f
 
        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
 
-       do j= 1,ndim1
+       do j=1,ndim1
 
           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
           

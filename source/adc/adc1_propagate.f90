@@ -31,7 +31,7 @@ contains
                                              nout,ndimf,ndimd,noutf
     integer*8                             :: noffd,noffdf
     real(d)                               :: e0
-    real(d), dimension(:,:), allocatable  :: cap_mo,hmat,eigvec
+    real(d), dimension(:,:), allocatable  :: cap_mo,eigvec
     type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
@@ -52,7 +52,7 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
-    call calc_hamiltonian_incore(kpqf,ndimf,hmat,eigvec)
+    call calc_hamiltonian_incore(kpqf,ndimf,eigvec)
 
 !-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -79,7 +79,7 @@ contains
 ! Deallocate arrays
 !-----------------------------------------------------------------------    
     deallocate(kpq,kpqf,kpqd)
-    deallocate(hmat)
+    deallocate(h1)
     deallocate(eigvec)
     if (allocated(cap_mo)) deallocate(cap_mo)
     if (allocated(w0j)) deallocate(w0j)
@@ -93,7 +93,7 @@ contains
 
 !#######################################################################
 
-  subroutine calc_hamiltonian_incore(kpqf,ndimf,hmat,eigvec)
+  subroutine calc_hamiltonian_incore(kpqf,ndimf,eigvec)
 
     use parameters
     use constants
@@ -102,15 +102,15 @@ contains
     implicit none
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
-    integer                              :: ndimf
-    real(d), dimension(:,:), allocatable :: hmat,eigvec
+    integer                                             :: ndimf,i,j
+    real(d), dimension(:,:), allocatable                :: eigvec
     
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-    ! Hamiltonian matrix
-    allocate(hmat(ndimf,ndimf))
-    hmat=0.0d0
+    ! ADC(1) Hamiltonian matrix
+    allocate(h1(ndimf,ndimf))
+    h1=0.0d0
 
     ! ADC(1) eigenvectors
     allocate(eigvec(ndimf,ndimf))
@@ -120,16 +120,24 @@ contains
 ! Full calculation and in-core storage of the ADC(1) Hamiltonian
 ! Matrix
 !-----------------------------------------------------------------------
+    ! Compute the lower triangle of the ADC(1) Hamiltonian matrix
     if (lcvsfinal) then
        write(ilog,'(/,2x,a)') 'Calculating the CVS-ADC(1) &
             Hamiltonian matrix'
-       call get_fspace_tda_direct_cvs(ndimf,kpqf,hmat,eigvec)
+       call get_fspace_tda_direct_cvs(ndimf,kpqf,h1,eigvec)
     else
        write(ilog,'(/,2x,a)') 'Calculating the ADC(1) &
             Hamiltonian matrix'
-       call get_fspace_tda_direct(ndimf,kpqf,hmat,eigvec)
+       call get_fspace_tda_direct(ndimf,kpqf,h1,eigvec)
     endif
-       
+    
+    ! Fill in the upper triangle of the ADC(1) Hamiltonian matrix
+    do i=1,ndimf-1
+       do j=i+1,ndimf
+          h1(i,j)=h1(j,i)
+       enddo
+    enddo
+
     return
     
   end subroutine calc_hamiltonian_incore

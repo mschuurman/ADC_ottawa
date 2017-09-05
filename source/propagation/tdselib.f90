@@ -573,7 +573,7 @@ contains
     real(d), dimension(3)                 :: Et
     complex(d), dimension(matdim)         :: v1,v2
     complex(d), dimension(:), allocatable :: opxv1
-     character(len=70)                    :: filename
+    character(len=70)                     :: filename
     character(len=1), dimension(3)        :: acomp
 
     acomp=(/ 'x','y','z' /)
@@ -650,7 +650,9 @@ contains
             opxv1(1:matdim-1),filename,nbuf_dip(i))
 
        ! Contribution to v2=dt|Psi>
-       v2=v2-opxv1(1:matdim-1)*Et(i) + ci*d00(i)*Et(i)*v1(1:matdim-1)
+       v2(1:matdim-1)=v2(1:matdim-1) &
+            -opxv1(1:matdim-1)*Et(i) &
+            + ci*d00(i)*Et(i)*v1(1:matdim-1)
 
     enddo
     
@@ -682,9 +684,9 @@ contains
             ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
        
     enddo
-       
+
 !----------------------------------------------------------------------
-! (3) CAP contribution: -i * -i * W * v1 = + W * v1
+! (3) CAP contribution: -i * -i * W * v1 = - W * v1
 !----------------------------------------------------------------------
 ! Three pieces: (a) IS representation of the CAP operator, W_IJ.
 !               (b) Ground state CAP matrix element, W_00.
@@ -695,26 +697,26 @@ contains
 
        ! (a) IS-IS block
        !
-       ! Calculate -i*Wc*v1
+       ! Calculate -i*W*v1
        filename='SCRATCH/cap'
        call opxvec_treal_ext(matdim-1,v1(1:matdim-1),&
             opxv1(1:matdim-1),filename,nbuf_cap)
        
        ! Contribution to v2=dt|Psi>
-       v2=v2-ci*opxv1(1:matdim-1) + w00*v1(1:matdim-1)
+       v2=v2-ci*opxv1(1:matdim-1)-w00*v1(1:matdim-1)
 
        ! (b) Ground state-ground state element
        !
        ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim) + w00*v1(matdim)
+       v2(matdim)=v2(matdim)-w00*v1(matdim)
 
        ! (c) Ground state-IS block
        !
        ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+&
-            dot_product(w0j(1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1)+&
-            w0j(1:matdim-1)*v1(matdim)
+       v2(matdim)=v2(matdim) &
+            -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
+       v2(1:matdim-1)=v2(1:matdim-1) &
+            -w0j(1:matdim-1)*v1(matdim)
        
     endif
        
@@ -874,6 +876,129 @@ contains
     return
     
   end subroutine opxvec_treal_ext
+
+!#######################################################################
+
+  subroutine matxvec_treal_laser_adc1(time,matdim,noffdiag,v1,v2)
+
+    use constants
+    use parameters
+    
+    implicit none
+    
+    integer                       :: matdim,i,j
+    integer*8                     :: noffdiag
+    real(d)                       :: time
+    real(d), dimension(3)         :: Et
+    complex(d), dimension(matdim) :: v1,v2
+
+!----------------------------------------------------------------------
+! Initialisation
+!----------------------------------------------------------------------
+    v2=czero
+
+!----------------------------------------------------------------------
+! (1) Molecular Hamiltonian contribution: -i * H * v1
+!
+! Note that: (i)  < Psi0 | H | Psi_J > = 0 for all J (by definition
+!                 of the intermediate state basis).
+!
+!            (ii) < Psi0 | H | Psi0 > = 0 (as we are dealing with
+!                 ground state energy-shifted Hamiltonian)
+!
+!----------------------------------------------------------------------
+    v2(1:matdim-1)=v2(matdim-1)-ci*matmul(h1,v1(1:matdim-1))
+
+!----------------------------------------------------------------------
+! (2) Dipole-laser contribution: -i * -mu.E(t) * v1 = +i * mu.E(t) * v1
+!----------------------------------------------------------------------
+! Three pieces: (a) IS representation of the dipole operator, D_IJ.
+!               (b) Ground state dipole matrix element, D_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, D_0J.
+!----------------------------------------------------------------------
+    
+    ! External electric field
+    Et=efield(time)
+
+    ! (a) IS-IS block
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
+       
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Contribution to v2=dt|Psi>
+       v2(1:matdim-1)=v2(1:matdim-1)&
+            + ci*Et(i)*matmul(dij(i,:,:),v1(1:matdim-1)) &
+            + ci*Et(i)*d00(i)*v1(1:matdim-1)
+
+    enddo
+
+    ! (b) Ground state-ground state element
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
+       
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
+
+    enddo
+
+    ! (c) Ground state-IS block
+    !
+    ! Loop over components of the dipole operator
+    do i=1,3
+
+       ! Cycle if the 
+       if (pulse_vec(i).eq.0.0d0) cycle
+
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)+&
+            ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
+       v2(1:matdim-1)=v2(1:matdim-1)+&
+            ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
+       
+    enddo
+
+!----------------------------------------------------------------------
+! (3) CAP contribution: -i * -i * W * v1 = - W * v1
+!----------------------------------------------------------------------
+! Three pieces: (a) IS representation of the CAP operator, W_IJ.
+!               (b) Ground state CAP matrix element, W_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, W_0J.
+!----------------------------------------------------------------------
+    if (lcap) then
+
+       ! (a) IS-IS block
+       !
+       v2(1:matdim-1)=v2(1:matdim-1) &
+            -matmul(wij,v1(1:matdim-1)) &
+            -w00*v1(1:matdim-1)
+            
+       ! (b) Ground state-ground state element
+       !
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim)-w00*v1(matdim)
+
+       ! (c) Ground state-IS block
+       !
+       ! Contribution to v2=dt|Psi>
+       v2(matdim)=v2(matdim) &
+            -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
+       v2(1:matdim-1)=v2(1:matdim-1) &
+            -w0j(1:matdim-1)*v1(matdim)
+       
+    endif
+    
+    return
+    
+  end subroutine matxvec_treal_laser_adc1
     
 !#######################################################################
 
