@@ -87,7 +87,7 @@ if [ "$target" == 'adc' ] || [ -z $target ]; then
 	rm lib/libnumgrid.so
     fi
     cd source/numgrid
-    gfortran -c numgrid.f90
+    gfortran -fPIC -c numgrid.f90
     g++ -fPIC -c *.cpp
     if [ "$isdarwin" == 'T' ]; then
 	g++ -shared -Wl,-install_name,libnumgrid.so -o libnumgrid.so *.o
