@@ -1887,14 +1887,7 @@
                read(keyword(i),*) capwid
                if (keyword(i+1).eq.',') then
                   i=i+2
-                  if (keyword(i).eq.'angstrom') then
-                     capwid=capwid*1.889725989d0
-                  else if (keyword(i).eq.'bohr') then
-                     ! Do nothing, this is the unit that we will work with
-                  else
-                     errmsg='Unknown length unit: '//trim(keyword(i))
-                     call error_control
-                  endif
+                  call convert_length(keyword(i),capwid)
                endif
             else
                goto 100
@@ -1976,6 +1969,8 @@
                   errmsg='Only two arguments out of three was given &
                        with the pulse_vec keyword'
                endif
+               ! Normalisation of the vector
+               pulse_vec=pulse_vec/sqrt(dot_product(pulse_vec,pulse_vec))
             else
                goto 100
             endif
@@ -2040,6 +2035,10 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) strength
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  call convert_intensity(keyword(i),strength)
+               endif
             else
                goto 100
             endif
@@ -2132,7 +2131,61 @@
       return 
 
     end subroutine rdgeometry
-    
+
+!#######################################################################
+
+    subroutine convert_intensity(unit,val)
+
+      use constants
+      use iomod
+      
+      implicit none
+      
+      real(d)          :: val
+      character(len=*) :: unit
+
+      if (unit.eq.'au') then
+         ! Do nothing, atomic units are the default         
+      else if (unit.eq.'winvcm2') then
+         ! W cm^-2 -> au
+         val=sqrt(val/3.5e+16_d)
+      else
+         ! Unrecognised unit
+         errmsg='Unrecognised unit: '//trim(unit)
+         call error_control
+      endif
+      
+      return
+      
+    end subroutine convert_intensity
+
+!#######################################################################
+
+    subroutine convert_length(unit,val)
+
+      use constants
+      use iomod
+      
+      implicit none
+      
+      real(d)          :: val
+      character(len=*) :: unit
+
+      if (unit.eq.'au') then
+         ! Do nothing, atomic units are the default         
+      else if (unit.eq.'angstrom') then
+         ! Angstrom -> au
+         val=val*1.889725989d0
+      else
+         ! Unrecognised unit
+         errmsg='Unrecognised unit: '//trim(unit)
+         call error_control
+      endif
+      
+      return
+            
+    end subroutine convert_length
+      
 !#######################################################################
 
   end module rdinput
