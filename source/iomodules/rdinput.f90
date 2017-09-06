@@ -789,21 +789,9 @@
             goto 999
          endif
 
-         ! Laser FWHM
-         if (fwhm.eq.0.0d0) then
-            msg='The laser FWHM has not been given'
-            goto 999
-         endif
-
          ! Laser strength
          if (strength.eq.0.0d0) then
             msg='The laser strength has not been given'
-            goto 999
-         endif
-
-         ! Laser t0
-         if (t0.eq.1e+12_d) then
-            msg='The laser t0 has not been given'
             goto 999
          endif
          
@@ -1929,7 +1917,8 @@
 
       implicit none
 
-      integer :: i
+      integer          :: i,n
+      character(len=2) :: ai
       
 !-----------------------------------------------------------------------
 ! Read to the propagation section
@@ -2015,22 +2004,6 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'pulse_fwhm') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) fwhm
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'pulse_t0') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) t0
-            else
-               goto 100
-            endif
-
          else if (keyword(i).eq.'pulse_strength') then
             if (keyword(i+1).eq.'=') then
                i=i+2
@@ -2039,6 +2012,51 @@
                   i=i+2
                   call convert_intensity(keyword(i),strength)
                endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'cos') then
+                  ipulse=1
+               else if (keyword(i).eq.'sin') then
+                  ipulse=2
+               else
+                  errmsg='Unknown pulse type: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'envelope') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               ! Read the envelope type
+               if (keyword(i).eq.'cos2') then
+                  ienvelope=1
+                  nenvpar=2
+               else if (keyword(i).eq.'sin2-ramp') then
+                  ienvelope=2
+                  nenvpar=1
+               else
+                  errmsg='Unknown evelope type: '//trim(keyword(i))
+                  call error_control
+               endif
+               ! Read the envelope parameters
+               do n=1,nenvpar
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) envpar(n)
+                  else
+                     write(ai,'(i2)') nenvpar
+                     errmsg='Not enough evelope parameters were given: '&
+                          //trim(adjustl(ai))//' parameters expected.'
+                     call error_control
+                  endif
+               enddo
             else
                goto 100
             endif
@@ -2063,7 +2081,7 @@
          call error_control
          
       endif
-            
+
       return
       
     end subroutine rdpropagationinp

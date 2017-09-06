@@ -742,24 +742,70 @@ contains
     implicit none
 
     real(d), dimension(3) :: efield
+    real(d)               :: pulse,envelope
     real(d)               :: t
 
-    !******************************************************************
-    ! At the moment, we will assume a cosine squared laser pulse
-    !******************************************************************
-    
-    if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
-       efield(1:3)=pulse_vec(1:3) &
-                   *strength &
-                   *(cos(pi*(t-t0)/(2.0d0*fwhm)))**2 &
-                   *cos(freq*(t-t0))
-    else
-       efield=0.0d0
+!----------------------------------------------------------------------
+! 'Wave' value
+!----------------------------------------------------------------------
+    if (ipulse.eq.1) then
+       ! cosine pulse
+       pulse=cos(freq*t)
+    else if (ipulse.eq.2) then
+       ! sine pulse
+       pulse=sin(freq*t)
     endif
+
+!----------------------------------------------------------------------
+! Envelope value
+!----------------------------------------------------------------------       
+    if (ienvelope.eq.1) then
+       ! Cosine squared envelope
+       envelope=cos2_envelope(t)
+    else if (ienvelope.eq.2) then
+       ! sin2-ramp envelope
+       print*,
+       print*,"WRITE THE SIN2-RAMP CODE"
+       print*,
+       stop
+    endif
+    
+!----------------------------------------------------------------------
+! Electric field value
+!----------------------------------------------------------------------
+    efield(1:3)=pulse_vec(1:3)*strength*envelope*pulse
     
     return
 
   end function efield
+
+!#######################################################################
+
+  function cos2_envelope(t) result(func)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    real(d) :: t,func,t0,fwhm
+
+    ! t0
+    t0=envpar(1)
+
+    ! fwhm
+    fwhm=envpar(2)
+
+    ! Envelope value
+     if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
+        func=(cos(pi*(t-t0)/(2.0d0*fwhm)))**2
+     else
+        func=0.0d0
+     endif
+        
+    return
+    
+  end function cos2_envelope
     
 !#######################################################################
 ! opxvec_treal_ext: calculates v2 = -i * O * v1 using an externally

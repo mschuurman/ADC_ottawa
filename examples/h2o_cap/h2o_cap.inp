@@ -13,14 +13,32 @@ scf_iter=100
 mem=900
 
 propagation_section
- pulse_vec=0,0,1
+
+ # Central frequency
  pulse_freq=0.043
- pulse_fwhm=1000.0
- pulse_strength=0.1
- pulse_t0=0.0
+
+ # Intensity
+ pulse_strength=1e+14,winvcm2
+
+ # Direction
+ pulse_vec=0.0,0.0,1.0
+
+ # Pulse type
+ pulse=cos
+
+ # Pulse envelope
+ envelope=cos2,0.0,1000.0
+
+ # Propagation time
  tfinal=42.0
+
+ # Output timestep
  tout=0.05
+
+ # Maximum Krylov subspace dimension
  krydim=7
+
+ # SIL error tolerance
  tol=1e-6
 end-propagation_section
 

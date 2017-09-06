@@ -155,10 +155,11 @@
       lpropagation=.false.
       pulse_vec=0.0d0
       freq=0.0d0
-      fwhm=0.0d0
       strength=0.0d0
-      t0=1e+12_d
       proptol=1e-5_d
+      ipulse=0
+      ienvelope=0
+      envpar=0.0d0
       
 !-----------------------------------------------------------------------
 ! CAP parameters
