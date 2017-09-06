@@ -404,6 +404,11 @@ contains
 !----------------------------------------------------------------------
 ! Create the grid
 !----------------------------------------------------------------------
+
+    ! TEST: allocation of arrays that we do not need to use
+    allocate(outer_center_elements(0))
+    allocate(outer_center_coordinates(0))
+
     context=numgrid_new_context()
 
     call numgrid_generate_grid(context,&
@@ -809,6 +814,12 @@ contains
     deallocate(primitive_exponents)
     deallocate(cap)
 
+    
+    ! TEST: deallocation of arrays that we do not need to use
+    deallocate(outer_center_elements)
+    deallocate(outer_center_coordinates)
+
+    
     call numgrid_free_context(context)
 
     return

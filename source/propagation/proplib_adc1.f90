@@ -96,7 +96,7 @@ contains
 ! Allocate the wavepacket array
 !----------------------------------------------------------------------
     allocate(psi(matdim))
-    psi=0.0d0
+    psi=czero
     
 !----------------------------------------------------------------------
 ! Set the initial wavepacket
@@ -104,7 +104,7 @@ contains
 ! For now, we will only support excitation/ionisation from the ground
 ! state, corresponding to the vector (0,...,0,1)^T
 !----------------------------------------------------------------------
-    psi=0.0d0
+    psi=czero
     psi(matdim)=cone
     
     return
@@ -160,14 +160,162 @@ contains
         call propagate_wavepacket_csil(kpqf)
     else
        ! Propagation using the short iterative Lanczos algorithm
-       !call propagate_wavepacket_sil(kpqf)
-       print*,"FINISH WRITING THE ADC(1) PROPAGATION CODE!"       
+       call propagate_wavepacket_sil(kpqf)
     endif
 
     return
     
   end subroutine propagate_wavepacket
 
+!#######################################################################
+
+    subroutine propagate_wavepacket_sil(kpqf)
+
+    use tdsemod
+    use sillib
+    
+    implicit none
+
+    integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
+    integer                                   :: i
+    integer*8                                 :: dummy
+    real(d)                                   :: norm
+    real(d), parameter                        :: tiny=1e-9_d
+    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
+    
+    ! SIL arrays and variables
+    integer                                   :: steps,trueorder,&
+                                                 errorcode
+    real(d)                                   :: intperiod,stepsize,&
+                                                 truestepsize,time,&
+                                                 inttime
+    real(d), dimension(:,:), allocatable      :: eigenvector
+    real(d), dimension(:), allocatable        :: diagonal,eigenval
+    real(d), dimension(:), allocatable        :: offdiag
+    real(d), dimension(:), allocatable        :: offdg2    
+    complex(d), dimension(:,:), allocatable   :: krylov
+    logical(kind=4)                           :: restart,relax,stdform
+
+!----------------------------------------------------------------------
+! sillib variables
+!----------------------------------------------------------------------
+    ! This is not a relaxation calculation
+    relax=.false.
+
+    ! func <-> -iH|Psi>
+    stdform=.true.
+
+    ! No. steps taken
+    steps=0
+
+    ! Time
+    time=0.0d0
+
+    ! Restart flag - if true, the Krylov space is built up
+    ! before propagation, else the old Krylov vectors are used.       
+    restart=.true.
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! Wavefunction arrays
+    allocate(dtpsi(matdim))
+    dtpsi=czero
+
+    allocate(hpsi(matdim))
+    hpsi=czero
+    
+    ! sillib arrays
+    allocate(krylov(matdim,kdim-1))
+    krylov=czero
+
+    allocate(eigenvector(kdim+1,kdim+3))
+    eigenvector=0.0d0
+
+    allocate(eigenval(kdim+1))
+    eigenval=0.0d0
+
+    allocate(diagonal(kdim+1))
+    diagonal=0.0d0
+
+    allocate(offdg2(kdim+1))
+    offdg2=0.0d0
+
+    allocate(offdiag(kdim))
+    offdiag=0.0d0
+
+!----------------------------------------------------------------------
+! Dummy variable: The sil/csil libraries need to be passed the number
+! of non-zero off-diagonal Hamiltonian matrix elements for use in an
+! ADC(2) propagation, for which only the non-zero elements are stored.
+! For the ADC(1) propagation being performed, we are storing all
+! matrices in full in-core, but still need to pass some dummy argument.
+!----------------------------------------------------------------------
+    dummy=0.5*(matdim-1)*matdim
+    
+!----------------------------------------------------------------------
+! Propagate forwards in time with the light-matter interaction
+! Hamiltonian, H - mu.E(t), using the Quantics sillib libraries
+!----------------------------------------------------------------------
+    ! Integration period
+    intperiod=tout
+
+    ! Loop over the timesteps
+    do i=1,int(tfinal/intperiod)
+
+       ! Propagate forwards one timestep
+       inttime=0.0d0
+100    continue
+
+       ! Update the required stepsize
+       stepsize=intperiod-inttime
+
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       ! NOTE THAT IN THIS MODULE MATDIM = NO. ISs + 1
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
+       ! dtpsi = -iH(t)|Psi>
+       call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
+
+       ! Take one step using the SIL algorithm
+       call silstep(psi,dtpsi,matdim,dummy,stepsize,kdim,proptol,relax,&
+            restart,stdform,steps,krylov,truestepsize,trueorder,&
+            errorcode,time,matxvec_treal_laser_adc1,eigenvector,eigenval,&
+            diagonal,offdg2,offdiag)
+       
+       ! Exit if the SIL integration failed
+       if (errorcode.ne.0) then
+          call silerrormsg(errorcode,errmsg)
+          call error_control
+       endif
+
+       ! Updtate the propagation time
+       time=time+truestepsize
+
+       ! Check whether the integration is complete
+       inttime=inttime+truestepsize
+       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+       ! Output some information about our progress
+       norm=real(sqrt(dot_product(psi,psi)))
+       call wrstepinfo(time,norm,kpqf)
+       
+    enddo
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(dtpsi)
+    deallocate(krylov)
+    deallocate(eigenvector)
+    deallocate(eigenval)
+    deallocate(diagonal)
+    deallocate(offdg2)
+    deallocate(offdiag)
+    
+    return
+    
+  end subroutine propagate_wavepacket_sil
+  
 !#######################################################################
 
   subroutine propagate_wavepacket_csil(kpqf)
@@ -250,7 +398,7 @@ contains
 ! For the ADC(1) propagation being performed, we are storing all
 ! matrices in full in-core, but still need to pass some dummy argument.
 !----------------------------------------------------------------------
-    dummy=0
+    dummy=0.5*(matdim-1)*matdim
     
 !----------------------------------------------------------------------
 ! Propagate forwards in time with the CAP-augmented light-matter

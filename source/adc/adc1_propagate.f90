@@ -31,11 +31,14 @@ contains
                                              nout,ndimf,ndimd,noutf
     integer*8                             :: noffd,noffdf
     real(d)                               :: e0
-    real(d), dimension(:,:), allocatable  :: cap_mo,eigvec
+    real(d), dimension(:,:), allocatable  :: cap_mo
     type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
+!
+! Do we really want to be doing this for an ADC(1) calculation? Note
+! that the MP1 ground state is simply the HF ground state.
 !-----------------------------------------------------------------------
     call mp2_master(e0)
 
@@ -52,7 +55,7 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
-    call calc_hamiltonian_incore(kpqf,ndimf,eigvec)
+    call calc_hamiltonian_incore(kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -80,7 +83,6 @@ contains
 !-----------------------------------------------------------------------    
     deallocate(kpq,kpqf,kpqd)
     deallocate(h1)
-    deallocate(eigvec)
     if (allocated(cap_mo)) deallocate(cap_mo)
     if (allocated(w0j)) deallocate(w0j)
     if (allocated(wij)) deallocate(wij)
@@ -93,7 +95,7 @@ contains
 
 !#######################################################################
 
-  subroutine calc_hamiltonian_incore(kpqf,ndimf,eigvec)
+  subroutine calc_hamiltonian_incore(kpqf,ndimf)
 
     use parameters
     use constants
@@ -103,8 +105,7 @@ contains
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer                                             :: ndimf,i,j
-    real(d), dimension(:,:), allocatable                :: eigvec
-    
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -112,32 +113,20 @@ contains
     allocate(h1(ndimf,ndimf))
     h1=0.0d0
 
-    ! ADC(1) eigenvectors
-    allocate(eigvec(ndimf,ndimf))
-    eigvec=0.0d0
-
 !-----------------------------------------------------------------------
 ! Full calculation and in-core storage of the ADC(1) Hamiltonian
 ! Matrix
 !-----------------------------------------------------------------------
-    ! Compute the lower triangle of the ADC(1) Hamiltonian matrix
     if (lcvsfinal) then
        write(ilog,'(/,2x,a)') 'Calculating the CVS-ADC(1) &
             Hamiltonian matrix'
-       call get_fspace_tda_direct_cvs(ndimf,kpqf,h1,eigvec)
+       call get_fspace_tda_direct_nodiag_cvs(ndimf,kpqf,h1)
     else
        write(ilog,'(/,2x,a)') 'Calculating the ADC(1) &
             Hamiltonian matrix'
-       call get_fspace_tda_direct(ndimf,kpqf,h1,eigvec)
+       call get_fspace_tda_direct_nodiag(ndimf,kpqf,h1)
     endif
     
-    ! Fill in the upper triangle of the ADC(1) Hamiltonian matrix
-    do i=1,ndimf-1
-       do j=i+1,ndimf
-          h1(i,j)=h1(j,i)
-       enddo
-    enddo
-
     return
     
   end subroutine calc_hamiltonian_incore

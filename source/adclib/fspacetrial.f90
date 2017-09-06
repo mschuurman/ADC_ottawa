@@ -666,6 +666,46 @@ contains
 
 !######################################################################
 
+    subroutine get_fspace_tda_direct_nodiag(ndim,kpq,arr)
+
+    implicit none
+    
+    integer, intent(in)                                 :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer                                             :: nbuf,i
+    real(d), dimension(ndim,ndim), intent(inout)        :: arr
+    real(d), dimension(:), allocatable                  :: ar_diag
+    real(d), dimension(:,:), allocatable                :: ar_offdiag
+
+!------------------------------------------------------------------
+! Allocate arrays
+!------------------------------------------------------------------
+    allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
+    ar_diag=0.0d0
+    ar_offdiag=0.0d0
+    
+!------------------------------------------------------------------
+! Calculate and save the ADC(1) Hamiltonian matrix elements
+!------------------------------------------------------------------
+    call get_offdiag_tda_direct(ndim,kpq(:,:),ar_offdiag(:,:))
+    call get_diag_tda_direct(ndim,kpq(:,:),ar_diag(:))
+
+    arr(:,:)=ar_offdiag(:,:)
+    do i=1,ndim
+       arr(i,i)=ar_diag(i)
+    enddo
+
+!------------------------------------------------------------------
+! Deallocate arrays
+!------------------------------------------------------------------
+    deallocate(ar_diag,ar_offdiag)
+
+    return
+    
+  end subroutine get_fspace_tda_direct_nodiag
+  
+!######################################################################
+
   subroutine get_fspace_tda_direct_cvs(ndim,kpq,arr,evector) 
 
     implicit none
@@ -707,7 +747,45 @@ contains
     return
     
   end subroutine get_fspace_tda_direct_cvs
+  
+!######################################################################
 
+  subroutine get_fspace_tda_direct_nodiag_cvs(ndim,kpq,arr) 
+
+    implicit none
+    
+    integer, intent(in)                                 :: ndim
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer                                             :: nbuf,i
+    real(d), dimension(ndim,ndim), intent(inout)        :: arr
+    real(d), dimension(:), allocatable                  :: ar_diag
+    real(d), dimension(:,:), allocatable                :: ar_offdiag
+
+!------------------------------------------------------------------
+! Allocate arrays
+!------------------------------------------------------------------
+    allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
+
+!------------------------------------------------------------------
+! Calculate and save the CVS-ADC(1) Hamiltonian matrix elements
+!------------------------------------------------------------------
+    call get_offdiag_tda_direct_cvs(ndim,kpq(:,:),ar_offdiag(:,:))
+    call get_diag_tda_direct_cvs(ndim,kpq(:,:),ar_diag(:))
+    
+    arr(:,:)=ar_offdiag(:,:)
+    do i=1,ndim
+       arr(i,i)=ar_diag(i)
+    end do
+
+!------------------------------------------------------------------
+! Deallocate arrays
+!------------------------------------------------------------------
+    deallocate(ar_diag,ar_offdiag)
+
+    return
+    
+  end subroutine get_fspace_tda_direct_nodiag_cvs
+  
 !######################################################################
 
   subroutine write_fspace_tda(ndim,kpq,chr) 

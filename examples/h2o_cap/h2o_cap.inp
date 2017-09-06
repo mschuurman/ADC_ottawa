@@ -1,0 +1,33 @@
+method=adc2-s
+
+initial_state=0
+istate_symm = 1
+
+dipole_component = x
+dipole_symm = 1
+
+frozen_core=initial,final
+
+scf_iter=100
+
+mem=900
+
+propagation_section
+ pulse_vec=0,0,1
+ pulse_freq=0.043
+ pulse_fwhm=1000.0
+ pulse_strength=0.1
+ pulse_t0=0.0
+ tfinal=42.0
+ tout=0.05
+ krydim=7
+ tol=1e-6
+end-propagation_section
+
+cap_section
+ cap_type=sigmoidal
+ cap_strength=10.0
+ cap_width=10.0 , angstrom
+end-cap_section
+
+end-input

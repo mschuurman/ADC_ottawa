@@ -218,7 +218,7 @@ contains
     ndiml=int(ndim,lng)
 
     call dsyev("V","L",ndiml,arr(:,:),ndiml,w,work(:),lworkl,info)
-
+    
     if (info.ne.0) then
        write(ilog,'(/,2x,a,/)') 'In subroutine vdiagonalise: &
             diagonalisation of the Hamiltonian matrix failed'
@@ -226,7 +226,7 @@ contains
     endif
 
     evector(:)=w(:)
-
+    
     deallocate(work)
 
   end subroutine vdiagonalise
