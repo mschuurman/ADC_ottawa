@@ -170,8 +170,6 @@ contains
 
 !#######################################################################
 
-  !######################################################################
-
   subroutine propagate_wavepacket_csil(kpqf)
 
     use tdsemod
@@ -300,9 +298,7 @@ contains
 
        ! Output some information about our progress
        norm=real(sqrt(dot_product(psi,psi)))
-       !call wrstepinfo(time,norm,kpqf)
-
-       print*,time,norm
+       call wrstepinfo(time,norm,kpqf)
        
     enddo
        
@@ -316,7 +312,103 @@ contains
     return
     
   end subroutine propagate_wavepacket_csil
+
+!#######################################################################
+
+  subroutine wrstepinfo(t,norm,kpqf)
+
+    implicit none
+
+    integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
+    integer                                   :: k
+    real(d)                                   :: t,norm
+
+    write(ilog,'(70a)') ('+',k=1,70)
+
+    ! Propagation time
+    write(ilog,'(/,2x,a,x,F10.4)') 'Time:',t
+
+    ! Wavefunction norm
+    write(ilog,'(2x,a,5x,F6.4)') 'Norm:',norm
+
+    ! Wavefunction analysis
+    call wrpsi(kpqf)
     
+    return
+    
+  end subroutine wrstepinfo
+
+!#######################################################################
+
+    subroutine wrpsi(kpqf)
+
+    use misc, only: dsortindxa1,getspincase
+    
+    implicit none
+
+    integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
+    integer, dimension(:), allocatable        :: indx
+    integer                                   :: k,ilbl
+    integer                                   :: kpqdim2
+    real(d), dimension(:), allocatable        :: abscoeff
+    real(d), parameter                        :: coefftol=0.01d0
+    character(len=2)                          :: spincase
+
+    kpqdim2=nbas**2*4*nocc**2+1
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(abscoeff(matdim))
+    allocate(indx(matdim))
+
+!-----------------------------------------------------------------------
+! Sort the coefficients by magnitude
+!-----------------------------------------------------------------------
+    abscoeff=abs(psi)
+    call dsortindxa1('D',matdim,abscoeff,indx)
+
+!-----------------------------------------------------------------------
+! Output the configurations contributing significantly to the
+! wavepacket
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a,/)') 'Dominant Configurations:'
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+    write(ilog,'(3x,a)') 'j   k -> a  b       |C_jkab|'
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+
+    ! Ground state contribution
+    write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
+
+    ! IS basis functions
+    do k=1,50
+
+       ilbl=indx(k)
+
+       ! Skip the ground state
+       if (ilbl.eq.matdim) cycle
+
+       ! Skip if the coefficient is small
+       if (abs(psi(ilbl)).lt.coefftol) cycle
+
+       ! Single excitations
+       write(ilog,'(3x,i2,4x,a2,1x,i2,8x,F8.5)') &
+            kpqf(3,ilbl),'->',kpqf(5,ilbl),abs(psi(ilbl))
+
+    enddo
+
+    write(ilog,'(2x,30a,/)') ('*',k=1,30)
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(abscoeff)
+    deallocate(indx)
+    
+    return
+    
+  end subroutine wrpsi
+  
 !#######################################################################
 
     subroutine finalise

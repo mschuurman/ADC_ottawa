@@ -201,7 +201,7 @@ contains
 
     allocate(w0j(ndimf))
     w0j=0.0d0
-    
+
     call get_modifiedtm_tda(ndimf,kpqf,w0j)
 
 !----------------------------------------------------------------------
@@ -216,7 +216,8 @@ contains
     write(ilog,'(72a,/)') ('-',k=1,72)
     
     allocate(wij(ndimf,ndimf))
-
+    wij=0.0d0
+    
     call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
     
 !----------------------------------------------------------------------
@@ -299,7 +300,8 @@ contains
 ! Dc - Dc_0, c=x,y,z
 !----------------------------------------------------------------------
     allocate(dij(3,ndimf,ndimf))
-
+    dij=0.0d0
+    
     ! Loop over the x, y, and z components
     do c=1,3
 

@@ -636,7 +636,9 @@ contains
 ! Allocate arrays
 !------------------------------------------------------------------
     allocate(ar_diag(ndim),ar_offdiag(ndim,ndim))
-
+    ar_diag=0.0d0
+    ar_offdiag=0.0d0
+    
 !------------------------------------------------------------------
 ! Calculate and save the ADC(1) Hamiltonian matrix elements
 !------------------------------------------------------------------
@@ -646,7 +648,7 @@ contains
     arr(:,:)=ar_offdiag(:,:)
     do i=1,ndim
        arr(i,i)=ar_diag(i)
-    end do
+    enddo
 
 !------------------------------------------------------------------
 ! Deallocate arrays

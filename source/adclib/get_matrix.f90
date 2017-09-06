@@ -62,6 +62,8 @@ contains
 !!$-------------------------------------------------------------------------
 
   subroutine get_offdiag_tda_direct(ndim,kpq,ar_offdiag)
+
+    implicit none
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
@@ -88,9 +90,10 @@ contains
           end if
        end do
     end do
-    
-  end subroutine get_offdiag_tda_direct
 
+    return
+
+  end subroutine get_offdiag_tda_direct
 
 !!$-------------------------------------------------------------------------  
 !!$-------------------------------------------------------------------------

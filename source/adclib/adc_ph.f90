@@ -41,11 +41,15 @@ contains
 !!$First order contribution C_ak,a'k'
   
   real(d) function C1_ph_ph(a,k,a1,k1)
+
+    implicit none
     
     integer, intent(in) :: a,k,a1,k1
 
-    C1_ph_ph=2._d*vpqrs(a,k,a1,k1)-vpqrs(a,a1,k,k1)
+    C1_ph_ph=2.0d0*vpqrs(a,k,a1,k1)-vpqrs(a,a1,k,k1)
 
+    return
+    
   end function C1_ph_ph
 
 !#######################################################################

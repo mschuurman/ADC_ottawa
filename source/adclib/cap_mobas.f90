@@ -322,7 +322,8 @@ contains
 
     ! Atom coordinates
     allocate(center_coordinates(num_centers*3))
-
+    center_coordinates=0.0d0
+    
     k=0
     do i=1,gam%natoms
        do j=1,3
@@ -335,6 +336,7 @@ contains
 ! Atom types
 !----------------------------------------------------------------------
     allocate(center_elements(num_centers))
+    center_elements=0
     do i=1,gam%natoms
        center_elements(i)=int(gam%atoms(i)%znuc)
     enddo
@@ -352,6 +354,7 @@ contains
 
     ! Shell centers
     allocate(shell_centers(num_shells))
+    shell_centers=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
@@ -362,6 +365,7 @@ contains
 
     ! Angular momentum quantum numbers for each shell
     allocate(shell_l_quantum_numbers(num_shells))
+    shell_l_quantum_numbers=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
@@ -372,6 +376,7 @@ contains
 
     ! Number of primitives for each shell
     allocate(shell_num_primitives(num_shells))
+    shell_num_primitives=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
@@ -385,6 +390,7 @@ contains
 
     ! Primitive exponents
     allocate(primitive_exponents(num_primitives))
+    primitive_exponents=0.0d0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
@@ -802,7 +808,7 @@ contains
     deallocate(shell_num_primitives)
     deallocate(primitive_exponents)
     deallocate(cap)
-    
+
     call numgrid_free_context(context)
 
     return

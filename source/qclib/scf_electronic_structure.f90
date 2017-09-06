@@ -268,7 +268,8 @@
    if(nbas == nao_spin) then
      dao_spin                       = 0._xrk
      dao_spin(1:nao    , 1:nao)     = dao
-     dao_spin(nao+1:nmo, nao+1:nmo) = dao
+!     dao_spin(nao+1:nmo, nao+1:nmo) = dao
+     dao_spin(nao+1:2*nao, nao+1:2*nao) = dao
      int_dipole = matmul(matmul(transpose(mos),dao_spin),mos)
      return
    else
