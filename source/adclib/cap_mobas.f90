@@ -404,8 +404,10 @@ contains
 !----------------------------------------------------------------------
 ! Create the grid
 !----------------------------------------------------------------------
-
-    ! TEST: allocation of arrays that we do not need to use
+    ! Allocation of arrays that we do not need to use: depending on
+    ! the compiler and compilation flags, we can run into problems
+    ! when numgrid_generate_grid is called if these arrays are not
+    ! allocated
     allocate(outer_center_elements(0))
     allocate(outer_center_coordinates(0))
 
@@ -813,12 +815,8 @@ contains
     deallocate(shell_num_primitives)
     deallocate(primitive_exponents)
     deallocate(cap)
-
-    
-    ! TEST: deallocation of arrays that we do not need to use
     deallocate(outer_center_elements)
     deallocate(outer_center_coordinates)
-
     
     call numgrid_free_context(context)
 
