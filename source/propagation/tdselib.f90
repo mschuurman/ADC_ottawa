@@ -758,16 +758,13 @@ contains
 
 !----------------------------------------------------------------------
 ! Envelope value
-!----------------------------------------------------------------------       
+!----------------------------------------------------------------------
     if (ienvelope.eq.1) then
        ! Cosine squared envelope
        envelope=cos2_envelope(t)
     else if (ienvelope.eq.2) then
-       ! sin2-ramp envelope
-       print*,
-       print*,"WRITE THE SIN2-RAMP CODE"
-       print*,
-       stop
+       ! Sin squared-ramp envelope
+       envelope=sin2ramp_envelope(t)
     endif
     
 !----------------------------------------------------------------------
@@ -780,7 +777,10 @@ contains
   end function efield
 
 !#######################################################################
-
+! cos2_envelope: calculates the value of a cosine squared envelope
+!                function at the time t
+!#######################################################################
+  
   function cos2_envelope(t) result(func)
 
     use constants
@@ -797,16 +797,47 @@ contains
     fwhm=envpar(2)
 
     ! Envelope value
-     if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
-        func=(cos(pi*(t-t0)/(2.0d0*fwhm)))**2
-     else
-        func=0.0d0
-     endif
-        
+    if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
+       func=(cos(pi*(t-t0)/(2.0d0*fwhm)))**2
+    else
+       func=0.0d0
+    endif
+    
     return
     
   end function cos2_envelope
+
+!#######################################################################
+! sin2ramp_envelope: calculates the value of a sine-squared ramp
+!                    envelope function at the time t.
+!#######################################################################
+  
+  function sin2ramp_envelope(t) result(func)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    real(d) :: t,func,tau
+
+    ! tau
+    tau=envpar(1)
+
+    ! Envelope value
+    if (t.lt.0.0d0) then
+       func=0.0d0
+    else if (t.ge.0.0d0.and.t.le.tau) then
+       func=sin(pi*t/(2.0d0*tau))
+       func=func**2
+    else
+       func=1.0d0
+    endif
+
+    return
     
+  end function sin2ramp_envelope
+  
 !#######################################################################
 ! opxvec_treal_ext: calculates v2 = -i * O * v1 using an externally
 !                   stored operator matrix O

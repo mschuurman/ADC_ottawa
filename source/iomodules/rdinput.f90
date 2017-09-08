@@ -777,6 +777,18 @@
 !-----------------------------------------------------------------------
       if (lpropagation) then
 
+         ! Pulse type
+         if (ipulse.eq.0) then
+            msg='The pulse type has not been given'
+            goto 999
+         endif
+
+         ! Pulse envelope type
+         if (ienvelope.eq.0) then
+            msg='The pulse envelope type has not been given'
+            goto 999
+         endif
+         
          ! Laser-molecule orientation
          if (sum(abs(pulse_vec)).eq.0.0d0) then
             msg='The laser pulse orientation has not been given'

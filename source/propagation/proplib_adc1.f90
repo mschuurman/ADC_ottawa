@@ -423,7 +423,7 @@ contains
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
-
+       
        ! Take one step using the SIL algorithm
        call csilstep(psi,dtpsi,matdim,dummy,stepsize,kdim,&
             proptol,relax,restart,stdform,olderrcri,steps,&
@@ -479,6 +479,9 @@ contains
     ! Wavefunction norm
     write(ilog,'(2x,a,5x,F6.4)') 'Norm:',norm
 
+    ! 'Number of electrons'
+    write(ilog,'(2x,a,5x,F6.4)') 'Norm x Nel:',norm*nocc*2.0d0
+    
     ! Wavefunction analysis
     call wrpsi(kpqf)
     
