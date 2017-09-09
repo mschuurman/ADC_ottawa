@@ -692,6 +692,9 @@ contains
 !               (b) Ground state CAP matrix element, W_00.
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, W_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     if (lcap) then
 
@@ -708,16 +711,20 @@ contains
        ! (b) Ground state-ground state element
        !
        ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)-w00*v1(matdim)
+       if (.not.lprojcap.or.statenumber.gt.0) then
+          v2(matdim)=v2(matdim)-w00*v1(matdim)
+       endif
 
        ! (c) Ground state-IS block
        !
        ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim) &
-            -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1) &
-            -w0j(1:matdim-1)*v1(matdim)
-       
+       if (.not.lprojcap.or.statenumber.gt.0) then
+          v2(matdim)=v2(matdim) &
+               -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
+          v2(1:matdim-1)=v2(1:matdim-1) &
+               -w0j(1:matdim-1)*v1(matdim)
+       endif
+
     endif
        
 !----------------------------------------------------------------------
@@ -1049,6 +1056,9 @@ contains
 !               (b) Ground state CAP matrix element, W_00.
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, W_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     if (lcap) then
 
@@ -1057,20 +1067,22 @@ contains
        v2(1:matdim-1)=v2(1:matdim-1) &
             -matmul(wij,v1(1:matdim-1)) &
             -w00*v1(1:matdim-1)
-            
+       
        ! (b) Ground state-ground state element
        !
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)-w00*v1(matdim)
+       if (.not.lprojcap.or.statenumber.gt.0) then
+          v2(matdim)=v2(matdim)-w00*v1(matdim)
+       endif
 
        ! (c) Ground state-IS block
        !
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim) &
-            -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1) &
-            -w0j(1:matdim-1)*v1(matdim)
-       
+       if (.not.lprojcap.or.statenumber.gt.0) then
+          v2(matdim)=v2(matdim) &
+               -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
+          v2(1:matdim-1)=v2(1:matdim-1) &
+               -w0j(1:matdim-1)*v1(matdim)
+       endif
+
     endif
     
     return
