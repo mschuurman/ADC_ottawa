@@ -186,7 +186,7 @@ contains
        call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
 
     endif
-       
+
 !----------------------------------------------------------------------
 ! Calculate the IS representation of the shifted CAP operator W-W_00
 !----------------------------------------------------------------------
