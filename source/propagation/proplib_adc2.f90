@@ -278,6 +278,7 @@ contains
     integer                                   :: i
     real(d)                                   :: norm
     real(d), parameter                        :: tiny=1e-9_d
+    real(d), parameter                        :: tinier=1e-10_d
     complex(d), dimension(:), allocatable     :: dtpsi,hpsi
     
     ! SIL arrays and variables
@@ -364,25 +365,36 @@ contains
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
 
-       ! Take one step using the SIL algorithm
-       call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,proptol,relax,&
-            restart,stdform,steps,krylov,truestepsize,trueorder,&
-            errorcode,time,matxvec_treal_laser,eigenvector,eigenval,&
-            diagonal,offdg2,offdiag)
+       ! Integrate the TDSE if || dtpsi || is non-zero
+       if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
        
-       ! Exit if the SIL integration failed
-       if (errorcode.ne.0) then
-          call silerrormsg(errorcode,errmsg)
-          call error_control
+          ! Take one step using the SIL algorithm
+          call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,proptol,relax,&
+               restart,stdform,steps,krylov,truestepsize,trueorder,&
+               errorcode,time,matxvec_treal_laser,eigenvector,eigenval,&
+               diagonal,offdg2,offdiag)
+          
+          ! Exit if the SIL integration failed
+          if (errorcode.ne.0) then
+             call silerrormsg(errorcode,errmsg)
+             call error_control
+          endif
+          
+          ! Updtate the propagation time
+          time=time+truestepsize
+          
+          ! Check whether the integration is complete
+          inttime=inttime+truestepsize
+          if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+       else
+
+          ! If the time derivative of the wavefunction is almost zero
+          ! then skip the integration for this timestep
+          time=time+intperiod
+          
        endif
-
-       ! Updtate the propagation time
-       time=time+truestepsize
-
-       ! Check whether the integration is complete
-       inttime=inttime+truestepsize
-       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
-
+          
        ! Output some information about our progress
        norm=real(sqrt(dot_product(psi,psi)))
        call wrstepinfo(time,norm,kpqf)
@@ -417,6 +429,7 @@ contains
     integer                                   :: i
     real(d)                                   :: norm
     real(d), parameter                        :: tiny=1e-9_d
+    real(d), parameter                        :: tinier=1e-10_d
     complex(d), dimension(:), allocatable     :: dtpsi,hpsi
     
     ! CSIL arrays and variables
@@ -502,26 +515,37 @@ contains
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
 
-       ! Take one step using the SIL algorithm
-       call csilstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,&
-            proptol,relax,restart,stdform,olderrcri,steps,&
-            truestepsize,trueorder,errorcode,time,macheps,&
-            matxvec_treal_laser,hessenberg,eigvec,krylov,&
-            auxmat)
-                     
-       ! Exit if the CSIL integration failed
-       if (errorcode.ne.0) then
-          call csilerrormsg(errorcode,errmsg)
-          call error_control
+       ! Integrate the TDSE if || dtpsi || is non-zero
+       if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
+       
+          ! Take one step using the SIL algorithm
+          call csilstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,&
+               proptol,relax,restart,stdform,olderrcri,steps,&
+               truestepsize,trueorder,errorcode,time,macheps,&
+               matxvec_treal_laser,hessenberg,eigvec,krylov,&
+               auxmat)
+          
+          ! Exit if the CSIL integration failed
+          if (errorcode.ne.0) then
+             call csilerrormsg(errorcode,errmsg)
+             call error_control
+          endif
+          
+          ! Updtate the propagation time
+          time=time+truestepsize
+          
+          ! Check whether the integration is complete
+          inttime=inttime+truestepsize
+          if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+       else
+
+          ! If the time derivative of the wavefunction is almost zero
+          ! then skip the integration for this timestep
+          time=time+intperiod
+          
        endif
-
-       ! Updtate the propagation time
-       time=time+truestepsize
-
-       ! Check whether the integration is complete
-       inttime=inttime+truestepsize
-       if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
-
+          
        ! Output some information about our progress
        norm=real(sqrt(dot_product(psi,psi)))
        call wrstepinfo(time,norm,kpqf)

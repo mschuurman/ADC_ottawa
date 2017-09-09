@@ -641,7 +641,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
        
-       ! Cycle if the 
+       ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Calculate -i*Dc*v1
@@ -661,7 +661,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
        
-       ! Cycle if the 
+       ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
@@ -674,7 +674,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
 
-       ! Cycle if the 
+       ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
@@ -706,7 +706,9 @@ contains
             opxv1(1:matdim-1),filename,nbuf_cap)
        
        ! Contribution to v2=dt|Psi>
-       v2=v2-ci*opxv1(1:matdim-1)-w00*v1(1:matdim-1)
+       v2(1:matdim-1)=v2(1:matdim-1)&
+            -ci*opxv1(1:matdim-1)&
+            -w00*v1(1:matdim-1)
 
        ! (b) Ground state-ground state element
        !
@@ -1010,7 +1012,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
        
-       ! Cycle if the 
+       ! Cycle if the current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
@@ -1025,7 +1027,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
        
-       ! Cycle if the 
+       ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
@@ -1038,7 +1040,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
 
-       ! Cycle if the 
+       ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
