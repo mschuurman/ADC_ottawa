@@ -353,6 +353,7 @@ real(d)                 :: w00
 real(d), allocatable    :: w0j(:)
 real(d), allocatable    :: wij(:,:)
 logical                 :: lcap
+logical                 :: lprojcap
 
 !!$************************************************
 !!$***************ADC(1) Hamiltonian***************

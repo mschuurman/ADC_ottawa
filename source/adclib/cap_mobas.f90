@@ -572,21 +572,34 @@ contains
     use parameters
     use import_gamess
     use gamess_internal
+    use omp_lib
     
     implicit none
 
-    integer                               :: nao,i,j,k
-    integer                               :: iatm,jatm,ish,jsh,ip,jp,&
-                                             il,jl,bra,ket,icomp,jcomp,&
-                                             inx,iny,inz,ipos,&
-                                             jnx,jny,jnz,jpos
-    real(dp)                              :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
-                                             aoi,aoj,iangc,jangc,&
-                                             maxdiff,avdiff
-    real(dp), dimension(:,:), allocatable :: sao,sao_grid,cap_mo,&
-                                             sao_diff
-    type(gam_structure)                   :: gam
+    integer                                 :: nao,i,j,k
+    integer                                 :: iatm,jatm,ish,jsh,ip,jp,&
+                                               il,jl,bra,ket,icomp,jcomp,&
+                                               inx,iny,inz,ipos,&
+                                               jnx,jny,jnz,jpos
+    real(dp)                                :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
+                                               aoi,aoj,iangc,jangc,&
+                                               maxdiff,avdiff
+    real(dp), dimension(:,:), allocatable   :: sao,sao_grid,cap_mo,&
+                                               sao_diff
+    real(dp), dimension(:,:,:), allocatable :: cap_ao_1thread,&
+                                               sao_grid_1thread
+    type(gam_structure)                     :: gam
 
+    integer                                 :: nthreads,tid,npt
+    integer, dimension(:,:), allocatable    :: irange
+    
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
@@ -601,8 +614,10 @@ contains
     
     ! AO representation of the CAP operator
     allocate(cap_ao(nao,nao))
+    allocate(cap_ao_1thread(nao,nao,nthreads))
     cap_ao=0.0d0
-
+    cap_ao_1thread=0.0d0    
+    
     ! MO representation of the CAP operator
     allocate(cap_mo(nbas,nbas))
     cap_mo=0.0d0
@@ -613,12 +628,31 @@ contains
 
     ! Numerical AO overlap matrix
     allocate(sao_grid(nao,nao))
+    allocate(sao_grid_1thread(nao,nao,nthreads))
     sao_grid=0.0d0
+    sao_grid_1thread=0.0d0
 
     ! Difference between the analytic and numerical AO overlap
     ! matrices
     allocate(sao_diff(nao,nao))
     sao_diff=0.0d0
+
+    ! Grid partitioning
+    allocate(irange(nthreads,2))
+    irange=0
+    
+!-----------------------------------------------------------------------
+! Partitioning of the grid points: one chunk per thread
+!-----------------------------------------------------------------------
+    npt=int(floor(real(num_points)/real(nthreads)))
+
+    do i=1,nthreads-1
+       irange(i,1)=(i-1)*npt+1
+       irange(i,2)=i*npt
+    enddo
+
+    irange(nthreads,1)=(nthreads-1)*npt+1
+    irange(nthreads,2)=num_points
     
 !----------------------------------------------------------------------
 ! Analytic AO overlaps
@@ -679,36 +713,58 @@ contains
                       jangc=ang_c(jpos)
                       
                       ! Calculation of the current integral
-                      do k=1,num_points
+                      !
+                      !$omp parallel do &
+                      !$omp& private(i,k,tid,x,y,z,w,ix,iy,iz,jx,jy,jz,aoi,aoj) &
+                      !$omp& shared(irange,sao_grid_1thread,cap_ao_1thread,grid,&
+                      !$omp& gam,cap,inx,iny,inz,iangc,ish,jnx,jny,jnz,jangc,jsh,&
+                      !$omp& iatm,jatm,bra,ket)
+                      do i=1,nthreads
                          
-                         ! Coordinates and weight for the current
-                         ! grid point
-                         x=grid(k*4-3)
-                         y=grid(k*4-2)
-                         z=grid(k*4-1)
-                         w=grid(k*4)
-                         
-                         ! Coordinate values relative to the atomic
-                         ! centres (in Bohr)
-                         ix=x-gam%atoms(iatm)%xyz(1)*ang2bohr
-                         iy=y-gam%atoms(iatm)%xyz(2)*ang2bohr
-                         iz=z-gam%atoms(iatm)%xyz(3)*ang2bohr
-                         jx=x-gam%atoms(jatm)%xyz(1)*ang2bohr
-                         jy=y-gam%atoms(jatm)%xyz(2)*ang2bohr
-                         jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
-                         
-                         ! AO values
-                         aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
-                         aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
-
-                         ! Contribution to the AO overlap integral
-                         sao_grid(bra,ket)=sao_grid(bra,ket)+w*aoi*aoj
-
-                         ! Contribution to the AO CAP matrix element
-                         cap_ao(bra,ket)=cap_ao(bra,ket)+w*aoi*aoj*cap(k)
-                         
+                         tid=1+omp_get_thread_num()
+                      
+                         do k=irange(tid,1),irange(tid,2)
+                      
+                            ! Coordinates and weight for the current
+                            ! grid point
+                            x=grid(k*4-3)
+                            y=grid(k*4-2)
+                            z=grid(k*4-1)
+                            w=grid(k*4)
+                            
+                            ! Coordinate values relative to the atomic
+                            ! centres (in Bohr)
+                            ix=x-gam%atoms(iatm)%xyz(1)*ang2bohr
+                            iy=y-gam%atoms(iatm)%xyz(2)*ang2bohr
+                            iz=z-gam%atoms(iatm)%xyz(3)*ang2bohr
+                            jx=x-gam%atoms(jatm)%xyz(1)*ang2bohr
+                            jy=y-gam%atoms(jatm)%xyz(2)*ang2bohr
+                            jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
+                            
+                            ! AO values
+                            aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
+                            aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
+                            
+                            ! Contribution to the AO overlap integral
+                            sao_grid_1thread(bra,ket,tid)=sao_grid_1thread(bra,ket,tid)&
+                                 +w*aoi*aoj
+                            
+                            ! Contribution to the AO CAP matrix element
+                            cap_ao_1thread(bra,ket,tid)=cap_ao_1thread(bra,ket,tid)&
+                                 +w*aoi*aoj*cap(k)
+                            
+                         enddo
+                      
                       enddo
-
+                      !$omp end parallel do
+                      
+                      do i=1,nthreads
+                         sao_grid(bra,ket)=sao_grid(bra,ket)&
+                              +sao_grid_1thread(bra,ket,i)
+                         cap_ao(bra,ket)=cap_ao(bra,ket)&
+                              +cap_ao_1thread(bra,ket,i)
+                      enddo
+                      
                    enddo
                 enddo
              enddo
@@ -748,6 +804,18 @@ contains
          (analytical - numerical):'
     write(ilog,'(2x,a,2x,E15.7)') 'Maximum:',maxdiff
     write(ilog,'(2x,a,2x,E15.7)') 'Average:',avdiff
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(sao)
+    deallocate(sao_grid)
+    deallocate(sao_grid_1thread)
+    deallocate(cap_ao)
+    deallocate(cap_ao_1thread)
+    deallocate(ao2mo)
+    deallocate(sao_diff)
+    deallocate(irange)
     
     return
     

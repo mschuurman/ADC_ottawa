@@ -164,13 +164,19 @@ contains
 
 !----------------------------------------------------------------------
 ! Calculate the CAP matrix element W_00 = < Psi_0 | W | Psi_0 >
+!
+! Note that if the projected CAP is being used and the initial state is
+! the ground state, then this matrix element is zero
 !----------------------------------------------------------------------
     w00=0.0d0
-    do p=1,nbas
-       do q=1,nbas
-          w00=w00+rho0(p,q)*cap_mo(p,q)
+
+    if (lprojcap.and.statenumber.eq.0) then
+       do p=1,nbas
+          do q=1,nbas
+             w00=w00+rho0(p,q)*cap_mo(p,q)
+          enddo
        enddo
-    enddo
+    endif
 
 !----------------------------------------------------------------------
 ! In the following, we calculate CAP matrix elements using the shifted
@@ -182,17 +188,24 @@ contains
 
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
+!
+! Note that if the projected CAP is being used and the initial state is
+! the ground state, then thes matrix elements are zero
 !----------------------------------------------------------------------
-    write(ilog,'(/,72a)') ('-',k=1,72)
-    write(ilog,'(2x,a)') 'Calculating the vector &
-         W_0J = < Psi_0 | W | Psi_J >'
-    write(ilog,'(72a)') ('-',k=1,72) 
-
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    call get_modifiedtm_tda(ndimf,kpqf,w0j)
+    if (lprojcap.and.statenumber.eq.0) then
 
+       write(ilog,'(/,72a)') ('-',k=1,72)
+       write(ilog,'(2x,a)') 'Calculating the vector &
+            W_0J = < Psi_0 | W | Psi_J >'
+       write(ilog,'(72a)') ('-',k=1,72)
+       
+       call get_modifiedtm_tda(ndimf,kpqf,w0j)
+
+    endif
+       
 !----------------------------------------------------------------------
 ! Calculate the IS representation of the shifted CAP operator W-W_00
 !

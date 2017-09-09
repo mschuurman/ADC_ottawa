@@ -1892,6 +1892,9 @@
             else
                goto 100
             endif
+
+         else if (keyword(i).eq.'projection') then
+            lprojcap=.true.
             
          else
             ! Exit if the keyword is not recognised
