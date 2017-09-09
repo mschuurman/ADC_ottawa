@@ -170,7 +170,7 @@ contains
 !----------------------------------------------------------------------
     w00=0.0d0
 
-    if (lprojcap.and.statenumber.eq.0) then
+    if (.not.lprojcap.or.statenumber.gt.0) then
        do p=1,nbas
           do q=1,nbas
              w00=w00+rho0(p,q)*cap_mo(p,q)
@@ -195,7 +195,7 @@ contains
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (lprojcap.and.statenumber.eq.0) then
+    if (.not.lprojcap.or.statenumber.gt.0) then
 
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the vector &

@@ -155,9 +155,11 @@ contains
 ! Note that if the projected CAP is being used and the initial state is
 ! the ground state, then this matrix element is zero
 !----------------------------------------------------------------------
+    if (lprojcap)
+
     w00=0.0d0
 
-    if (lprojcap.and.statenumber.eq.0) then
+    if (.not.lprojcap.or.statenumber.gt.0) then
        do p=1,nbas
           do q=1,nbas
              w00=w00+rho0(p,q)*cap_mo(p,q)
@@ -182,7 +184,7 @@ contains
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (lprojcap.and.statenumber.eq.0) then
+    if (.not.lprojcap.or.statenumber.gt.0) then
 
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the vector &
@@ -192,7 +194,7 @@ contains
        call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
 
     endif
-       
+
 !----------------------------------------------------------------------
 ! Calculate the IS representation of the shifted CAP operator W-W_00
 !----------------------------------------------------------------------
