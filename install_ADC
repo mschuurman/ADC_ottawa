@@ -44,8 +44,8 @@ fi
 #lapackflag='-mkl=sequential'
 
 # MKL, parallel
-blasflag='-mkl'
-lapackflag='-mkl'
+#blasflag='-mkl'
+#lapackflag='-mkl'
 
 # BLAS/LAPACK
 #blasflag='-lblas'
@@ -87,8 +87,7 @@ if [ "$target" == 'adc' ] || [ -z $target ]; then
 	rm lib/libnumgrid.so
     fi
     cd source/numgrid
-#    gfortran -fPIC -c numgrid.f90
-    ifort -fPIC -c numgrid.f90
+    gfortran -fPIC -c numgrid.f90
     g++ -fPIC -c *.cpp
     if [ "$isdarwin" == 'T' ]; then
 	g++ -shared -Wl,-install_name,libnumgrid.so -o libnumgrid.so *.o
