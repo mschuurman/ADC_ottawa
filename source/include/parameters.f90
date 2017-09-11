@@ -328,7 +328,7 @@ logical                               :: lfdstates
 !!$************************************************
 integer*8, dimension(3)      :: nel_dip
 integer, dimension(3)        :: nbuf_dip
-integer, parameter           :: mxenvpar=10
+integer, parameter           :: mxenvpar=20
 integer                      :: nenvpar
 integer                      :: ipulse
 integer                      :: ienvelope
@@ -345,15 +345,20 @@ logical                      :: lpropagation
 !!$************************************************
 !!$***************CAP Parameters*******************
 !!$************************************************
-integer                 :: icap
-integer*8               :: nel_cap
-integer                 :: nbuf_cap
-real(d)                 :: capstr,capwid
-real(d)                 :: w00
-real(d), allocatable    :: w0j(:)
-real(d), allocatable    :: wij(:,:)
-logical                 :: lcap
-logical                 :: lprojcap
+integer                       :: icap
+integer*8                     :: nel_cap
+integer                       :: nbuf_cap
+integer                       :: igrid
+integer                       :: ngridpar
+integer, parameter            :: mxgridpar=20
+real(d), dimension(mxgridpar) :: gridpar
+real(d)                       :: capstr
+real(d)                       :: capwid
+real(d)                       :: w00
+real(d), allocatable          :: w0j(:)
+real(d), allocatable          :: wij(:,:)
+logical                       :: lcap
+logical                       :: lprojcap
 
 !!$************************************************
 !!$***************ADC(1) Hamiltonian***************

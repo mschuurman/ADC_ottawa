@@ -169,6 +169,8 @@
       capstr=0.0d0
       capwid=0.0d0
       lprojcap=.false.
+      igrid=1
+      ngridpar=0
       
 !-----------------------------------------------------------------------
 ! I/O channels

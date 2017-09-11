@@ -1838,7 +1838,8 @@
 
       implicit none
 
-      integer :: i
+      integer          :: i,n
+      character(len=2) :: ai
       
 !-----------------------------------------------------------------------
 ! Read to the CAP section
@@ -1895,7 +1896,38 @@
 
          else if (keyword(i).eq.'projection') then
             lprojcap=.true.
-            
+
+         else if (keyword(i).eq.'grid') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               ! Read the integration grid type
+               if (keyword(i).eq.'becke') then
+                  igrid=1
+                  ngridpar=0
+               else if (keyword(i).eq.'gauss') then
+                  igrid=2
+                  ngridpar=4
+               else
+                  errmsg='Unknown CAP integration grid type: '&
+                       //trim(keyword(i))
+                  call error_control
+               endif
+               ! Read the grid parameters
+               do n=1,ngridpar
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) gridpar(n)
+                  else
+                     write(ai,'(i2)') gridpar
+                     errmsg='Not enough CAP grid parameters were given: '&
+                          //trim(adjustl(ai))//' parameters expected.'
+                     call error_control
+                  endif
+               enddo
+            else
+               goto 100
+            endif
+               
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

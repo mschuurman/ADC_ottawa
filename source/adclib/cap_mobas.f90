@@ -1,8 +1,10 @@
 !######################################################################
 ! capmod: routines for the calculation of the MO representation of
 !         the CAP operator. Employs numerical integration performed
-!         using Becke's partitioning scheme (JCP 88, 2547 (1988)).
-!         Makes use of the NUMGRID libraries of Radovan Bast.
+!         using either Becke's partitioning scheme
+!         (JCP 88, 2547 (1988)) or Gauss-Legendre quadrature.
+!         Makes use of the NUMGRID libraries of Radovan Bast if
+!         Becke's partitioning scheme is used.
 !######################################################################
 
 module capmod
@@ -79,6 +81,40 @@ contains
     call times(tw1,tc1)
 
 !----------------------------------------------------------------------
+! Calculate the MO CAP matrix elements
+!----------------------------------------------------------------------
+    if (igrid.eq.1) then
+       ! Becke's integration scheme
+       call cap_mobas_becke(gam,cap_mo)
+    else if (igrid.eq.2) then
+       ! Gauss-Legendre quadrature
+       call cap_mobas_gauss(gam,cap_mo)
+    endif
+
+!----------------------------------------------------------------------
+! Output timings
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
+    
+    return
+    
+  end subroutine cap_mobas
+
+!######################################################################
+
+  subroutine cap_mobas_becke(gam,cap_mo)
+
+    use channels
+    use parameters
+    use import_gamess
+    
+    implicit none
+
+    real(dp), dimension(:,:), allocatable :: cap_mo
+    type(gam_structure)                   :: gam
+
+!----------------------------------------------------------------------
 ! Fill in the van der Waals radius array
 !----------------------------------------------------------------------
     call get_vdwr(gam)
@@ -99,20 +135,42 @@ contains
     call mo_cap_matrix(gam,cap_mo)
 
 !----------------------------------------------------------------------
-! Output timings
-!----------------------------------------------------------------------
-    call times(tw2,tc2)
-    write(ilog,'(/,2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
-    
-!----------------------------------------------------------------------
 ! Deallocate arrays and destroy the grid context
 !----------------------------------------------------------------------
     call finalise_intgrid
     
     return
     
-  end subroutine cap_mobas
+  end subroutine cap_mobas_becke
 
+!######################################################################
+
+  subroutine cap_mobas_gauss(gam,cap_mo)
+
+    use channels
+    use parameters
+    use import_gamess
+    
+    implicit none
+
+    real(dp), dimension(:,:), allocatable :: cap_mo
+    type(gam_structure)                   :: gam
+
+!----------------------------------------------------------------------
+! Fill in the van der Waals radius array
+!----------------------------------------------------------------------
+    call get_vdwr(gam)
+
+!----------------------------------------------------------------------
+! 
+!----------------------------------------------------------------------
+    
+    STOP
+    
+    return
+    
+  end subroutine cap_mobas_gauss
+    
 !######################################################################
 
   subroutine get_vdwr(gam)
@@ -583,7 +641,7 @@ contains
                                                jnx,jny,jnz,jpos
     real(dp)                                :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
                                                aoi,aoj,iangc,jangc,&
-                                               maxdiff,avdiff
+                                               maxdiff,avdiff,trace
     real(dp), dimension(:,:), allocatable   :: sao,sao_grid,cap_mo,&
                                                sao_diff
     real(dp), dimension(:,:,:), allocatable :: cap_ao_1thread,&
@@ -784,7 +842,8 @@ contains
 
 !----------------------------------------------------------------------
 ! For checking purposes, output some information about the difference
-! between the numerical and analytic AO overlap matrices
+! between the numerical and analytic AO overlap matrices and the
+! trace of the numverical AO overlap matrix
 !----------------------------------------------------------------------
     sao_diff=abs(sao-sao_grid)
 
@@ -800,6 +859,16 @@ contains
     enddo
     avdiff=avdiff/(nao**2)
 
+    ! Trace of the numerical AO overlap matrix
+    trace=0.0d0
+    do i=1,nao
+       trace=trace+sao_grid(i,i)
+       write(ilog,*) i,sao(i,i),sao_grid(i,i)
+    enddo
+
+    write(ilog,'(/,2x,a,E15.7)') 'Trace of the numerical AO &
+         overlap matrix:',trace
+    
     write(ilog,'(/,2x,a)') 'AO overlap differences &
          (analytical - numerical):'
     write(ilog,'(2x,a,2x,E15.7)') 'Maximum:',maxdiff
@@ -891,7 +960,256 @@ contains
     return
     
   end subroutine finalise_intgrid
+
+!######################################################################
+! qgss3d: calculation of a three-dimensional integral using
+!         Gauss-Legendre quadrature.
+!
+! x1,x2,y1,y2,z1,z2: integration boundaries
+! ngp: number of quadrature points/weights
+!  
+! Adapted from the gaussm3 code - modified to assume a rectangular
+! integration volume, i.e, y1,y2 do not depend on x and z1,z2 do
+! not depend on x,y.
+!######################################################################
+
+  recursive function qgss3d(gam,x1,x2,y1,y2,z1,z2,ngp) result(inth)
+
+    use gamess_internal
+
+    implicit none
+
+    integer                  :: j
+    integer, intent(in)      :: ngp
+    real(dp)                 :: inth,x1,x2,y1,y2,z1,z2
+    real(dp)                 :: xm,xl,xtmp,ytmp
+    real(dp), dimension(ngp) :: xabsc,weig
+    type(gam_structure)      :: gam
+    
+!-----------------------------------------------------------------------
+! Calculate the Gauss-Legendre quadrature points and weights
+!-----------------------------------------------------------------------
+    call gauleg(ngp,xabsc,weig)
+
+!-----------------------------------------------------------------------
+! Perform the Gauss-Legendre quadrature
+!-----------------------------------------------------------------------
+    inth=0.0d0
+    xm=0.5d0*(x2+x1)
+    xl=0.5d0*(x2-x1)
+
+    ! Loop over the Gauss-Legendre quadrature points
+    do j=1,ngp
+
+       ! Gauss-Legendre abcissas
+       xtmp=xm+xl*xabsc(j)
+
+       inth=inth+weig(j)*qgssgy()
+
+    enddo
+
+    ! Scale to obtain the integral value over the range of integration
+    inth=inth*xl
+
+  contains
+    
+    recursive function qgssgy() result(intg)
+
+      implicit none
+
+      integer  :: j
+      real(dp) :: intg
+      real(dp) :: ym,yl
+      
+      intg=0.0d0
+      ym=0.5d0*(y2+y1)
+      yl=0.5d0*(y2-y1)
+      
+      do j=1,ngp
+         ytmp=ym+yl*xabsc(j)
+         intg=intg+weig(j)*qgssfz()
+      end do
+      
+      intg=intg*yl
+
+    end function qgssgy
+    
+    recursive function qgssfz() result(intf)
+
+      implicit none
+
+      integer  :: j
+      real(dp) :: intf
+      real(dp) :: zm,zl,ztmp
+      
+      intf=0.0d0
+      zm=0.5d0*(z2+z1)
+      zl=0.5d0*(z2-z1)
+      
+      do j=1,ngp
+         ztmp=zm+zl*xabsc(j)
+         intf=intf+weig(j)*capvalue(gam,xtmp,ytmp,ztmp)
+      end do
+      
+      intf=intf*zl
+
+    end function qgssfz
+    
+  end function qgss3d
     
 !######################################################################
+! gauleg: Calculation of Gauss-Legendre quadrature points and weights.
+!
+! ngp: number of quadrature points/weights
+! xabsc: quadrature points
+! wei: quadrature weights
+!
+! Adapted from the gaussm3 code
+!######################################################################
+  
+  subroutine gauleg(ngp,xabsc,weig)
+
+    use constants
+    
+    implicit none
+
+    integer                               :: i,j,m
+    integer, intent(in)                   :: ngp
+    real(dp)                              :: p1,p2,p3,pp,z,z1
+    real(dp), dimension(ngp), intent(out) :: xabsc,weig
+    real(dp), parameter                   :: eps=3.0d-15
+    
+!----------------------------------------------------------------------
+! Number of desired roots.
+! Note that the roots are symmetric and so we only need to compute
+! half of them.
+!----------------------------------------------------------------------
+    m=(ngp+1)/2
+
+!----------------------------------------------------------------------
+! Compute the roots
+!----------------------------------------------------------------------
+    ! Loop over roots
+    do i=1,m
+
+       ! Approximation to the ith root
+       z=cos(pi*(i-0.25d0)/(ngp+0.5d0))
+
+       ! Refine the approximation to the ith root using Newton's
+       ! method
+100    p1=1.0d0
+       p2=0.0d0
+
+       ! Loop up the recurrence relation to get the Legendre
+       ! polynomial evaluated at z
+       do j=1,ngp
+          p3=p2
+          p2=p1
+          p1=((2.0d0*j-1.0d0)*z*p2-(j-1.0d0)*p3)/j
+       enddo
+
+       ! p1 is now the desired Legendre polynomial. We next compute pp,
+       ! its derivative, by a standard relation involving also p2, the
+       ! polynomial of one lower order
+       pp=ngp*(z*p1-p2)/(z*z-1.0d0)
+       z1=z
+       z=z1-p1/pp
+       if (dabs(z-z1).gt.eps) goto 100
+
+       ! The roots are in the interval [-1,1]
+       xabsc(i)=-z
+       
+       ! The roots are symmetric about the origin
+       xabsc(ngp+1-i)=+z
+
+       ! Calculate the ith weight
+       weig(i)=2.0d0/((1.0d0-z*z)*pp*pp)
+
+       ! Symmetric counterpart to the ith weight
+       weig(ngp+1-i)=weig(i)
+       
+    enddo
+    
+    return
+    
+  end subroutine gauleg
+
+!######################################################################  
+
+  function capvalue(gam,x,y,z)
+
+    use parameters
+    use gamess_internal
+    
+    implicit none
+
+    integer                             :: natom,i,n
+    real(dp)                            :: x,y,z,capvalue
+    real(dp)                            :: xa,ya,za,r,r0,currval,capa
+    real(dp)                            :: pival
+    real(dp), dimension(:), allocatable :: acoo
+    type(gam_structure)                 :: gam
+    
+    pival=4.0d0*atan(1.0d0)
+
+!----------------------------------------------------------------------
+! Atomic coordinates (in Bohr)
+!----------------------------------------------------------------------
+    natom=gam%natoms
+
+    allocate(acoo(3*natom))
+    acoo=0.0d0
+
+    do n=1,natom
+       do i=1,3
+          acoo(n*3-3+i)=gam%atoms(n)%xyz(i)*ang2bohr
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! Evaluate the sigmoidal CAP value at the current point
+!----------------------------------------------------------------------
+    ! Initialisation
+    currval=1e+12
+
+    ! Loop over atoms
+    do n=1,natom
+       
+       ! Atomic coordinates
+       xa=acoo(n*3-2)
+       ya=acoo(n*3-1)
+       za=acoo(n*3)
+
+       ! Distance from the current grid point to the current atom
+       r=sqrt((x-xa)**2+(y-ya)**2+(z-za)**2)
+       
+       ! CAP starting position
+       r0=vdwr(n)*dscale
+       
+       ! Contribution to the total CAP value
+       if (r.le.r0) then
+          capa=0.0d0
+       else if (r.gt.r0.and.r.lt.r0+capwid) then
+          capa=capstr*(sin(pival*(r-r0)/(2.0d0*capwid)))**2
+       else
+          capa=capstr
+       endif
+       
+       if (capa.lt.currval) currval=capa
+          
+    enddo
+
+    capvalue=currval
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------    
+    deallocate(acoo)
+    
+    return
+    
+  end function capvalue
+    
+!######################################################################  
   
 end module capmod
