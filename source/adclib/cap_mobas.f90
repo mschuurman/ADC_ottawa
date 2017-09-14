@@ -43,6 +43,12 @@ module capmod
   real(dp), pointer     :: grid(:)
   type(c_ptr)           :: context
 
+  ! Gauss-Legendre quadrature arrays and variables
+  integer               :: ngp
+  real(dp), allocatable :: xabsc(:)
+  real(dp), allocatable :: weig(:)
+  real(dp)              :: xi,xf,yi,yf,zi,zf
+  
   ! CAP arrays
   real(dp), allocatable :: cap(:)
   real(dp), allocatable :: cap_ao(:,:)
@@ -153,7 +159,9 @@ contains
     
     implicit none
 
+    integer                               :: i,n,natom
     real(dp), dimension(:,:), allocatable :: cap_mo
+    real(dp), dimension(3)                :: cent
     type(gam_structure)                   :: gam
 
 !----------------------------------------------------------------------
@@ -162,10 +170,38 @@ contains
     call get_vdwr(gam)
 
 !----------------------------------------------------------------------
-! 
+! Calculate the Gauss-Legendre quadrature points and weights
 !----------------------------------------------------------------------
+    ngp=gridpar(4)
+    allocate(xabsc(ngp))
+    allocate(weig(ngp))
     
-    STOP
+    call gauleg(ngp,xabsc,weig)
+
+!----------------------------------------------------------------------
+! Integration boundaries
+!----------------------------------------------------------------------
+    ! Geometric centre of the molecule (in Bohr)
+    cent=0.0d0
+    natom=gam%natoms
+    do n=1,natom
+       do i=1,3
+          cent(i)=cent(i)+gam%atoms(n)%xyz(i)*ang2bohr/natom
+       enddo
+    enddo
+
+    ! Integration boundaries
+    xi=cent(1)-0.5d0*gridpar(1)*ang2bohr
+    xf=cent(1)+0.5d0*gridpar(1)*ang2bohr
+    yi=cent(2)-0.5d0*gridpar(2)*ang2bohr
+    yf=cent(2)+0.5d0*gridpar(2)*ang2bohr
+    zi=cent(3)-0.5d0*gridpar(3)*ang2bohr
+    zf=cent(3)+0.5d0*gridpar(3)*ang2bohr
+    
+!----------------------------------------------------------------------
+! Calculate the MO representation of the CAP operator
+!----------------------------------------------------------------------
+    call mo_cap_matrix(gam,cap_mo)
     
     return
     
@@ -623,6 +659,10 @@ contains
   end subroutine precalc_cap_sigmoidal
     
 !######################################################################
+! mo_cap_matrix: Numerical calculation of the MO representation of the
+!                CAP operator. Additionally, for checking purposes,
+!                the numerical AO overlap matrix is computed.
+!######################################################################
   
   subroutine mo_cap_matrix(gam,cap_mo)
 
@@ -639,24 +679,11 @@ contains
                                                il,jl,bra,ket,icomp,jcomp,&
                                                inx,iny,inz,ipos,&
                                                jnx,jny,jnz,jpos
-    real(dp)                                :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
-                                               aoi,aoj,iangc,jangc,&
+    real(dp)                                :: iangc,jangc,&
                                                maxdiff,avdiff,trace
     real(dp), dimension(:,:), allocatable   :: sao,sao_grid,cap_mo,&
                                                sao_diff
-    real(dp), dimension(:,:,:), allocatable :: cap_ao_1thread,&
-                                               sao_grid_1thread
     type(gam_structure)                     :: gam
-
-    integer                                 :: nthreads,tid,npt
-    integer, dimension(:,:), allocatable    :: irange
-    
-!-----------------------------------------------------------------------
-! Determine the no. threads
-!-----------------------------------------------------------------------
-    !$omp parallel
-    nthreads=omp_get_num_threads()
-    !$omp end parallel
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -672,9 +699,7 @@ contains
     
     ! AO representation of the CAP operator
     allocate(cap_ao(nao,nao))
-    allocate(cap_ao_1thread(nao,nao,nthreads))
-    cap_ao=0.0d0
-    cap_ao_1thread=0.0d0    
+    cap_ao=0.0d0    
     
     ! MO representation of the CAP operator
     allocate(cap_mo(nbas,nbas))
@@ -686,31 +711,12 @@ contains
 
     ! Numerical AO overlap matrix
     allocate(sao_grid(nao,nao))
-    allocate(sao_grid_1thread(nao,nao,nthreads))
     sao_grid=0.0d0
-    sao_grid_1thread=0.0d0
 
     ! Difference between the analytic and numerical AO overlap
     ! matrices
     allocate(sao_diff(nao,nao))
     sao_diff=0.0d0
-
-    ! Grid partitioning
-    allocate(irange(nthreads,2))
-    irange=0
-    
-!-----------------------------------------------------------------------
-! Partitioning of the grid points: one chunk per thread
-!-----------------------------------------------------------------------
-    npt=int(floor(real(num_points)/real(nthreads)))
-
-    do i=1,nthreads-1
-       irange(i,1)=(i-1)*npt+1
-       irange(i,2)=i*npt
-    enddo
-
-    irange(nthreads,1)=(nthreads-1)*npt+1
-    irange(nthreads,2)=num_points
     
 !----------------------------------------------------------------------
 ! Analytic AO overlaps
@@ -746,6 +752,10 @@ contains
              inz=ang_nz(ipos)          ! nz
 
              iangc=ang_c(ipos)
+
+             
+!             write(ilog,*) 'bra:',bra
+
              
              ! Loop over ket AOs
              ket=0
@@ -769,59 +779,21 @@ contains
                       jnz=ang_nz(jpos)          ! nz
 
                       jangc=ang_c(jpos)
-                      
+
                       ! Calculation of the current integral
-                      !
-                      !$omp parallel do &
-                      !$omp& private(i,k,tid,x,y,z,w,ix,iy,iz,jx,jy,jz,aoi,aoj) &
-                      !$omp& shared(irange,sao_grid_1thread,cap_ao_1thread,grid,&
-                      !$omp& gam,cap,inx,iny,inz,iangc,ish,jnx,jny,jnz,jangc,jsh,&
-                      !$omp& iatm,jatm,bra,ket)
-                      do i=1,nthreads
-                         
-                         tid=1+omp_get_thread_num()
-                      
-                         do k=irange(tid,1),irange(tid,2)
-                      
-                            ! Coordinates and weight for the current
-                            ! grid point
-                            x=grid(k*4-3)
-                            y=grid(k*4-2)
-                            z=grid(k*4-1)
-                            w=grid(k*4)
-                            
-                            ! Coordinate values relative to the atomic
-                            ! centres (in Bohr)
-                            ix=x-gam%atoms(iatm)%xyz(1)*ang2bohr
-                            iy=y-gam%atoms(iatm)%xyz(2)*ang2bohr
-                            iz=z-gam%atoms(iatm)%xyz(3)*ang2bohr
-                            jx=x-gam%atoms(jatm)%xyz(1)*ang2bohr
-                            jy=y-gam%atoms(jatm)%xyz(2)*ang2bohr
-                            jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
-                            
-                            ! AO values
-                            aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
-                            aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
-                            
-                            ! Contribution to the AO overlap integral
-                            sao_grid_1thread(bra,ket,tid)=sao_grid_1thread(bra,ket,tid)&
-                                 +w*aoi*aoj
-                            
-                            ! Contribution to the AO CAP matrix element
-                            cap_ao_1thread(bra,ket,tid)=cap_ao_1thread(bra,ket,tid)&
-                                 +w*aoi*aoj*cap(k)
-                            
-                         enddo
-                      
-                      enddo
-                      !$omp end parallel do
-                      
-                      do i=1,nthreads
-                         sao_grid(bra,ket)=sao_grid(bra,ket)&
-                              +sao_grid_1thread(bra,ket,i)
-                         cap_ao(bra,ket)=cap_ao(bra,ket)&
-                              +cap_ao_1thread(bra,ket,i)
-                      enddo
+                      if (igrid.eq.1) then
+                         ! Becke's integration scheme
+                         call calc_1integral_becke(cap_ao(bra,ket),&
+                              sao_grid(bra,ket),gam,iatm,jatm,&
+                              inx,iny,inz,jnx,jny,jnz,iangc,jangc,&
+                              ish,jsh)
+                      else if (igrid.eq.2) then
+                         ! Gauss-Legendre quadrature
+                         call calc_1integral_gauss(cap_ao(bra,ket),&
+                              sao_grid(bra,ket),gam,iatm,jatm,&
+                              inx,iny,inz,jnx,jny,jnz,iangc,jangc,&
+                              ish,jsh)
+                      endif
                       
                    enddo
                 enddo
@@ -879,17 +851,230 @@ contains
 !----------------------------------------------------------------------
     deallocate(sao)
     deallocate(sao_grid)
-    deallocate(sao_grid_1thread)
     deallocate(cap_ao)
-    deallocate(cap_ao_1thread)
     deallocate(ao2mo)
     deallocate(sao_diff)
-    deallocate(irange)
     
     return
     
   end subroutine mo_cap_matrix
 
+!######################################################################
+! calc_1integral_becke: Calculation of a single pair of AO CAP and
+!                       overlap matrix elements using Becke's 
+!                       integration scheme.
+!######################################################################
+  
+  subroutine calc_1integral_becke(cap_ao,sao_grid,gam,iatm,jatm,inx,&
+       iny,inz,jnx,jny,jnz,iangc,jangc,ish,jsh)
+
+    use parameters
+    use import_gamess
+    use gamess_internal
+    use omp_lib
+    
+    implicit none
+
+    integer                              :: i,k
+    integer                              :: nthreads,tid,npt
+    integer, dimension(:,:), allocatable :: irange
+    integer                              :: iatm,jatm,inx,iny,inz,&
+                                            jnx,jny,jnz,ish,jsh
+    real(dp)                             :: cap_ao,sao_grid
+    real(dp)                             :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
+                                            aoi,aoj,iangc,jangc
+    real(dp), dimension(:), allocatable  :: cap_ao_1thread,&
+                                            sao_grid_1thread
+    type(gam_structure)                  :: gam
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    ! Grid partitioning
+    allocate(irange(nthreads,2))
+    irange=0
+
+    ! Working arrays
+    allocate(cap_ao_1thread(nthreads))
+    cap_ao_1thread=0.0d0
+
+    allocate(sao_grid_1thread(nthreads))
+    sao_grid_1thread=0.0d0
+    
+!-----------------------------------------------------------------------
+! Partitioning of the grid points: one chunk per thread
+!-----------------------------------------------------------------------
+    npt=int(floor(real(num_points)/real(nthreads)))
+
+    do i=1,nthreads-1
+       irange(i,1)=(i-1)*npt+1
+       irange(i,2)=i*npt
+    enddo
+
+    irange(nthreads,1)=(nthreads-1)*npt+1
+    irange(nthreads,2)=num_points
+    
+!-----------------------------------------------------------------------
+! Calculate the current integral values
+!-----------------------------------------------------------------------
+    !$omp parallel do &
+    !$omp& private(i,k,tid,x,y,z,w,ix,iy,iz,jx,jy,jz,aoi,aoj) &
+    !$omp& shared(irange,sao_grid_1thread,cap_ao_1thread,grid,&
+    !$omp& gam,cap,inx,iny,inz,iangc,ish,jnx,jny,jnz,jangc,jsh,&
+    !$omp& iatm,jatm)
+    do i=1,nthreads
+       
+       tid=1+omp_get_thread_num()
+       
+       do k=irange(tid,1),irange(tid,2)
+          
+          ! Coordinates and weight for the current
+          ! grid point
+          x=grid(k*4-3)
+          y=grid(k*4-2)
+          z=grid(k*4-1)
+          w=grid(k*4)
+          
+          ! Coordinate values relative to the atomic
+          ! centres (in Bohr)
+          ix=x-gam%atoms(iatm)%xyz(1)*ang2bohr
+          iy=y-gam%atoms(iatm)%xyz(2)*ang2bohr
+          iz=z-gam%atoms(iatm)%xyz(3)*ang2bohr
+          jx=x-gam%atoms(jatm)%xyz(1)*ang2bohr
+          jy=y-gam%atoms(jatm)%xyz(2)*ang2bohr
+          jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
+          
+          ! AO values
+          aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
+          aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
+          
+          ! Contribution to the AO overlap integral
+          sao_grid_1thread(tid)=sao_grid_1thread(tid)+w*aoi*aoj
+          
+          ! Contribution to the AO CAP matrix element
+          cap_ao_1thread(tid)=cap_ao_1thread(tid)+w*aoi*aoj*cap(k)
+          
+       enddo
+                      
+    enddo
+    !$omp end parallel do
+
+    ! Sum up the contributions from each thread
+    sao_grid=0.0d0
+    cap_ao=0.0d0
+    do i=1,nthreads
+       sao_grid=sao_grid+sao_grid_1thread(i)
+       cap_ao=cap_ao+cap_ao_1thread(i)
+    enddo
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(irange)
+    deallocate(cap_ao_1thread)
+    deallocate(sao_grid_1thread)
+    
+    return
+    
+  end subroutine calc_1integral_becke
+
+!######################################################################
+! calc_1integral_gauss: Calculation of a single pair of AO CAP and
+!                       overlap matrix elements using Gauss-Legendre
+!                       quadrature.
+!######################################################################
+  
+  subroutine calc_1integral_gauss(cap_ao,sao_grid,gam,iatm,jatm,inx,&
+       iny,inz,jnx,jny,jnz,iangc,jangc,ish,jsh)
+
+    use parameters
+    use import_gamess
+    use gamess_internal
+    use omp_lib
+    
+    implicit none
+
+    integer                              :: i,j,k
+    integer                              :: nthreads,tid,npt
+    integer, dimension(:,:), allocatable :: irange
+    integer                              :: iatm,jatm,inx,iny,inz,&
+                                            jnx,jny,jnz,ish,jsh
+    real(dp)                             :: cap_ao,sao_grid
+    real(dp)                             :: x,y,z,w,ix,iy,iz,jx,jy,jz,&
+                                            aoi,aoj,iangc,jangc
+    real(dp), dimension(:), allocatable  :: cap_ao_1thread,&
+                                            sao_grid_1thread
+    real(dp)                             :: xm,xl,ym,yl,zm,zl,xtmp,&
+                                            ytmp,ztmp,stmp,captmp
+    type(gam_structure)                  :: gam
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+!-----------------------------------------------------------------------
+! Calculate the matrix elements
+!-----------------------------------------------------------------------
+    xm=0.5d0*(xf+xi)
+    xl=0.5d0*(xf-xi)
+    ym=0.5d0*(yf+yi)
+    yl=0.5d0*(yf-yi)
+    zm=0.5d0*(zf+zi)
+    zl=0.5d0*(zf-zi)
+
+    stmp=0.0d0
+    captmp=0.0d0
+    
+    !$omp parallel do &
+    !$omp& private(i,j,k,xtmp,ytmp,ztmp,ix,iy,iz,jx,jy,jz,aoi,aoj) &
+    !$omp& shared(xabsc,weig,inx,iny,inz,iangc,ish,jnx,jny,jnz,jangc,&
+    !$omp& jsh,iatm,jatm) &
+    !$omp& reduction(+:captmp,stmp)
+    do i=1,ngp
+       xtmp=xm+xl*xabsc(i)
+       ix=xtmp-gam%atoms(iatm)%xyz(1)*ang2bohr
+       jx=xtmp-gam%atoms(jatm)%xyz(1)*ang2bohr
+       
+       do j=1,ngp
+          ytmp=ym+yl*xabsc(j)
+          iy=ytmp-gam%atoms(iatm)%xyz(1)*ang2bohr
+          jy=ytmp-gam%atoms(jatm)%xyz(1)*ang2bohr
+          
+          do k=1,ngp
+             ztmp=zm+zl*xabsc(k)
+             iz=ztmp-gam%atoms(iatm)%xyz(1)*ang2bohr
+             jz=ztmp-gam%atoms(jatm)%xyz(1)*ang2bohr
+
+             aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
+             aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
+
+             stmp=stmp+weig(i)*weig(j)*weig(k)*aoi*aoj*xl*yl*zl
+             captmp=captmp+weig(i)*weig(j)*weig(k)*capvalue(gam,xtmp,ytmp,ztmp)*aoi*aoj*xl*yl*zl
+             
+          enddo
+
+       enddo
+
+    enddo
+    !$omp end parallel do
+
+    sao_grid=stmp
+    cap_ao=captmp
+    
+    return
+    
+  end subroutine calc_1integral_gauss
+    
 !######################################################################
 
   function aoval(x,y,z,nx,ny,nz,angc,iatom,ishell,gam)
@@ -961,102 +1146,6 @@ contains
     
   end subroutine finalise_intgrid
 
-!######################################################################
-! qgss3d: calculation of a three-dimensional integral using
-!         Gauss-Legendre quadrature.
-!
-! x1,x2,y1,y2,z1,z2: integration boundaries
-! ngp: number of quadrature points/weights
-!  
-! Adapted from the gaussm3 code - modified to assume a rectangular
-! integration volume, i.e, y1,y2 do not depend on x and z1,z2 do
-! not depend on x,y.
-!######################################################################
-
-  recursive function qgss3d(gam,x1,x2,y1,y2,z1,z2,ngp) result(inth)
-
-    use gamess_internal
-
-    implicit none
-
-    integer                  :: j
-    integer, intent(in)      :: ngp
-    real(dp)                 :: inth,x1,x2,y1,y2,z1,z2
-    real(dp)                 :: xm,xl,xtmp,ytmp
-    real(dp), dimension(ngp) :: xabsc,weig
-    type(gam_structure)      :: gam
-    
-!-----------------------------------------------------------------------
-! Calculate the Gauss-Legendre quadrature points and weights
-!-----------------------------------------------------------------------
-    call gauleg(ngp,xabsc,weig)
-
-!-----------------------------------------------------------------------
-! Perform the Gauss-Legendre quadrature
-!-----------------------------------------------------------------------
-    inth=0.0d0
-    xm=0.5d0*(x2+x1)
-    xl=0.5d0*(x2-x1)
-
-    ! Loop over the Gauss-Legendre quadrature points
-    do j=1,ngp
-
-       ! Gauss-Legendre abcissas
-       xtmp=xm+xl*xabsc(j)
-
-       inth=inth+weig(j)*qgssgy()
-
-    enddo
-
-    ! Scale to obtain the integral value over the range of integration
-    inth=inth*xl
-
-  contains
-    
-    recursive function qgssgy() result(intg)
-
-      implicit none
-
-      integer  :: j
-      real(dp) :: intg
-      real(dp) :: ym,yl
-      
-      intg=0.0d0
-      ym=0.5d0*(y2+y1)
-      yl=0.5d0*(y2-y1)
-      
-      do j=1,ngp
-         ytmp=ym+yl*xabsc(j)
-         intg=intg+weig(j)*qgssfz()
-      end do
-      
-      intg=intg*yl
-
-    end function qgssgy
-    
-    recursive function qgssfz() result(intf)
-
-      implicit none
-
-      integer  :: j
-      real(dp) :: intf
-      real(dp) :: zm,zl,ztmp
-      
-      intf=0.0d0
-      zm=0.5d0*(z2+z1)
-      zl=0.5d0*(z2-z1)
-      
-      do j=1,ngp
-         ztmp=zm+zl*xabsc(j)
-         intf=intf+weig(j)*capvalue(gam,xtmp,ytmp,ztmp)
-      end do
-      
-      intf=intf*zl
-
-    end function qgssfz
-    
-  end function qgss3d
-    
 !######################################################################
 ! gauleg: Calculation of Gauss-Legendre quadrature points and weights.
 !
