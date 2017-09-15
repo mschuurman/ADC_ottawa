@@ -225,15 +225,19 @@ int Grid::generate(const double radial_precision,
 
                     for (int p = 0; p < shell_num_primitives[ishell]; p++)
                     {
-                        double e = primitive_exponents[n];
-                        alpha_max = std::max(
+		      // OLD (WRONG):
+		      //double e = primitive_exponents[n+p];
+		      // NEW (CORRECT):
+		        double e = primitive_exponents[n+p];
+		        //printf("\n %i %10.7f \n", iround, e);
+			alpha_max = std::max(
                             alpha_max, 2.0 * e); // factor 2.0 to match DIRAC
                         alpha_min[l] = std::min(alpha_min[l], e);
                     }
                 }
                 n += shell_num_primitives[ishell];
             }
-	      
+
             // obtain radial parameters
             double r_inner = get_r_inner(radial_precision, alpha_max);
             double h = 1.0e50;
@@ -278,11 +282,10 @@ int Grid::generate(const double radial_precision,
                         (5.0 * 0.529177249); // factors match DIRAC code
             double c = r_inner / (exp(h) - 1.0);
             int num_radial = int(log(1.0 + (r_outer / c)) / h);
-            for (int irad = 0; irad < num_radial; irad++)
+	    for (int irad = 0; irad < num_radial; irad++)
             {
                 double radial_r = c * (exp((irad + 1) * h) - 1.0);
                 double radial_w = (radial_r + c) * radial_r * radial_r * h;
-
                 int num_angular = num_max_num_angular_points;
                 if (radial_r < rb)
                 {
