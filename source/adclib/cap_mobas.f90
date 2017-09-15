@@ -403,9 +403,9 @@ contains
 ! Grid parameters
 !----------------------------------------------------------------------
     ! Grid parameters
-    radial_precision=1.0e-20_d
+    radial_precision=1.0e-12_d
     min_num_angular_points=170
-    max_num_angular_points=350
+    max_num_angular_points=974
 
 !----------------------------------------------------------------------
 ! Atomic coordinates (in Bohr). Note that the gam_structure derived
@@ -415,24 +415,24 @@ contains
     num_centers=gam%natoms
 
     ! Atom coordinates
-    allocate(center_coordinates(num_centers*3))
+    allocate(center_coordinates(0:num_centers*3-1))
     center_coordinates=0.0d0
     
     k=0
     do i=1,gam%natoms
        do j=1,3
           k=k+1
-          center_coordinates(k)=gam%atoms(i)%xyz(j)*ang2bohr
+          center_coordinates(k-1)=gam%atoms(i)%xyz(j)*ang2bohr
        enddo
     enddo
 
 !----------------------------------------------------------------------
 ! Atom types
 !----------------------------------------------------------------------
-    allocate(center_elements(num_centers))
+    allocate(center_elements(0:num_centers-1))
     center_elements=0
     do i=1,gam%natoms
-       center_elements(i)=int(gam%atoms(i)%znuc)
+       center_elements(i-1)=int(gam%atoms(i)%znuc)
     enddo
 
 !----------------------------------------------------------------------
@@ -447,35 +447,35 @@ contains
     enddo
 
     ! Shell centers
-    allocate(shell_centers(num_shells))
+    allocate(shell_centers(0:num_shells-1))
     shell_centers=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
           k=k+1
-          shell_centers(k)=i
+          shell_centers(k-1)=i
        enddo
     enddo
 
     ! Angular momentum quantum numbers for each shell
-    allocate(shell_l_quantum_numbers(num_shells))
+    allocate(shell_l_quantum_numbers(0:num_shells-1))
     shell_l_quantum_numbers=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
           k=k+1
-          shell_l_quantum_numbers(k)=gam%atoms(i)%sh_l(j)
+          shell_l_quantum_numbers(k-1)=gam%atoms(i)%sh_l(j)
        enddo
     enddo
 
     ! Number of primitives for each shell
-    allocate(shell_num_primitives(num_shells))
+    allocate(shell_num_primitives(0:num_shells-1))
     shell_num_primitives=0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
           k=k+1
-          shell_num_primitives(k)=gam%atoms(i)%sh_p(j+1)-gam%atoms(i)%sh_p(j)
+          shell_num_primitives(k-1)=gam%atoms(i)%sh_p(j+1)-gam%atoms(i)%sh_p(j)
        enddo
     enddo
 
@@ -483,14 +483,14 @@ contains
     num_primitives=sum(shell_num_primitives)
 
     ! Primitive exponents
-    allocate(primitive_exponents(num_primitives))
+    allocate(primitive_exponents(0:num_primitives-1))
     primitive_exponents=0.0d0
     k=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
           do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
              k=k+1
-             primitive_exponents(k)=gam%atoms(i)%p_zet(l)
+             primitive_exponents(k-1)=gam%atoms(i)%p_zet(l)
           enddo
        enddo
     enddo

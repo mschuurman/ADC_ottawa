@@ -233,7 +233,7 @@ int Grid::generate(const double radial_precision,
                 }
                 n += shell_num_primitives[ishell];
             }
-
+	      
             // obtain radial parameters
             double r_inner = get_r_inner(radial_precision, alpha_max);
             double h = 1.0e50;
