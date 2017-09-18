@@ -759,7 +759,7 @@
          endif
 
          ! CAP width
-         if (capwid.eq.0.0d0) then
+         if (capwid.eq.0.0d0.and.icap.eq.1) then
             msg='The CAP width has not been given'
             goto 999
          endif         
@@ -1866,6 +1866,8 @@
                i=i+2
                if (keyword(i).eq.'sigmoidal') then
                   icap=1
+               else if (keyword(i).eq.'monomial') then
+                  icap=2
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control

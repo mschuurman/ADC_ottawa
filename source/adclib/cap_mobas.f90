@@ -1,10 +1,24 @@
 !######################################################################
 ! capmod: routines for the calculation of the MO representation of
-!         the CAP operator. Employs numerical integration performed
+!         the CAP operator.
+!
+!         Two types of CAP are supported:
+!
+!         (1) Sigmoidal CAPs of the type used by Lopata et al
+!             (see equations 6&7 in JCP, 145, 094105 (2016))
+!
+!         (2) Monomial-type CAPs
+!             (see equations 6&7 in JCP, 115, 6853 (2001))
+!
+!         For sigmoidal CAPS, numerical integration is performed
 !         using either Becke's partitioning scheme
 !         (JCP 88, 2547 (1988)) or Gauss-Legendre quadrature.
 !         Makes use of the NUMGRID libraries of Radovan Bast if
 !         Becke's partitioning scheme is used.
+!
+!         For monomial CAPs, all matrix elements are evaluated
+!         analytically using the equations derived by Santra and
+!         Cederbaum in JCP, 115, 6853 (2001).
 !######################################################################
 
 module capmod
@@ -18,42 +32,54 @@ module capmod
   
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
-  integer, parameter    :: dp=selected_real_kind(8)
+  integer, parameter     :: dp=selected_real_kind(8)
 
   ! Conversion factors
-  real(dp), parameter   :: ang2bohr=1.889725989d0
+  real(dp), parameter    :: ang2bohr=1.889725989d0
+
+  ! Basis dimensions
+  integer                :: npbas
+  integer                :: nao
   
   ! NUMGRID arrays and variables
-  integer               :: min_num_angular_points
-  integer               :: max_num_angular_points
-  integer               :: num_points
-  integer               :: num_centers
-  integer               :: num_outer_centers
-  integer               :: num_shells
-  integer               :: num_primitives
-  integer, allocatable  :: center_elements(:)
-  integer, allocatable  :: shell_centers(:)
-  integer, allocatable  :: shell_l_quantum_numbers(:)
-  integer, allocatable  :: shell_num_primitives(:)
-  integer, allocatable  :: outer_center_elements(:)
-  real(dp), allocatable :: outer_center_coordinates(:)
-  real(dp), allocatable :: primitive_exponents(:)
-  real(dp)              :: radial_precision
-  real(dp), allocatable :: center_coordinates(:)
-  real(dp), pointer     :: grid(:)
-  type(c_ptr)           :: context
+  integer                :: min_num_angular_points
+  integer                :: max_num_angular_points
+  integer                :: num_points
+  integer                :: num_centers
+  integer                :: num_outer_centers
+  integer                :: num_shells
+  integer                :: num_primitives
+  integer, allocatable   :: center_elements(:)
+  integer, allocatable   :: shell_centers(:)
+  integer, allocatable   :: shell_l_quantum_numbers(:)
+  integer, allocatable   :: shell_num_primitives(:)
+  integer, allocatable   :: outer_center_elements(:)
+  real(dp), allocatable  :: outer_center_coordinates(:)
+  real(dp), allocatable  :: primitive_exponents(:)
+  real(dp)               :: radial_precision
+  real(dp), allocatable  :: center_coordinates(:)
+  real(dp), pointer      :: grid(:)
+  type(c_ptr)            :: context
 
   ! Gauss-Legendre quadrature arrays and variables
-  integer               :: ngp
-  real(dp), allocatable :: xabsc(:)
-  real(dp), allocatable :: weig(:)
-  real(dp)              :: xi,xf,yi,yf,zi,zf
+  integer                :: ngp
+  real(dp), allocatable  :: xabsc(:)
+  real(dp), allocatable  :: weig(:)
+  real(dp)               :: xa,xb,ya,yb,za,zb
   
   ! CAP arrays
-  real(dp), allocatable :: cap(:)
-  real(dp), allocatable :: cap_ao(:,:)
-  real(dp), allocatable :: vdwr(:)
-  real(dp), parameter   :: dscale=3.5d0
+  real(dp), allocatable  :: cap(:)
+  real(dp), allocatable  :: cap_ao(:,:)
+  real(dp), allocatable  :: vdwr(:)
+  real(dp), parameter    :: dscale=3.5d0
+
+  ! Monomial CAP arrays
+  real(dp), dimension(3) :: cstrt
+  real(dp), allocatable  :: amunu(:,:)
+  real(dp), allocatable  :: smunu(:,:)
+  real(dp), allocatable  :: rmunu(:,:,:)
+  real(dp), allocatable  :: rmu(:,:)
+  real(dp), allocatable  :: alpha(:)
   
 contains
   
@@ -89,14 +115,22 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the MO CAP matrix elements
 !----------------------------------------------------------------------
-    if (igrid.eq.1) then
-       ! Becke's integration scheme
-       call cap_mobas_becke(gam,cap_mo)
-    else if (igrid.eq.2) then
-       ! Gauss-Legendre quadrature
-       call cap_mobas_gauss(gam,cap_mo)
+    if (icap.eq.1) then
+       ! Sigmoidal CAP: no analytic equations for the matrix elements
+       ! exits, and we have to resort to numerical integration
+       if (igrid.eq.1) then
+          ! Becke's integration scheme
+          call cap_mobas_becke(gam,cap_mo)
+       else if (igrid.eq.2) then
+          ! Gauss-Legendre quadrature
+          call cap_mobas_gauss(gam,cap_mo)
+       endif
+    else if (icap.eq.2) then
+       ! Monomial CAP: analytic equations exist for the matrix
+       ! elements, and we will evaluate them exactly
+       call cap_mobas_monomial(gam,cap_mo)
     endif
-
+       
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
@@ -191,12 +225,12 @@ contains
     enddo
 
     ! Integration boundaries
-    xi=cent(1)-0.5d0*gridpar(1)*ang2bohr
-    xf=cent(1)+0.5d0*gridpar(1)*ang2bohr
-    yi=cent(2)-0.5d0*gridpar(2)*ang2bohr
-    yf=cent(2)+0.5d0*gridpar(2)*ang2bohr
-    zi=cent(3)-0.5d0*gridpar(3)*ang2bohr
-    zf=cent(3)+0.5d0*gridpar(3)*ang2bohr
+    xa=cent(1)-0.5d0*gridpar(1)*ang2bohr
+    xb=cent(1)+0.5d0*gridpar(1)*ang2bohr
+    ya=cent(2)-0.5d0*gridpar(2)*ang2bohr
+    yb=cent(2)+0.5d0*gridpar(2)*ang2bohr
+    za=cent(3)-0.5d0*gridpar(3)*ang2bohr
+    zb=cent(3)+0.5d0*gridpar(3)*ang2bohr
     
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -206,7 +240,445 @@ contains
     return
     
   end subroutine cap_mobas_gauss
+
+!######################################################################
+! cap_mobas_monomial: Analytic evaluation of the MO representation
+!                     of a monomial-type CAP operator.
+!                     For a definition of the CAP used, see Eqs 6&7
+!                     in JCP, 115, 6853 (2001).
+!                     Also see Eqs 9-19 of this paper for the working
+!                     equations used to evaluate the matrix elements.
+!######################################################################
+  
+  subroutine cap_mobas_monomial(gam,cap_mo)
+
+    use channels
+    use parameters
+    use import_gamess
     
+    implicit none
+
+    real(dp), dimension(:,:), allocatable :: cap_mo
+    real(dp), dimension(3)                :: cent
+    type(gam_structure)                   :: gam
+
+!----------------------------------------------------------------------
+! Fill in the van der Waals radius array
+!----------------------------------------------------------------------
+    call get_vdwr(gam)
+    
+!----------------------------------------------------------------------
+! Precalculation of terms that appear a lot in the working equations
+!----------------------------------------------------------------------
+    call monomial_precalc(gam)
+
+!----------------------------------------------------------------------
+! Set up the CAP box: in each Cartesian direction, we take the start
+! of the CAP to correspond to the furthest atom plus dscale times
+! its van der Waals radius
+!----------------------------------------------------------------------
+    call get_cap_box_monomial(gam)
+    
+!----------------------------------------------------------------------
+! Calculate the primitive representation of the CAP
+!----------------------------------------------------------------------
+    call primitive_monomial_cap_matrix(gam)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(amunu)
+    deallocate(smunu)
+    deallocate(rmunu)
+    deallocate(rmu)
+    deallocate(alpha)
+    deallocate(vdwr)
+    
+    STOP
+    
+    return
+    
+  end subroutine cap_mobas_monomial
+    
+!######################################################################
+
+  subroutine monomial_precalc(gam)
+
+    use channels
+    use parameters
+    use iomod
+    use import_gamess
+    use gamess_internal
+    
+    implicit none
+
+    integer                :: i,j,l,ipr,jpr,lpr,mu,nu,n,m,mpr,il,ilpr
+    real(dp)               :: zmu,znu
+    real(dp), dimension(3) :: r1,r2,cent
+    real(dp)               :: ftmp
+    type(gam_structure)    :: gam
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! No. primitives
+    call get_npbas(gam)
+
+    allocate(amunu(npbas,npbas))
+    amunu=0.0d0
+
+    allocate(smunu(npbas,npbas))
+    smunu=0.0d0
+
+    allocate(rmunu(npbas,npbas,3))
+    rmunu=0.0d0
+
+    allocate(rmu(npbas,3))
+    rmu=0.0d0
+
+    allocate(alpha(npbas))
+    alpha=0.0d0
+    
+!----------------------------------------------------------------------
+! a_mu,nu
+!----------------------------------------------------------------------
+    mu=0
+    do i=1,gam%natoms
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+
+                nu=0
+                do ipr=1,gam%natoms
+                   do jpr=1,gam%atoms(ipr)%nshell
+                      ilpr=gam%atoms(ipr)%sh_l(jpr)
+                      do mpr=1,gam_orbcnt(ilpr)
+                         do lpr=gam%atoms(ipr)%sh_p(jpr),gam%atoms(ipr)%sh_p(jpr+1)-1
+                            nu=nu+1
+                            
+                            amunu(mu,nu)=gam%atoms(i)%p_zet(l)&
+                                 +gam%atoms(ipr)%p_zet(lpr)
+                            
+                         enddo
+                      enddo
+                   enddo
+                enddo
+                      
+             enddo
+          enddo
+       enddo
+    enddo
+                
+!----------------------------------------------------------------------
+! S_mu,nu
+!----------------------------------------------------------------------
+    mu=0
+    do i=1,gam%natoms
+       r1=gam%atoms(i)%xyz(1:3)*ang2bohr
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+
+                nu=0
+                do ipr=1,gam%natoms
+                   r2=gam%atoms(ipr)%xyz(1:3)*ang2bohr 
+                   do jpr=1,gam%atoms(ipr)%nshell
+                      ilpr=gam%atoms(ipr)%sh_l(jpr)
+                      do mpr=1,gam_orbcnt(ilpr)
+                         do lpr=gam%atoms(ipr)%sh_p(jpr),gam%atoms(ipr)%sh_p(jpr+1)-1
+                            nu=nu+1
+                            
+                            zmu=gam%atoms(i)%p_zet(l)
+                            znu=gam%atoms(ipr)%p_zet(lpr)
+
+                            ftmp=dot_product(r1-r2,r1-r2)
+                      
+                            smunu(mu,nu)=exp(-zmu*znu*ftmp/amunu(mu,nu))
+                            
+                         enddo
+                      enddo
+                   enddo
+                enddo
+                      
+             enddo
+          enddo
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! alpha_mu (exponents)
+!----------------------------------------------------------------------
+    mu=0
+    do i=1,gam%natoms
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+                alpha(mu)=gam%atoms(i)%p_zet(l)
+             enddo
+          enddo
+       enddo
+    enddo
+                
+!----------------------------------------------------------------------
+! R_mu - note that we take the atomic centres relative to the
+!        geometric centre of the molecule as this makes the
+!        construction of the monomial-type CAP easier
+!----------------------------------------------------------------------
+    cent=0.0d0
+    do n=1,gam%natoms
+       do i=1,3
+          cent(i)=cent(i)+gam%atoms(n)%xyz(i)*ang2bohr/gam%natoms
+       enddo
+    enddo
+
+    mu=0
+    do i=1,gam%natoms
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+                rmu(mu,:)=gam%atoms(i)%xyz(1:3)*ang2bohr
+                rmu(mu,:)=rmu(mu,:)-cent(i)
+             enddo
+          enddo
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! R_mu,nu
+!----------------------------------------------------------------------
+    mu=0
+    do i=1,gam%natoms
+       r1=gam%atoms(i)%xyz(1:3)*ang2bohr
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+
+                nu=0
+                do ipr=1,gam%natoms
+                   r2=gam%atoms(ipr)%xyz(1:3)*ang2bohr
+                   do jpr=1,gam%atoms(ipr)%nshell
+                      ilpr=gam%atoms(ipr)%sh_l(jpr)
+                      do mpr=1,gam_orbcnt(ilpr)
+                         do lpr=gam%atoms(ipr)%sh_p(jpr),gam%atoms(ipr)%sh_p(jpr+1)-1
+                            nu=nu+1
+                            
+                            zmu=gam%atoms(i)%p_zet(l)
+                            znu=gam%atoms(ipr)%p_zet(lpr)                     
+
+                            rmunu(mu,nu,:)=(zmu*r1+znu*r2)/amunu(mu,nu)
+                            
+                         enddo
+                      enddo
+                   enddo
+                enddo
+                      
+             enddo
+          enddo
+       enddo
+    enddo
+    
+    return
+    
+  end subroutine monomial_precalc
+
+!######################################################################
+! get_npbas: determines the total number of primitive basis functions
+!######################################################################
+  
+  subroutine get_npbas(gam)
+
+    use channels
+    use parameters
+    use iomod
+    use import_gamess
+    use gamess_internal
+    
+    implicit none
+
+    integer             :: iatm,ish,il
+    type(gam_structure) :: gam
+
+    npbas=0
+    do iatm=1,gam%natoms
+
+       do ish=1,gam%atoms(iatm)%nshell
+
+          il=gam%atoms(iatm)%sh_l(ish)
+
+          npbas=npbas+gam_orbcnt(il)*(gam%atoms(iatm)%sh_p(ish+1) &
+               -gam%atoms(iatm)%sh_p(ish))
+           
+       enddo
+    enddo
+    
+    return
+    
+  end subroutine get_npbas
+
+!######################################################################
+! get_cap_box_monomial: determines the start of the rectangular CAP
+!                       box used in a monomial CAP. For each Cartesian
+!                       direction, we take the start of the CAP to
+!                       correspond to the furthest atom plus its van
+!                       der Waals radius multiplied by dscale
+!######################################################################
+  
+  subroutine get_cap_box_monomial(gam)
+
+    use channels
+    use parameters
+    use import_gamess
+    use gamess_internal
+    
+    implicit none
+
+    integer               :: k,i,j,l,mu,il,m
+    integer, dimension(3) :: indx
+    real(dp)              :: ftmp
+    type(gam_structure)   :: gam
+
+!----------------------------------------------------------------------
+! Calculate the CAP box parameters. These are the c_i's of Eqs 6&7 in
+! JCP, 115, 6853 (2001)
+!
+! Note that R_mu already has the geometric centre coordinates
+! subtracted, so it is a bit simpler to work with these coordinates
+!----------------------------------------------------------------------
+    do k=1,3
+       ftmp=0.0d0
+       mu=0
+       do i=1,gam%natoms
+
+          do j=1,gam%atoms(i)%nshell
+             il=gam%atoms(i)%sh_l(j)
+
+             do m=1,gam_orbcnt(il)
+             
+                do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                   mu=mu+1
+                   
+                   if (abs(rmu(mu,k))+dscale*vdwr(i).gt.ftmp) then
+                      
+                      ftmp=abs(rmu(mu,k))+dscale*vdwr(i)
+                      
+                      cstrt(k)=abs(rmu(mu,k))+dscale*vdwr(i)
+                      
+                   endif
+                
+                enddo
+             enddo
+          enddo
+       enddo
+    enddo
+       
+    return
+    
+  end subroutine get_cap_box_monomial
+  
+!######################################################################
+! primitive_monomial_cap_matrix: calculates the primitive basis
+!                                representation of a monomial CAP
+!                                operator
+!######################################################################
+  
+  subroutine primitive_monomial_cap_matrix(gam)
+
+    use channels
+    use parameters
+    use iomod
+    use import_gamess
+    use gamess_internal
+    
+    implicit none
+
+    integer               :: i,j,l,mu,k,ipr,jpr,lpr,nu,n,m,mpr,il,ilpr
+    real(dp), allocatable :: Xi(:,:,:)
+    type(gam_structure)   :: gam
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(Xi(npbas,npbas,3))
+
+!----------------------------------------------------------------------
+! Temporary hardwiring of the CAP order
+!----------------------------------------------------------------------
+    n=2
+    
+!----------------------------------------------------------------------
+! Calculate the terms Xi_mu,nu,i of Eq. 11 in JCP, 115, 6853 (2001)
+!----------------------------------------------------------------------
+    do k=1,3
+
+       mu=0
+       do i=1,gam%natoms
+          do j=1,gam%atoms(i)%nshell
+             il=gam%atoms(i)%sh_l(j)
+             do m=1,gam_orbcnt(il)
+                do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                   mu=mu+1
+                   
+                   nu=0
+                   do ipr=1,gam%natoms
+                      do jpr=1,gam%atoms(ipr)%nshell
+                         ilpr=gam%atoms(ipr)%sh_l(jpr)
+                         do mpr=1,gam_orbcnt(ilpr)
+                            do lpr=gam%atoms(ipr)%sh_p(jpr),gam%atoms(ipr)%sh_p(jpr+1)-1
+                               nu=nu+1
+                            
+                               Xi(nu,mu,k)=Xival(nu,mu,k,n)
+                            
+                            enddo
+                         enddo
+                      enddo
+                   enddo
+                   
+                enddo
+             enddo
+          enddo
+       enddo
+
+    enddo
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(Xi)
+    
+    return
+
+  end subroutine primitive_monomial_cap_matrix
+
+!######################################################################
+
+  function Xival(mu,nu,i,n) result(func)
+
+    use channels
+    use parameters
+    use iomod
+    
+    implicit none
+    
+    integer  :: mu,nu,i,n
+    real(dp) :: func
+
+    errmsg='Finish writing the Xival code!'
+    call error_control
+    
+    return
+    
+  end function Xival
+  
 !######################################################################
 
   subroutine get_vdwr(gam)
@@ -674,7 +1146,7 @@ contains
     
     implicit none
 
-    integer                                 :: nao,i,j,k
+    integer                                 :: i,j,k
     integer                                 :: iatm,jatm,ish,jsh,ip,jp,&
                                                il,jl,bra,ket,icomp,jcomp,&
                                                inx,iny,inz,ipos,&
@@ -754,7 +1226,7 @@ contains
              iangc=ang_c(ipos)
 
              
-!             write(ilog,*) 'bra:',bra
+             write(ilog,*) 'bra:',bra
 
              
              ! Loop over ket AOs
@@ -1025,12 +1497,12 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the matrix elements
 !-----------------------------------------------------------------------
-    xm=0.5d0*(xf+xi)
-    xl=0.5d0*(xf-xi)
-    ym=0.5d0*(yf+yi)
-    yl=0.5d0*(yf-yi)
-    zm=0.5d0*(zf+zi)
-    zl=0.5d0*(zf-zi)
+    xm=0.5d0*(xb+xa)
+    xl=0.5d0*(xb-xa)
+    ym=0.5d0*(yb+ya)
+    yl=0.5d0*(yb-ya)
+    zm=0.5d0*(zb+za)
+    zl=0.5d0*(zb-za)
 
     stmp=0.0d0
     captmp=0.0d0
@@ -1298,7 +1770,7 @@ contains
     return
     
   end function capvalue
-    
+
 !######################################################################  
   
 end module capmod
