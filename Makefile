@@ -65,7 +65,8 @@ INCLUDE=source/include/constants.o \
 UTILITIES=source/utilities/timingmod.o \
 	source/utilities/misc.o \
 	source/utilities/lineq.o \
-	source/utilities/eigchess.o
+	source/utilities/eigchess.o \
+	source/utilities/gammainc.o
 
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
@@ -159,6 +160,7 @@ ADC_OBJ=accuracy.o \
 	misc.o \
 	lineq.o \
 	eigchess.o \
+	gammainc.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
