@@ -864,14 +864,9 @@
       !  
       call gam_readline ; call echo(1_ik)
       !
-      !  Symmetry line. We'll only accept C1.
+      !  Symmetry line - ignore as we now support symmetry in the ADC code
       !
       call gam_readline ; call echo(1_ik)
-      if (gam_line_buf(1:2)/='C1') then
-        write (out,"('import_gamess%parse_geometry_data: encountered ',a,' symmetry; only C1 is OK')") &
-               trim(gam_line_buf)
-        stop 'import_gamess%parse_geometry_data - bad symmetry'
-      end if
       !
       !  Begin loading geometry, COORD=UNIQUE format
       !
