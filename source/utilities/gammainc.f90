@@ -1,6 +1,6 @@
 !######################################################################
 ! Routines for the evaluation of the incomplete Gamma function.
-! Taken from the freely available ASA032 library of John Burkardt.
+! Taken from the freely available ASA239 library of John Burkardt.
 !######################################################################
 
 module gammainc
@@ -21,8 +21,8 @@ contains
 !
 !  Author:
 !
-!    Allan Macleod
-!    FORTRAN90 version by John Burkardt
+!    Original FORTRAN77 version by Allan Macleod.
+!    FORTRAN90 version by John Burkardt.
 !
 !  Reference:
 !
@@ -91,7 +91,7 @@ contains
     real ( kind = 8 ), parameter :: xlgst = 1.0D+30
     real ( kind = 8 ) xvalue
     real ( kind = 8 ) y
-
+    
     x = xvalue
     alngam = 0.0D+00
 !
@@ -101,20 +101,20 @@ contains
        ifault = 2
        return
     end if
-
+    
     if ( x <= 0.0D+00 ) then
        ifault = 1
        return
     end if
-
+    
     ifault = 0
 !
 !  Calculation for 0 < X < 0.5 and 0.5 <= X < 1.5 combined.
 !
     if ( x < 1.5D+00 ) then
-
+       
        if ( x < 0.5D+00 ) then
-
+          
           alngam = - log ( x )
           y = x + 1.0D+00
 !
@@ -125,7 +125,7 @@ contains
           end if
           
        else
-       
+          
           alngam = 0.0D+00
           y = x
           x = ( x - 0.5D+00 ) - 0.5D+00
@@ -193,7 +193,7 @@ contains
 
           x1 = 1.0D+00 / x
           x2 = x1 * x1
-
+          
           alngam = alngam + x1 * ( ( &
                r4(3)   * &
                x2 + r4(2) ) * &
@@ -202,203 +202,126 @@ contains
                x2 + r4(4) )
 
        end if
-    
+       
     end if
-
+    
     return
   end function alngam
 
-  function gamain ( x, p, ifault )
+  function alnorm ( x, upper )
 
 !*****************************************************************************80
 !
-!! GAMAIN computes the incomplete gamma ratio.
-!
-!  Discussion:
-!
-!    A series expansion is used if P > X or X <= 1.  Otherwise, a
-!    continued fraction approximation is used.
+!! ALNORM computes the cumulative density of the standard normal distribution.
 !
 !  Modified:
 !
-!    17 January 2008
+!    13 January 2008
 !
 !  Author:
 !
-!    G Bhattacharjee
-!    FORTRAN90 version by John Burkardt
+!    Original FORTRAN77 version by David Hill.
+!    FORTRAN90 version by John Burkardt.
 !
 !  Reference:
 !
-!    G Bhattacharjee,
-!    Algorithm AS 32:
-!    The Incomplete Gamma Integral,
+!    David Hill,
+!    Algorithm AS 66:
+!    The Normal Integral,
 !    Applied Statistics,
-!    Volume 19, Number 3, 1970, pages 285-287.
+!    Volume 22, Number 3, 1973, pages 424-427.
 !
 !  Parameters:
 !
-!    Input, real ( kind = 8 ) X, P, the parameters of the incomplete 
-!    gamma ratio.  0 <= X, and 0 < P.
+!    Input, real ( kind = 8 ) X, is one endpoint of the semi-infinite interval
+!    over which the integration takes place.
 !
-!    Output, integer ( kind = 4 ) IFAULT, error flag.
-!    0, no errors.
-!    1, P <= 0.
-!    2, X < 0.
-!    3, underflow.
-!    4, error return from the Log Gamma routine.
+!    Input, logical UPPER, determines whether the upper or lower
+!    interval is to be integrated:
+!    .TRUE.  => integrate from X to + Infinity;
+!    .FALSE. => integrate from - Infinity to X.
 !
-!    Output, real ( kind = 8 ) GAMAIN, the value of the incomplete
-!    gamma ratio.
+!    Output, real ( kind = 8 ) ALNORM, the integral of the standard normal
+!    distribution over the desired interval.
 !
     implicit none
 
-    real ( kind = 8 ) a
-    real ( kind = 8 ), parameter :: acu = 1.0D-08
-!    real ( kind = 8 ) alngam
-    real ( kind = 8 ) an
-    real ( kind = 8 ) arg
-    real ( kind = 8 ) b
-    real ( kind = 8 ) dif
-    real ( kind = 8 ) factor
-    real ( kind = 8 ) g
-    real ( kind = 8 ) gamain
-    real ( kind = 8 ) gin
-    integer ( kind = 4 ) i
-    integer ( kind = 4 ) ifault
-    real ( kind = 8 ), parameter :: oflo = 1.0D+37
-    real ( kind = 8 ) p
-    real ( kind = 8 ) pn(6)
-    real ( kind = 8 ) rn
-    real ( kind = 8 ) term
-    real ( kind = 8 ), parameter :: uflo = 1.0D-37
+    real ( kind = 8 ), parameter :: a1 = 5.75885480458D+00
+    real ( kind = 8 ), parameter :: a2 = 2.62433121679D+00
+    real ( kind = 8 ), parameter :: a3 = 5.92885724438D+00
+    real ( kind = 8 ) alnorm
+    real ( kind = 8 ), parameter :: b1 = -29.8213557807D+00
+    real ( kind = 8 ), parameter :: b2 = 48.6959930692D+00
+    real ( kind = 8 ), parameter :: c1 = -0.000000038052D+00
+    real ( kind = 8 ), parameter :: c2 = 0.000398064794D+00
+    real ( kind = 8 ), parameter :: c3 = -0.151679116635D+00
+    real ( kind = 8 ), parameter :: c4 = 4.8385912808D+00
+    real ( kind = 8 ), parameter :: c5 = 0.742380924027D+00
+    real ( kind = 8 ), parameter :: c6 = 3.99019417011D+00
+    real ( kind = 8 ), parameter :: con = 1.28D+00
+    real ( kind = 8 ), parameter :: d1 = 1.00000615302D+00
+    real ( kind = 8 ), parameter :: d2 = 1.98615381364D+00
+    real ( kind = 8 ), parameter :: d3 = 5.29330324926D+00
+    real ( kind = 8 ), parameter :: d4 = -15.1508972451D+00
+    real ( kind = 8 ), parameter :: d5 = 30.789933034D+00
+    real ( kind = 8 ), parameter :: ltone = 7.0D+00
+    real ( kind = 8 ), parameter :: p = 0.398942280444D+00
+    real ( kind = 8 ), parameter :: q = 0.39990348504D+00
+    real ( kind = 8 ), parameter :: r = 0.398942280385D+00
+    logical up
+    logical upper
+    real ( kind = 8 ), parameter :: utzero = 18.66D+00
     real ( kind = 8 ) x
-!
-!  Check the input.
-!
-    if ( p <= 0.0D+00 ) then
-       ifault = 1
-       gamain = 0.0D+00
-       return
-    end if
-    
-    if ( x < 0.0D+00 ) then
-       ifault = 2
-       gamain = 0.0D+00
-       return
-    end if
-    
-    if ( x == 0.0D+00 ) then
-       ifault = 0
-       gamain = 0.0D+00
-       return
-    end if
-    
-    g = alngam ( p, ifault )
+    real ( kind = 8 ) y
+    real ( kind = 8 ) z
 
-    if ( ifault /= 0 ) then
-       ifault = 4
-       gamain = 0.0D+00
-       return
+    up = upper
+    z = x
+  
+    if ( z < 0.0D+00 ) then
+       up = .not. up
+       z = - z
     end if
 
-    arg = p * log ( x ) - x - g
+    if ( ltone < z .and. ( ( .not. up ) .or. utzero < z ) ) then
 
-    if ( arg < log ( uflo ) ) then
-       ifault = 3
-       gamain = 0.0D+00
-       return
-    end if
-    
-    ifault = 0
-    factor = exp ( arg )
-!
-!  Calculation by series expansion.
-!
-    if ( x <= 1.0D+00 .or. x < p ) then
-
-       gin = 1.0D+00
-       term = 1.0D+00
-       rn = p
-
-       do
-
-          rn = rn + 1.0D+00
-          term = term * x / rn
-          gin = gin + term
-          
-          if ( term <= acu ) then
-             exit
-          end if
-          
-       end do
-       
-       gamain = gin * factor / p
-       return
-       
-    end if
-!
-!  Calculation by continued fraction.
-!
-    a = 1.0D+00 - p
-    b = a + x + 1.0D+00
-    term = 0.0D+00
-    
-    pn(1) = 1.0D+00
-    pn(2) = x
-    pn(3) = x + 1.0D+00
-    pn(4) = x * b
-    
-    gin = pn(3) / pn(4)
-
-    do
-
-       a = a + 1.0D+00
-       b = b + 2.0D+00
-       term = term + 1.0D+00
-       an = a * term
-       do i = 1, 2
-          pn(i+4) = b * pn(i+2) - an * pn(i)
-       end do
-       
-       if ( pn(6) /= 0.0D+00 ) then
-
-          rn = pn(5) / pn(6)
-          dif = abs ( gin - rn )
-!
-!  Absolute error tolerance satisfied?
-!
-          if ( dif <= acu ) then
-!
-!  Relative error tolerance satisfied?
-!
-             if ( dif <= acu * rn ) then
-                gamain = 1.0D+00 - factor * gin
-                exit
-             end if
-             
-          end if
-
-          gin = rn
-
-       end if
-
-       do i = 1, 4
-          pn(i) = pn(i+2)
-       end do
-
-       if ( oflo <= abs ( pn(5) ) ) then
-       
-          do i = 1, 4
-             pn(i) = pn(i) / oflo
-          end do
-          
+       if ( up ) then
+          alnorm = 0.0D+00
+       else
+          alnorm = 1.0D+00
        end if
        
-    end do
-    
+       return
+
+    end if
+
+    y = 0.5D+00 * z * z
+
+    if ( z <= con ) then
+       
+       alnorm = 0.5D+00 - z * ( p - q * y &
+            / ( y + a1 + b1 &
+            / ( y + a2 + b2 & 
+            / ( y + a3 ))))
+
+    else
+
+       alnorm = r * exp ( - y ) &
+            / ( z + c1 + d1 &
+            / ( z + c2 + d2 &
+            / ( z + c3 + d3 &
+            / ( z + c4 + d4 &
+            / ( z + c5 + d5 &
+            / ( z + c6 ))))))
+
+    end if
+
+    if ( .not. up ) then
+       alnorm = 1.0D+00 - alnorm
+    end if
+
     return
-  end function gamain
+  end function alnorm
 
   subroutine gamma_inc_values ( n_data, a, x, fx )
 
@@ -463,7 +386,7 @@ contains
     implicit none
 
     integer ( kind = 4 ), parameter :: n_max = 20
-
+    
     real ( kind = 8 ) a
     real ( kind = 8 ), save, dimension ( n_max ) :: a_vec = (/ &
          0.10D+00, &
@@ -548,8 +471,211 @@ contains
        x = x_vec(n_data)
        fx = fx_vec(n_data)
     end if
-    
+
     return
   end subroutine gamma_inc_values
+
+  function gammad ( x, p, ifault )
+
+!*****************************************************************************80
+!
+!! GAMMAD computes the Incomplete Gamma Integral
+!
+!  Auxiliary functions:
+!
+!    ALOGAM = logarithm of the gamma function, 
+!    ALNORM = algorithm AS66
+!
+!  Modified:
+!
+!    20 January 2008
+!
+!  Author:
+!
+!    Original FORTRAN77 version by B Shea.
+!    FORTRAN90 version by John Burkardt.
+!
+!  Reference:
+!
+!    B Shea,
+!    Algorithm AS 239:
+!    Chi-squared and Incomplete Gamma Integral,
+!    Applied Statistics,
+!    Volume 37, Number 3, 1988, pages 466-473.
+!
+!  Parameters:
+!
+!    Input, real ( kind = 8 ) X, P, the parameters of the incomplete 
+!    gamma ratio.  0 <= X, and 0 < P.
+!
+!    Output, integer ( kind = 4 ) IFAULT, error flag.
+!    0, no error.
+!    1, X < 0 or P <= 0.
+!
+!    Output, real ( kind = 8 ) GAMMAD, the value of the incomplete 
+!    Gamma integral.
+!
+    implicit none
+
+    real ( kind = 8 ) a
+!    real ( kind = 8 ) alnorm
+!    real ( kind = 8 ) alngam
+    real ( kind = 8 ) an
+    real ( kind = 8 ) arg
+    real ( kind = 8 ) b
+    real ( kind = 8 ) c
+    real ( kind = 8 ), parameter :: elimit = - 88.0D+00
+    real ( kind = 8 ) gammad
+    integer ( kind = 4 ) ifault
+    real ( kind = 8 ), parameter :: oflo = 1.0D+37
+    real ( kind = 8 ) p
+    real ( kind = 8 ), parameter :: plimit = 1000.0D+00
+    real ( kind = 8 ) pn1
+    real ( kind = 8 ) pn2
+    real ( kind = 8 ) pn3
+    real ( kind = 8 ) pn4
+    real ( kind = 8 ) pn5
+    real ( kind = 8 ) pn6
+    real ( kind = 8 ) rn
+    real ( kind = 8 ), parameter :: tol = 1.0D-14
+    logical upper
+    real ( kind = 8 ) x
+    real ( kind = 8 ), parameter :: xbig = 1.0D+08
+    
+    gammad = 0.0D+00
+!
+!  Check the input.
+!
+    if ( x < 0.0D+00 ) then
+       ifault = 1
+       return
+    end if
+    
+    if ( p <= 0.0D+00 ) then
+       ifault = 1
+       return
+    end if
+    
+    ifault = 0
+
+    if ( x == 0.0D+00 ) then
+       gammad = 0.0D+00
+       return
+    end if
+!
+!  If P is large, use a normal approximation.
+!
+    if ( plimit < p ) then
+
+       pn1 = 3.0D+00 * sqrt ( p ) * ( ( x / p )**( 1.0D+00 / 3.0D+00 ) &
+            + 1.0D+00 / ( 9.0D+00 * p ) - 1.0D+00 )
+       
+       upper = .false.
+       gammad = alnorm ( pn1, upper )
+       return
+
+    end if
+!
+!  If X is large set GAMMAD = 1.
+!
+    if ( xbig < x ) then
+       gammad = 1.0D+00
+       return
+    end if
+!
+!  Use Pearson's series expansion.
+!  (Note that P is not large enough to force overflow in ALOGAM).
+!  No need to test IFAULT on exit since P > 0.
+!
+    if ( x <= 1.0D+00 .or. x < p ) then
+       
+       arg = p * log ( x ) - x - alngam ( p + 1.0D+00, ifault )
+       c = 1.0D+00
+       gammad = 1.0D+00
+       a = p
+       
+       do
+
+          a = a + 1.0D+00
+          c = c * x / a
+          gammad = gammad + c
+          
+          if ( c <= tol ) then
+             exit
+          end if
+
+       end do
+
+       arg = arg + log ( gammad )
+
+       if ( elimit <= arg ) then
+          gammad = exp ( arg )
+       else
+          gammad = 0.0D+00
+       end if
+!
+!  Use a continued fraction expansion.
+!
+    else 
+
+       arg = p * log ( x ) - x - alngam ( p, ifault )
+       a = 1.0D+00 - p
+       b = a + x + 1.0D+00
+       c = 0.0D+00
+       pn1 = 1.0D+00
+       pn2 = x
+       pn3 = x + 1.0D+00
+       pn4 = x * b
+       gammad = pn3 / pn4
+       
+       do
+
+          a = a + 1.0D+00
+          b = b + 2.0D+00
+          c = c + 1.0D+00
+          an = a * c
+          pn5 = b * pn3 - an * pn1
+          pn6 = b * pn4 - an * pn2
+
+          if ( pn6 /= 0.0D+00 ) then
+
+             rn = pn5 / pn6
+             
+             if ( abs ( gammad - rn ) <= min ( tol, tol * rn ) ) then
+                exit
+             end if
+
+             gammad = rn
+
+          end if
+          
+          pn1 = pn3
+          pn2 = pn4
+          pn3 = pn5
+          pn4 = pn6
+!
+!  Re-scale terms in continued fraction if terms are large.
+!
+          if ( oflo <= abs ( pn5 ) ) then
+             pn1 = pn1 / oflo
+             pn2 = pn2 / oflo
+             pn3 = pn3 / oflo
+             pn4 = pn4 / oflo
+          end if
+          
+       end do
+
+       arg = arg + log ( gammad )
+       
+       if ( elimit <= arg ) then
+          gammad = 1.0D+00 - exp ( arg )
+       else
+          gammad = 1.0D+00
+       end if
+       
+    end if
+
+    return
+  end function gammad
 
 end module gammainc

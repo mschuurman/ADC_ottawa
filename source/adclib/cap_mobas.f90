@@ -311,8 +311,8 @@ contains
     ! Multiplication by the CAP strength parameter
     cap_mo=cap_mo*capstr
 
-    ! Symmetrisation - not strictly necessary, but we will be extra
-    ! cautious
+    ! Symmetrisation - not really necessary but lets make sure that
+    ! the MO CAP matrix is strictly Hermitian
     do i=1,nbas-1
        do j=i+1,nbas
           cap_mo(i,j)=cap_mo(j,i)
@@ -558,12 +558,14 @@ contains
        do j=1,gam%atoms(i)%nshell
           il=gam%atoms(i)%sh_l(j)
           do m=1,gam_orbcnt(il)
-             ipos=ang_loc(il)+m-1
+!             ipos=ang_loc(il)+m-1
              do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
                 mu=mu+1
                 
-                Nmu(mu)=ang_c(ipos)
-                
+                !Nmu(mu)=ang_c(ipos)
+
+                Nmu(mu)=gam_normc(il)
+
              enddo
           enddo
        enddo
@@ -936,17 +938,14 @@ contains
 
 !----------------------------------------------------------------------
 ! Incomplete Gamma function: gamma((kappa+1)/2,ac^2)
-! Note that the function gamain returns the incomplete gamma ratio,
-! hence the need to multiply by Gamma((kappa+1)/2)
 !----------------------------------------------------------------------
     ! Incomplete gamma function
-    ginc=gamain(a*c**2,dble(kappa+1)/2.0d0,ierr)*g
-    
+    ginc=gammad(a*c**2,dble(kappa+1)/2.0d0,ierr)
+
     ! Exit here if something went wrong
-    if (ierr.ne.0.and.ierr.ne.3) then
-       write(errmsg,'(a,2x,i1)') &
-            'Calculation of the incomplete Gamma function &
-            failed. ierr=',ierr
+    if (ierr.ne.0) then
+       write(errmsg,'(a,2x,i1)') 'Calculation of the incomplete &
+            Gamma function failed. ierr=',ierr
        call error_control
     endif
 
