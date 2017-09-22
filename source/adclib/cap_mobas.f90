@@ -735,21 +735,22 @@ contains
 ! See Eq. 10 in JCP, 115, 6853 (2001)
 !----------------------------------------------------------------------
     cap_pbas=0.0d0
-    do mu=1,npbas
-       do nu=1,npbas
 
-          do i=1,3
+    do i=1,3
+
+       do mu=1,npbas
+          do nu=1,npbas
              
              Wi=Nmu(mu)*Nmu(nu)*Smunu(mu,nu)*Xi(mu,nu,i)
              do j=1,3
                 if (j.ne.i) Wi=Wi*Theta(mu,nu,j)
              enddo
-
+             
              cap_pbas(mu,nu)=cap_pbas(mu,nu)+Wi
              
           enddo
-
        enddo
+
     enddo
           
 !----------------------------------------------------------------------
