@@ -745,7 +745,7 @@
 ! CAP section
 !-----------------------------------------------------------------------
       if (lcap) then
-
+         
          ! CAP type
          if (icap.eq.0) then
             msg='The CAP type has not been given'
@@ -764,6 +764,14 @@
             goto 999
          endif         
 
+         ! Grid type - note that for a monomial CAP, as default we
+         ! evaluate the MO CAP matrix elements analytically, and
+         ! so no grid is required
+         if (icap.ne.2.and.igrid.eq.0) then
+            msg='The CAP integration grid has not been given'
+            goto 999
+         endif
+         
          ! Propagation section
          if (.not.lpropagation) then
             msg='The propagation sesction has not been given'

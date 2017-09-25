@@ -218,6 +218,9 @@
   ! tighten up orbitals with a couple scf runs, if requested
   if (.true.) call scf_loop(int2e,gam,hao_cmplx,mos_cmplx)
 
+  ! Reset the MOs in gam as these are used later in some parts of the code
+  gam%vectors(1:nao,1:nmo)=real(real(mos_cmplx(1:nao,1:nmo)))
+  
   ! ensure orbitals have not developed any complex character
   mos_real = real(real(mos_cmplx))
   refval = sum(real(aimag(mos_cmplx)))

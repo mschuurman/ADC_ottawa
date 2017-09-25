@@ -16,7 +16,7 @@
 !         Makes use of the NUMGRID libraries of Radovan Bast if
 !         Becke's partitioning scheme is used.
 !
-!         For monomial CAPs, all matrix elements are evaluated
+!         For monomial CAPs, all matrix elements can be evaluated
 !         analytically using the equations derived by Santra and
 !         Cederbaum in JCP, 115, 6853 (2001).
 !######################################################################
@@ -40,6 +40,9 @@ module capmod
   ! Basis dimensions
   integer                :: npbas
   integer                :: nao
+
+  ! Geometric centre of the molecule
+  real(dp), dimension(3) :: gcent
   
   ! NUMGRID arrays and variables
   integer                :: min_num_angular_points
@@ -116,11 +119,21 @@ contains
     call times(tw1,tc1)
 
 !----------------------------------------------------------------------
+! Calculate the geometric centre of the molecule - this is used in
+! various different schemes to evalaute CAP matrix elements, and so
+! should be precalculated
+!----------------------------------------------------------------------
+    call calc_geomcent(gam)
+    
+!----------------------------------------------------------------------
 ! Calculate the MO CAP matrix elements
 !----------------------------------------------------------------------
-    if (icap.eq.1) then
-       ! Sigmoidal CAP: no analytic equations for the matrix elements
-       ! exits, and we have to resort to numerical integration
+    if (igrid.eq.0) then
+       ! Analytic evaluation of the MO CAP matrix elements. Note
+       ! that this is only possible for a monomial CAP
+       call cap_mobas_monomial_ana(gam,cap_mo)
+    else
+       ! Numerical integration of the MO CAP matrix elements
        if (igrid.eq.1) then
           ! Becke's integration scheme
           call cap_mobas_becke(gam,cap_mo)
@@ -128,10 +141,6 @@ contains
           ! Gauss-Legendre quadrature
           call cap_mobas_gauss(gam,cap_mo)
        endif
-    else if (icap.eq.2) then
-       ! Monomial CAP: analytic equations exist for the matrix
-       ! elements, and we will evaluate them exactly
-       call cap_mobas_monomial(gam,cap_mo)
     endif
        
 !----------------------------------------------------------------------
@@ -144,6 +153,35 @@ contains
     
   end subroutine cap_mobas
 
+!######################################################################
+
+  subroutine calc_geomcent(gam)
+
+    use channels
+    use parameters
+    use timingmod
+    use import_gamess
+
+    implicit none
+
+    integer             :: i,n,natom
+    type(gam_structure) :: gam
+
+!----------------------------------------------------------------------
+! Geometric centre of the molecule (in Bohr)
+!----------------------------------------------------------------------
+    gcent=0.0d0
+    natom=gam%natoms
+    do n=1,natom
+       do i=1,3
+          gcent(i)=gcent(i)+gam%atoms(n)%xyz(i)*ang2bohr/natom
+       enddo
+    enddo
+
+    return
+    
+  end subroutine calc_geomcent
+    
 !######################################################################
 
   subroutine cap_mobas_becke(gam,cap_mo)
@@ -198,7 +236,6 @@ contains
 
     integer                               :: i,n,natom
     real(dp), dimension(:,:), allocatable :: cap_mo
-    real(dp), dimension(3)                :: cent
     type(gam_structure)                   :: gam
 
 !----------------------------------------------------------------------
@@ -218,22 +255,13 @@ contains
 !----------------------------------------------------------------------
 ! Integration boundaries
 !----------------------------------------------------------------------
-    ! Geometric centre of the molecule (in Bohr)
-    cent=0.0d0
-    natom=gam%natoms
-    do n=1,natom
-       do i=1,3
-          cent(i)=cent(i)+gam%atoms(n)%xyz(i)*ang2bohr/natom
-       enddo
-    enddo
-
     ! Integration boundaries
-    xa=cent(1)-0.5d0*gridpar(1)*ang2bohr
-    xb=cent(1)+0.5d0*gridpar(1)*ang2bohr
-    ya=cent(2)-0.5d0*gridpar(2)*ang2bohr
-    yb=cent(2)+0.5d0*gridpar(2)*ang2bohr
-    za=cent(3)-0.5d0*gridpar(3)*ang2bohr
-    zb=cent(3)+0.5d0*gridpar(3)*ang2bohr
+    xa=gcent(1)-0.5d0*gridpar(1)*ang2bohr
+    xb=gcent(1)+0.5d0*gridpar(1)*ang2bohr
+    ya=gcent(2)-0.5d0*gridpar(2)*ang2bohr
+    yb=gcent(2)+0.5d0*gridpar(2)*ang2bohr
+    za=gcent(3)-0.5d0*gridpar(3)*ang2bohr
+    zb=gcent(3)+0.5d0*gridpar(3)*ang2bohr
     
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -253,17 +281,17 @@ contains
 !                     equations used to evaluate the matrix elements.
 !######################################################################
   
-  subroutine cap_mobas_monomial(gam,cap_mo)
+  subroutine cap_mobas_monomial_ana(gam,cap_mo)
 
     use channels
+    use iomod
     use parameters
     use import_gamess
     
     implicit none
 
-    integer                               :: i,j
+    integer                               :: i,j,unit
     real(dp), dimension(:,:), allocatable :: cap_mo
-    real(dp), dimension(3)                :: cent
     type(gam_structure)                   :: gam
 
 !----------------------------------------------------------------------
@@ -300,11 +328,6 @@ contains
     allocate(cap_mo(nbas,nbas))
     cap_mo=0.0d0
 
-    ! Allocate and retrieve the AO-to-MO transformation matrix
-    nao=gam%nbasis
-    if (.not.allocated(ao2mo)) allocate(ao2mo(nao,nbas))
-    ao2mo=gam%vectors(1:nao,1:nbas)
-
     ! Similarity transform the AO CAP matrix to yield the MO CAP matrix
     cap_mo=matmul(transpose(ao2mo),matmul(cap_ao,ao2mo))
 
@@ -318,6 +341,18 @@ contains
           cap_mo(i,j)=cap_mo(j,i)
        enddo
     enddo
+
+!----------------------------------------------------------------------
+! For checking purposes, output the MO CAP matrix elements to file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='mocap.dat',form='formatted',status='unknown')
+    do i=1,nbas
+       do j=i,nbas
+          write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
+       enddo
+    enddo
+    close(unit)
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -336,7 +371,7 @@ contains
     
     return
     
-  end subroutine cap_mobas_monomial
+  end subroutine cap_mobas_monomial_ana
     
 !######################################################################
 
@@ -353,7 +388,6 @@ contains
     integer                :: i,j,l,ipr,jpr,lpr,mu,nu,n,m,mpr,il,&
                               ilpr,ipos
     real(dp)               :: zmu,znu
-    real(dp), dimension(3) :: cent
     real(dp)               :: ftmp
     type(gam_structure)    :: gam
 
@@ -389,13 +423,6 @@ contains
 !        geometric centre of the molecule as this makes the
 !        construction of the monomial-type CAP easier
 !----------------------------------------------------------------------
-    cent=0.0d0
-    do n=1,gam%natoms
-       do i=1,3
-          cent(i)=cent(i)+gam%atoms(n)%xyz(i)*ang2bohr/gam%natoms
-       enddo
-    enddo
-
     mu=0
     do i=1,gam%natoms
        do j=1,gam%atoms(i)%nshell
@@ -404,7 +431,7 @@ contains
              do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
                 mu=mu+1
                 Rmu(mu,:)=gam%atoms(i)%xyz(1:3)*ang2bohr
-                Rmu(mu,:)=Rmu(mu,:)-cent(i)
+                Rmu(mu,:)=Rmu(mu,:)-gcent(i)
              enddo
           enddo
        enddo
@@ -558,13 +585,15 @@ contains
        do j=1,gam%atoms(i)%nshell
           il=gam%atoms(i)%sh_l(j)
           do m=1,gam_orbcnt(il)
-!             ipos=ang_loc(il)+m-1
+             ipos=ang_loc(il)+m-1
              do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
                 mu=mu+1
                 
                 !Nmu(mu)=ang_c(ipos)
 
-                Nmu(mu)=gam_normc(il)
+                !Nmu(mu)=gam_normc(il)
+
+                Nmu(mu)=1.0d0
 
              enddo
           enddo
@@ -799,7 +828,7 @@ contains
 
           ! I_mu,nu,i
           Imunu=Ival(mu,nu,i,cstrt(i),n,rho+sigma)
-          
+
           Xival=Xival+bcmu*bcnu*f1*f2*Imunu
           
        enddo
@@ -1392,7 +1421,7 @@ contains
 !----------------------------------------------------------------------
     allocate(cap(num_points))
     cap=0.0d0
-    
+
 !----------------------------------------------------------------------
 ! Calculate the CAP values at the grid points
 !----------------------------------------------------------------------
@@ -1401,6 +1430,10 @@ contains
     case(1) ! Sigmoidal CAP
 
        call precalc_cap_sigmoidal(gam)
+
+    case(2) ! Monomial CAP
+
+       call precalc_cap_monomial(gam)
        
     end select
     
@@ -1454,7 +1487,9 @@ contains
 !----------------------------------------------------------------------
 ! Evaluate the sigmoidal CAP value at each grid point
 !----------------------------------------------------------------------
-    ! Loop over grid points
+    cap=0.0d0
+
+    ! Loop over the grid points
     do i=1,num_points
 
        ! Cartesian coordinates of the current grid point
@@ -1497,7 +1532,98 @@ contains
     return
     
   end subroutine precalc_cap_sigmoidal
+
+!######################################################################
+! precalc_cap_monomial: Calculation of a monomial-type CAP at the
+!                       grid points. The form of the CAP is given in
+!                       equations 6 and 7 in JCP, 115, 6853 (2001).
+!                       The CAP box parameters c_i are correspond, in
+!                       each direction, to the position of the
+!                       furthest atom plus its van der Waals radius
+!                       multiplied by dscale
+!######################################################################
+  
+  subroutine precalc_cap_monomial(gam)
+
+    use channels
+    use parameters
+    use import_gamess
+    use gamess_internal
     
+    implicit none
+
+    integer                :: i,n,mu,j,il,m,l,ord
+    real(dp), dimension(3) :: x
+    type(gam_structure)    :: gam
+    
+!----------------------------------------------------------------------
+! Calculate the CAP box parameters.
+! Note that the subroutine get_cap_box_monomial assumes that the Rmu
+! array has already been filled in, so this must first be done.
+!----------------------------------------------------------------------
+    ! No. primitives
+    call get_npbas(gam)
+
+    ! R_mu - note that we take the atomic centres relative to the
+    ! geometric centre of the molecule as this makes the
+    ! construction of the monomial-type CAP easier
+    allocate(Rmu(npbas,3))
+    Rmu=0.0d0
+
+    ! R_mu
+    mu=0
+    do i=1,gam%natoms
+       do j=1,gam%atoms(i)%nshell
+          il=gam%atoms(i)%sh_l(j)
+          do m=1,gam_orbcnt(il)
+             do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
+                mu=mu+1
+                Rmu(mu,:)=gam%atoms(i)%xyz(1:3)*ang2bohr
+                Rmu(mu,:)=Rmu(mu,:)-gcent(i)
+             enddo
+          enddo
+       enddo
+    enddo
+
+    ! Calculate the CAP box parameters
+    call get_cap_box_monomial(gam)
+    
+    deallocate(Rmu)
+
+!----------------------------------------------------------------------
+! Temporary hardwiring of the CAP order
+!----------------------------------------------------------------------
+    ord=2
+    
+!----------------------------------------------------------------------
+! Evaluate the sigmoidal CAP value at each grid point
+!----------------------------------------------------------------------
+    cap=0.0d0
+
+    ! Loop over the grid points
+    do n=1,num_points
+
+       ! Cartesian coordinates of the current grid point
+       x(1)=grid(n*4-3)
+       x(2)=grid(n*4-2)
+       x(3)=grid(n*4-1)
+
+       ! Loop over the x, y, and directions
+       do i=1,3
+
+          ! Contribution do the CAP
+          if (abs(x(i)-gcent(i)).gt.cstrt(i)) then
+             cap(n)=cap(n)+capstr*(abs(x(i))-cstrt(i))**ord
+          endif
+          
+       enddo
+
+    enddo
+    
+    return
+    
+  end subroutine precalc_cap_monomial
+  
 !######################################################################
 ! mo_cap_matrix: Numerical calculation of the MO representation of the
 !                CAP operator. Additionally, for checking purposes,
@@ -1506,6 +1632,7 @@ contains
   
   subroutine mo_cap_matrix(gam,cap_mo)
 
+    use iomod
     use channels
     use parameters
     use import_gamess
@@ -1514,7 +1641,7 @@ contains
     
     implicit none
 
-    integer                                 :: i,j,k
+    integer                                 :: i,j,k,unit
     integer                                 :: iatm,jatm,ish,jsh,ip,jp,&
                                                il,jl,bra,ket,icomp,jcomp,&
                                                inx,iny,inz,ipos,&
@@ -1653,6 +1780,18 @@ contains
     cap_mo=matmul(transpose(ao2mo),matmul(cap_ao,ao2mo))
 
 !----------------------------------------------------------------------
+! For checking purposes, output the MO CAP matrix elements to file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='mocap.dat',form='formatted',status='unknown')
+    do i=1,nbas
+       do j=i,nbas
+          write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
+       enddo
+    enddo
+    close(unit)
+    
+!----------------------------------------------------------------------
 ! For checking purposes, output some information about the difference
 ! between the numerical and analytic AO overlap matrices and the
 ! trace of the numverical AO overlap matrix
@@ -1790,6 +1929,18 @@ contains
           jx=x-gam%atoms(jatm)%xyz(1)*ang2bohr
           jy=y-gam%atoms(jatm)%xyz(2)*ang2bohr
           jz=z-gam%atoms(jatm)%xyz(3)*ang2bohr
+
+          ! For monomial CAPs, we work with atomic coordinates
+          ! taken relative to the goeometric centre of the
+          ! molecule
+          if (icap.eq.2) then
+             ix=ix-gcent(1)
+             iy=iy-gcent(2)
+             iz=iz-gcent(3)
+             jx=jx-gcent(1)
+             jy=jy-gcent(2)
+             jz=jz-gcent(3)
+          endif
           
           ! AO values
           aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
