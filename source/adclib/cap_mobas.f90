@@ -273,12 +273,13 @@ contains
   end subroutine cap_mobas_gauss
 
 !######################################################################
-! cap_mobas_monomial: Analytic evaluation of the MO representation
-!                     of a monomial-type CAP operator.
-!                     For a definition of the CAP used, see Eqs 6&7
-!                     in JCP, 115, 6853 (2001).
-!                     Also see Eqs 9-19 of this paper for the working
-!                     equations used to evaluate the matrix elements.
+! cap_mobas_monomial_ana: Analytic evaluation of the MO representation
+!                         of a monomial-type CAP operator.
+!                         For a definition of the CAP used, see Eqs
+!                         6 &7 in JCP, 115, 6853 (2001).
+!                         Also see Eqs 9-19 of this paper for the
+!                         working equations used to evaluate the
+!                         matrix elements.
 !######################################################################
   
   subroutine cap_mobas_monomial_ana(gam,cap_mo)
@@ -303,7 +304,7 @@ contains
 ! Precalculation of terms that appear a lot in the working equations
 !----------------------------------------------------------------------
     call monomial_precalc(gam)
-
+    
 !----------------------------------------------------------------------
 ! Set up the CAP box: in each Cartesian direction, we take the start
 ! of the CAP to correspond to the furthest atom plus dscale times
@@ -345,15 +346,15 @@ contains
 !----------------------------------------------------------------------
 ! For checking purposes, output the MO CAP matrix elements to file
 !----------------------------------------------------------------------
-    call freeunit(unit)
-    open(unit,file='mocap.dat',form='formatted',status='unknown')
-    do i=1,nbas
-       do j=i,nbas
-          write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
-       enddo
-    enddo
-    close(unit)
-    
+!    call freeunit(unit)
+!    open(unit,file='mocap.dat',form='formatted',status='unknown')
+!    do i=1,nbas
+!       do j=i,nbas
+!          write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
+!       enddo
+!    enddo
+!    close(unit)
+
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -458,7 +459,7 @@ contains
                             
                             amunu(mu,nu)=gam%atoms(i)%p_zet(l)&
                                  +gam%atoms(ipr)%p_zet(lpr)
-                            
+
                          enddo
                       enddo
                    enddo
@@ -468,7 +469,7 @@ contains
           enddo
        enddo
     enddo
-                
+
 !----------------------------------------------------------------------
 ! S_mu,nu
 !----------------------------------------------------------------------
@@ -589,12 +590,8 @@ contains
              do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
                 mu=mu+1
                 
-                !Nmu(mu)=ang_c(ipos)
-
-                !Nmu(mu)=gam_normc(il)
-
-                Nmu(mu)=1.0d0
-
+                Nmu(mu)=ang_c(ipos)
+                
              enddo
           enddo
        enddo
@@ -743,7 +740,7 @@ contains
     do i=1,3
        do mu=1,npbas
           do nu=1,npbas
-             Xi(nu,mu,i)=Xival(nu,mu,i,n)
+             Xi(mu,nu,i)=Xival(mu,nu,i,n)
           enddo
        enddo
     enddo
@@ -754,7 +751,7 @@ contains
     do j=1,3
        do mu=1,npbas
           do nu=1,npbas
-             Theta(nu,mu,j)=Thetaval(nu,mu,j)
+             Theta(mu,nu,j)=Thetaval(mu,nu,j)
           enddo
        enddo
     enddo
@@ -912,7 +909,7 @@ contains
        ! (-1)^(n-tau) * ('n choose tau') * a_mu,nu^-(kappa+tau+1)/2
        pre=(-1.0d0)**(n-tau) &
             * mathbinomial(n,tau) &
-            * amunu(mu,nu)**(-(kappa+tau+1)/2.0d0)
+            * amunu(mu,nu)**(-0.5d0*(kappa+tau+1))
 
        ! (-1)^kappa * (c_i + R_mu,nu,i)^(n-tau)
        f1=(-1.0d0)**kappa &
@@ -970,14 +967,7 @@ contains
 ! Incomplete Gamma function: gamma((kappa+1)/2,ac^2)
 !----------------------------------------------------------------------
     ! Incomplete gamma function
-    ginc=gammad(a*c**2,dble(kappa+1)/2.0d0,ierr)
-
-    ! Exit here if something went wrong
-    if (ierr.ne.0) then
-       write(errmsg,'(a,2x,i1)') 'Calculation of the incomplete &
-            Gamma function failed. ierr=',ierr
-       call error_control
-    endif
+    ginc=g*gamma_inc_ratio(dble(kappa+1)/2.0d0,a*c**2)
 
 !----------------------------------------------------------------------
 ! xi_kappa(c)
@@ -1782,14 +1772,14 @@ contains
 !----------------------------------------------------------------------
 ! For checking purposes, output the MO CAP matrix elements to file
 !----------------------------------------------------------------------
-    call freeunit(unit)
-    open(unit,file='mocap.dat',form='formatted',status='unknown')
-    do i=1,nbas
-       do j=i,nbas
-          write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
-       enddo
-    enddo
-    close(unit)
+    !call freeunit(unit)
+    !open(unit,file='mocap.dat',form='formatted',status='unknown')
+    !do i=1,nbas
+    !   do j=i,nbas
+    !      write(unit,'(2(i3,2x),ES15.7)') i,j,cap_mo(i,j)
+    !   enddo
+    !enddo
+    !close(unit)
     
 !----------------------------------------------------------------------
 ! For checking purposes, output some information about the difference
@@ -1814,7 +1804,7 @@ contains
     trace=0.0d0
     do i=1,nao
        trace=trace+sao_grid(i,i)
-       write(ilog,*) i,sao(i,i),sao_grid(i,i)
+       !write(ilog,*) i,sao(i,i),sao_grid(i,i)
     enddo
 
     write(ilog,'(/,2x,a,E15.7)') 'Trace of the numerical AO &
@@ -1824,7 +1814,7 @@ contains
          (analytical - numerical):'
     write(ilog,'(2x,a,2x,E15.7)') 'Maximum:',maxdiff
     write(ilog,'(2x,a,2x,E15.7)') 'Average:',avdiff
-    
+
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -1940,7 +1930,7 @@ contains
              jx=jx-gcent(1)
              jy=jy-gcent(2)
              jz=jz-gcent(3)
-          endif
+          endif          
           
           ! AO values
           aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
@@ -2035,17 +2025,35 @@ contains
        xtmp=xm+xl*xabsc(i)
        ix=xtmp-gam%atoms(iatm)%xyz(1)*ang2bohr
        jx=xtmp-gam%atoms(jatm)%xyz(1)*ang2bohr
+
+       ! For monomial CAPs, we work with atomic coordinates
+       ! taken relative to the goeometric centre of the
+       ! molecule
+       if (icap.eq.2) then
+          ix=ix-gcent(1)
+          jx=jx-gcent(1)
+       endif
        
        do j=1,ngp
           ytmp=ym+yl*xabsc(j)
           iy=ytmp-gam%atoms(iatm)%xyz(1)*ang2bohr
           jy=ytmp-gam%atoms(jatm)%xyz(1)*ang2bohr
+
+          if (icap.eq.2) then
+             iy=iy-gcent(2)
+             jy=jy-gcent(2)
+          endif
           
           do k=1,ngp
              ztmp=zm+zl*xabsc(k)
              iz=ztmp-gam%atoms(iatm)%xyz(1)*ang2bohr
              jz=ztmp-gam%atoms(jatm)%xyz(1)*ang2bohr
 
+             if (icap.eq.2) then
+                iz=iz-gcent(3)
+                jz=jz-gcent(3)
+             endif
+             
              aoi=aoval(ix,iy,iz,inx,iny,inz,iangc,iatm,ish,gam)
              aoj=aoval(jx,jy,jz,jnx,jny,jnz,jangc,jatm,jsh,gam)
 
@@ -2107,8 +2115,14 @@ contains
        coeff=gam%atoms(iatom)%p_c(iprim)
        
        ! Contribution of the current primitive to the AO
-       aoval=aoval+coeff*angc*(x**nx)*(y**ny)*(z**nz)*exp(-zeta*rsq)
-        
+       aoval=aoval &
+            + coeff &
+            * angc &
+            * (x**nx) &
+            * (y**ny) &
+            * (z**nz) &
+            * exp(-zeta*rsq)
+       
     enddo
 
     return
