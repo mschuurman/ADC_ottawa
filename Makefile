@@ -91,6 +91,13 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
 
+CAP=	source/cap/cap_mobas.o \
+	source/cap/lebedev.o \
+	source/cap/atoms.o \
+	source/cap/molecular_grid.o \
+	source/cap/rf_cap.o \
+	source/cap/basis_cap.o
+
 ADCLIB= source/adclib/defaults.o \
 	source/adclib/orbindx.o \
 	source/adclib/filetools.o \
@@ -109,8 +116,7 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
-	source/adclib/adc2common.o \
-	source/adclib/cap_mobas.o \
+	source/adclib/adc2common.o
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_opa.o \
@@ -129,6 +135,7 @@ ADC =   $(INCLUDE) \
 	$(UTILITIES) \
 	$(QCLIB) \
 	$(PROPAGATION) \
+	$(CAP) \
 	$(EIGEN) \
 	$(ADCLIB) \
 	$(ADC_MAIN)
@@ -165,6 +172,12 @@ ADC_OBJ=accuracy.o \
 	parsemod.o \
 	rdinput.o \
 	timingmod.o \
+	cap_mobas.o \
+	lebedev.o \
+	atoms.o \
+	molecular_grid.o \
+	rf_cap.o \
+	basis_cap.o \
 	defaults.o \
 	orbindx.o \
 	vpqrsmod.o \
@@ -199,7 +212,6 @@ ADC_OBJ=accuracy.o \
 	dyson_io.o \
 	target_matching.o \
 	adc2common.o \
-	cap_mobas.o \
 	guessvecs.o \
 	adc1_opa.o \
 	adc2_opa.o \
