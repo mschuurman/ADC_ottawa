@@ -83,11 +83,11 @@ contains
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
 !          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
-          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
-             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-             print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
-             stop
-          end if
+!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
+!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
+!             print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
+!             stop
+!          end if
        end do
     end do
 
@@ -118,11 +118,11 @@ contains
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
 !          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
-          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
-             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-             write(ilog,*) i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
-             stop
-          end if
+!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
+!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
+!             write(ilog,*) i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
+!             stop
+!          end if
        end do
     end do
     
@@ -202,10 +202,10 @@ contains
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag_ji=C1_ph_ph(indapr,indjpr,inda,indj)
-          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
-             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-             stop
-          end if
+!          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
+!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
+!             stop
+!          end if
 
 !!$ Saving into vector for the following Lanzcos/Davidson routine 
             
@@ -4911,10 +4911,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag_ij=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag_ji=C1_ph_ph(indapr,indjpr,inda,indj)
-          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
-             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-             stop
-          end if
+!          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
+!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
+!             stop
+!          end if
 
 !!$ Saving into vector for the following Lanzcos/Davidson routine 
             
@@ -5052,10 +5052,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
           ar_offdiag_ij = 0.d0 
           ar_offdiag_ij = C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag_ji = C1_ph_ph(indapr,indjpr,inda,indj)
-          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
-             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-             stop
-          end if
+!          if(abs(ar_offdiag_ij-ar_offdiag_ji) .ge. 1.e-15_d) then
+!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
+!             stop
+!          end if
 
 !!$ Saving into vector for the following Lanzcos/Davidson routine 
             

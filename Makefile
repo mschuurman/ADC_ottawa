@@ -23,7 +23,7 @@ CCOPTS  = -g -O0
 #F90	 = ifort
 #F77	 = ifort
 #CC	 = icc
-#F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O3 -unroll0 -diag-disable 8290 -diag-disable 8291
+#F90OPTS = -cpp -g -assume byterecl -free -fopenmp -traceback -O2 -unroll0 -diag-disable 8290 -diag-disable 8291
 #CCOPTS  = -g -O0
 
 #-----------------------------------------------------------------------

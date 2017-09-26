@@ -1073,6 +1073,7 @@ contains
     use channels
     use parameters
     use iomod
+    use parsemod, only: lowercase
     use import_gamess
     
     implicit none
@@ -1097,136 +1098,138 @@ contains
 
        name=gam%atoms(i)%name
        
-       if (name.eq.'H') then
+       call lowercase(name)
+
+       if (name.eq.'h') then
           vdwr(i)=1.10d0
 
-       else if (name.eq.'He') then
+       else if (name.eq.'he') then
           vdwr(i)=1.40d0
 
-       else if (name.eq.'Li') then
+       else if (name.eq.'li') then
           vdwr(i)=1.81d0
 
-       else if (name.eq.'Be') then
+       else if (name.eq.'be') then
           vdwr(i)=1.53d0
 
-       else if (name.eq.'B') then
+       else if (name.eq.'b') then
           vdwr(i)=1.92d0
 
-       else if (name.eq.'C') then
+       else if (name.eq.'c') then
           vdwr(i)=1.70d0
 
-       else if (name.eq.'N') then
+       else if (name.eq.'n') then
           vdwr(i)=1.55d0
 
-       else if (name.eq.'O') then
+       else if (name.eq.'o') then
           vdwr(i)=1.52d0
 
-       else if (name.eq.'F') then
+       else if (name.eq.'f') then
           vdwr(i)=1.47d0
                     
-       else if (name.eq.'Ne') then
+       else if (name.eq.'ne') then
           vdwr(i)=1.54d0
 
-       else if (name.eq.'Na') then
+       else if (name.eq.'na') then
           vdwr(i)=2.27d0
 
-       else if (name.eq.'Mg') then
+       else if (name.eq.'mg') then
           vdwr(i)=1.73d0
 
-       else if (name.eq.'Al') then
+       else if (name.eq.'al') then
           vdwr(i)=1.84d0
 
-       else if (name.eq.'Si') then
+       else if (name.eq.'si') then
           vdwr(i)=2.10d0
 
-       else if (name.eq.'P') then
+       else if (name.eq.'p') then
           vdwr(i)=1.80d0
 
-       else if (name.eq.'S') then
+       else if (name.eq.'s') then
           vdwr(i)=1.80d0
 
-       else if (name.eq.'Cl') then
+       else if (name.eq.'cl') then
           vdwr(i)=1.75d0
 
-       else if (name.eq.'Ar') then
+       else if (name.eq.'ar') then
           vdwr(i)=1.88d0
 
-       else if (name.eq.'K') then
+       else if (name.eq.'k') then
           vdwr(i)=2.75d0
 
-       else if (name.eq.'Ca') then
+       else if (name.eq.'ca') then
           vdwr(i)=2.31d0
 
-       else if (name.eq.'Ga') then
+       else if (name.eq.'ga') then
           vdwr(i)=1.87d0
 
-       else if (name.eq.'Ge') then
+       else if (name.eq.'ge') then
           vdwr(i)=2.11d0
 
-       else if (name.eq.'As') then
+       else if (name.eq.'as') then
           vdwr(i)=1.85d0
 
-       else if (name.eq.'Se') then
+       else if (name.eq.'se') then
           vdwr(i)=1.90d0
 
-       else if (name.eq.'Br') then
+       else if (name.eq.'br') then
           vdwr(i)=1.83d0
 
-       else if (name.eq.'Kr') then
+       else if (name.eq.'kr') then
           vdwr(i)=2.02d0
 
-       else if (name.eq.'Rb') then
+       else if (name.eq.'rb') then
           vdwr(i)=3.03d0
 
-       else if (name.eq.'Sr') then
+       else if (name.eq.'sr') then
           vdwr(i)=2.49d0
 
-       else if (name.eq.'In') then
+       else if (name.eq.'in') then
           vdwr(i)=1.93d0
 
-       else if (name.eq.'Sn') then
+       else if (name.eq.'sn') then
           vdwr(i)=2.17d0
 
-       else if (name.eq.'Sb') then
+       else if (name.eq.'sb') then
           vdwr(i)=2.06d0
 
-       else if (name.eq.'Te') then
+       else if (name.eq.'te') then
           vdwr(i)=2.06d0
 
-       else if (name.eq.'I') then
+       else if (name.eq.'i') then
           vdwr(i)=1.98d0
 
-       else if (name.eq.'Xe') then
+       else if (name.eq.'xe') then
           vdwr(i)=2.16d0
 
-       else if (name.eq.'Cs') then
+       else if (name.eq.'cs') then
           vdwr(i)=3.43d0
 
-       else if (name.eq.'Ba') then
+       else if (name.eq.'ba') then
           vdwr(i)=2.68d0
 
-       else if (name.eq.'Tl') then
+       else if (name.eq.'tl') then
           vdwr(i)=1.96d0
 
-       else if (name.eq.'Pb') then
+       else if (name.eq.'pb') then
           vdwr(i)=2.02d0
 
-       else if (name.eq.'Bi') then
+       else if (name.eq.'bi') then
           vdwr(i)=2.07d0
 
-       else if (name.eq.'Po') then
+       else if (name.eq.'po') then
           vdwr(i)=1.97d0
 
-       else if (name.eq.'At') then
+       else if (name.eq.'at') then
           vdwr(i)=2.02d0
 
-       else if (name.eq.'Rn') then
+       else if (name.eq.'rn') then
           vdwr(i)=2.20d0
 
-       else if (name.eq.'Fr') then
+       else if (name.eq.'fr') then
           vdwr(i)=3.48d0
 
-       else if (name.eq.'Ra') then
+       else if (name.eq.'ra') then
           vdwr(i)=2.83d0
 
        else

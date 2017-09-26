@@ -19,6 +19,8 @@ contains
 
       if (lbl.eq.'h') then
          num=1.0d0
+      else if (lbl.eq.'he') then
+         num=2.0d0
       else if (lbl.eq.'c') then
          num=6.0d0
       else if (lbl.eq.'n') then
@@ -104,6 +106,8 @@ contains
 
       if (label.eq.'h') then
          mass=1.00794d0
+      else if (label.eq.'he') then
+         mass=4.002602d0
       else if (label.eq.'c') then
          mass=12.0107d0
       else if (label.eq.'n') then
