@@ -346,6 +346,7 @@ logical                      :: lpropagation
 !!$***************CAP Parameters*******************
 !!$************************************************
 integer                       :: icap
+integer                       :: capord
 integer*8                     :: nel_cap
 integer                       :: nbuf_cap
 integer                       :: igrid

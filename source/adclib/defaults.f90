@@ -168,6 +168,7 @@
       icap=0
       capstr=0.0d0
       capwid=0.0d0
+      capord=-1
       lprojcap=.false.
       igrid=0
       ngridpar=0

@@ -33,7 +33,7 @@
                                                          ! 'atom moiseyev' = Moiseyev's non-local perfect CAP, atom-centered spheres
                                                          ! 'manolopoulous' = JWKB perfect absorber; DOT NOT USE
                                                          ! The cap_centre and cap_r0 paraments apply to all CAPs
-    real(rk), save      :: cap_centre(3)   = 0           ! Centre of the spherical shell carrying the complex absorbing potential
+    real(rk), save      :: cap_centre(3)   = 0._rk       ! Centre of the spherical shell carrying the complex absorbing potential
     real(rk), save      :: cap_r0          = 12._rk      ! Radius at which CAP starts
                                                          ! === Parameters related to the monomial CAP
     real(rk), save      :: cap_strength    = 0.02_rk     ! eta parameter of Riss&Meyer

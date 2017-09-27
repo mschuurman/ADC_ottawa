@@ -21,8 +21,8 @@ contains
     use guessvecs
     use mp2
     use targetmatching
-    use capmod
     use propagate_adc2
+    use capmod
     
     implicit none
 
@@ -33,7 +33,7 @@ contains
     real(d)                               :: e0
     real(d), dimension(:,:), allocatable  :: cap_mo
     type(gam_structure)                   :: gam
-
+    
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !-----------------------------------------------------------------------
@@ -59,7 +59,7 @@ contains
 ! Calculate the MO representation of the CAP operator
 !-----------------------------------------------------------------------
     if (lcap) call cap_mobas(gam,cap_mo)
-
+    
 !-----------------------------------------------------------------------
 ! Calculate the matrix elements needed to represent the CAP operator
 ! in the the ground state + intermediate state basis

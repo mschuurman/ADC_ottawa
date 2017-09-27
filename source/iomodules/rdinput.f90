@@ -758,19 +758,27 @@
             goto 999
          endif
 
-         ! CAP width
-         if (capwid.eq.0.0d0.and.icap.eq.1) then
-            msg='The CAP width has not been given'
-            goto 999
-         endif         
+!         ! CAP width
+!         if (capwid.eq.0.0d0.and.icap.eq.1) then
+!            msg='The CAP width has not been given'
+!            goto 999
+!         endif         
 
-         ! Grid type - note that for a monomial CAP, as default we
-         ! evaluate the MO CAP matrix elements analytically, and
-         ! so no grid is required
-         if (icap.ne.2.and.igrid.eq.0) then
-            msg='The CAP integration grid has not been given'
-            goto 999
+         ! CAP order
+         if (icap.eq.1.or.icap.eq.2.or.icap.eq.3) then
+            if (capord.eq.-1) then
+               msg='The monomial CAP order has not been set'
+               goto 999
+            endif
          endif
+         
+!         ! Grid type - note that for a monomial CAP, as default we
+!         ! evaluate the MO CAP matrix elements analytically, and
+!         ! so no grid is required
+!         if (icap.ne.2.and.igrid.eq.0) then
+!            msg='The CAP integration grid has not been given'
+!            goto 999
+!         endif
          
          ! Propagation section
          if (.not.lpropagation) then
@@ -1872,10 +1880,16 @@
          if (keyword(i).eq.'cap_type') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               if (keyword(i).eq.'sigmoidal') then
+               if (keyword(i).eq.'monomial') then
                   icap=1
-               else if (keyword(i).eq.'monomial') then
+               else if (keyword(i).eq.'monomial_grid') then
                   icap=2
+               else if (keyword(i).eq.'atom_monomial') then
+                  icap=3
+               else if (keyword(i).eq.'moiseyev') then
+                  icap=4
+               else if (keyword(i).eq.'atom_moiseyev') then
+                  icap=5
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control
@@ -1937,7 +1951,15 @@
             else
                goto 100
             endif
-               
+
+         else if (keyword(i).eq.'cap_order') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) capord
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

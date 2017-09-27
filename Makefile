@@ -29,7 +29,7 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS} lib/libnumgrid.so
+LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
 
 #-----------------------------------------------------------------------
 # Define object files
@@ -91,12 +91,13 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
 
-CAP=	source/cap/cap_mobas.o \
+CAP=	source/cap/monomial_analytic.o \
 	source/cap/lebedev.o \
 	source/cap/atoms.o \
 	source/cap/molecular_grid.o \
 	source/cap/rf_cap.o \
-	source/cap/basis_cap.o
+	source/cap/basis_cap.o \
+	source/cap/cap_mobas.o
 
 ADCLIB= source/adclib/defaults.o \
 	source/adclib/orbindx.o \
@@ -172,12 +173,13 @@ ADC_OBJ=accuracy.o \
 	parsemod.o \
 	rdinput.o \
 	timingmod.o \
-	cap_mobas.o \
+	monomial_analytic.o \
 	lebedev.o \
 	atoms.o \
 	molecular_grid.o \
 	rf_cap.o \
 	basis_cap.o \
+	cap_mobas.o \
 	defaults.o \
 	orbindx.o \
 	vpqrsmod.o \

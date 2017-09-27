@@ -79,29 +79,6 @@ echo "LIB_BLAS=$blasflag" >>ADC.CONFIG
 echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 
 #-----------------------------------------------------------------------
-# Compilation of external libraries
-#-----------------------------------------------------------------------
-if [ "$target" == 'adc' ] || [ -z $target ]; then
-    # Numgrid
-    if [ -f lib/libnumgrid.so ]; then
-	rm lib/libnumgrid.so
-    fi
-    cd source/numgrid
-    gfortran -fPIC -c numgrid.f90
-    #ifort -fPIC -c numgrid.f90
-    g++ -fPIC -c *.cpp
-    if [ "$isdarwin" == 'T' ]; then
-	g++ -shared -Wl,-install_name,libnumgrid.so -o libnumgrid.so *.o
-    else
-	g++ -shared -Wl,-soname,libnumgrid.so -o libnumgrid.so *.o
-    fi	
-    mv libnumgrid.so ../../lib
-    mv numgrid.mod ../../
-    rm *.o *.mod
-    cd ../../
-fi
-
-#-----------------------------------------------------------------------
 # Calls to make
 #-----------------------------------------------------------------------
 list=(clean_all adc stieltjes_ap mcspline numhess rixsplt auto2spec \

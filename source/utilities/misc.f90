@@ -1,6 +1,6 @@
 module misc
 
-!!$Contains miscellaneous ancillary functions and subroutines
+  ! Contains miscellaneous ancillary functions and subroutines
   
   use constants
   use parameters  
@@ -9,128 +9,311 @@ module misc
   implicit none
 
 contains
+  
+!#######################################################################
+
+  function atomic_number(lbl) result(num)
+
+    real*8           :: num
+    character(len=*) :: lbl
+    
+    if (lbl.eq.'h') then
+       num=1.0d0
+    else if (lbl.eq.'he') then
+       num=2.0d0
+    else if (lbl.eq.'c') then
+       num=6.0d0
+    else if (lbl.eq.'n') then
+       num=7.0d0
+    else if (lbl.eq.'o') then
+       num=8.0d0
+    else if (lbl.eq.'f') then
+       num=9.0d0
+    else if (lbl.eq.'ne') then
+       num=10.0d0
+    else if (lbl.eq.'s') then
+       num=16.0d0
+    else if (lbl.eq.'cl') then
+       num=17.0d0
+    else
+       write(6,'(/,2(2x,a),/)') 'Atomic no. not known for atom:',lbl
+    endif
+    
+    return
+    
+  end function atomic_number
 
 !#######################################################################
 
-    function atomic_number(lbl) result(num)
+  function uppercase(string1) result(string2)
 
-      real*8           :: num
-      character(len=*) :: lbl
+    implicit none
+    
+    integer                     :: dim,i,j
+    character(len=*)            :: string1
+    character(len=len(string1)) :: string2
+    
+    do i = 1, len(string1)
+       j = iachar(string1(i:i))
+       if (j>= iachar("a") .and. j<=iachar("z") ) then
+          string2(i:i) = achar(iachar(string1(i:i))-32)
+       else
+          string2(i:i) = string1(i:i)
+       endif
+    enddo
 
-      if (lbl.eq.'h') then
-         num=1.0d0
-      else if (lbl.eq.'he') then
-         num=2.0d0
-      else if (lbl.eq.'c') then
-         num=6.0d0
-      else if (lbl.eq.'n') then
-         num=7.0d0
-      else if (lbl.eq.'o') then
-         num=8.0d0
-      else if (lbl.eq.'f') then
-         num=9.0d0
-      else if (lbl.eq.'ne') then
-         num=10.0d0
-      else if (lbl.eq.'s') then
-         num=16.0d0
-      else if (lbl.eq.'cl') then
-         num=17.0d0
-      else
-         write(6,'(/,2(2x,a),/)') 'Atomic no. not known for atom:',lbl
-      endif
+    return
 
-      return
+  end function uppercase
 
-    end function atomic_number
+!#######################################################################
+  
+  subroutine getcom(xcom)
+
+    use parameters
+
+    implicit none
+
+    integer              :: i,j
+    real*8, dimension(3) :: xcom
+    real*8               :: m,tmass
+
+    xcom=0.0d0
+    tmass=0.0d0
+
+    do i=1,natm
+       m=mass(atlbl(i))
+       tmass=tmass+m
+       do j=1,3
+          xcom(j)=xcom(j)+xcoo(i*3-3+j)*m
+       enddo
+    enddo
+    
+    xcom=xcom/tmass
+
+    return
+
+  end subroutine getcom
 
 !#######################################################################
 
-    function uppercase(string1) result(string2)
+  function mass(label)
 
-      implicit none
+    implicit none
 
-      integer                     :: dim,i,j
-      character(len=*)            :: string1
-      character(len=len(string1)) :: string2
+    real*8           :: mass
+    character(len=*) :: label
 
-      do i = 1, len(string1)
-         j = iachar(string1(i:i))
-         if (j>= iachar("a") .and. j<=iachar("z") ) then
-            string2(i:i) = achar(iachar(string1(i:i))-32)
-         else
-            string2(i:i) = string1(i:i)
-         endif
-     enddo
+    if (label.eq.'h') then
+       mass=1.00794d0
+    else if (label.eq.'he') then
+       mass=4.002602d0
+    else if (label.eq.'c') then
+       mass=12.0107d0
+    else if (label.eq.'n') then
+       mass=14.0067d0      
+    else if (label.eq.'o') then
+       mass=15.9994d0
+    else if (label.eq.'f') then
+       mass=18.998403d0
+    else if (label.eq.'ne') then
+       mass=20.1797d0
+    else if (label.eq.'s') then
+       mass=32.065d0
+    else if (label.eq.'cl') then
+       mass=35.453d0
+    else
+       write(6,'(2(2x,a))') 'Unknown atom type:',trim(label)
+       STOP
+    endif
+    
+    return
 
-      return
-
-    end function uppercase
-
-!#######################################################################
-
-    subroutine getcom(xcom)
-
-      use parameters
-
-      implicit none
-
-      integer              :: i,j
-      real*8, dimension(3) :: xcom
-      real*8               :: m,tmass
-
-      xcom=0.0d0
-      tmass=0.0d0
-
-      do i=1,natm
-         m=mass(atlbl(i))
-         tmass=tmass+m
-         do j=1,3
-            xcom(j)=xcom(j)+xcoo(i*3-3+j)*m
-         enddo
-      enddo
-
-      xcom=xcom/tmass
-
-      return
-
-    end subroutine getcom 
+  end function mass
 
 !#######################################################################
 
-    function mass(label)
+  subroutine get_vdwr(gam,vdwr,natom)
 
-      implicit none
+    use constants
+    use channels
+    use parameters
+    use iomod
+    use parsemod, only: lowercase
+    use import_gamess
+    
+    implicit none
+    
+    integer                   :: natom,i
+    real(d), dimension(natom) :: vdwr
+    real(d), parameter        :: ang2bohr=1.889725989d0
+    character(len=20)         :: name
+    type(gam_structure)       :: gam
+    
+!----------------------------------------------------------------------
+! Initialisation
+!----------------------------------------------------------------------   
+    vdwr=0.0d0
 
-      real*8           :: mass
-      character(len=*) :: label
+!----------------------------------------------------------------------
+! Fill in the van der Waals radius array (units of Bohr)
+! Van der Waals radii taken from Mantina et al., JPCA, 113, 5806 (2009)
+!----------------------------------------------------------------------
+    ! Van der Waals radii in Angstrom
+    do i=1,natom
 
-      if (label.eq.'h') then
-         mass=1.00794d0
-      else if (label.eq.'he') then
-         mass=4.002602d0
-      else if (label.eq.'c') then
-         mass=12.0107d0
-      else if (label.eq.'n') then
-         mass=14.0067d0      
-      else if (label.eq.'o') then
-         mass=15.9994d0
-      else if (label.eq.'f') then
-         mass=18.998403d0
-      else if (label.eq.'ne') then
-         mass=20.1797d0
-      else if (label.eq.'s') then
-         mass=32.065d0
-      else if (label.eq.'cl') then
-         mass=35.453d0
-      else
-         write(6,'(2(2x,a))') 'Unknown atom type:',trim(label)
-         STOP
-      endif
+       name=gam%atoms(i)%name
+       
+       call lowercase(name)
 
-      return
+       if (name.eq.'h') then
+          vdwr(i)=1.10d0
 
-    end function mass
+       else if (name.eq.'he') then
+          vdwr(i)=1.40d0
 
+       else if (name.eq.'li') then
+          vdwr(i)=1.81d0
+
+       else if (name.eq.'be') then
+          vdwr(i)=1.53d0
+
+       else if (name.eq.'b') then
+          vdwr(i)=1.92d0
+
+       else if (name.eq.'c') then
+          vdwr(i)=1.70d0
+
+       else if (name.eq.'n') then
+          vdwr(i)=1.55d0
+
+       else if (name.eq.'o') then
+          vdwr(i)=1.52d0
+
+       else if (name.eq.'f') then
+          vdwr(i)=1.47d0
+                    
+       else if (name.eq.'ne') then
+          vdwr(i)=1.54d0
+
+       else if (name.eq.'na') then
+          vdwr(i)=2.27d0
+
+       else if (name.eq.'mg') then
+          vdwr(i)=1.73d0
+
+       else if (name.eq.'al') then
+          vdwr(i)=1.84d0
+
+       else if (name.eq.'si') then
+          vdwr(i)=2.10d0
+
+       else if (name.eq.'p') then
+          vdwr(i)=1.80d0
+
+       else if (name.eq.'s') then
+          vdwr(i)=1.80d0
+
+       else if (name.eq.'cl') then
+          vdwr(i)=1.75d0
+
+       else if (name.eq.'ar') then
+          vdwr(i)=1.88d0
+
+       else if (name.eq.'k') then
+          vdwr(i)=2.75d0
+
+       else if (name.eq.'ca') then
+          vdwr(i)=2.31d0
+
+       else if (name.eq.'ga') then
+          vdwr(i)=1.87d0
+
+       else if (name.eq.'ge') then
+          vdwr(i)=2.11d0
+
+       else if (name.eq.'as') then
+          vdwr(i)=1.85d0
+
+       else if (name.eq.'se') then
+          vdwr(i)=1.90d0
+
+       else if (name.eq.'br') then
+          vdwr(i)=1.83d0
+
+       else if (name.eq.'kr') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'rb') then
+          vdwr(i)=3.03d0
+
+       else if (name.eq.'sr') then
+          vdwr(i)=2.49d0
+
+       else if (name.eq.'in') then
+          vdwr(i)=1.93d0
+
+       else if (name.eq.'sn') then
+          vdwr(i)=2.17d0
+
+       else if (name.eq.'sb') then
+          vdwr(i)=2.06d0
+
+       else if (name.eq.'te') then
+          vdwr(i)=2.06d0
+
+       else if (name.eq.'i') then
+          vdwr(i)=1.98d0
+
+       else if (name.eq.'xe') then
+          vdwr(i)=2.16d0
+
+       else if (name.eq.'cs') then
+          vdwr(i)=3.43d0
+
+       else if (name.eq.'ba') then
+          vdwr(i)=2.68d0
+
+       else if (name.eq.'tl') then
+          vdwr(i)=1.96d0
+
+       else if (name.eq.'pb') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'bi') then
+          vdwr(i)=2.07d0
+
+       else if (name.eq.'po') then
+          vdwr(i)=1.97d0
+
+       else if (name.eq.'at') then
+          vdwr(i)=2.02d0
+
+       else if (name.eq.'rn') then
+          vdwr(i)=2.20d0
+
+       else if (name.eq.'fr') then
+          vdwr(i)=3.48d0
+
+       else if (name.eq.'ra') then
+          vdwr(i)=2.83d0
+
+       else
+          errmsg='Currently CAPs are not supported for the element '&
+               //trim(name)
+          call error_control
+          
+       endif
+       
+    enddo
+
+    ! Convert to Bohr
+    vdwr=vdwr*ang2bohr
+
+    return
+    
+  end subroutine get_vdwr
+    
 !#######################################################################
 
   integer function kdelta(k,kpr)
