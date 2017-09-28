@@ -169,7 +169,8 @@ contains
 ! we require the AO representation of W, hence the conversion after
 ! this subroutine is called.
 !----------------------------------------------------------------------
-     call cap_evaluate(gam,120,770,1200,770,cap_ao_cmplx,smat,lmat)
+    call cap_evaluate(gam,nrad(1),nang(1),nrad(2),nang(2),&
+         cap_ao_cmplx,smat,lmat)
 
      do i=1,nao
         do j=1,nao

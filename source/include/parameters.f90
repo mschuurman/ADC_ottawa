@@ -349,12 +349,8 @@ integer                       :: icap
 integer                       :: capord
 integer*8                     :: nel_cap
 integer                       :: nbuf_cap
-integer                       :: igrid
-integer                       :: ngridpar
-integer, parameter            :: mxgridpar=20
-real(d), dimension(mxgridpar) :: gridpar
+integer, dimension(2)         :: nrad,nang
 real(d)                       :: capstr
-real(d)                       :: capwid
 real(d)                       :: w00
 real(d), allocatable          :: w0j(:)
 real(d), allocatable          :: wij(:,:)

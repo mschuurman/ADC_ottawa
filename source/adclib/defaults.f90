@@ -167,11 +167,12 @@
       lcap=.false.
       icap=0
       capstr=0.0d0
-      capwid=0.0d0
       capord=-1
       lprojcap=.false.
-      igrid=0
-      ngridpar=0
+      nrad(1)=120
+      nrad(2)=1200
+      nang(1)=770
+      nang(2)=770
       
 !-----------------------------------------------------------------------
 ! I/O channels

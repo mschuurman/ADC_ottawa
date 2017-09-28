@@ -758,12 +758,6 @@
             goto 999
          endif
 
-!         ! CAP width
-!         if (capwid.eq.0.0d0.and.icap.eq.1) then
-!            msg='The CAP width has not been given'
-!            goto 999
-!         endif         
-
          ! CAP order
          if (icap.eq.1.or.icap.eq.2.or.icap.eq.3) then
             if (capord.eq.-1) then
@@ -771,14 +765,22 @@
                goto 999
             endif
          endif
-         
-!         ! Grid type - note that for a monomial CAP, as default we
-!         ! evaluate the MO CAP matrix elements analytically, and
-!         ! so no grid is required
-!         if (icap.ne.2.and.igrid.eq.0) then
-!            msg='The CAP integration grid has not been given'
-!            goto 999
-!         endif
+
+         ! Integration grid
+         if (icap.gt.1) then
+            if (nang(1).ne.110.and.nang(1).ne.302&
+                 .and.nang(1).ne.770) then
+               msg='The number of angular grid points can only be &
+                    one of: 110, 302 or 770'
+               goto 999
+            endif
+            if (nang(2).ne.110.and.nang(2).ne.302&
+                 .and.nang(2).ne.770) then
+               msg='The number of angular grid points can only be &
+                    one of: 110, 302 or 770'
+               goto 999
+            endif
+         endif
          
          ! Propagation section
          if (.not.lpropagation) then
@@ -1906,51 +1908,8 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'cap_width') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) capwid
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  call convert_length(keyword(i),capwid)
-               endif
-            else
-               goto 100
-            endif
-
          else if (keyword(i).eq.'projection') then
             lprojcap=.true.
-
-         else if (keyword(i).eq.'grid') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               ! Read the integration grid type
-               if (keyword(i).eq.'becke') then
-                  igrid=1
-                  ngridpar=0
-               else if (keyword(i).eq.'gauss') then
-                  igrid=2
-                  ngridpar=4
-               else
-                  errmsg='Unknown CAP integration grid type: '&
-                       //trim(keyword(i))
-                  call error_control
-               endif
-               ! Read the grid parameters
-               do n=1,ngridpar
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) gridpar(n)
-                  else
-                     write(ai,'(i2)') gridpar
-                     errmsg='Not enough CAP grid parameters were given: '&
-                          //trim(adjustl(ai))//' parameters expected.'
-                     call error_control
-                  endif
-               enddo
-            else
-               goto 100
-            endif
 
          else if (keyword(i).eq.'cap_order') then
             if (keyword(i+1).eq.'=') then
@@ -1959,7 +1918,37 @@
             else
                goto 100
             endif
-            
+
+         else if (keyword(i).eq.'grid_rad') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) nrad(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) nrad(2)
+               else
+                  errmsg='The no. outer radial points has not been given'
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'grid_ang') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) nang(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) nang(2)
+               else
+                  errmsg='The no. outer angular points has not been given'
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
