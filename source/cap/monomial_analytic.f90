@@ -844,7 +844,7 @@ contains
 
     integer                        :: i,j
     real(dp), dimension(nbas,nbas) :: cap_mo
-    real(dp), parameter            :: thrsh=1e-16_dp
+    real(dp), parameter            :: thrsh=1e-12_dp
     
 !----------------------------------------------------------------------
 ! Similarity transform the AO CAP matrix to yield the MO CAP matrix
@@ -865,6 +865,7 @@ contains
              errmsg='Error: the MO CAP matrix is not symmetric.'
              call error_control
           endif
+          cap_mo(i,j)=cap_mo(j,i)
        enddo
     enddo
 
