@@ -93,7 +93,7 @@ contains
     if (lautobox) then
        ! Determination of the CAP box via an analysis of the
        ! initial state density
-       call autobox(gam,cstrt)
+       call autobox(gam,cstrt,gcent)
     else
        if (boxpar(1).eq.0.0d0) then
           call get_cap_box_monomial(gam)

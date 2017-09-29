@@ -18,7 +18,7 @@ contains
 
 !######################################################################
 
-  subroutine autobox(gam,cstrt)
+  subroutine autobox(gam,cstrt,gcent)
 
     use channels
     use parameters
@@ -27,7 +27,7 @@ contains
     
     implicit none
     
-    real(dp), dimension(3) :: cstrt
+    real(dp), dimension(3) :: cstrt,gcent
     type(gam_structure)    :: gam
 
 !----------------------------------------------------------------------
@@ -53,7 +53,7 @@ contains
 !----------------------------------------------------------------------
 ! Determine the CAP box from an analysis of the initial state density
 !----------------------------------------------------------------------
-    call density_analysis(gam)
+    call density_analysis(gam,cstrt,gcent)
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -127,7 +127,7 @@ contains
     
 !######################################################################
 
-  subroutine density_analysis(gam)
+  subroutine density_analysis(gam,cstrt,gcent)
 
     use channels
     use parameters
@@ -137,42 +137,53 @@ contains
 
     implicit none
 
-    integer                :: i,k
-    integer, parameter     :: npnt=201
-    real(dp), parameter    :: dx=0.1d0
-    real(dp), dimension(3) :: r
-    real(dp)               :: dens
-    type(gam_structure)    :: gam
+    integer                  :: i,k,dir,unit
+    real(dp), parameter      :: dx=0.1d0
+    real(dp), dimension(3)   :: cstrt,gcent,r
+    real(dp)                 :: dens
+    real(dp), dimension(3,2) :: rc
+    type(gam_structure)      :: gam
 
-
+    ! Loop over negative and positive displacements
+    do dir=1,2
     
-    ! REMEMBER TO SCAN IN THE NEGATIVE AS WELL AS
-    ! POSITIVE DIRECTIONS
-
-    
-    
-    ! Loop over the x, y and z directions
-    do i=1,3
-
-       print*,
-       
-       ! Loop over grid points
-       do k=1,npnt
-
-          ! Current coordinate (in Bohr)
-          r=0.0d0
-          r(i)=0.0d0+(k-1)*dx
-
-          ! Initial state density at the current coordinate
-          dens=density_value(gam,rho,r)
-
-          print*,k,dens
+       ! Loop over the x, y and z directions
+       do i=1,3
           
+          write(ilog,'(/)')
+          
+          ! Loop over points until the density drops
+          ! below threshold
+          k=0
+          do
+             
+             k=k+1
+
+             ! Current coordinate (in Bohr)
+             r=0.0d0
+             r(i)=gcent(i)+(k-1)*dx*(-1)**dir
+             
+             ! Initial state density at the current coordinate
+             dens=density_value(gam,rho,r)
+             
+             ! Exit the loop if the density has dropped below
+             ! threshold
+             if (dens.lt.densthrsh) exit
+
+          enddo
+          
+          ! Coordinate value (relative to the geometric centre) at
+          ! which the density dropped below threshold
+          rc(i,dir)=(k-1)*dx*(-1)**dir
+
        enddo
-       
+
     enddo
 
-    STOP
+    ! Set the CAP box parameters
+    do i=1,3
+       cstrt(i)=maxval(abs(rc(i,:)))
+    enddo
     
     return
     
