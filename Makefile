@@ -91,7 +91,8 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
 
-CAP=	source/cap/monomial_analytic.o \
+CAP=	source/cap/auto_cap_box.o \
+	source/cap/monomial_analytic.o \
 	source/cap/lebedev.o \
 	source/cap/atoms.o \
 	source/cap/molecular_grid.o \
@@ -114,6 +115,7 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/fspace2.o \
         source/adclib/guessvecs.o \
 	source/adclib/mp2.o \
+	source/adclib/density.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
@@ -136,9 +138,9 @@ ADC =   $(INCLUDE) \
 	$(UTILITIES) \
 	$(QCLIB) \
 	$(PROPAGATION) \
-	$(CAP) \
 	$(EIGEN) \
 	$(ADCLIB) \
+	$(CAP) \
 	$(ADC_MAIN)
 
 OBJECTS = $(MULTI) $(ADC)
@@ -173,13 +175,6 @@ ADC_OBJ=accuracy.o \
 	parsemod.o \
 	rdinput.o \
 	timingmod.o \
-	monomial_analytic.o \
-	lebedev.o \
-	atoms.o \
-	molecular_grid.o \
-	rf_cap.o \
-	basis_cap.o \
-	cap_mobas.o \
 	defaults.o \
 	orbindx.o \
 	vpqrsmod.o \
@@ -210,11 +205,20 @@ ADC_OBJ=accuracy.o \
 	diagmod.o \
 	block_lanczos.o \
 	mp2.o \
+	density.o \
 	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \
 	adc2common.o \
 	guessvecs.o \
+	auto_cap_box.o \
+	monomial_analytic.o \
+	lebedev.o \
+	atoms.o \
+	molecular_grid.o \
+	rf_cap.o \
+	basis_cap.o \
+	cap_mobas.o \
 	adc1_opa.o \
 	adc2_opa.o \
 	adc2_ener.o \

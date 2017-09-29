@@ -352,11 +352,13 @@ integer                       :: nbuf_cap
 integer, dimension(2)         :: nrad,nang
 real(d)                       :: capstr
 real(d), dimension(3)         :: boxpar
+real(d)                       :: densthrsh
 real(d)                       :: w00
 real(d), allocatable          :: w0j(:)
 real(d), allocatable          :: wij(:,:)
 logical                       :: lcap
 logical                       :: lprojcap
+logical                       :: lautobox
 
 !!$************************************************
 !!$***************ADC(1) Hamiltonian***************

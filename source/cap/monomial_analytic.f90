@@ -51,6 +51,7 @@ contains
     use channels
     use parameters
     use misc, only: get_vdwr
+    use autocapbox
     use import_gamess
     
     implicit none
@@ -83,13 +84,24 @@ contains
 ! user, then in each Cartesian direction, we take the start of the CAP
 ! to correspond to the furthest atom plus dscale times its van der
 ! Waals radius
+!
+! If an automatic determination of the CAP box has been requested,
+! then we will choose the starting postions based on ana analysis of
+! the initial state density
 !----------------------------------------------------------------------
-    if (boxpar(1).eq.0.0d0) then
-       call get_cap_box_monomial(gam)
-    else
-       cstrt=boxpar
-    endif
 
+    if (lautobox) then
+       ! Determination of the CAP box via an analysis of the
+       ! initial state density
+       call autobox(gam,cstrt)
+    else
+       if (boxpar(1).eq.0.0d0) then
+          call get_cap_box_monomial(gam)
+       else
+          cstrt=boxpar
+       endif
+    endif
+       
     write(ilog,'(2x,a,3(2x,F6.3))') 'CAP box parameters:',&
          (cstrt(i),i=1,3)
 
