@@ -139,15 +139,30 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf
     integer                                   :: p,q,k
+    integer                                   :: error
     real(d), dimension(nbas,nbas)             :: cap_mo
     real(d), dimension(nbas,nbas)             :: rho0
     real(d), dimension(nbas,nbas)             :: dpl_orig
+    real(d), dimension(nbas,nbas)             :: natorb
+    real(d), dimension(nbas)                  :: natocc
+    real(d), dimension(3*nbas)                :: work
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
 ! Calculate the ground state density matrix
 !----------------------------------------------------------------------
     call rho_mp2(rho0)
+
+!!-----------------------------------------------------------------------    
+!! MP2 natural orbital occupancies
+!!-----------------------------------------------------------------------    
+!    natorb=rho
+!    call dsyev('V','U',nbas,natorb,nbas,natocc,work,3*nbas,error)
+!
+!    if (error.ne.0) then
+!       errmsg='Error diagonalising the MP2 density matrix'
+!       call error_control
+!    endif
 
 !----------------------------------------------------------------------
 ! Calculate the CAP matrix element W_00 = < Psi_0 | W | Psi_0 >

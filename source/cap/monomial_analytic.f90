@@ -55,7 +55,7 @@ contains
     
     implicit none
 
-    integer                        :: natom
+    integer                        :: natom,i
     real(dp), dimension(nbas,nbas) :: cap_mo
     type(gam_structure)            :: gam
 
@@ -79,11 +79,19 @@ contains
     call monomial_precalc(gam)
 
 !----------------------------------------------------------------------
-! Set up the CAP box: in each Cartesian direction, we take the start
-! of the CAP to correspond to the furthest atom plus dscale times
-! its van der Waals radius
+! Set up the CAP box: if the CAP box has not been specified by the
+! user, then in each Cartesian direction, we take the start of the CAP
+! to correspond to the furthest atom plus dscale times its van der
+! Waals radius
 !----------------------------------------------------------------------
-    call get_cap_box_monomial(gam)
+    if (boxpar(1).eq.0.0d0) then
+       call get_cap_box_monomial(gam)
+    else
+       cstrt=boxpar
+    endif
+
+    write(ilog,'(2x,a,3(2x,F6.3))') 'CAP box parameters:',&
+         (cstrt(i),i=1,3)
 
 !----------------------------------------------------------------------
 ! Calculate the primitive representation of the CAP
@@ -836,7 +844,8 @@ contains
 !######################################################################
   
   subroutine mo_cap_matrix(cap_mo)
-
+    
+    use channels
     use iomod
     use parameters
     
@@ -844,7 +853,7 @@ contains
 
     integer                        :: i,j
     real(dp), dimension(nbas,nbas) :: cap_mo
-    real(dp), parameter            :: thrsh=1e-16_dp
+    real(dp), parameter            :: thrsh=1e-12_dp
     
 !----------------------------------------------------------------------
 ! Similarity transform the AO CAP matrix to yield the MO CAP matrix
@@ -865,6 +874,7 @@ contains
              errmsg='Error: the MO CAP matrix is not symmetric.'
              call error_control
           endif
+          cap_mo(i,j)=cap_mo(j,i)
        enddo
     enddo
 

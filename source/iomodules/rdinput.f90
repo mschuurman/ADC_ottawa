@@ -1949,6 +1949,34 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'cap_box') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) boxpar(1)
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) boxpar(2)
+               else
+                  errmsg='Only 1 out of 3 CAP box dimensions were given'
+                  call error_control
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) boxpar(3)
+               else
+                  errmsg='Only 3 out of 3 CAP box dimensions were given'
+                  call error_control
+               endif
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  do n=1,3
+                     call convert_length(keyword(i),boxpar(n))
+                  enddo
+               endif
+            else
+               goto 100
+            endif
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))

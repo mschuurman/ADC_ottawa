@@ -740,7 +740,7 @@ contains
 
 !#######################################################################
 ! efield: calculates the value of the applied external electric field
-!         at the current time
+!         at the time t
 !#######################################################################
 
   function efield(t)
@@ -775,7 +775,7 @@ contains
        ! Sin squared-ramp envelope
        envelope=sin2ramp_envelope(t)
     endif
-    
+ 
 !----------------------------------------------------------------------
 ! Electric field value
 !----------------------------------------------------------------------

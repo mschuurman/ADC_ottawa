@@ -147,21 +147,27 @@ contains
     enddo
 
 !----------------------------------------------------------------------
-! CAP starting radius: we take the start of the CAP to correspond to
-! the greatest distance in any direction to the furthest most atom
-! plus its van der Waals radius multiplied by dscale
+! CAP starting radius: if a CAP box has not been specified by the user, 
+! then we will take the start of the CAP to correspond to the greatest
+! distance in any direction to the furthest most atom plus its van der
+! Waals radius multiplied by dscale
 !----------------------------------------------------------------------
-    call get_vdwr(gam,vdwr,natom)
-
-    cap_r0=-1.0d0
-    do n=1,natom
-       do i=1,3
-          x=gam%atoms(n)%xyz(i)*ang2bohr
-          r=abs(x-cap_centre(i))+dscale*vdwr(n)
-          if (r.gt.cap_r0) cap_r0=r
+    if (boxpar(1).eq.0.0d0) then
+       ! The user has not specified a cap box, 
+       call get_vdwr(gam,vdwr,natom)
+       cap_r0=-1.0d0
+       do n=1,natom
+          do i=1,3
+             x=gam%atoms(n)%xyz(i)*ang2bohr
+             r=abs(x-cap_centre(i))+dscale*vdwr(n)
+             if (r.gt.cap_r0) cap_r0=r
+          enddo
        enddo
-    enddo
-    
+    else
+       ! User specified box: take the maximum starting distance
+       cap_r0=maxval(boxpar)
+    endif
+
 !----------------------------------------------------------------------
 ! Calculate the AO representation of the CAP.
 !

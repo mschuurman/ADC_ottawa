@@ -70,18 +70,32 @@ contains
 
     implicit none
 
-    integer :: r,s,u,v,nsym1,nsym2,i,j,a,b
-    real(d) :: DA,eijc,term,etotal
-
-    integer                            :: nthreads,tid
+    integer                            :: r,s,u,v,nsym1,nsym2,i,j,a,b
+    integer                            :: occ1,nthreads,tid
+    real(d)                            :: DA,eijc,term,etotal
     real(d), dimension(:), allocatable :: sum1thread
 
+!-----------------------------------------------------------------------
+! Set the index of the first non-frozen occupied orbital
+!-----------------------------------------------------------------------
+    if (lifrzcore) then
+       occ1=ncore+1
+    else
+       occ1=1
+    endif
+
+!-----------------------------------------------------------------------    
+! Determine the number of threads
+!-----------------------------------------------------------------------    
     !$omp parallel
     nthreads=omp_get_num_threads()
     !$omp end parallel
     allocate(sum1thread(nthreads))
     sum1thread=0.0d0
-        
+
+!-----------------------------------------------------------------------    
+! Calculate the MP2 energy correction
+!-----------------------------------------------------------------------    
     E_MP2 = 0.0d0
     etotal = 0.0d0
 
@@ -94,10 +108,10 @@ contains
        do s=nOcc+1,nBas
           b=roccnum(s) !s
           
-          do u=1,nOcc
+          do u=occ1,nocc
              i=roccnum(u) !u
                  
-             do v=1,nOcc
+             do v=occ1,nocc
                 j=roccnum(v) !v
 
                 tid=1+omp_get_thread_num()
@@ -282,13 +296,38 @@ contains
 
   subroutine rho_mp2(rho)
 
+    use channels
     use constants
     use parameters
-    
+    use timingmod
+    use iomod
+
     implicit none
 
-    integer                       :: i,j,a,b
+    integer                       :: i,j,a,b,k,occ1
     real(d), dimension(nbas,nbas) :: rho
+    real(d)                       :: tw1,tw2,tc1,tc2
+
+!-----------------------------------------------------------------------
+! Start timing
+!-----------------------------------------------------------------------
+    call times(tw1,tc1)
+
+!-----------------------------------------------------------------------
+! Ouput what we are doing
+!-----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the MP2 density matrix'
+    write(ilog,'(72a)') ('-',k=1,72)
+
+!-----------------------------------------------------------------------
+! Set the index of the first non-frozen occupied orbital
+!-----------------------------------------------------------------------
+    if (lifrzcore) then
+       occ1=ncore+1
+    else
+       occ1=1
+    endif
 
 !-----------------------------------------------------------------------
 ! Ground state density matrix.
@@ -302,8 +341,8 @@ contains
     enddo
 
     ! Occupied-occupied block: 2nd-order contribution
-    do i=1,nocc
-       do j=i,nocc
+    do i=occ1,nocc
+       do j=occ1,nocc
           rho(i,j)=rho(i,j)+rhogs2_oo(i,j)
           rho(j,i)=rho(i,j)
        enddo
@@ -318,13 +357,19 @@ contains
     enddo
     
     ! Occupied-unoccupied block: 2nd-order contribution
-    do i=1,nocc
+    do i=occ1,nocc
        do a=nocc+1,nbas
           rho(i,a)=rhogs2_ou(i,a)
           rho(a,i)=rho(i,a)
        enddo
     enddo
-    
+
+!-----------------------------------------------------------------------
+! Finish timing and output the wall time taken
+!-----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+
     return
     
   end subroutine rho_mp2
@@ -343,15 +388,29 @@ contains
     
     implicit none
 
-    integer :: a,b,i1,j1,c1,i,j,c
+    integer :: a,b,i1,j1,c1,i,j,c,occ1
     real(d) :: fret,ftmp,delta_ijac,delta_ijbc
       
+!-----------------------------------------------------------------------
+! Set the index of the first non-frozen occupied orbital
+!-----------------------------------------------------------------------
+    if (lifrzcore) then
+       occ1=ncore+1
+    else
+       occ1=1
+    endif
+
+!-----------------------------------------------------------------------
+! Calculate the matrix element
+!-----------------------------------------------------------------------
     fret=0.0d0
 
-    do i1=1,nocc
-       i=roccnum(i1)
-       do j1=1,nocc
+    do i=occ1,nocc
+       i1=roccnum(i1)
+       
+       do j1=occ1,nocc
           j=roccnum(j1)
+       
           do c1=nocc+1,nbas
              c=roccnum(c1)
              
@@ -388,13 +447,25 @@ contains
     
     implicit none
 
-    integer :: i,j,k1,a1,b1,k,a,b
+    integer :: i,j,k1,a1,b1,k,a,b,occ1
     real(d) :: fret,ftmp,delta_ikab,delta_jkab
 
+!-----------------------------------------------------------------------
+! Set the index of the first non-frozen occupied orbital
+!-----------------------------------------------------------------------
+    if (lifrzcore) then
+       occ1=ncore+1
+    else
+       occ1=1
+    endif
+
+!-----------------------------------------------------------------------
+! Calculate the matrix element
+!-----------------------------------------------------------------------
     fret=0.0d0
 
-    do k1=1,nocc
-       k=roccnum(k1)
+    do k1=occ1,nocc
+      k=roccnum(k1)
        do a1=nocc+1,nbas
           a=roccnum(a1)
           do b1=nocc+1,nbas
@@ -432,11 +503,23 @@ contains
     
     implicit none
 
-    integer :: i,a,j1,k1,b1,c1,j,k,b,c
+    integer :: i,a,j1,k1,b1,c1,j,k,b,c,occ1
     real(d) :: fret,ftmp,term1,term2,delta_ijbc,delta_jkab
 
+!-----------------------------------------------------------------------
+! Set the index of the first non-frozen occupied orbital
+!-----------------------------------------------------------------------
+    if (lifrzcore) then
+       occ1=ncore+1
+    else
+       occ1=1
+    endif
+
+!-----------------------------------------------------------------------
+! Calculate the matrix element
+!-----------------------------------------------------------------------
     term1=0.0d0
-    do j1=1,nocc
+    do j1=occ1,nocc
        j=roccnum(j1)
        do b1=nocc+1,nbas
           b=roccnum(b1)
@@ -455,9 +538,9 @@ contains
     enddo
 
     term2=0.0d0
-    do j1=1,nocc
+    do j1=occ1,nocc
        j=roccnum(j1)
-       do k1=1,nocc
+       do k1=occ1,nocc
           k=roccnum(k1)
           do b1=nocc+1,nbas
              b=roccnum(b1)
