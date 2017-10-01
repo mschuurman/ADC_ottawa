@@ -33,7 +33,9 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    call initialise
+    ! Initial state density matrix
+    allocate(rho(nbas,nbas))
+    rho=0.0d0
     
 !----------------------------------------------------------------------
 ! Currently, we can only calculate the ground state density matrix,
@@ -58,40 +60,12 @@ contains
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
-    call finalise
+    deallocate(rho)
     
     return
     
   end subroutine autobox
 
-!######################################################################
-
-  subroutine initialise
-
-    use parameters
-    
-    implicit none
-
-    ! Initial state density matrix
-    allocate(rho(nbas,nbas))
-    rho=0.0d0
-    
-    return
-    
-  end subroutine initialise
-
-!######################################################################
-
-  subroutine finalise
-
-    implicit none
-
-    deallocate(rho)
-    
-    return
-    
-  end subroutine finalise
-    
 !######################################################################
 
   subroutine istate_density_matrix
@@ -105,7 +79,7 @@ contains
     real(dp) :: trace
     
 !----------------------------------------------------------------------
-! ADC(1) ground state density matrix
+! ADC(1) (HF) ground state density matrix
 !----------------------------------------------------------------------
     if (method.eq.1) then
        rho=0.0d0
@@ -115,7 +89,7 @@ contains
     endif
 
 !----------------------------------------------------------------------
-! ADC(2) ground state density matrix
+! ADC(2) (MP2) ground state density matrix
 !----------------------------------------------------------------------
     if (method.eq.2.or.method.eq.3) then
        call rho_mp2(rho)
@@ -144,13 +118,16 @@ contains
     real(dp), dimension(3,2) :: rc
     type(gam_structure)      :: gam
 
+!----------------------------------------------------------------------
+! For each of the x-, y-, and z-directions, determine the distance at
+! which the initial state density drops below the user-set threshold.
+! We take these points to define the CAP box.
+!----------------------------------------------------------------------
     ! Loop over negative and positive displacements
     do dir=1,2
     
        ! Loop over the x, y and z directions
        do i=1,3
-          
-          write(ilog,'(/)')
           
           ! Loop over points until the density drops
           ! below threshold
