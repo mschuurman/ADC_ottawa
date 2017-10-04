@@ -46,6 +46,12 @@ contains
             only supported for the ground state'
        call error_control
     endif
+
+!----------------------------------------------------------------------
+! Analysis of the eigenvalues of the MO representation of the position
+! operator
+!----------------------------------------------------------------------
+!    call position_eigenvalues
     
 !----------------------------------------------------------------------
 ! Calculate the initial state density matrix
@@ -128,7 +134,7 @@ contains
     
        ! Loop over the x, y and z directions
        do i=1,3
-          
+
           ! Loop over points until the density drops
           ! below threshold
           k=0
@@ -161,11 +167,54 @@ contains
     do i=1,3
        cstrt(i)=maxval(abs(rc(i,:)))
     enddo
-    
+
     return
     
   end subroutine density_analysis
+
+!######################################################################
+
+  subroutine position_eigenvalues
+
+    use channels
+    use parameters
+    use iomod
+        
+    implicit none
+
+    integer                        :: i,j,error
+    real(dp), dimension(nbas,nbas) :: eigvec
+    real(dp), dimension(nbas)      :: eigval
+    real(dp), dimension(3*nbas)    :: work
     
+!----------------------------------------------------------------------
+! Loop over the x, y, and z-drections, diagonalising the MO
+! MO representation of the position operator for each component
+!----------------------------------------------------------------------
+    do i=1,3
+
+       eigvec=-dpl_all(i,:,:)
+       
+       call dsyev('V','U',nbas,eigvec,nbas,eigval,work,3*nbas,error)
+
+       if (error.ne.0) then
+          errmsg='Diagonalisation of the MO dipole matrix failed'
+          call error_control
+       endif
+
+       write(ilog,'(/)')
+       do j=1,nbas
+          write(ilog,*) j,eigval(j)
+       enddo
+       
+    enddo
+
+!    STOP
+    
+    return
+    
+  end subroutine position_eigenvalues
+  
 !######################################################################
   
 end module autocapbox

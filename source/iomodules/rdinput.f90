@@ -2151,6 +2151,9 @@
                else if (keyword(i).eq.'sin2-ramp') then
                   ienvelope=2
                   nenvpar=1
+               else if (keyword(i).eq.'box') then
+                  ienvelope=3
+                  nenvpar=2
                else
                   errmsg='Unknown evelope type: '//trim(keyword(i))
                   call error_control

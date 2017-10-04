@@ -788,15 +788,15 @@ contains
   
 !######################################################################
 
-  subroutine write_fspace_tda(ndim,kpq,chr) 
+  subroutine write_fspace_tda(ndim,kpq,noffd,chr) 
 
-    integer, intent(in) :: ndim
+    integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    character(1), intent(in) :: chr
-
-    integer :: nbuf,i
+    integer*8                                           :: noffd
+    integer                                             :: nbuf,i
+    character(1), intent(in)                            :: chr
     
-    call get_offdiag_tda_save(ndim,kpq(:,:),nbuf,chr)
+    call get_offdiag_tda_save(ndim,kpq(:,:),nbuf,noffd,chr)
     call get_diag_tda_save(ndim,kpq(:,:),nbuf,chr)
     
   end subroutine write_fspace_tda

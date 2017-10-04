@@ -5001,92 +5001,113 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
 !!$------------------------------------------------------------------------------
 
 
-  subroutine get_offdiag_tda_DIPOLE_SAVE_OK(ndimf,ndim,kpqf,kpq,nbuf,count, UNIT_DIP )
+  subroutine get_offdiag_tda_DIPOLE_SAVE_OK(ndimf,ndim,kpqf,kpq,nbuf,&
+       count,filename)
+    
 
-  integer, intent(in) :: ndimf
-  integer, intent(in) :: ndim
-  integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
-  integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-  integer*8, intent(out) :: count
-  integer, intent(out)   :: nbuf
-  integer, intent(in) :: UNIT_DIP
+    integer, dimension(7,0:nBas**2*nOcc**2) :: kpqf
+    integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
+    
+    integer                            :: ndimf
+    integer                            :: ndim
+    integer*8                          :: count
+    integer                            :: nbuf
+    integer                            :: unit_dip
+    integer                            :: inda,indb,indk,indl,&
+                                          spin
+    integer                            :: indapr,indbpr,indkpr,indlpr,&
+                                          spinpr
+    integer                            :: i,j,nlim,dim_count,dim_countf,&
+                                          ndim1,ndim1f
+    integer                            :: lim1i,lim2i,lim1j,lim2j
+    integer                            :: rec_count
+    integer, dimension(:), allocatable :: oi,oj
+    real(d), dimension(:), allocatable :: file_offdiagd
+    real(d)                            :: ar_offdiagd_ij
+    character(len=60)                  :: filename
+
+!-----------------------------------------------------------------------
+! Allocation and initialisation
+!-----------------------------------------------------------------------
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiagd(buf_size))
+
+    count=0
+    rec_count=0
+    nbuf=0
+    oi(:)=0   
+    oj(:)=0   
+    file_offdiagd(:)=0.d0
+    
+!-----------------------------------------------------------------------
+! Open the output file
+!-----------------------------------------------------------------------
+    call freeunit(unit_dip)
+    open(unit_dip,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Write the buffer size to file
+!-----------------------------------------------------------------------
+    write(unit_dip) buf_size
+    
+!-----------------------------------------------------------------------
+! Calculate and save the ADC(1) dipole matrix
+!-----------------------------------------------------------------------
+    ndim1f = kpqf(1,0)
+    ndim1 = kpq(1,0)
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
-
-
-  integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
-  integer :: lim1i,lim2i,lim1j,lim2j
-
-  integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
-
-  count=0
-  rec_count=0
-  nbuf=0
-  oi(:)=0   
-  oj(:)=0   
-  file_offdiagd(:)=0.d0   
-
-  write(ilog,*) "Writing the off-diagonal part of ADC DIPOLE matrix in file ", UNIT_DIP
-
-!!$ Full diagonalization. Filling the lower half of the matrix
-
-!!$ Filling the off-diagonal part of the ph-ph block
-
-     ndim1f = kpqf(1,0)
-
-     ndim1 = kpq(1,0)
-  
-     do i = 1 , ndim1f
-        call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
-
-        do j = 1 , ndim1
-           call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
-
+    do i=1,ndim1f
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       
+       do j=1,ndim1
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
           
-           ar_offdiagd_ij = 0.d0
+          ar_offdiagd_ij = 0.0d0
          
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if(indk .eq. indkpr) then
-                   ar_offdiagd_ij = ar_offdiagd_ij + D0_1_ph_ph(inda,indapr)
-    end if
+          if (indk .eq. indkpr) then
+             ar_offdiagd_ij=ar_offdiagd_ij+D0_1_ph_ph(inda,indapr)
+          endif
+          
+          if (inda.eq.indapr) then
+             ar_offdiagd_ij=ar_offdiagd_ij+D0_2_ph_ph(indk,indkpr)
+          endif
 
-    if(inda .eq. indapr) then
-                   ar_offdiagd_ij = ar_offdiagd_ij + D0_2_ph_ph(indk,indkpr)
-    end if
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! Culling small matrix elements
+          if (abs(ar_offdiagd_ij).gt.minc) then
+             call register1()
+          endif
+          
+       enddo
 
-             !Culling  small matrix elements
-             if (abs(ar_offdiagd_ij) .gt. minc) then
-                call register1()
-             end if
-
-   end do
-  end do
-
-
+    enddo
 
     call register2()
-
-
+    
     write(ilog,*) 'rec_counts',nbuf
-    write(ilog,*) count,' DIPOLE_off-diagonal elements saved in file ', UNIT_DIP
+    write(ilog,*) count,' DIPOLE_off-diagonal elements saved in file ',&
+         unit_dip
 
-
+!-----------------------------------------------------------------------
+! Close the output file
+!-----------------------------------------------------------------------
+    close(unit_dip)
+    
+!-----------------------------------------------------------------------
+! Deallocatation
+!-----------------------------------------------------------------------
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiagd)
+    
   contains
-       
 
     subroutine register1()
-
-      if (abs(ar_offdiagd_ij) .gt. minc) then
+      
+      if (abs(ar_offdiagd_ij).gt.minc) then
          count=count+1
-         IF ( count .eq. 1 ) then
-         write(ilog,*) 'the first element not-diagonal saved in', UNIT_DIP,'is the', i , j,'one:', ar_offdiagd_ij
-         END IF
-! buf_size*int(rec_count,8) can exceed the int*4 limit
+         ! buf_size*int(rec_count,8) can exceed the int*4 limit
          file_offdiagd(count-buf_size*int(rec_count,8))=ar_offdiagd_ij
          oi(count-buf_size*int(rec_count,8))=i
          oj(count-buf_size*int(rec_count,8))=j
@@ -5095,27 +5116,156 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
             rec_count=rec_count+1
             nlim=buf_size
             !Saving off-diag part in file
-            call wrtoffdg( UNIT_DIP ,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
-         end if
-      end if
+            call wrtoffdg(unit_dip,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
+         endif
+      endif
+
     end subroutine register1
     
     subroutine register2()
       
       !Saving the rest in file
       nlim=count-buf_size*int(rec_count,8)
-      call wrtoffdg( UNIT_DIP ,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
+      call wrtoffdg(unit_dip,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
       rec_count=rec_count+1
       nbuf=rec_count
       
     end subroutine register2
 
-
-
   end subroutine get_offdiag_tda_DIPOLE_SAVE_OK
 
+!######################################################################
+  
+  subroutine get_tda_dipole_samespace_save(kpq,nbuf,count,filename)
 
+    implicit none
 
+    integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
+    integer*8                               :: count
+    integer                                 :: nbuf
+    integer                                 :: unit_dip
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin
+    integer                                 :: indapr,indbpr,indkpr,&
+                                               indlpr,spinpr
+    integer                                 :: i,j,nlim,dim_count,&
+                                               dim_countf,ndim1
+    integer                                 :: lim1i,lim2i,lim1j,lim2j
+    integer                                 :: rec_count
+    integer, dimension(:), allocatable      :: oi,oj
+    real(d), dimension(:), allocatable      :: file_offdiagd
+    real(d)                                 :: ar_offdiagd_ij
+    character(len=60)                       :: filename
+
+!-----------------------------------------------------------------------
+! Allocation and initialisation
+!-----------------------------------------------------------------------
+    allocate(oi(buf_size))
+    allocate(oj(buf_size))
+    allocate(file_offdiagd(buf_size))
+
+    count=0
+    rec_count=0
+    nbuf=0
+    oi(:)=0
+    oj(:)=0
+    file_offdiagd(:)=0.d0
+    
+!-----------------------------------------------------------------------
+! Open the output file
+!-----------------------------------------------------------------------
+    call freeunit(unit_dip)
+    open(unit_dip,file=filename,status='unknown',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Write the buffer size to file
+!-----------------------------------------------------------------------
+    write(unit_dip) buf_size
+    
+!-----------------------------------------------------------------------
+! Calculate and save the ADC(1) dipole matrix
+!-----------------------------------------------------------------------
+    ndim1 = kpq(1,0)
+  
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indk,indl,spin)
+       
+       do j=1,ndim1
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)  
+          
+          ar_offdiagd_ij = 0.0d0
+         
+          if (indk .eq. indkpr) then
+             ar_offdiagd_ij=ar_offdiagd_ij+D0_1_ph_ph(inda,indapr)
+          endif
+          
+          if (inda.eq.indapr) then
+             ar_offdiagd_ij=ar_offdiagd_ij+D0_2_ph_ph(indk,indkpr)
+          endif
+
+          ! Culling small matrix elements
+          if (abs(ar_offdiagd_ij).gt.minc) then
+             call register1()
+          endif
+          
+       enddo
+
+    enddo
+
+    call register2()
+    
+    write(ilog,*) 'rec_counts',nbuf
+    write(ilog,*) count,' DIPOLE_off-diagonal elements saved in file ',&
+         unit_dip
+
+!-----------------------------------------------------------------------
+! Close the output file
+!-----------------------------------------------------------------------
+    close(unit_dip)
+    
+!-----------------------------------------------------------------------
+! Deallocatation
+!-----------------------------------------------------------------------
+    deallocate(oi)
+    deallocate(oj)
+    deallocate(file_offdiagd)
+    
+  contains
+
+    subroutine register1()
+      
+      if (abs(ar_offdiagd_ij).gt.minc) then
+         count=count+1
+         ! buf_size*int(rec_count,8) can exceed the int*4 limit
+         file_offdiagd(count-buf_size*int(rec_count,8))=ar_offdiagd_ij
+         oi(count-buf_size*int(rec_count,8))=i
+         oj(count-buf_size*int(rec_count,8))=j
+         !Checking if the buffer is full 
+         if(mod(count,buf_size) .eq. 0) then
+            rec_count=rec_count+1
+            nlim=buf_size
+            !Saving off-diag part in file
+            call wrtoffdg(unit_dip,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
+         endif
+      endif
+
+    end subroutine register1
+    
+    subroutine register2()
+      
+      !Saving the rest in file
+      nlim=count-buf_size*int(rec_count,8)
+      call wrtoffdg(unit_dip,buf_size,file_offdiagd(:),oi(:),oj(:),nlim)
+      rec_count=rec_count+1
+      nbuf=rec_count
+      
+    end subroutine register2
+
+  end subroutine get_tda_dipole_samespace_save
+
+!######################################################################
+  
   subroutine get_offdiag_tda_DIPOLE_SAVE_OK_GS(ndimf,ndim,kpqf,kpq,nbuf,count, UNIT_DIP )
 
   integer, intent(in) :: ndimf

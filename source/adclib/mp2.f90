@@ -316,9 +316,7 @@ contains
 !-----------------------------------------------------------------------
 ! Ouput what we are doing
 !-----------------------------------------------------------------------
-    write(ilog,'(/,72a)') ('-',k=1,72)
     write(ilog,'(2x,a)') 'Calculating the MP2 density matrix'
-    write(ilog,'(72a)') ('-',k=1,72)
 
 !-----------------------------------------------------------------------
 ! Set the index of the first non-frozen occupied orbital

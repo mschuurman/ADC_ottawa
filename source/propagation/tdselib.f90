@@ -567,7 +567,7 @@ contains
     
     implicit none
     
-    integer                               :: matdim,i
+    integer                               :: matdim,i,j
     integer*8                             :: noffdiag
     real(d)                               :: time
     real(d), dimension(3)                 :: Et
@@ -612,7 +612,7 @@ contains
 !
 ! noffdiag, however, is fine as is
 !----------------------------------------------------------------------
-    
+
     if (hincore) then
        call matxvec_treal_incore(matdim-1,noffdiag,v1(1:matdim-1),&
             opxv1(1:matdim-1))
@@ -620,7 +620,7 @@ contains
        call matxvec_treal_ext(matdim-1,noffdiag,v1(1:matdim-1),&
             opxv1(1:matdim-1))
     endif
-
+    
     ! Contribution to v2=dt|Psi>
     v2=v2+opxv1
     
@@ -632,7 +632,6 @@ contains
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, D_0J.
 !----------------------------------------------------------------------
-    
     ! External electric field
     Et=efield(time)
     
@@ -644,18 +643,18 @@ contains
        ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
-       ! Calculate -i*Dc*v1
+       ! Calculate Dc*v1
        filename='SCRATCH/dipole_'//acomp(i)
-       call opxvec_treal_ext(matdim-1,v1(1:matdim-1),&
+       call opxvec_ext(matdim-1,v1(1:matdim-1),&
             opxv1(1:matdim-1),filename,nbuf_dip(i))
-
+       
        ! Contribution to v2=dt|Psi>
        v2(1:matdim-1)=v2(1:matdim-1) &
-            -opxv1(1:matdim-1)*Et(i) &
-            + ci*d00(i)*Et(i)*v1(1:matdim-1)
+            + ci*Et(i)*opxv1(1:matdim-1) &
+            + ci*Et(i)*d00(i)*v1(1:matdim-1)
 
     enddo
-    
+
     ! (b) Ground state-ground state element
     !
     ! Loop over components of the dipole operator
@@ -674,7 +673,7 @@ contains
     ! Loop over components of the dipole operator
     do i=1,3
 
-       ! Cycle if the  current component does not contribute
+       ! Cycle if the current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
        ! Contribution to v2=dt|Psi>
@@ -682,9 +681,9 @@ contains
             ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
        v2(1:matdim-1)=v2(1:matdim-1)+&
             ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
-       
-    enddo
 
+    enddo
+    
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1 = - W * v1
 !----------------------------------------------------------------------
@@ -700,16 +699,16 @@ contains
 
        ! (a) IS-IS block
        !
-       ! Calculate -i*W*v1
+       ! Calculate W*v1
        filename='SCRATCH/cap'
-       call opxvec_treal_ext(matdim-1,v1(1:matdim-1),&
+       call opxvec_ext(matdim-1,v1(1:matdim-1),&
             opxv1(1:matdim-1),filename,nbuf_cap)
        
        ! Contribution to v2=dt|Psi>
-       v2(1:matdim-1)=v2(1:matdim-1)&
-            -ci*opxv1(1:matdim-1)&
+       v2(1:matdim-1)=v2(1:matdim-1) &
+            -opxv1(1:matdim-1) &
             -w00*v1(1:matdim-1)
-
+       
        ! (b) Ground state-ground state element
        !
        ! Contribution to v2=dt|Psi>
@@ -725,6 +724,7 @@ contains
                -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
           v2(1:matdim-1)=v2(1:matdim-1) &
                -w0j(1:matdim-1)*v1(matdim)
+
        endif
 
     endif
@@ -774,6 +774,9 @@ contains
     else if (ienvelope.eq.2) then
        ! Sin squared-ramp envelope
        envelope=sin2ramp_envelope(t)
+    else if (ienvelope.eq.3) then
+       ! Box-type envelope
+       envelope=box_envelope(t)
     endif
  
 !----------------------------------------------------------------------
@@ -846,13 +849,46 @@ contains
     return
     
   end function sin2ramp_envelope
-  
+
 !#######################################################################
-! opxvec_treal_ext: calculates v2 = -i * O * v1 using an externally
-!                   stored operator matrix O
+! box_envelope: calculates the value of a box function at the time t.
 !#######################################################################
 
-  subroutine opxvec_treal_ext(matdim,v1,v2,filename,nrec)
+  function box_envelope(t) result(func)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    real(d) :: t,func,ti,tf
+
+    ! t_i
+    ti=envpar(1)
+
+    ! t_f
+    tf=envpar(2)
+
+    ! Envelope value
+    if (t.lt.ti.or.t.gt.tf) then
+       func=0.0d0
+    else
+       func=1.0d0
+    endif
+    
+    return
+    
+  end function box_envelope
+    
+!#######################################################################
+! opxvec_treal_ext: calculates v2 = O * v1 using an externally stored
+!                   operator matrix O
+!
+! NOTE THAT IN ITS CURRENT STATE, THIS SUBROUTINE ASSUMES THAT ALL
+! MATRIX ELEMENTS ARE SAVED TO DISK
+!#######################################################################
+
+  subroutine opxvec_ext(matdim,v1,v2,filename,nrec)
 
     use constants
     use parameters
@@ -865,7 +901,6 @@ contains
     integer                                 :: matdim,nrec,nlim,&
                                                unit,i,k,n,nthreads,&
                                                tid,npt,tmp
-    integer*8                               :: noffdiag
     integer, dimension(:), allocatable      :: indxi,indxj
     integer*8, dimension(:,:), allocatable  :: irange
     real(d), dimension(:), allocatable      :: oij
@@ -927,18 +962,18 @@ contains
        !
        !$omp parallel do &
        !$omp& private(i,k,tid) &
-       !$omp& shared(tmpvec,v1)
+       !$omp& shared(tmpvec,v1,oij,indxi,indxj)
        do i=1,nthreads
           tid=1+omp_get_thread_num()
           do k=irange(tid,1),irange(tid,2)
              tmpvec(indxi(k),tid)=tmpvec(indxi(k),tid)&
-                  -ci*oij(k)*v1(indxj(k))
-             tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
-                  -ci*oij(k)*v1(indxi(k))
+                  +oij(k)*v1(indxj(k))
+             !tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
+             !     +oij(k)*v1(indxi(k))
           enddo
        enddo
        !$omp end parallel do
-       
+
     enddo
 
     do i=1,nthreads
@@ -961,7 +996,7 @@ contains
     
     return
     
-  end subroutine opxvec_treal_ext
+  end subroutine opxvec_ext
 
 !#######################################################################
 
@@ -1003,7 +1038,6 @@ contains
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, D_0J.
 !----------------------------------------------------------------------
-    
     ! External electric field
     Et=efield(time)
 

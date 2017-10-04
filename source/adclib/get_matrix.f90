@@ -139,13 +139,13 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in) :: chr
     
-    character(10) :: name
+    character(30) :: name
     integer :: i,ktype,unt
     integer :: inda,indb,indj,indk,spin
     real(d), dimension(ndim) :: ar_diag
     
     ktype=1
-    name="tda.diag"//chr
+    name="SCRATCH/hmlt.dia"//chr
     unt=11
     
     do i=1, ndim
@@ -166,14 +166,15 @@ contains
 !!$----------------------------------------------------------------
 !!$----------------------------------------------------------------
 
-  subroutine get_offdiag_tda_save(ndim,kpq,nbuf,chr)
+  subroutine get_offdiag_tda_save(ndim,kpq,nbuf,noffd,chr)
     
     integer, intent(in) :: ndim
     integer, intent(out) :: nbuf 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer*8 :: noffd
     character(1), intent(in) :: chr
     
-    character(10) :: name
+    character(30) :: name
     integer :: i,j,nlim,rec_count,count,unt
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
@@ -186,7 +187,7 @@ contains
     allocate(oj(buf_size))
     allocate(file_offdiag(buf_size))
 
-    name="tda.off"//chr
+    name="SCRATCH/hmlt.off"//chr
     unt=12
 
     count=0
@@ -226,6 +227,8 @@ contains
        deallocate(oj)
        deallocate(file_offdiag)
 
+       noffd=count
+       
   contains
        
     subroutine register1()

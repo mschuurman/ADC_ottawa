@@ -55,7 +55,7 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
-    call calc_hamiltonian_incore(kpqf,ndimf)
+    call calc_hamiltonian_incore(kpqf,ndimf,noffdf)
 
 !-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -95,7 +95,7 @@ contains
 
 !#######################################################################
 
-  subroutine calc_hamiltonian_incore(kpqf,ndimf)
+  subroutine calc_hamiltonian_incore(kpqf,ndimf,noffdf)
 
     use parameters
     use constants
@@ -105,7 +105,8 @@ contains
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer                                             :: ndimf,i,j
-
+    integer*8                                           :: noffdf
+    
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -126,7 +127,7 @@ contains
             Hamiltonian matrix'
        call get_fspace_tda_direct_nodiag(ndimf,kpqf,h1)
     endif
-    
+
     return
     
   end subroutine calc_hamiltonian_incore
@@ -215,7 +216,7 @@ contains
     wij=0.0d0
     
     call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
-    
+
 !----------------------------------------------------------------------
 ! Reset the dpl array
 !----------------------------------------------------------------------
@@ -290,7 +291,7 @@ contains
        call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
        
     enddo
-
+    
 !----------------------------------------------------------------------
 ! Calculate the IS representations of the shifted dipole operators
 ! Dc - Dc_0, c=x,y,z
@@ -315,7 +316,7 @@ contains
             dij(c,:,:))
        
     enddo
-    
+
     return
     
   end subroutine dipole_isbas_adc1
