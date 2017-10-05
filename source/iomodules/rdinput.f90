@@ -41,6 +41,9 @@
                i=i+2
                if (keyword(i).eq.'adc1') then
                   method=1
+               else if (keyword(i).eq.'cis') then
+                  method=1
+                  lcis=.true.
                else if (keyword(i).eq.'adc2'.or.keyword(i).eq.'adc2-s') then
                   method=2
                else if (keyword(i).eq.'adc2-x') then

@@ -55,7 +55,7 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
-    call calc_hamiltonian_incore(kpqf,ndimf,noffdf)
+    call calc_hamiltonian_incore(kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
@@ -95,7 +95,7 @@ contains
 
 !#######################################################################
 
-  subroutine calc_hamiltonian_incore(kpqf,ndimf,noffdf)
+  subroutine calc_hamiltonian_incore(kpqf,ndimf)
 
     use parameters
     use constants
@@ -105,7 +105,6 @@ contains
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer                                             :: ndimf,i,j
-    integer*8                                           :: noffdf
     
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -196,9 +195,13 @@ contains
        write(ilog,'(2x,a)') 'Calculating the vector &
             W_0J = < Psi_0 | W | Psi_J >'
        write(ilog,'(72a)') ('-',k=1,72)
-       
-       call get_modifiedtm_tda(ndimf,kpqf,w0j)
 
+       if (lcis) then
+          call get_tm_cis(ndimf,kpqf,w0j)
+       else
+          call get_modifiedtm_tda(ndimf,kpqf,w0j)
+       endif
+          
     endif
 
 !----------------------------------------------------------------------

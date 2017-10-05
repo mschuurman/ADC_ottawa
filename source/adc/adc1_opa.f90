@@ -63,8 +63,12 @@ contains
 !-----------------------------------------------------------------------
     write(ilog,'(/,2x,a)') 'Calculating the transition dipole &
          moments between the ground state and all excited states...'
-    call get_modifiedtm_tda(ndim,kpq(:,:),mtm(:))
-
+    if (lcis) then
+       call get_tm_cis(ndim,kpq(:,:),mtm(:))
+    else
+       call get_modifiedtm_tda(ndim,kpq(:,:),mtm(:))
+    endif
+       
     do i=1,ndim
        tmvec(i)=tm(ndim,arr(:,i),mtm(:))
        osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2

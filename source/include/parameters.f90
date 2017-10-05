@@ -168,6 +168,7 @@ module parameters
   real(d)                              :: maxmem
   logical                              :: ldipole
   real(d), dimension(:), allocatable   :: dipmom,dipmom_f
+  logical                              :: lcis
 
 !!$************************************************
 !!$**********Physical Constants********************

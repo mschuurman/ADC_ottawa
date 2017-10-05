@@ -102,6 +102,54 @@ contains
 
 !#######################################################################
 
+  subroutine get_tm_cis(ndim,kpq,mtm)
+
+    implicit none
+       
+    integer, intent(in)                                   :: ndim
+    integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
+    integer                                               :: i,ap,ih
+    real(d), dimension(ndim), intent(out)                 :: mtm 
+    real(d)                                               :: tw1,tw2,&
+                                                             tc1,tc2
+    
+!----------------------------------------------------------------------
+! Start timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
+    
+!----------------------------------------------------------------------
+! Dimensionality check
+!----------------------------------------------------------------------
+    if (ndim .ne. kpq(1,0)) then
+       errmsg='Inconsistent dim of the CIS matrix'
+       call error_control
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the CIS f-vector
+!----------------------------------------------------------------------
+    do i=1,ndim
+       ih=kpq(3,i)
+       ap=kpq(5,i)
+       mtm(i)=dpl(ih,ap)
+    enddo
+    
+    mtm(:)=-sqrt(2.0d0)*mtm(:)
+
+!----------------------------------------------------------------------
+! Stop timing and output the time taken
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+
+    write(ilog,'(2x,a,x,F9.2,/)') "Time taken:",tw2-tw1
+    
+    return
+    
+  end subroutine get_tm_cis
+  
+!#######################################################################
+
   subroutine get_modifiedtm_adc2(ndim,kpq,mtm,ista)
 
     implicit none
