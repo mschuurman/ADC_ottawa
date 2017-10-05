@@ -73,8 +73,8 @@ contains
 !----------------------------------------------------------------------
 ! Dimensionality check
 !----------------------------------------------------------------------
-    if (ndim .ne. kpq(1,0)) then
-       errmsg='Inconsistent dim of the TDA matrix'
+    if (ndim.ne.kpq(1,0)) then
+       errmsg='Inconsistent dimension of the TDA matrix'
        call error_control
     endif
 
@@ -86,7 +86,7 @@ contains
        ap=kpq(5,i)
        mtm(i)=dpl(ih,ap)+F0_ph(ap,ih)
     enddo
-    
+
     mtm(:)=-sqrt(2.0d0)*mtm(:)
 
 !----------------------------------------------------------------------
@@ -112,7 +112,7 @@ contains
     real(d), dimension(ndim), intent(out)                 :: mtm 
     real(d)                                               :: tw1,tw2,&
                                                              tc1,tc2
-    
+
 !----------------------------------------------------------------------
 ! Start timing
 !----------------------------------------------------------------------
@@ -121,8 +121,8 @@ contains
 !----------------------------------------------------------------------
 ! Dimensionality check
 !----------------------------------------------------------------------
-    if (ndim .ne. kpq(1,0)) then
-       errmsg='Inconsistent dim of the CIS matrix'
+    if (ndim.ne.kpq(1,0)) then
+       errmsg='Inconsistent dimension of the CIS matrix'
        call error_control
     endif
 
@@ -135,8 +135,8 @@ contains
        mtm(i)=dpl(ih,ap)
     enddo
     
-    mtm(:)=-sqrt(2.0d0)*mtm(:)
-
+    mtm(:)=-sqrt(2.0d0)*mtm(:)    
+    
 !----------------------------------------------------------------------
 ! Stop timing and output the time taken
 !----------------------------------------------------------------------

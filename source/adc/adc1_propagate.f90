@@ -184,7 +184,7 @@ contains
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
 !
 ! Note that if the projected CAP is being used and the initial state is
-! the ground state, then thes matrix elements are zero
+! the ground state, then these matrix elements are zero
 !----------------------------------------------------------------------
     allocate(w0j(ndimf))
     w0j=0.0d0
@@ -290,9 +290,13 @@ contains
        write(ilog,'(72a)') ('-',k=1,72)
 
        dpl(:,:)=dpl_all(c,:,:)
-       
-       call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
-       
+
+       if (lcis) then
+          call get_tm_cis(ndimf,kpqf,d0j(c,:))
+       else
+          call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
+       endif
+          
     enddo
     
 !----------------------------------------------------------------------
