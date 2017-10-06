@@ -1993,7 +1993,7 @@
             else
                goto 100
             endif
-                        
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -2031,6 +2031,7 @@
       implicit none
 
       integer          :: i,n
+      real(d)          :: theta,phi
       character(len=2) :: ai
       
 !-----------------------------------------------------------------------
@@ -2052,24 +2053,51 @@
 
 10       continue
          i=i+1
-
+         
          if (keyword(i).eq.'pulse_vec') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) pulse_vec(1)
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  read(keyword(i),*) pulse_vec(2)
+               if (keyword(i).eq.'polar') then
+                  ! Spherical polar specification
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) theta
+                  else
+                     errmsg='The polar angle was not given'
+                     call error_control
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) phi
+                  else
+                     errmsg='The azimuthal angle was not given'
+                     call error_control
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     call convert_angle(keyword(i),theta)
+                     call convert_angle(keyword(i),phi)
+                  endif
+                  pulse_vec(1)=sin(theta)*cos(phi)
+                  pulse_vec(2)=sin(theta)*sin(phi)
+                  pulse_vec(3)=cos(theta)
                else
-                  errmsg='Only one argument out of three was given &
-                       with the pulse_vec keyword'
-               endif
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  read(keyword(i),*) pulse_vec(3)
-               else
-                  errmsg='Only two arguments out of three was given &
-                       with the pulse_vec keyword'
+                  ! Cartesian specification
+                  read(keyword(i),*) pulse_vec(1)
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) pulse_vec(2)
+                  else
+                     errmsg='Only one argument out of three was given &
+                          with the pulse_vec keyword'
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) pulse_vec(3)
+                  else
+                     errmsg='Only two arguments out of three was given &
+                          with the pulse_vec keyword'
+                  endif
                endif
                ! Normalisation of the vector
                pulse_vec=pulse_vec/sqrt(dot_product(pulse_vec,pulse_vec))
@@ -2319,7 +2347,34 @@
       return
             
     end subroutine convert_length
+
+!#######################################################################
+
+    subroutine convert_angle(unit,val)
+
+      use constants
+      use iomod
       
+      implicit none
+
+      real(d)          :: val
+      character(len=*) :: unit
+
+      if (unit.eq.'rad'.or.unit.eq.'radians') then
+         ! Do nothing, radians are the default         
+      else if (unit.eq.'deg'.or.unit.eq.'degrees') then
+         ! radians -> degrees
+         val=val*pi/180.0d0
+      else
+         ! Unrecognised unit
+         errmsg='Unrecognised unit: '//trim(unit)
+         call error_control
+      endif
+      
+      return
+      
+    end subroutine convert_angle
+    
 !#######################################################################
 
   end module rdinput
