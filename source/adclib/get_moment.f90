@@ -444,6 +444,231 @@ contains
 
 !#######################################################################
 
+  subroutine get_modifiedtm_adc1ext(ndim,kpq,mtm,ista)
+
+    implicit none
+    
+    integer, intent(in)                                   :: ndim,ista
+    integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
+    real*8, dimension(ndim), intent(out)                  :: mtm
+    integer                                               :: a,b,k,j,cnt
+    integer                                               :: nlim1,nlim2
+    
+    integer                              :: a1,c1,c,l1,l,i,&
+         itmp,itmp1,nvirt
+    real*8                               :: tw1,tw2,tc1,tc2,ftmp
+    real*8, dimension(:,:), allocatable  :: tau
+    
+    write(ilog,'(/,2x,a)') 'Calculating the f-vector &
+         f_J=<Psi_0|D|Psi_J>...'
+    call times(tw1,tc1)
+    
+    mtm(:)=0.0d0
+
+!-----------------------------------------------------------------------    
+! 1h1p block
+!-----------------------------------------------------------------------
+    nlim1=1
+    nlim2=kpq(1,0)
+    nvirt=nbas-nocc
+    
+    ! F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph (note that
+    ! the calculation of these terms is still very slow)
+    !$omp parallel do private(cnt,k,a) shared(dpl,mtm,kpq,nlim1,nlim2)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       mtm(cnt)=dpl(a,k)
+       mtm(cnt)=mtm(cnt)+F0_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F25_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F26_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F27_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F28_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F29_ph(a,k)
+       mtm(cnt)=mtm(cnt)+F210_ph(a,k)
+    enddo
+    !$omp end parallel do
+
+    ! FA_ph
+    allocate(tau(nvirt,nvirt))
+    !$omp parallel do private(a,c,itmp,itmp1) shared(tau)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do c=nocc+1,nbas
+          itmp1=c-nocc
+          tau(itmp,itmp1)=tauA(c,a)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,a,k,itmp,itmp1,ftmp,c1,c) shared(kpq,roccnum,tau,dpl,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       itmp=a-nocc
+       itmp1=0
+       ftmp=0.0d0
+       do c1=nocc+1,nbas
+          c=roccnum(c1)
+          itmp1=itmp1+1
+          ftmp=ftmp+tau(itmp,itmp1)*dpl(c,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+
+    ! FB_ph
+    allocate(tau(nocc,nocc))
+    !$omp parallel do private(l,k) shared(tau)
+    do l=1,nocc
+       do k=1,nocc
+          tau(l,k)=tauB(l,k)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a,ftmp,l1,l) shared(kpq,roccnum,dpl,tau,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       ftmp=0.0d0
+       do l1=1,nocc
+          l=roccnum(l1)
+          ftmp=ftmp+dpl(a,l)*tau(l1,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+    
+    ! FC_ph
+    allocate(tau(nvirt,nocc))
+    !$omp parallel do private(a,itmp,l) shared(tau)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do l=1,nocc
+          tau(itmp,l)=tauC(a,l)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a) shared(kpq,mtm,tau)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       mtm(cnt)=mtm(cnt)+FC_ph_new(a,k,tau,nvirt)
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+    
+    ! F21_ph
+    allocate(tau(nvirt,nocc))
+    !$omp parallel do private(a,itmp,l) shared(tau)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do l=1,nocc
+          tau(itmp,l)=tau21(a,l)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a,itmp,ftmp,l1,l) shared(kpq,roccnum,tau,dpl,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       itmp=a-nocc
+       ftmp=0.0d0
+       do l1=1,nocc
+          l=roccnum(l1)
+          ftmp=ftmp+tau(itmp,l1)*dpl(l,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+
+    ! F22_ph
+    allocate(tau(nvirt,nocc))
+    !$omp parallel do private(a,itmp,l) shared(tau)
+    do a=nocc+1,nbas
+       itmp=a-nocc
+       do l=1,nocc
+          tau(itmp,l)=tau22(a,l)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a,itmp,ftmp,l1,l) shared(kpq,roccnum,tau,dpl,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       itmp=a-nocc
+       ftmp=0.0d0
+       do l1=1,nocc
+          l=roccnum(l1)
+          ftmp=ftmp+tau(itmp,l1)*dpl(l,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+
+    ! F23_ph
+    allocate(tau(nvirt,nocc))
+    !$omp parallel do private(c,itmp,k) shared(tau)
+    do c=nocc+1,nbas
+       itmp=c-nocc
+       do k=1,nocc
+          tau(itmp,k)=tau23(c,k)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a,itmp,ftmp,c1,c) shared(kpq,roccnum,tau,dpl,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       itmp=0
+       ftmp=0.0d0
+       do c1=nocc+1,nbas
+          itmp=itmp+1
+          c=roccnum(c1)
+          ftmp=ftmp+dpl(a,c)*tau(itmp,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+
+    ! F24_ph
+    allocate(tau(nvirt,nocc))
+    !$omp parallel do private(c,itmp,k) shared(tau)
+    do c=nocc+1,nbas
+       itmp=c-nocc
+       do k=1,nocc
+          tau(itmp,k)=tau24(c,k)
+       enddo
+    enddo
+    !$omp end parallel do
+    !$omp parallel do private(cnt,k,a,itmp,ftmp,c1,c) shared(kpq,roccnum,tau,dpl,mtm)
+    do cnt=nlim1,nlim2
+       k=kpq(3,cnt)
+       a=kpq(5,cnt)
+       itmp=0
+       ftmp=0.0d0
+       do c1=nocc+1,nbas
+          itmp=itmp+1
+          c=roccnum(c1)
+          ftmp=ftmp+dpl(a,c)*tau(itmp,k)
+       enddo
+       mtm(cnt)=mtm(cnt)+ftmp
+    enddo
+    !$omp end parallel do
+    deallocate(tau)
+
+    mtm(:)=-sqrt(2.0d0)*mtm(:)
+    
+    return
+    
+  end subroutine get_modifiedtm_adc1ext
+    
+!#######################################################################
+
 end module get_moment
     
     

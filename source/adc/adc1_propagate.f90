@@ -100,6 +100,7 @@ contains
     use parameters
     use constants
     use fspace
+    use iomod
     
     implicit none
 
@@ -117,14 +118,22 @@ contains
 ! Full calculation and in-core storage of the ADC(1) Hamiltonian
 ! Matrix
 !-----------------------------------------------------------------------
-    if (lcvsfinal) then
-       write(ilog,'(/,2x,a)') 'Calculating the CVS-ADC(1) &
-            Hamiltonian matrix'
-       call get_fspace_tda_direct_nodiag_cvs(ndimf,kpqf,h1)
-    else
-       write(ilog,'(/,2x,a)') 'Calculating the ADC(1) &
-            Hamiltonian matrix'
-       call get_fspace_tda_direct_nodiag(ndimf,kpqf,h1)
+    if (method.eq.1) then
+       ! ADC(1)
+       if (lcvsfinal) then
+          write(ilog,'(/,2x,a)') 'Calculating the CVS-ADC(1) &
+               Hamiltonian matrix'
+          call get_fspace_tda_direct_nodiag_cvs(ndimf,kpqf,h1)
+       else
+          write(ilog,'(/,2x,a)') 'Calculating the ADC(1) &
+               Hamiltonian matrix'
+          call get_fspace_tda_direct_nodiag(ndimf,kpqf,h1)
+       endif
+    else if (method.eq.4) then
+       ! ADC(1)-x
+       ! (Note that the CVS-ADC(1) Hamiltonian can be
+       ! calculated using the ADC(1) routines)
+       call get_fspace_adc1ext_direct_nodiag(ndimf,kpqf,h1)
     endif
 
     return
@@ -197,8 +206,13 @@ contains
        write(ilog,'(72a)') ('-',k=1,72)
 
        if (lcis) then
+          ! CIS
           call get_tm_cis(ndimf,kpqf,w0j)
+       else if (method.eq.4) then
+          ! ADC(1)-x
+          call get_modifiedtm_adc1ext(ndimf,kpqf,w0j,1)
        else
+          ! ADC(1)
           call get_modifiedtm_tda(ndimf,kpqf,w0j)
        endif
           
@@ -217,8 +231,14 @@ contains
     
     allocate(wij(ndimf,ndimf))
     wij=0.0d0
-    
-    call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
+
+    if (method.eq.4) then
+       ! ADC(1)-x
+       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,wij)
+    else
+       ! ADC(1) and CIS
+       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
+    endif
 
 !----------------------------------------------------------------------
 ! Reset the dpl array
@@ -292,8 +312,13 @@ contains
        dpl(:,:)=dpl_all(c,:,:)
 
        if (lcis) then
+          ! CIS
           call get_tm_cis(ndimf,kpqf,d0j(c,:))
+       else if (method.eq.4) then
+          ! ADC(1)-x
+          call get_modifiedtm_adc1ext(ndimf,kpqf,d0j(c,:),1)
        else
+          ! ADC(1)
           call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
        endif
           
@@ -318,10 +343,16 @@ contains
        write(ilog,'(72a)') ('-',k=1,72)
 
        dpl(:,:)=dpl_all(c,:,:)
-       
-       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
-            dij(c,:,:))
-       
+
+       if (method.eq.4) then
+          ! ADC(1)-x
+          call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,dij(c,:,:))
+       else
+          ! ADC(1) and CIS
+          call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
+               dij(c,:,:))
+       endif
+          
     enddo
 
     return

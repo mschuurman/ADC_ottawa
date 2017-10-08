@@ -138,7 +138,7 @@ program adc
 
   else if (lpropagation) then
 
-     if (method.eq.1) then
+     if (method.eq.1.or.method.eq.4) then
         ! TD-ADC(1) wavepacket propagation calculation
         call adc1_propagate(gamess_info)
      else if (method.eq.2.or.method.eq.3) then

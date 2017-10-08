@@ -682,7 +682,8 @@ contains
   end function dsinc
 
 !######################################################################
-! calc_ener: calculates the energies using various variational principles
+! calc_ener: calculates the energies using various variational
+!            principles
 !######################################################################
   
   subroutine calc_ener

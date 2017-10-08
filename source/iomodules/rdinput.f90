@@ -44,10 +44,16 @@
                else if (keyword(i).eq.'cis') then
                   method=1
                   lcis=.true.
-               else if (keyword(i).eq.'adc2'.or.keyword(i).eq.'adc2-s') then
+               else if (keyword(i).eq.'adc2' &
+                    .or.keyword(i).eq.'adc2-s' &
+                    .or.keyword(i).eq.'adc2s') then
                   method=2
-               else if (keyword(i).eq.'adc2-x') then
+               else if (keyword(i).eq.'adc2-x' &
+                    .or.keyword(i).eq.'adc2x') then
                   method=3
+               else if (keyword(i).eq.'adc1-x' &
+                    .or.keyword(i).eq.'adc1x') then
+                  method=4
                endif
             else
                goto 100
@@ -841,7 +847,17 @@
          endif
          
       endif
-         
+
+!-----------------------------------------------------------------------
+! ADC(1)-x calculations - at present, this is only supported for a
+! wavepacket propagation calculation
+!-----------------------------------------------------------------------
+      if (method.eq.4.and..not.lpropagation) then
+         msg='ADC(1)-x calculations are only currently supported for &
+              wavepacket propagation calculations'
+         goto 999
+      endif
+      
       return
 
 999   continue
@@ -2104,7 +2120,7 @@
             else
                goto 100
             endif
-
+            
          else if (keyword(i).eq.'tfinal') then
             if (keyword(i+1).eq.'=') then
                i=i+2

@@ -48,7 +48,7 @@
       character(10)                          :: name
 
       integer                                :: nvirt,itmp,itmp1,dim
-      real(d)                                :: func,mem4indx
+      real(d)                                :: func
       real(d)                                :: tw1,tw2,tc1,tc2
 
 !-----------------------------------------------------------------------
@@ -2279,7 +2279,6 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
     integer                                             :: nvirt
-    real(d)                                             :: mem4indx
     real(d), dimension(ndim), intent(in)                :: autvec
 
 !-----------------------------------------------------------------------
@@ -2662,7 +2661,6 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
     integer                                             :: nvirt
-    real(d)                                             :: mem4indx
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
@@ -11270,7 +11268,7 @@ ar_offdiag_ij = 0.
     ! NEW
     integer                      :: idpl
     integer                      :: nvirt,itmp,itmp1,dim
-    real(d)                      :: func,mem4indx
+    real(d)                      :: func
     real(d)                      :: tw1,tw2,tc1,tc2
 
 !-----------------------------------------------------------------------
@@ -12454,7 +12452,7 @@ ar_offdiag_ij = 0.
     integer                                       :: n,nprev
     integer, dimension(:), allocatable            :: nsaved
     real(d), dimension(:,:), allocatable          :: file_offdiag_omp
-    real(d)                                       :: func,mem4indx
+    real(d)                                       :: func
     real(d)                                       :: tw1,tw2,tc1,tc2
     character(len=120), dimension(:), allocatable :: dplfile
 
@@ -14544,6 +14542,117 @@ ar_offdiag_ij = 0.
 
   end subroutine get_adc2_dipole_improved_omp
 
+!#######################################################################
+
+  subroutine get_adc1ext_dipole_omp(ndim,ndimf,kpq,kpqf,arr)
+
+    use timingmod
+    
+    implicit none
+
+    integer, intent(in) :: ndim
+    integer, intent(in) :: ndimf
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+    integer                                             :: inda,indb,indk,indl,spin
+    integer                                             :: indapr,indbpr,indkpr,&
+                                                           indlpr,spinpr
+    integer                                             :: i,j,ndim1,ndim1f
+    real(d), dimension(ndimf,ndim), intent(out)         :: arr
+    real(d)                                             :: tw1,tw2,tc1,tc2
+
+    integer                                       :: idpl
+    integer                                       :: nvirt,itmp,itmp1,dim
+    real(d)                                       :: func
+    
+    nvirt=nbas-nocc
+    
+!----------------------------------------------------------------------
+! Begin timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+    write(ilog,*) "nthreads:",nthreads
+
+!-----------------------------------------------------------------------
+! Calculate the density matrix
+! Note that we only need to calculate the occupied-unoccupied part
+!-----------------------------------------------------------------------
+    call density_matrix_ov_block
+
+!-----------------------------------------------------------------------
+! Precalculation of function values
+!-----------------------------------------------------------------------
+    call dmatrix_precalc_noscreen(ndim,kpq,kpqf)
+
+!-----------------------------------------------------------------------
+! Final space 1h1p, initial space 1h1p block
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') 'Calculating the D-matrix...'
+
+    arr=0.0d0
+    
+    ndim1=kpq(1,0)
+    ndim1f=kpqf(1,0)
+    !$omp parallel do &
+    !$omp& private(i,j,inda,indb,indk,indl,spin,indapr,indbpr, &
+    !$omp& indkpr,indlpr,spinpr) &
+    !$omp& shared(arr,kpq,kpqf) &
+    !$omp& firstprivate(ndim1,ndim1f)
+    do i=1,ndim1f
+
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+
+       do j=1,ndim1
+
+          call get_indices(kpq(:,j),indapr,indbpr,indkpr,indlpr,spinpr)
+            
+          call contract_4indx_dpl(arr(i,j),inda,indapr,indk,indkpr)
+            
+          arr(i,j)=arr(i,j)+D2_7_1_ph_ph(inda,indapr,indk,indkpr)
+          arr(i,j)=arr(i,j)+D2_7_2_ph_ph(inda,indapr,indk,indkpr)
+
+          if(indk.eq.indkpr) then
+             itmp=inda-nocc
+             itmp1=indapr-nocc
+             arr(i,j)=arr(i,j)+pre_vv(itmp,itmp1)
+          endif
+       
+          if(inda.eq.indapr) then
+             arr(i,j)=arr(i,j)+pre_oo(indk,indkpr)
+          endif
+          
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    if (allocated(pre_vv)) deallocate(pre_vv)
+    if (allocated(pre_oo)) deallocate(pre_oo)
+    if (allocated(D261)) deallocate(D261)
+    if (allocated(D262)) deallocate(D262)
+    if (allocated(D263)) deallocate(D263)
+    if (allocated(D264)) deallocate(D264)
+    
+!----------------------------------------------------------------------
+! Finish timing and output the time taken
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+    
+    return
+    
+  end subroutine get_adc1ext_dipole_omp
+    
 !#######################################################################
  
 end module get_matrix_dipole

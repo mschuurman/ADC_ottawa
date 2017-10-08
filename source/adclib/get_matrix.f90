@@ -6,17 +6,14 @@ module get_matrix
   use misc
   use filetools
   use channels
-
+  use timingmod
+  
   implicit none
 
 contains
-  
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*********************************TDA BLOCK***********************************
-!!$*******************************************************************************
-!!$*******************************************************************************
-  
+
+!######################################################################
+   
   subroutine get_diag_tda_direct(ndim,kpq,ar_diag)
     
     integer, intent(in) :: ndim 
@@ -36,8 +33,7 @@ contains
 
   end subroutine get_diag_tda_direct
 
-!!$-------------------------------------------------------------------------  
-!!$-------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_diag_tda_direct_cvs(ndim,kpq,ar_diag)
     
@@ -58,8 +54,7 @@ contains
 
   end subroutine get_diag_tda_direct_cvs
 
-!!$-------------------------------------------------------------------------  
-!!$-------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_offdiag_tda_direct(ndim,kpq,ar_offdiag)
 
@@ -72,9 +67,6 @@ contains
     integer :: i,j
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
-
-!!$ Full diagonalization. The program performs a symmetry check. For better efficiency
-!!$ it should be removed if no problems have showed up.
  
     do i=1,ndim
        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
@@ -82,12 +74,6 @@ contains
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
-!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
-!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
-!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-!             print*,i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
-!             stop
-!          end if
        end do
     end do
 
@@ -95,8 +81,7 @@ contains
 
   end subroutine get_offdiag_tda_direct
 
-!!$-------------------------------------------------------------------------  
-!!$-------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_offdiag_tda_direct_cvs(ndim,kpq,ar_offdiag)
     
@@ -108,30 +93,18 @@ contains
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
 
-!!$ Full diagonalization. The program performs a symmetry check. For better efficiency 
-!!$ it should be removed if no problems have showed up.
- 
     do i=1,ndim
        call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
        do j=i+1,ndim
           call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
           ar_offdiag(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
           ar_offdiag(j,i)=C1_ph_ph(indapr,indjpr,inda,indj)
-!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-14_d) then
-!          if(abs(ar_offdiag(i,j)-ar_offdiag(j,i)) .ge. 1.e-10_d) then
-!             write(ilog,*) "TDA matrix is not symmetric. Stopping now."
-!             write(ilog,*) i,j,abs(ar_offdiag(i,j)-ar_offdiag(j,i))
-!             stop
-!          end if
-       end do
-    end do
+       enddo
+    enddo
     
   end subroutine get_offdiag_tda_direct_cvs
 
-
-!!$---------------------------------------------------
-!!$---------------------------------------------------
-
+!######################################################################
 
   subroutine get_diag_tda_save(ndim,kpq,nbuf,chr)
     
@@ -163,8 +136,7 @@ contains
        
   end subroutine get_diag_tda_save
 
-!!$----------------------------------------------------------------
-!!$----------------------------------------------------------------
+ !######################################################################
 
   subroutine get_offdiag_tda_save(ndim,kpq,nbuf,noffd,chr)
     
@@ -259,26 +231,7 @@ contains
     
   end subroutine get_offdiag_tda_save
 
-
-
-
-!!$---------------------------------------------------
-!!$---------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*********************************ADC2 BLOCK***********************************
-!!$*******************************************************************************
-!!$*******************************************************************************
+!######################################################################
 
   subroutine get_diag_adc2_direct(ndim1,ndim2,kpq,ar_diag)
   
@@ -309,8 +262,7 @@ contains
     
   end subroutine get_diag_adc2_direct
 
-!!$------------------------------------------------------------------------
-!!$------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_diag_adc2_save(ndim1,ndim2,kpq,nbuf,chr)
   
@@ -358,8 +310,7 @@ contains
     deallocate(ar_diag)
   end subroutine get_diag_adc2_save
 
-!!$----------------------------------------------------------------------------
-!!$----------------------------------------------------------------------------
+!######################################################################
   
   subroutine get_offdiag_adc2_direct(ndim,kpq,ar_offdiag)
     
@@ -397,7 +348,6 @@ contains
           ar_offdiag(j,i)=ar_offdiag(i,j)
        end do
     end do
-
        
 !!$ Filling the off-diagonal part of the ph-2p2h block 
 !!$ Coupling to the i=j,a=b configs
@@ -470,10 +420,8 @@ contains
     end do
   
   end subroutine get_offdiag_adc2_direct
-!!$  
-!!$------------------------------------------------------------------------------
-!!$------------------------------------------------------------------------------
-!!$-----------------------------------
+
+!######################################################################
 
   subroutine get_offdiag_adc2_save(ndim,kpq,nbuf,count,chr)
 
@@ -497,7 +445,7 @@ contains
    
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: t1,t2
+    real(d)                              :: tw1,tw2,tc1,tc2
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -506,7 +454,7 @@ contains
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-    call cpu_time(t1)
+    call times(tw1,tc1)
 
     nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
@@ -635,9 +583,9 @@ contains
     CLOSE(unt)
     write(ilog,*) count,' off-diagonal elements saved'
 
-    call cpu_time(t2)
+    call times(tw2,tc2)
     write(ilog,'(/,2x,a,F8.2,1x,a1)') &
-         'Time taken to save off-diagonal elements:',t2-t1,'s'
+         'Time taken to save off-diagonal elements:',tw2-tw1,'s'
 
     deallocate(oi)
     deallocate(oj)
@@ -689,7 +637,7 @@ contains
     character(1), intent(in)                            :: chr
     
     integer                      :: inda,indb,indj,indk,spin
-    integer                      :: indapr,indbpr,indjpr,indkpr,spinpr 
+    integer                      :: indapr,indbpr,indjpr,indkpr,spinpr
     
     character(30)                :: name
     integer                      :: i,j,k,nlim,rec_count,dim_count,ndim1,unt
@@ -700,7 +648,7 @@ contains
    
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: t1,t2
+    real(d)                              :: tw1,tw2,tc1,tc2
 
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -723,9 +671,8 @@ contains
     buf_size2=buf_size
     minc2=minc
 
-    call system_clock(c,cr,cm)
-    t1=real(c)/real(cr)
-
+    call times(tw1,tc1)
+    
 !-----------------------------------------------------------------------
 ! Determine the no. threads
 !-----------------------------------------------------------------------
@@ -771,7 +718,7 @@ contains
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-    call cpu_time(t1)
+    call times(tw1,tc1)
 
     nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
@@ -1152,10 +1099,9 @@ contains
     deallocate(nlim_omp)
     deallocate(nsaved)
 
-    call system_clock(c,cr,cm)
-    t2=real(c)/real(cr)
+    call times(tw2,tc2)
 
-    write(ilog,*) "Time taken:",t2-t1
+    write(ilog,*) "Time taken:",tw2-tw1
 
     return
     
@@ -1323,7 +1269,7 @@ contains
     
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: t1,t2
+    real(d)                              :: tw1,tw2,tc1,tc2
     
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -1346,8 +1292,7 @@ contains
     buf_size2=buf_size
     minc2=minc
 
-    call system_clock(c,cr,cm)
-    t1=real(c)/real(cr)
+    call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Determine the no. threads
@@ -1696,10 +1641,8 @@ contains
     deallocate(nlim_omp)
     deallocate(nsaved)
 
-    call system_clock(c,cr,cm)
-    t2=real(c)/real(cr)
-
-    write(ilog,*) "Time taken:",t2-t1
+    call times(tw2,tc2) 
+    write(ilog,*) "Time taken:",tw2-tw1
 
     return
 
@@ -1751,7 +1694,8 @@ contains
     end do
     
   end subroutine get_phph_adc2
-!!$-------------------------------------------
+
+!######################################################################
   
   subroutine get_ph_2p2h(ndim,i1,i2,kpq,bmx)
 
@@ -1812,7 +1756,9 @@ contains
     end do
 
   end subroutine get_ph_2p2h
-!!$--------------------------------------------------
+
+!######################################################################
+  
   subroutine get_2p2h2p2h_dg2s(ndim,kpq,ar_diag)
     
     integer, intent(in) :: ndim
@@ -1831,11 +1777,7 @@ contains
     
   end subroutine get_2p2h2p2h_dg2s
 
-!!$*******************************************************************************
-!!$*******************************************************************************
-!!$*********************************ADC2 extended BLOCK***************************
-!!$*******************************************************************************
-!!$*******************************************************************************
+!######################################################################
 
   subroutine get_diag_adc2ext_direct(ndim1,ndim2,kpq,ar_diag)
   
@@ -1939,8 +1881,7 @@ contains
     
   end subroutine get_diag_adc2ext_direct
 
-!!$------------------------------------------------------------------------------
-!!$------------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_diag_adc2ext_save(ndim1,ndim2,kpq,nbuf,chr)
   
@@ -2059,8 +2000,7 @@ contains
     write(ilog,*) 'Writing successful at get_diag_adc2ext_save end'
   end subroutine get_diag_adc2ext_save
 
-!!$---------------------------------------------------------------------------------
-!!$---------------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_offdiag_adc2ext_direct(ndim,kpq,ar_offdiag)
 
@@ -2413,8 +2353,7 @@ contains
 
   end subroutine get_offdiag_adc2ext_direct
 
-!!$-----------------------------------------------------------
-!!$-----------------------------------------------------------
+!######################################################################
 
 subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
    
@@ -2438,7 +2377,7 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
 
   integer                              :: nvirt,a,b,nzero
   real(d), dimension(:,:), allocatable :: ca,cb
-  real(d)                              :: t1,t2
+  real(d)                              :: tw1,tw2,tc1,tc2
 
 
   allocate(oi(buf_size))
@@ -2448,7 +2387,7 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  call cpu_time(t1)
+  call times(tw1,tc1)
   
   nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
@@ -3336,7 +3275,9 @@ end subroutine get_offdiag_adc2ext_save_cvs
     end if
      
   end subroutine adc2ext_0_0
-!!$---------------------------------------------------  
+
+!######################################################################
+  
   subroutine adc2ext_1_1(meth,a,j,a1,j1,ea,ej,matel)
     
     integer, intent(in):: meth,a,j,a1,j1
@@ -3355,7 +3296,9 @@ end subroutine get_offdiag_adc2ext_save_cvs
          matel=matel+C_1_1(a,j,a1,j1)
     
   end subroutine adc2ext_1_1
-!!$------------------------------------------------------
+
+!######################################################################
+  
   subroutine adc2ext_2_2(meth,a,b,j,a1,b1,j1,ea,eb,ej,matel)
     
     integer, intent(in):: meth,a,b,j,a1,b1,j1
@@ -3375,7 +3318,9 @@ end subroutine get_offdiag_adc2ext_save_cvs
          matel=matel+C_2_2(a,b,j,a1,b1,j1)
     
   end subroutine adc2ext_2_2
-!!$------------------------------------------------------
+
+!######################################################################
+  
   subroutine adc2ext_3_3(meth,a,j,k,a1,j1,k1,ea,ej,ek,matel)
     
     integer, intent(in):: meth,a,j,k,a1,j1,k1
@@ -3395,7 +3340,9 @@ end subroutine get_offdiag_adc2ext_save_cvs
          matel=matel+C_3_3(a,j,k,a1,j1,k1)
     
   end subroutine adc2ext_3_3
-!!$--------------------------------------------------------------
+
+!######################################################################
+
   subroutine adc2ext_4i_4i(meth,a,b,j,k,a1,b1,j1,k1,ea,eb,ej,ek,matel)
     
     integer, intent(in):: meth,a,b,j,k,a1,b1,j1,k1
@@ -3415,7 +3362,9 @@ end subroutine get_offdiag_adc2ext_save_cvs
          matel=matel+C_4i_4i(a,b,j,k,a1,b1,j1,k1)
     
   end subroutine adc2ext_4i_4i
-!!$------------------------------------------------------------------
+
+!######################################################################
+  
   subroutine adc2ext_4ii_4ii(meth,a,b,j,k,a1,b1,j1,k1,ea,eb,ej,ek,matel)
     
     integer, intent(in):: meth,a,b,j,k,a1,b1,j1,k1
@@ -3436,10 +3385,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
   end subroutine adc2ext_4ii_4ii
    
-
-
-
-
+!######################################################################
 
   subroutine get_offdiag_adc2_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
@@ -3606,11 +3552,8 @@ end subroutine get_offdiag_adc2ext_save_cvs
     end subroutine register2
     
   end subroutine get_offdiag_adc2_save_MIO
-!!$-----------------------------------
 
-
-
-
+!######################################################################
 
   subroutine get_diag_adc2_save_MIO(ndim1,ndim2,kpq,nbuf,indx,chr)
   
@@ -3660,11 +3603,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
     deallocate(ar_diag)
   end subroutine get_diag_adc2_save_MIO
 
-!!$----------------------------------------------------------------------------
-!!$----------------------------------------------------------------------------
-
-
-
+!######################################################################
 
   subroutine get_diag_adc2_direct_MIO(ndim1,ndim2,kpq,ar_diag,indx)
   
@@ -3697,8 +3636,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
   end subroutine get_diag_adc2_direct_MIO
 
-
-
+!######################################################################
 
   subroutine get_offdiag_adc2_direct_MIO(ndim,kpq,ar_offdiag,indx)
     
@@ -3814,11 +3752,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
   
   end subroutine get_offdiag_adc2_direct_MIO
 
-
-
-
-
-
+!######################################################################
 
   subroutine get_offdiag_adc2ext_direct_MIO(ndim,kpq,ar_offdiag,indx)
 
@@ -4187,8 +4121,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
 
   end subroutine get_offdiag_adc2ext_direct_MIO
 
-!!$-----------------------------------------------------------
-!!$-----------------------------------------------------------
+!######################################################################
 
 subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
    
@@ -4616,6 +4549,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_offdiag_adc2ext_save_MIO
 
+!######################################################################
 
   subroutine get_diag_adc2ext_direct_MIO(ndim1,ndim2,kpq,ar_diag,indx)
   
@@ -4721,8 +4655,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     
   end subroutine get_diag_adc2ext_direct_MIO
 
-!!$------------------------------------------------------------------------------
-!!$------------------------------------------------------------------------------
+!######################################################################
 
   subroutine get_diag_adc2ext_save_MIO(ndim1,ndim2,kpq,nbuf,indx,chr)
   
@@ -4842,13 +4775,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     write(ilog,*) 'Writing successful at get_diag_adc2ext_save end'
   end subroutine get_diag_adc2ext_save_MIO
 
-
-
-
-
-
-
-
+!######################################################################
 
   subroutine get_diag_tda_save_OK(ndim,kpq, UNIT_HAM )
     
@@ -4880,8 +4807,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
        
   end subroutine get_diag_tda_save_OK
 
-!!$----------------------------------------------------------------
-!!$----------------------------------------------------------------
+!######################################################################
 
   subroutine get_offdiag_tda_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
     
@@ -4970,11 +4896,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     
   end subroutine get_offdiag_tda_save_OK
 
-
-
-
-!!$---------------------------------------------------
-!!$---------------------------------------------------
+!######################################################################
 
   subroutine get_diag_tda_save_GS( ndim , kpq , UNIT_HAM )
     
@@ -5006,12 +4928,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_diag_tda_save_GS
 
-
-
-!!$----------------------------------------------------------------
-!!$----------------------------------------------------------------
-
-
+!######################################################################
 
   subroutine get_offdiag_tda_save_GS(ndim,kpq,nbuf,count,UNIT_HAM)
     
@@ -5111,8 +5028,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     
   end subroutine get_offdiag_tda_save_GS
 
-
-
+!######################################################################
 
   subroutine get_offdiag_adc2_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
 
@@ -5310,9 +5226,9 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     end subroutine register2
     
   end subroutine get_offdiag_adc2_save_OK
-!!$-----------------------------------
 
-
+!######################################################################
+  
   subroutine get_offdiag_adc2_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 
 !!$The difference from the earlier routine is that this routine returns the total number of saved els to a caller. 
@@ -5519,12 +5435,8 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     end subroutine register2
     
   end subroutine get_offdiag_adc2_save_GS
-!!$-----------------------------------
 
-
-
-
-
+!######################################################################
 
   subroutine get_diag_adc2_save_OK(ndim1,ndim2,kpq, UNIT_HAM )
   
@@ -5575,6 +5487,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_diag_adc2_save_OK
 
+!######################################################################
 
   subroutine get_diag_adc2_save_GS(ndim1,ndim2,kpq, UNIT_HAM )
   
@@ -5626,9 +5539,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_diag_adc2_save_GS
 
-
-
-
+!######################################################################
 
   subroutine get_diag_adc2ext_save_OK(ndim1,ndim2,kpq, UNIT_HAM )
   
@@ -5745,8 +5656,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_diag_adc2ext_save_OK
 
-
-
+!######################################################################
 
   subroutine get_diag_adc2ext_save_GS(ndim1,ndim2,kpq, UNIT_HAM )
   
@@ -5865,10 +5775,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
 
   end subroutine get_diag_adc2ext_save_GS
 
-
-
-
-
+!######################################################################
 
 subroutine get_offdiag_adc2ext_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
    
@@ -6323,9 +6230,7 @@ subroutine get_offdiag_adc2ext_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
 
   end subroutine get_offdiag_adc2ext_save_OK
 
-
-
-
+!######################################################################
 
 subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
    
@@ -6825,7 +6730,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: t1,t2
+    real(d)                              :: tw1,tw2,tc1,tc2
 
     
     integer                                       :: nthreads,tid
@@ -6849,8 +6754,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     buf_size2=buf_size
     minc2=minc
 
-    call system_clock(c,cr,cm)
-    t1=real(c)/real(cr)
+    call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Determine the no. threads
@@ -7812,10 +7716,8 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     deallocate(nlim_omp)
     deallocate(nsaved)
 
-    call system_clock(c,cr,cm)
-    t2=real(c)/real(cr)
-
-    write(ilog,*) "Time taken:",t2-t1
+    call times(tw2,tc2)
+    write(ilog,*) "Time taken:",tw2-tw1
 
     return
 
@@ -7850,7 +7752,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     
     integer                              :: nvirt,a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: t1,t2
+    real(d)                              :: tw1,tw2,tc1,tc2
     
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -7873,8 +7775,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     buf_size2=buf_size
     minc2=minc
 
-    call system_clock(c,cr,cm)
-    t1=real(c)/real(cr)
+    call times(tw1,tc1)
 
 !-----------------------------------------------------------------------
 ! Determine the no. threads
@@ -8433,15 +8334,185 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     deallocate(nlim_omp)
     deallocate(nsaved)
 
-    call system_clock(c,cr,cm)
-    t2=real(c)/real(cr)
-
-    write(ilog,*) "Time taken:",t2-t1
+    call times(tw2,tc2)
+    write(ilog,*) "Time taken:",tw2-tw1
 
     return
 
   end subroutine get_offdiag_adc2ext_save_cvs_omp
 
+!#######################################################################
+
+  subroutine get_offdiag_adc1ext_save_omp(ndim,kpq,arr)
+
+    use omp_lib
+    use iomod
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                  :: ndim
+    integer                              :: inda,indb,indj,indk,spin
+    integer                              :: indapr,indbpr,indjpr,&
+                                            indkpr,spinpr
+    integer                              :: i,j
+    integer                              :: nthreads,tid,nvirt,&
+                                            ndim1
+    real(d), dimension(ndim,ndim)        :: arr
+    real(d), dimension(:,:), allocatable :: ca,cb
+
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
+    write(ilog,*) "nthreads:",nthreads
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    nvirt=nbas-nocc
+    allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+    
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+    !$omp parallel do private(i,j) shared(ca)
+    ! CA_ph_ph
+    do i=1,nvirt
+       do j=i,nvirt
+          ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
+          ca(j,i)=ca(i,j)
+       enddo
+    enddo
+    !$omp end parallel do
+
+    !$omp parallel do private(i,j) shared(cb)
+    ! CB_ph_ph
+    do i=1,nocc
+       do j=i,nocc
+          cb(i,j)=CB_ph_ph(i,j)
+          cb(j,i)=cb(i,j)
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! ph-ph block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+
+       do j=i+1,ndim1
+          call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+          arr(i,j)=C1_ph_ph(inda,indj,indapr,indjpr)
+
+          if(indj.eq.indjpr)&
+               arr(i,j)=arr(i,j)+ca(inda-nocc,indapr-nocc)
+
+          if(inda.eq.indapr)&
+               arr(i,j)=arr(i,j)+cb(indj,indjpr)
+
+          arr(i,j)=arr(i,j)+CC_ph_ph(inda,indj,indapr,indjpr)
+
+          arr(j,i)=arr(i,j)
+          
+       enddo
+
+    enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(ca,cb)
+    
+    return
+    
+  end subroutine get_offdiag_adc1ext_save_omp
+
+!#######################################################################
+
+  subroutine get_diag_adc1ext_save_omp(ndim,kpq,arr)
+
+    use omp_lib
+    use iomod
+
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+
+    integer, intent(in)                  :: ndim
+    integer                              :: inda,indb,indj,indk,spin
+    integer                              :: indapr,indbpr,indjpr,&
+                                            indkpr,spinpr
+    integer                              :: i,j
+    integer                              :: nthreads,tid,nvirt,&
+                                            ndim1
+    real(d), dimension(ndim)             :: arr
+    real(d), dimension(:,:), allocatable :: ca,cb
+    
+!-----------------------------------------------------------------------
+! Determine the no. threads
+!-----------------------------------------------------------------------
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
+    write(ilog,*) "nthreads:",nthreads
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    nvirt=nbas-nocc
+    allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+    
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+    !$omp parallel do private(i,j) shared(ca)
+    ! CA_ph_ph
+    do i=1,nvirt
+       do j=i,nvirt
+          ca(i,j)=CA_ph_ph(nocc+i,nocc+j)
+          ca(j,i)=ca(i,j)
+       enddo
+    enddo
+    !$omp end parallel do
+
+    !$omp parallel do private(i,j) shared(cb)
+    ! CB_ph_ph
+    do i=1,nocc
+       do j=i,nocc
+          cb(i,j)=CB_ph_ph(i,j)
+          cb(j,i)=cb(i,j)
+       enddo
+    enddo
+    !$omp end parallel do
+
+!-----------------------------------------------------------------------
+! ph-ph block
+!-----------------------------------------------------------------------
+    ndim1=kpq(1,0)
+
+    do i=1,ndim1
+       call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+       arr(i)=K_ph_ph(e(inda),e(indj))
+       arr(i)=arr(i)+C1_ph_ph(inda,indj,inda,indj)
+       arr(i)=arr(i)+ca(inda-nocc,inda-nocc)
+       arr(i)=arr(i)+cb(indj,indj)
+       arr(i)=arr(i)+CC_ph_ph(inda,indj,inda,indj)
+    enddo
+       
+    return
+    
+  end subroutine get_diag_adc1ext_save_omp
+  
 !#######################################################################
 
 end module get_matrix

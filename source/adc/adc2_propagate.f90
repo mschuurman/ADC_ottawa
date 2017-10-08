@@ -183,7 +183,7 @@ contains
        write(ilog,'(2x,a)') 'Calculating the vector &
             W_0J = < Psi_0 | W | Psi_J >'
        write(ilog,'(72a)') ('-',k=1,72)
-       
+
        call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
 
     endif
