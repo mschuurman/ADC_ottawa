@@ -46,7 +46,7 @@ contains
 
 !######################################################################
 
-  subroutine monomial_ana(gam,cap_mo)
+  subroutine monomial_ana(gam,cap_mo,order,eta)
 
     use channels
     use parameters
@@ -56,7 +56,9 @@ contains
     
     implicit none
 
+    integer                        :: order
     integer                        :: natom,i
+    real(dp)                       :: eta
     real(dp), dimension(nbas,nbas) :: cap_mo
     type(gam_structure)            :: gam
 
@@ -89,7 +91,6 @@ contains
 ! then we will choose the starting postions based on ana analysis of
 ! the initial state density
 !----------------------------------------------------------------------
-
     if (lautobox) then
        ! Determination of the CAP box via an analysis of the
        ! initial state density
@@ -108,7 +109,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the primitive representation of the CAP
 !----------------------------------------------------------------------
-    call primitive_monomial_cap_matrix(gam)
+    call primitive_monomial_cap_matrix(gam,order)
 
 !----------------------------------------------------------------------
 ! Calculate the AO representation of the CAP
@@ -118,7 +119,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP
 !----------------------------------------------------------------------
-    call mo_cap_matrix(cap_mo)
+    call mo_cap_matrix(cap_mo,eta)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -491,7 +492,7 @@ contains
 !                                operator
 !######################################################################
   
-  subroutine primitive_monomial_cap_matrix(gam)
+  subroutine primitive_monomial_cap_matrix(gam,order)
 
     use channels
     use parameters
@@ -501,6 +502,7 @@ contains
     
     implicit none
 
+    integer               :: order
     integer               :: i,j,mu,nu,n
     real(dp), allocatable :: Xi(:,:,:)
     real(dp), allocatable :: Theta(:,:,:)
@@ -525,7 +527,7 @@ contains
     do i=1,3
        do mu=1,npbas
           do nu=1,npbas
-             Xi(mu,nu,i)=Xival(mu,nu,i,capord)
+             Xi(mu,nu,i)=Xival(mu,nu,i,order)
           enddo
        enddo
     enddo
@@ -855,7 +857,7 @@ contains
 !                operator from its AO representation
 !######################################################################
   
-  subroutine mo_cap_matrix(cap_mo)
+  subroutine mo_cap_matrix(cap_mo,eta)
     
     use channels
     use iomod
@@ -864,6 +866,7 @@ contains
     implicit none
 
     integer                        :: i,j
+    real(dp)                       :: eta
     real(dp), dimension(nbas,nbas) :: cap_mo
     real(dp), parameter            :: thrsh=1e-12_dp
     
@@ -875,7 +878,7 @@ contains
 !----------------------------------------------------------------------
 ! Multiplication by the CAP strength parameter
 !----------------------------------------------------------------------
-    cap_mo=cap_mo*capstr
+    cap_mo=cap_mo*eta
 
 !----------------------------------------------------------------------
 ! Symmetry check

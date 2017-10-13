@@ -2009,6 +2009,9 @@
             else
                goto 100
             endif
+
+         else if (keyword(i).eq.'flux') then
+            lflux=.true.
             
          else
             ! Exit if the keyword is not recognised

@@ -88,6 +88,7 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
 	source/propagation/fdstates.o \
+	source/propagation/flux.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
 
@@ -98,7 +99,8 @@ CAP=	source/cap/auto_cap_box.o \
 	source/cap/molecular_grid.o \
 	source/cap/rf_cap.o \
 	source/cap/basis_cap.o \
-	source/cap/cap_mobas.o
+	source/cap/cap_mobas.o \
+	source/cap/theta_mobas.o
 
 ADCLIB= source/adclib/defaults.o \
 	source/adclib/orbindx.o \
@@ -200,6 +202,7 @@ ADC_OBJ=accuracy.o \
 	relaxation.o \
 	fvecprop.o \
 	fdstates.o \
+	flux.o \
 	proplib_adc2.o \
 	proplib_adc1.o \
 	diagmod.o \
@@ -219,6 +222,7 @@ ADC_OBJ=accuracy.o \
 	rf_cap.o \
 	basis_cap.o \
 	cap_mobas.o \
+	theta_mobas.o \
 	adc1_opa.o \
 	adc2_opa.o \
 	adc2_ener.o \

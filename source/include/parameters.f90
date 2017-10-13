@@ -350,6 +350,8 @@ integer                       :: icap
 integer                       :: capord
 integer*8                     :: nel_cap
 integer                       :: nbuf_cap
+integer*8                     :: nel_theta
+integer                       :: nbuf_theta
 integer, dimension(2)         :: nrad,nang
 real(d)                       :: capstr
 real(d), dimension(3)         :: boxpar
@@ -357,9 +359,13 @@ real(d)                       :: densthrsh
 real(d)                       :: w00
 real(d), allocatable          :: w0j(:)
 real(d), allocatable          :: wij(:,:)
+real(d)                       :: theta00
+real(d), allocatable          :: theta0j(:)
+real(d), allocatable          :: thetaij(:,:)
 logical                       :: lcap
 logical                       :: lprojcap
 logical                       :: lautobox
+logical                       :: lflux
 
 !!$************************************************
 !!$***************ADC(1) Hamiltonian***************

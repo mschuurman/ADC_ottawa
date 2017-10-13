@@ -5,7 +5,7 @@ module vpqrsmod
 ! 
 ! To revert back to the option of using external memory, delete this
 ! function, uncomment the code below it as well as the code referring
-! to vpqrs in adc/main_draft1.f90
+! to vpqrs in adc/adc.f90
 !#######################################################################  
 
 contains
@@ -20,8 +20,8 @@ contains
     integer,intent(in) :: r,s,u,v
     real(d)            :: val
     
-    val = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
-    
+    val=real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+
     return
     
   end function vpqrs

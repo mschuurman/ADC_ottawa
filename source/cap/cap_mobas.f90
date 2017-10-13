@@ -53,11 +53,11 @@ contains
     cap_mo=0.0d0
 
 !----------------------------------------------------------------------
-! Calculate the AO representation of the CAP operator
+! Calculate the MO representation of the CAP operator
 !----------------------------------------------------------------------
     if (icap.eq.1) then
        ! Monomial CAP, analytic evaluation of the CAP matrix elements
-       call monomial_ana(gam,cap_mo)
+       call monomial_ana(gam,cap_mo,capord,capstr)
     else
        ! Numerical evaluation of the CAP matrix elements
        call numerical_cap(gam,cap_mo)

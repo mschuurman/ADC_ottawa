@@ -16,6 +16,7 @@ module propagate_adc2
 
   integer                               :: matdim
   integer*8                             :: noffdiag
+  integer                               :: iflux
   complex(d), dimension(:), allocatable :: psi
   
 contains
@@ -50,6 +51,11 @@ contains
     call times(tw1,tc1)
 
 !----------------------------------------------------------------------
+! Open the output files
+!----------------------------------------------------------------------
+    call open_outfiles
+    
+!----------------------------------------------------------------------
 ! Set up the initial wavefunction vector
 !----------------------------------------------------------------------
     call initialise(ndimf,noffdf)
@@ -80,7 +86,12 @@ contains
 ! Finalise and deallocate arrays
 !----------------------------------------------------------------------
     call finalise
-    
+
+!----------------------------------------------------------------------
+! Close the output files
+!----------------------------------------------------------------------
+    call close_outfiles
+
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
@@ -92,6 +103,46 @@ contains
     
   end subroutine propagate_laser_adc2
 
+!#######################################################################
+
+  subroutine open_outfiles
+
+    use iomod
+    
+    implicit none
+
+    integer :: i
+    
+!----------------------------------------------------------------------
+! Flux expectation values
+!----------------------------------------------------------------------
+    if (lflux) then
+       call freeunit(iflux)
+       open(iflux,file='flux.dat',form='formatted',status='unknown')
+       write(iflux,'(72a)') ('#',i=1,72)
+       write(iflux,'(a)') '# Time (au)    Flux'
+       write(iflux,'(72a)') ('#',i=1,72)
+    endif
+       
+    return
+    
+  end subroutine open_outfiles
+
+!#######################################################################
+
+  subroutine close_outfiles
+
+    implicit none
+
+!----------------------------------------------------------------------
+! Flux expectation values
+!----------------------------------------------------------------------
+    if (lflux) close(iflux)
+       
+    return
+    
+  end subroutine close_outfiles
+  
 !#######################################################################
 
   subroutine wrinfo
@@ -422,12 +473,13 @@ contains
 
     use tdsemod
     use csillib
+    use fluxmod
     
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
-    real(d)                                   :: norm
+    real(d)                                   :: norm,flux
     real(d), parameter                        :: tiny=1e-9_d
     real(d), parameter                        :: tinier=1e-10_d
     complex(d), dimension(:), allocatable     :: dtpsi,hpsi
@@ -515,6 +567,13 @@ contains
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
 
+       ! Flux analysis (we only need to do this at the start of
+       ! each timestep)
+       if (lflux.and.inttime.eq.0.0d0) then
+          call adc2_flux_cap(matdim,psi,dtpsi,flux)
+          write(iflux,'(F10.4,5x,ES15.8)') time,flux
+       endif
+       
        ! Integrate the TDSE if || dtpsi || is non-zero
        if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
        
@@ -551,7 +610,14 @@ contains
        call wrstepinfo(time,norm,kpqf)
        
     enddo
-       
+
+    ! Final flux expectation value
+    if (lflux) then
+       call matxvec_treal_laser(time,matdim,noffdiag,psi,dtpsi)
+       call adc2_flux_cap(matdim,psi,dtpsi,flux)
+       write(iflux,'(F10.4,5x,ES15.8)') time,flux
+    endif
+    
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------

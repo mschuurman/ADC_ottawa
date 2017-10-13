@@ -22,6 +22,7 @@ contains
     use mp2
     use targetmatching
     use capmod
+    use thetamod
     use propagate_adc1
     
     implicit none
@@ -31,7 +32,7 @@ contains
                                              nout,ndimf,ndimd,noutf
     integer*8                             :: noffd,noffdf
     real(d)                               :: e0
-    real(d), dimension(:,:), allocatable  :: cap_mo
+    real(d), dimension(:,:), allocatable  :: cap_mo,theta_mo
     type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
@@ -61,6 +62,12 @@ contains
 ! Calculate the MO representation of the CAP operator
 !-----------------------------------------------------------------------
     if (lcap) call cap_mobas(gam,cap_mo)
+
+!-----------------------------------------------------------------------
+! If flux analysis is to be performed, then calculate the MO
+! representation of the projector (Theta) onto the CAP region
+!-----------------------------------------------------------------------
+    if (lflux) call theta_mobas(gam,theta_mo)
     
 !-----------------------------------------------------------------------
 ! Calculate the matrix elements needed to represent the CAP operator
@@ -73,6 +80,13 @@ contains
 !-----------------------------------------------------------------------
     call dipole_isbas_adc1(kpqf,ndimf)
 
+!-----------------------------------------------------------------------
+! If flux analysis is to be performed, then calculate the matrix
+! elements needed to represent the projector onto the CAP region in
+! the ground state + intermediate state basis
+!-----------------------------------------------------------------------
+    if (lflux) call theta_isbas_adc1(theta_mo,kpqf,ndimf)
+    
 !-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
@@ -88,6 +102,9 @@ contains
     if (allocated(wij)) deallocate(wij)
     deallocate(d0j)
     deallocate(dij)
+    if (allocated(theta_mo)) deallocate(theta_mo)
+    if (allocated(theta0j)) deallocate(theta0j)
+    if (allocated(thetaij)) deallocate(thetaij)
     
     return
     
@@ -358,7 +375,112 @@ contains
     return
     
   end subroutine dipole_isbas_adc1
+
+!#######################################################################
+
+  subroutine theta_isbas_adc1(theta_mo,kpqf,ndimf)
+
+    use constants
+    use parameters
+    use mp2
+    use get_matrix_dipole
+    use get_moment
     
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf
+    integer                                   :: i,p,q,k
+    real(d), dimension(nbas,nbas)             :: theta_mo
+    real(d), dimension(nbas,nbas)             :: rho0
+    real(d), dimension(nbas,nbas)             :: dpl_orig
+    character(len=60)                         :: filename
+
+!----------------------------------------------------------------------
+! Ground state density matrix.
+! Note that the 1st-order correction is zero.
+!----------------------------------------------------------------------
+    rho0=0.0d0
+
+    ! Occupied-occupied block: 0th-order contribution
+    do i=1,nocc
+       rho0(i,i)=2.0d0
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the ground state-ground state projector matrix element
+! Theta_00 = < Psi_0 | Theta | Psi_0 >
+!----------------------------------------------------------------------
+    theta00=0.0d0
+    do p=1,nbas
+       do q=1,nbas
+          theta00=theta00+rho0(p,q)*theta_mo(p,q)
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! In the following, we calculate projector matrix elements using the
+! shifted dipole code (D-matrix and f-vector code) by simply
+! temporarily copying the MO Theta matrix into the dpl array.
+!----------------------------------------------------------------------
+    dpl_orig(1:nbas,1:nbas)=dpl(1:nbas,1:nbas)
+    dpl(1:nbas,1:nbas)=theta_mo(1:nbas,1:nbas)
+
+!----------------------------------------------------------------------
+! Calculate the vector Theta_0J = < Psi_0 | Theta | Psi_J >
+!----------------------------------------------------------------------
+    allocate(theta0j(ndimf))
+    theta0j=0.0d0
+
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the vector &
+         Theta_0J = < Psi_0 | Theta | Psi_J >'
+    write(ilog,'(72a)') ('-',k=1,72)
+    
+    if (lcis) then
+       ! CIS
+       call get_tm_cis(ndimf,kpqf,theta0j)
+    else if (method.eq.4) then
+       ! ADC(1)-x
+       call get_modifiedtm_adc1ext(ndimf,kpqf,theta0j,1)
+    else
+       ! ADC(1)
+       call get_modifiedtm_tda(ndimf,kpqf,theta0j)
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the IS representation of the shifted projection operator
+! Theta-Theta_00
+!
+! Note that we are here assuming that the ADC(1) D-matrix is small
+! enough to fit into memory
+!----------------------------------------------------------------------
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the IS representation of the &
+         shifted CAP-projector (Theta)'
+    write(ilog,'(72a,/)') ('-',k=1,72)
+    
+    allocate(thetaij(ndimf,ndimf))
+    thetaij=0.0d0
+
+    if (method.eq.4) then
+       ! ADC(1)-x
+       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,thetaij)
+    else
+       ! ADC(1) and CIS
+       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
+            thetaij)
+    endif
+
+!----------------------------------------------------------------------
+! Reset the dpl array
+!----------------------------------------------------------------------
+    dpl(1:nbas,1:nbas)=dpl_orig(1:nbas,1:nbas)
+    
+    return
+    
+  end subroutine theta_isbas_adc1
+
 !#######################################################################
   
 end module adc1propmod

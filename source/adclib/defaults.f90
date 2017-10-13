@@ -182,6 +182,7 @@
       boxpar=0.0d0
       lautobox=.false.
       densthrsh=-1.0d0
+      lflux=.false.
       
 !-----------------------------------------------------------------------
 ! I/O channels
