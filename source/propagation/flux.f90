@@ -45,14 +45,18 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    oppsi(matdim)=oppsi(matdim)+theta00*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim)+theta00*psi(matdim)
+    endif
 
     ! (c) Ground state-IS block
     !
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(theta0j(1:matdim-1),psi(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +theta0j(1:matdim-1)*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim) &
+            +dot_product(theta0j(1:matdim-1),psi(1:matdim-1))
+       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+            +theta0j(1:matdim-1)*psi(matdim)
+    endif
 
     val1=2.0d0*real(dot_product(dtpsi,oppsi))
 
@@ -69,14 +73,18 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    oppsi(matdim)=oppsi(matdim)+w00*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim)+w00*psi(matdim)
+    endif
 
     ! (c) Ground state-IS block
     !
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(w0j(1:matdim-1),psi(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +w0j(1:matdim-1)*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim) &
+            +dot_product(w0j(1:matdim-1),psi(1:matdim-1))
+       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+            +w0j(1:matdim-1)*psi(matdim)
+    endif
 
     val2=2.0d0*real(dot_product(psi,oppsi))
     
@@ -136,16 +144,18 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    ! Contribution to v2=dt|Psi>
-    oppsi(matdim)=oppsi(matdim)+theta00*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim)+theta00*psi(matdim)
+    endif
 
     ! (c) Ground state-IS block
     !
-    ! Contribution to v2=dt|Psi>
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(theta0j(1:matdim-1),psi(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +theta0j(1:matdim-1)*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim) &
+            +dot_product(theta0j(1:matdim-1),psi(1:matdim-1))
+       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+            +theta0j(1:matdim-1)*psi(matdim)
+    endif
 
     val1=2.0d0*real(dot_product(dtpsi,oppsi))    
 
@@ -156,7 +166,6 @@ contains
 
     ! (a) IS-IS block
     !
-    ! Calculate W*v1
     filename='SCRATCH/cap'
     call opxvec_ext(matdim-1,psi(1:matdim-1),&
          oppsi(1:matdim-1),filename,nbuf_cap)
@@ -165,16 +174,18 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    ! Contribution to v2=dt|Psi>
-    oppsi(matdim)=oppsi(matdim)+w00*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim)+w00*psi(matdim)
+    endif
 
     ! (c) Ground state-IS block
     !
-    ! Contribution to v2=dt|Psi>
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(w0j(1:matdim-1),psi(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +w0j(1:matdim-1)*psi(matdim)
+    if (.not.lprojcap.or.statenumber.gt.0) then
+       oppsi(matdim)=oppsi(matdim) &
+            +dot_product(w0j(1:matdim-1),psi(1:matdim-1))
+       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+            +w0j(1:matdim-1)*psi(matdim)
+    endif
 
     val2=2.0d0*real(dot_product(psi,oppsi))
     

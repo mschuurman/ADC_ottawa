@@ -868,7 +868,7 @@ contains
     integer                        :: i,j
     real(dp)                       :: eta
     real(dp), dimension(nbas,nbas) :: cap_mo
-    real(dp), parameter            :: thrsh=1e-12_dp
+    real(dp), parameter            :: thrsh=1e-9_dp
     
 !----------------------------------------------------------------------
 ! Similarity transform the AO CAP matrix to yield the MO CAP matrix

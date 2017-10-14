@@ -567,7 +567,8 @@ contains
     write(ilog,'(/,2x,a,7x,F10.4)') 'Time:',t
 
     ! Wavefunction norm
-    write(ilog,'(2x,a,11x,F6.4)') 'Norm:',norm
+    !write(ilog,'(2x,a,11x,F.4)') 'Norm:',norm
+    write(ilog,'(2x,a,11x,ES11.4)') 'Norm:',norm
 
     ! 'Number of electrons'
     write(ilog,'(2x,a,3x,F8.4)') 'Norm x Nel:',norm*nocc*2.0d0
