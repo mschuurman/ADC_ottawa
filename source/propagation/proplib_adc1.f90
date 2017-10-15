@@ -230,7 +230,7 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
     integer*8                                 :: dummy
-    real(d)                                   :: norm
+    real(d)                                   :: norm,flux
     real(d), parameter                        :: tiny=1e-9_d
     real(d), parameter                        :: tinier=1e-10_d
     complex(d), dimension(:), allocatable     :: dtpsi,hpsi
@@ -328,6 +328,14 @@ contains
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
 
+       ! Output some information about our progress
+       ! (this only needs to be done at the start of
+       ! each timestep)
+       if (inttime.eq.0.0d0) then
+          norm=real(sqrt(dot_product(psi,psi)))
+          call wrstepinfo(time,norm,flux,kpqf)
+       endif
+       
        ! Integrate the TDSE if || dtpsi || is non-zero
        if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
 
@@ -358,11 +366,14 @@ contains
 
        endif
 
-       ! Output some information about our progress
-       norm=real(sqrt(dot_product(psi,psi)))
-       call wrstepinfo(time,norm,kpqf)
-       
     enddo
+
+!----------------------------------------------------------------------
+! Final report
+!----------------------------------------------------------------------
+    ! Final timestep output
+    norm=real(sqrt(dot_product(psi,psi)))
+    call wrstepinfo(time,norm,flux,kpqf)
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -489,13 +500,15 @@ contains
        ! dtpsi = -iH(t)|Psi>
        call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
 
-       ! Flux analysis (we only need to do this at the start of
+       ! Output some information about our progress
+       ! (this only needs to be done at the start of
        ! each timestep)
-       if (lflux.and.inttime.eq.0.0d0) then
-          call adc1_flux_cap(matdim,psi,dtpsi,flux)
-          write(iflux,'(F10.4,5x,ES15.8)') time,flux
+       if (inttime.eq.0.0d0) then
+          norm=real(sqrt(dot_product(psi,psi)))
+          if (lflux) call adc1_flux_cap(matdim,psi,dtpsi,flux)
+          call wrstepinfo(time,norm,flux,kpqf)
        endif
-          
+       
        ! Integrate the TDSE if || dtpsi || is non-zero
        if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
 
@@ -527,18 +540,20 @@ contains
 
        endif
 
-       ! Output some information about our progress
-       norm=real(sqrt(dot_product(psi,psi)))
-       call wrstepinfo(time,norm,kpqf)
-
     enddo
 
+!----------------------------------------------------------------------
+! Final report
+!----------------------------------------------------------------------
     ! Final flux expectation value
     if (lflux) then
        call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
        call adc1_flux_cap(matdim,psi,dtpsi,flux)
-       write(iflux,'(F10.4,5x,ES15.8)') time,flux
     endif
+
+    ! Final timestep output
+    norm=real(sqrt(dot_product(psi,psi)))
+    call wrstepinfo(time,norm,flux,kpqf)
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -553,26 +568,28 @@ contains
 
 !#######################################################################
 
-  subroutine wrstepinfo(t,norm,kpqf)
+  subroutine wrstepinfo(t,norm,flux,kpqf)
 
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: t,norm
+    real(d)                                   :: t,norm,flux
 
     write(ilog,'(70a)') ('+',k=1,70)
 
     ! Propagation time
-    write(ilog,'(/,2x,a,7x,F10.4)') 'Time:',t
+    write(ilog,'(/,2x,a,7x,F12.6)') 'Time:',t
 
     ! Wavefunction norm
-    !write(ilog,'(2x,a,11x,F.4)') 'Norm:',norm
-    write(ilog,'(2x,a,11x,ES11.4)') 'Norm:',norm
+    write(ilog,'(2x,a,11x,F8.6)') 'Norm:',norm
 
     ! 'Number of electrons'
-    write(ilog,'(2x,a,3x,F8.4)') 'Norm x Nel:',norm*nocc*2.0d0
+    write(ilog,'(2x,a,3x,F10.6)') 'Norm x Nel:',norm*nocc*2.0d0
 
+    ! Flux
+    if (lflux) write(iflux,'(F10.4,5x,ES15.8)') t,flux
+    
     ! Wavefunction analysis
     call wrpsi(kpqf)
     

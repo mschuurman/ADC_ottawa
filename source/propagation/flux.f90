@@ -33,7 +33,15 @@ contains
     oppsi=czero
     
 !----------------------------------------------------------------------
-! (1) 2 Re < d Psi/dt | Theta | Psi >
+! (I) 2 Re < d Psi/dt | Theta | Psi >
+!----------------------------------------------------------------------    
+! Three pieces: (a) IS representation of the projector, Theta_IJ.
+!               (b) Ground state projector matrix element, Theta_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, Theta_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 
@@ -61,7 +69,15 @@ contains
     val1=2.0d0*real(dot_product(dtpsi,oppsi))
 
 !----------------------------------------------------------------------
-! 2 < Psi | W | Psi >
+! (II) 2 < Psi | W | Psi >
+!----------------------------------------------------------------------    
+! Three pieces: (a) IS representation of the CAP operator, W_IJ.
+!               (b) Ground state CAP matrix element, W_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, W_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 
@@ -129,7 +145,15 @@ contains
     oppsi=czero
     
 !----------------------------------------------------------------------
-! (1) 2 Re < d Psi/dt | Theta | Psi >
+! (I) 2 Re < d Psi/dt | Theta | Psi >
+!----------------------------------------------------------------------    
+! Three pieces: (a) IS representation of the projector, Theta_IJ.
+!               (b) Ground state projector matrix element, Theta_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, Theta_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 
@@ -160,7 +184,15 @@ contains
     val1=2.0d0*real(dot_product(dtpsi,oppsi))    
 
 !----------------------------------------------------------------------
-! 2 < Psi | W | Psi >
+! (II) 2 < Psi | W | Psi >
+!----------------------------------------------------------------------    
+! Three pieces: (a) IS representation of the CAP operator, W_IJ.
+!               (b) Ground state CAP matrix element, W_00.
+!               (c) Off-diagonal elements between the ground state
+!                   and the intermediate states, W_0J.
+!
+! Note that (b) and (c) do not contribute if the CAP is projected
+! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 

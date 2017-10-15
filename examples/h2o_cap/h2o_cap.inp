@@ -1,4 +1,4 @@
-method=adc2-s
+method=adc2
 
 initial_state=0
 istate_symm = 1
@@ -14,26 +14,26 @@ mem=900
 
 propagation_section
 
- # Central frequency
- pulse_freq=0.043
+ # Central frequency (800 nm here)
+ pulse_freq=0.057
 
  # Intensity
- pulse_strength=1e+14,winvcm2
+ pulse_strength=2e+14,winvcm2
 
  # Direction
  pulse_vec=0.0,0.0,1.0
 
  # Pulse type
- pulse=cos
+ pulse=sin
 
  # Pulse envelope
- envelope=cos2,0.0,1000.0
+ envelope=sin2-ramp,551.157
 
  # Propagation time
- tfinal=42.0
+ tfinal=620.0
 
  # Output timestep
- tout=0.05
+ tout=0.5
 
  # Maximum Krylov subspace dimension
  krydim=7
@@ -43,9 +43,10 @@ propagation_section
 end-propagation_section
 
 cap_section
- cap_type=sigmoidal
- cap_strength=10.0
- cap_width=10.0 , angstrom
+ cap_type=monomial
+ cap_strength=0.02
+ cap_order=2
+ flux
 end-cap_section
 
 end-input
