@@ -222,6 +222,10 @@
                   difftype=1
                else if (keyword(i).eq.'kbj_ryd') then
                   difftype=3
+               else if (keyword(i).eq.'even') then
+                  difftype=2
+                  i=i+2
+                  read(keyword(i),*) diffratio
                else
                   goto 100
                endif

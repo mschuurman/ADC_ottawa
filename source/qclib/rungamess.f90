@@ -281,6 +281,7 @@
     subroutine calc_diffexp
 
       use parameters
+      use iomod
 
       implicit none
 
@@ -326,9 +327,8 @@
                minexp(i)=diffexp(i,j)
             else if (difftype.eq.2) then
                ! Even-tempered diffuse functions
-               write(6,'(a)') 'You need to write the even-tempered basis &
-                    function code...'
-               STOP
+               diffexp(i,j)=minexp(i)/diffratio
+               minexp(i)=diffexp(i,j)
             else if (difftype.eq.3) then
                ! KBJ Rydberg-type diffuse functions
                diffexp(i,j)=kbjexp_ryd(i,minexp(i))
