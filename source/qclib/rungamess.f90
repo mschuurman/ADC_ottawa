@@ -321,7 +321,7 @@
 !-----------------------------------------------------------------------
       do i=1,5
          do j=1,ndiff(i)
-            if (difftype.eq.1) then               
+            if (difftype.eq.1) then
                ! KBJ exponential-type diffuse functions
                diffexp(i,j)=kbjexp_cont(i,minexp(i))
                minexp(i)=diffexp(i,j)
@@ -333,6 +333,9 @@
                ! KBJ Rydberg-type diffuse functions
                diffexp(i,j)=kbjexp_ryd(i,minexp(i))
                minexp(i)=diffexp(i,j)
+            else if (difftype.eq.4) then
+               ! Explicit basis function lists
+               diffexp(i,j)=difflist(i,j)
             endif
          enddo
       enddo

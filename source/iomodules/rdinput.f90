@@ -15,7 +15,7 @@
       
       integer            :: i,k,n,l
       character(len=120) :: atmp1,atmp2
-      logical            :: iscvs,energyonly,ldiag,llanc
+      logical            :: iscvs,energyonly,ldiag,llanc,ldiffsection
 
 !-----------------------------------------------------------------------
 ! Set 'traps'
@@ -24,6 +24,7 @@
       ldiag=.false.
       llanc=.false.
       iscvs=.false.
+      ldiffsection=.false.
 
 !-----------------------------------------------------------------------
 ! Read input file
@@ -218,14 +219,16 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                ! Diffuse function type
+               ! Note that difftype=4 is reserved for explicit
+               ! lists of diffuse functions
                if (keyword(i).eq.'kbj'.or.keyword(i).eq.'kbj_cont') then
                   difftype=1
-               else if (keyword(i).eq.'kbj_ryd') then
-                  difftype=3
                else if (keyword(i).eq.'even') then
                   difftype=2
                   i=i+2
                   read(keyword(i),*) diffratio
+               else if (keyword(i).eq.'kbj_ryd') then
+                  difftype=3
                else
                   goto 100
                endif
@@ -337,6 +340,14 @@
             if (keyword(1).ne.'end-propagation_section') goto 70
             i=inkw
             
+         else if (keyword(i).eq.'diffuse_section') then
+            ldiffsection=.true.
+            difftype=4
+75          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-diffuse_section') goto 75
+            i=inkw
+
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -426,7 +437,12 @@
 ! Read the propagation section
 !-----------------------------------------------------------------------
       if (lpropagation) call rdpropagationinp
-      
+
+!-----------------------------------------------------------------------
+! Read the diffuse function section
+!-----------------------------------------------------------------------
+      if (ldiffsection) call rddiffbaslist
+
 !-----------------------------------------------------------------------
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
@@ -1050,19 +1066,19 @@
          endif
 
          ! If there are more keywords to be read on the current line,
-           ! then read them, else read the next line
-           if (i.lt.inkw) then
-              goto 10
-           else
-              goto 5
-           endif
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
 
          ! Exit if a required argument has not been given with a keyword
 100      continue
          errmsg='No argument given with the keyword '//trim(keyword(i))
          call error_control
 
-        endif
+      endif
 
       return
 
@@ -2252,7 +2268,80 @@
       return
       
     end subroutine rdpropagationinp
+
+!#######################################################################
+
+    subroutine rddiffbaslist
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer :: i,l
+
+!-----------------------------------------------------------------------
+! Read to the diffuse basis section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'diffuse_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read the diffuse basis information
+!-----------------------------------------------------------------------
+      5    call rdinp(iin)
       
+      i=0
+
+      if (keyword(1).ne.'end-diffuse_section') then
+         
+10       continue
+         i=i+1
+         
+         if (keyword(i).eq.'s') then
+            ndiff(1)=ndiff(1)+1
+            i=i+1
+            read(keyword(i),*) difflist(1,ndiff(1))
+         else if (keyword(i).eq.'p') then
+            ndiff(2)=ndiff(2)+1
+            i=i+1
+            read(keyword(i),*) difflist(2,ndiff(2))
+         else if (keyword(i).eq.'d') then
+            ndiff(3)=ndiff(3)+1
+            i=i+1
+            read(keyword(i),*) difflist(3,ndiff(3))
+         else if (keyword(i).eq.'f') then
+            ndiff(4)=ndiff(4)+1
+            i=i+1
+            read(keyword(i),*) difflist(4,ndiff(4))
+         else if (keyword(i).eq.'g') then
+            ndiff(5)=ndiff(5)+1
+            i=i+1
+            read(keyword(i),*) difflist(5,ndiff(5))
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+      endif
+
+      return
+
+    end subroutine rddiffbaslist
+
 !#######################################################################
 
     subroutine getdiffinfo(n,l,string)

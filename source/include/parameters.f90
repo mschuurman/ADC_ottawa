@@ -258,6 +258,7 @@ integer, dimension(:,:), allocatable        :: nprim,aotype,ilquant
 real(d), dimension(:,:,:), allocatable      :: aocoeff,aoexp
 real(d), dimension(:,:), allocatable        :: diffexp
 real(d)                                     :: diffratio
+real(d), dimension(5,100)                   :: difflist
 character(len=60)                           :: basname
 character(len=2), dimension(:), allocatable :: atlbl
 logical                                     :: lrungamess,ldiffcom
