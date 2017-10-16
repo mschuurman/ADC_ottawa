@@ -460,6 +460,9 @@ contains
        mu=0
        do i=1,gam%natoms
 
+          ! Skip dummy atoms
+          if (gam%atoms(i)%name.eq.'x') cycle
+
           do j=1,gam%atoms(i)%nshell
              il=gam%atoms(i)%sh_l(j)
 

@@ -157,6 +157,7 @@ contains
        call get_vdwr(gam,vdwr,natom)
        cap_r0=-1.0d0
        do n=1,natom
+          if (gam%atoms(n)%name.eq.'x') cycle
           do i=1,3
              x=gam%atoms(n)%xyz(i)*ang2bohr
              r=abs(x-cap_centre(i))+dscale*vdwr(n)

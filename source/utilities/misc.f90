@@ -161,11 +161,15 @@ contains
 !----------------------------------------------------------------------
     ! Van der Waals radii in Angstrom
     do i=1,natom
-
-       name=gam%atoms(i)%name
        
+       ! Atom name
+       name=gam%atoms(i)%name
        call lowercase(name)
 
+       ! Skip dummy atoms
+       if (name.eq.'x') cycle
+
+       ! Assign the Van der Waals radius for the current atom
        if (name.eq.'h') then
           vdwr(i)=1.10d0
 
