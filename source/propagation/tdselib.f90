@@ -755,14 +755,14 @@ contains
     real(d)               :: t
 
 !----------------------------------------------------------------------
-! 'Wave' value
+! Carrier wave value
 !----------------------------------------------------------------------
     if (ipulse.eq.1) then
        ! cosine pulse
-       pulse=cos(freq*t)
+       pulse=cos(freq*(t-t0)-phase)
     else if (ipulse.eq.2) then
        ! sine pulse
-       pulse=sin(freq*t)
+       pulse=sin(freq*(t-t0)-phase)
     endif
 
 !----------------------------------------------------------------------
@@ -772,11 +772,14 @@ contains
        ! Cosine squared envelope
        envelope=cos2_envelope(t)
     else if (ienvelope.eq.2) then
-       ! Sin squared-ramp envelope
+       ! Sine squared-ramp envelope
        envelope=sin2ramp_envelope(t)
     else if (ienvelope.eq.3) then
        ! Box-type envelope
        envelope=box_envelope(t)
+    else if (ienvelope.eq.4) then
+       ! Sine squared envelope
+       envelope=sin2_envelope(t)
     endif
  
 !----------------------------------------------------------------------
@@ -800,17 +803,17 @@ contains
 
     implicit none
 
-    real(d) :: t,func,t0,fwhm
+    real(d) :: t,func,tzero,fwhm
 
-    ! t0
-    t0=envpar(1)
+    ! tzero
+    tzero=envpar(1)
 
     ! fwhm
     fwhm=envpar(2)
 
     ! Envelope value
-    if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
-       func=(cos(pi*(t-t0)/(2.0d0*fwhm)))**2
+    if (t.gt.tzero-fwhm.and.t.lt.tzero+fwhm) then
+       func=(cos(pi*(t-tzero)/(2.0d0*fwhm)))**2
     else
        func=0.0d0
     endif
@@ -819,6 +822,37 @@ contains
     
   end function cos2_envelope
 
+!#######################################################################
+! sin2_envelope: calculates the value of a sine squared envelope
+!                function at the time t
+!#######################################################################
+  
+  function sin2_envelope(t) result(func)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    real(d) :: t,func,tzero,fwhm
+
+    ! tzero
+    tzero=envpar(1)
+
+    ! fwhm
+    fwhm=envpar(2)
+
+    ! Envelope value
+    if (t.gt.tzero.and.t.lt.tzero+2.0d0*fwhm) then
+       func=(sin(pi*(t-tzero)/(2.0d0*fwhm)))**2
+    else
+       func=0.0d0
+    endif
+    
+    return
+    
+  end function sin2_envelope
+  
 !#######################################################################
 ! sin2ramp_envelope: calculates the value of a sine-squared ramp
 !                    envelope function at the time t.

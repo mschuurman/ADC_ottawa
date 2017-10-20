@@ -342,6 +342,8 @@ real(d), dimension(3)        :: pulse_vec
 real(d)                      :: proptol
 real(d)                      :: freq
 real(d)                      :: strength
+real(d)                      :: t0
+real(d)                      :: phase
 real(d), dimension(mxenvpar) :: envpar
 logical                      :: lpropagation
 

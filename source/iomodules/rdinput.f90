@@ -2196,7 +2196,23 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'pulse') then
+         else if (keyword(i).eq.'pulse_t0') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) t0
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_phase') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) phase
+            else
+               goto 100
+            endif
+            
+         else if (keyword(i).eq.'pulse'.or.keyword(i).eq.'carrier') then
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'cos') then
@@ -2223,6 +2239,9 @@
                   nenvpar=1
                else if (keyword(i).eq.'box') then
                   ienvelope=3
+                  nenvpar=2
+               else if (keyword(i).eq.'sin2') then
+                  ienvelope=4
                   nenvpar=2
                else
                   errmsg='Unknown evelope type: '//trim(keyword(i))

@@ -162,6 +162,8 @@
       pulse_vec=0.0d0
       freq=0.0d0
       strength=0.0d0
+      t0=0.0d0
+      phase=0.0d0
       proptol=1e-5_d
       ipulse=0
       ienvelope=0
