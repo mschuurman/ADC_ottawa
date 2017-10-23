@@ -15,7 +15,7 @@
                                             niter,currdim,ipre,nconv,&
                                             nconv_prev,nrec,maxbl,&
                                             blocksize_curr,maxvec_curr,&
-                                            nstates_curr,nmult
+                                            nstates_curr,nmult,subdim
     integer, dimension(:), allocatable   :: indxi,indxj
     real(d), dimension(:), allocatable   :: hii,hij
     real(d), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
@@ -69,6 +69,23 @@
       call davinitialise(matdim)
 
 !-----------------------------------------------------------------------
+! Determine whether or not we can perform the matrix-vector
+! multiplication in-core
+!-----------------------------------------------------------------------
+      call isincore(matdim,noffd)
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal elements of the Hamiltonian matrix from disk
+!-----------------------------------------------------------------------
+      call rdham_on(matdim)
+
+!-----------------------------------------------------------------------
+! If the matrix-vector multiplication is to proceed in-core, then
+! read the off-diagonal Hamiltonian matrix from disk
+!-----------------------------------------------------------------------
+      if (lincore) call rdham_off(noffd)
+
+!-----------------------------------------------------------------------
 ! Set the initial vectors
 ! -----------------------------------------------------------------------
       ! Determine whether the initial vectors are to be constructed
@@ -98,23 +115,6 @@
          ! Use a single IS for each initial vector
          call initvec_ondiag(matdim)
       endif
-
-!-----------------------------------------------------------------------
-! Determine whether or not we can perform the matrix-vector
-! multiplication in-core
-!-----------------------------------------------------------------------
-      call isincore(matdim,noffd)
-
-!-----------------------------------------------------------------------
-! Read the on-diagonal elements of the Hamiltonian matrix from disk
-!-----------------------------------------------------------------------
-      call rdham_on(matdim)
-
-!-----------------------------------------------------------------------
-! If the matrix-vector multiplication is to proceed in-core, then
-! read the off-diagonal Hamiltonian matrix from disk
-!-----------------------------------------------------------------------
-      if (lincore) call rdham_off(noffd)
 
 !-----------------------------------------------------------------------
 ! Perform the block Davidson iterations
@@ -169,6 +169,7 @@
          vecfile=davname
          maxvec=maxsubdim
          ldeflate=ldfl
+         subdim=guessdim
       else if (hamflag.eq.'f') then
          blocksize=dmain_f
          nstates=davstates_f
@@ -178,6 +179,7 @@
          vecfile=davname_f
          maxvec=maxsubdim_f
          ldeflate=ldfl_f
+         subdim=guessdim_f
       endif
 
 !-----------------------------------------------------------------------
@@ -291,14 +293,16 @@
       use constants
       use misc, only: dsortindxa1
       use iomod
+      use channels
 
       implicit none
 
       integer, intent(in)                  :: matdim
       integer*8, intent(in)                :: noffd
       integer, dimension(:), allocatable   :: full2sub,sub2full,indxhii
-      integer                              :: subdim,i,j,k,i1,j1,e2,&
-                                              error,iham,nlim,l
+      integer*8                            :: k,i,j
+      integer                              :: i1,j1
+      integer                              :: e2,error,iham,nlim,l
       real(d), dimension(:,:), allocatable :: hsub
       real(d), dimension(:), allocatable   :: subeig,work
       character(len=70)                    :: filename
@@ -306,30 +310,7 @@
 !-----------------------------------------------------------------------
 ! Subspace dimension check
 !-----------------------------------------------------------------------
-      ! Temporary hard-wiring of the subspace dimension
-      subdim=700
       if (subdim.gt.matdim) subdim=matdim
-
-!-----------------------------------------------------------------------
-! Read the on-diagonal Hamiltonian matrix elements from file
-!-----------------------------------------------------------------------
-      allocate(hii(matdim))
-
-      call freeunit(iham)
-      
-      if (hamflag.eq.'i') then
-         filename='SCRATCH/hmlt.diai'
-      else if (hamflag.eq.'f') then
-         filename='SCRATCH/hmlt.diac'
-      endif
-
-      open(iham,file=filename,status='old',access='sequential',&
-        form='unformatted') 
-
-      read(iham) maxbl,nrec
-      read(iham) hii
-
-      close(iham)      
 
 !-----------------------------------------------------------------------
 ! Sort the on-diagonal Hamiltonian matrix elements in order of
@@ -342,8 +323,8 @@
 ! Ensure that the subdim'th IS is not degenerate with subdim+1'th IS,
 ! and if it is, increase subdim accordingly
 !-----------------------------------------------------------------------
+5     continue
       if (subdim.lt.matdim) then
-5        continue
          if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
             subdim=subdim+1
             goto 5
@@ -463,7 +444,6 @@
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
-      deallocate(hii)
       deallocate(indxhii)
       deallocate(full2sub)
       deallocate(sub2full)
@@ -681,6 +661,7 @@
          filename='SCRATCH/hmlt.offc'
       endif
 
+      call freeunit(iham)
       open(iham,file=filename,status='old',access='sequential',&
            form='unformatted')
 
