@@ -37,7 +37,7 @@ module basis_cap
                                                        ! 'moiseyev'      = Moiseyev's non-local perfect CAP, single sphere
                                                        ! 'atom moiseyev' = Moiseyev's non-local perfect CAP, atom-centered spheres
                                                        ! 'manolopoulous' = JWKB perfect absorber; DOT NOT USE
-                                                       ! 'sigmoidal'     = Schlegel's cavity-type sigmoidal CAP
+                                                       ! 'sigmoidal'     = Cavity-type sigmoidal CAP
                                                        ! The cap_centre and cap_r0 paraments apply to all CAPs
   real(rk), save      :: cap_centre(3)   = 0._rk       ! Centre of the spherical shell carrying the complex absorbing potential
   real(rk), save      :: cap_r0          = 12._rk      ! Radius at which CAP starts
@@ -144,6 +144,49 @@ contains
   end function atomMonomialVcap
 
 !######################################################################
+
+  function sigmoidalVcap(gam,xyz) result(v)
+    type(gam_structure), intent(in) :: gam    ! Basis set and structure descriptor
+    real(rk), intent(in)            :: xyz(:) ! Coordinates of the point
+    real(rk)                        :: v      ! The potential
+
+    integer(ik) :: i
+    real(rk)    :: r,width
+    real(rk)    :: val(gam%natoms)
+    real(rk)    :: at_xyz(3)
+
+    ! Temporary hardwiring of the cap width parameter
+    width=10.0d0
+    
+    ! Loop over atoms
+    do i=1,gam%natoms
+
+       ! Skip dummy atoms
+       if (gam%atoms(i)%name.eq.'x'&
+            .or.gam%atoms(i)%name.eq.'X') cycle
+
+       ! Cartesian coordinates of the current atom (in Bohr)
+       at_xyz=real(gam%atoms(i)%xyz,kind=rk)/abohr
+
+       ! Distance from the point xyz to the current atom
+       r=sqrt(dot_product(xyz-at_xyz,xyz-at_xyz))
+       
+       ! Calculate the CAP value
+       if (r.le.cap_r0) then
+          val(i)=0.0d0
+       else if (r.lt.cap_r0+width) then
+          val(i)=-cap_strength*(sin(0.5d0*pi*(r-cap_r0)/width))**2
+       else
+          val(i)=-cap_strength
+       endif
+
+    enddo
+
+    v=minval(val)
+    
+  end function sigmoidalVcap
+    
+!######################################################################
 !
 !  Multiplicative CAPs can all be treated alike
 !
@@ -199,8 +242,7 @@ contains
           case ('atom monomial')
              cap(ipt) = atomMonomialVcap(gam,xyzw(1:3,ipt)) * xyzw(4,ipt)
           case ('sigmoidal')
-             print*,'WRITE THE SIGMOIDAL CODE!'
-             stop
+             cap(ipt) = sigmoidalVcap(gam,xyzw(1:3,ipt)) * xyzw(4,ipt)
           end select
        end do evaluate_cap
        !
@@ -290,8 +332,7 @@ contains
           case ('atom monomial')
              cap(ipt) = atomMonomialVcap(gam,xyzw(1:3,ipt))
           case ('sigmoidal')
-             print*,'WRITE THE SIGMOIDAL CODE!'
-             stop
+             cap(ipt) = sigmoidalVcap(gam,xyzw(1:3,ipt))
           end select
        end do evaluate_cap
        !
@@ -361,10 +402,9 @@ contains
        write (out,"('        Long-range D = ',3(g14.6,1x))") cap_mpole(2:4)
        write (out,"('        Long-range Q = ',3(g14.6,1x))") cap_mpole(5:7)
        write (out,"('                       ',3(g14.6,1x))") cap_mpole(8:10)
-    case ('sigmoidal')
-       print*,'WRITE THE SIGMOIDAL CODE!'
-       stop
        cap_width = 2.0_rk / cap_lambda
+    case ('sigmoidal')
+       ! We will sort this out later...
     end select
     rout = cap_r0 + 0.5_rk * cap_width
     !

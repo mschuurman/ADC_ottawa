@@ -129,6 +129,9 @@ contains
     else if (icap.eq.3) then
        ! Atom-centred monomial CAP
        cap_type='atom monomial'
+    else if (icap.eq.6) then
+       ! Cavity-type sigmoidal CAP
+       cap_type='sigmoidal'       
     else
        errmsg='Flux analysis is not yet supported for ECS-type &
             absorbing potentials'
