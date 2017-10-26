@@ -28,7 +28,6 @@ module monomial_analytic
   ! CAP arrays
   real(dp), allocatable  :: cap(:)
   real(dp), allocatable  :: cap_ao(:,:)
-  real(dp), allocatable  :: vdwr(:)
   real(dp), parameter    :: dscale=3.5d0
 
   ! Monomial CAP arrays
@@ -57,7 +56,7 @@ contains
     implicit none
 
     integer                        :: order
-    integer                        :: natom,i
+    integer                        :: i
     real(dp)                       :: eta
     real(dp), dimension(nbas,nbas) :: cap_mo
     type(gam_structure)            :: gam
@@ -66,15 +65,6 @@ contains
 ! Calculate the geometric centre of the molecule
 !----------------------------------------------------------------------
     call calc_geomcent(gam)
-
-!----------------------------------------------------------------------
-! Fill in the van der Waals radius array
-!----------------------------------------------------------------------
-    natom=gam%natoms
-    allocate(vdwr(natom))
-    vdwr=0.0d0
-
-    call get_vdwr(gam,vdwr,natom)
 
 !----------------------------------------------------------------------
 ! Precalculation of terms that appear a lot in the working equations
@@ -903,7 +893,7 @@ contains
 !######################################################################
 
   subroutine finalise
-
+    
     implicit none
 
     deallocate(amunu)
@@ -913,7 +903,6 @@ contains
     deallocate(alpha)
     deallocate(kmu)
     deallocate(Nmu)
-    deallocate(vdwr)
     deallocate(cap_pbas)
     deallocate(cap_ao)
     

@@ -1931,6 +1931,8 @@
                   icap=4
                else if (keyword(i).eq.'atom_moiseyev') then
                   icap=5
+               else if (keyword(i).eq.'sigmoidal') then
+                  icap=6
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control

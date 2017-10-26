@@ -133,7 +133,7 @@ contains
 
 !#######################################################################
 
-  subroutine get_vdwr(gam,vdwr,natom)
+  subroutine get_vdwr(gam)
 
     use constants
     use channels
@@ -144,15 +144,15 @@ contains
     
     implicit none
     
-    integer                   :: natom,i
-    real(d), dimension(natom) :: vdwr
-    real(d), parameter        :: ang2bohr=1.889725989d0
-    character(len=20)         :: name
-    type(gam_structure)       :: gam
+    integer             :: natom,i
+    real(d), parameter  :: ang2bohr=1.889725989d0
+    character(len=20)   :: name
+    type(gam_structure) :: gam
     
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------   
+    natom=gam%natoms
     vdwr=0.0d0
 
 !----------------------------------------------------------------------

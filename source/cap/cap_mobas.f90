@@ -25,6 +25,7 @@ contains
     use timingmod
     use monomial_analytic
     use import_gamess
+    use misc, only: get_vdwr
     
     implicit none
 
@@ -52,6 +53,14 @@ contains
     allocate(cap_mo(nbas,nbas))
     cap_mo=0.0d0
 
+    allocate(vdwr(gam%natoms))
+    vdwr=0.0d0
+
+!----------------------------------------------------------------------
+! Fetch the van der Waals radius array
+!----------------------------------------------------------------------
+    call get_vdwr(gam)
+    
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !----------------------------------------------------------------------
@@ -68,7 +77,7 @@ contains
 !----------------------------------------------------------------------
     call times(tw2,tc2)
     write(ilog,'(/,2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
-
+    
     return
     
   end subroutine cap_mobas
@@ -90,7 +99,6 @@ contains
     real(dp), dimension(nbas,nbas)           :: cap_mo
     real(dp), dimension(:,:), allocatable    :: cap_ao,smat,lmat
     real(dp), parameter                      :: ang2bohr=1.889725989d0
-    real(dp), dimension(:), allocatable      :: vdwr
     real(dp), parameter                      :: dscale=3.5
     real(dp)                                 :: x,r
     complex(dp), dimension(:,:), allocatable :: cap_ao_cmplx
@@ -100,11 +108,8 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     nao=gam%nbasis
-
     natom=gam%natoms
-    allocate(vdwr(natom))
-    vdwr=0.0d0
-    
+        
     allocate(cap_ao(nao,nao))
     cap_ao=0.0d0
 
@@ -132,6 +137,9 @@ contains
     else if (icap.eq.5) then
        ! Moiseyev's non-local perfect CAP, atom-centered spheres
        cap_type='atom moiseyev'
+    else if (icap.eq.6) then
+       ! Cavity-like sigmoidal CAP
+       cap_type='sigmoidal'
     endif
 
 !----------------------------------------------------------------------
@@ -153,8 +161,7 @@ contains
 ! Waals radius multiplied by dscale
 !----------------------------------------------------------------------
     if (boxpar(1).eq.0.0d0) then
-       ! The user has not specified a cap box, 
-       call get_vdwr(gam,vdwr,natom)
+       ! The user has not specified a cap box
        cap_r0=-1.0d0
        do n=1,natom
           if (gam%atoms(n)%name.eq.'x') cycle

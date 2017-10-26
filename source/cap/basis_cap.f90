@@ -37,6 +37,7 @@ module basis_cap
                                                        ! 'moiseyev'      = Moiseyev's non-local perfect CAP, single sphere
                                                        ! 'atom moiseyev' = Moiseyev's non-local perfect CAP, atom-centered spheres
                                                        ! 'manolopoulous' = JWKB perfect absorber; DOT NOT USE
+                                                       ! 'sigmoidal'     = Schlegel's cavity-type sigmoidal CAP
                                                        ! The cap_centre and cap_r0 paraments apply to all CAPs
   real(rk), save      :: cap_centre(3)   = 0._rk       ! Centre of the spherical shell carrying the complex absorbing potential
   real(rk), save      :: cap_r0          = 12._rk      ! Radius at which CAP starts
@@ -197,6 +198,9 @@ contains
              cap(ipt) = monomialVcap(xyzw(1:3,ipt)) * xyzw(4,ipt)
           case ('atom monomial')
              cap(ipt) = atomMonomialVcap(gam,xyzw(1:3,ipt)) * xyzw(4,ipt)
+          case ('sigmoidal')
+             print*,'WRITE THE SIGMOIDAL CODE!'
+             stop
           end select
        end do evaluate_cap
        !
@@ -285,6 +289,9 @@ contains
              cap(ipt) = monomialVcap(xyzw(1:3,ipt))
           case ('atom monomial')
              cap(ipt) = atomMonomialVcap(gam,xyzw(1:3,ipt))
+          case ('sigmoidal')
+             print*,'WRITE THE SIGMOIDAL CODE!'
+             stop
           end select
        end do evaluate_cap
        !
@@ -354,6 +361,9 @@ contains
        write (out,"('        Long-range D = ',3(g14.6,1x))") cap_mpole(2:4)
        write (out,"('        Long-range Q = ',3(g14.6,1x))") cap_mpole(5:7)
        write (out,"('                       ',3(g14.6,1x))") cap_mpole(8:10)
+    case ('sigmoidal')
+       print*,'WRITE THE SIGMOIDAL CODE!'
+       stop
        cap_width = 2.0_rk / cap_lambda
     end select
     rout = cap_r0 + 0.5_rk * cap_width
