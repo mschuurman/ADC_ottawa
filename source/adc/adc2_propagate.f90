@@ -214,8 +214,11 @@ contains
     
     filename='SCRATCH/cap'
     
-    call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-         nbuf_cap,nel_cap,filename)
+    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+    !     nbuf_cap,nel_cap,filename)
+
+    call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_cap,nel_cap,&
+         filename)
     
 !----------------------------------------------------------------------
 ! Reset the dpl array
@@ -305,8 +308,11 @@ contains
 
        dpl(:,:)=dpl_all(c,:,:)
        
-       call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-            nbuf_dip(c),nel_dip(c),filename)
+       !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+       !     nbuf_dip(c),nel_dip(c),filename)
+
+       call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_dip(c),&
+            nel_dip(c),filename)
        
     enddo
 
@@ -383,9 +389,12 @@ contains
     
     filename='SCRATCH/theta'
     
-    call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-         nbuf_theta,nel_theta,filename)
+    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+    !     nbuf_theta,nel_theta,filename)
 
+    call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_theta,nel_theta,&
+         filename)
+    
 !----------------------------------------------------------------------
 ! Reset the dpl array
 !----------------------------------------------------------------------

@@ -917,9 +917,6 @@ contains
 !#######################################################################
 ! opxvec_treal_ext: calculates v2 = O * v1 using an externally stored
 !                   operator matrix O
-!
-! NOTE THAT IN ITS CURRENT STATE, THIS SUBROUTINE ASSUMES THAT ALL
-! MATRIX ELEMENTS ARE SAVED TO DISK
 !#######################################################################
 
   subroutine opxvec_ext(matdim,v1,v2,filename,nrec)
@@ -937,7 +934,7 @@ contains
                                                tid,npt,tmp
     integer, dimension(:), allocatable      :: indxi,indxj
     integer*8, dimension(:,:), allocatable  :: irange
-    real(d), dimension(:), allocatable      :: oij
+    real(d), dimension(:), allocatable      :: oij,oii
     complex(d), dimension(matdim)           :: v1,v2
     complex(d), dimension(:,:), allocatable :: tmpvec
     character(len=70)                       :: filename
@@ -954,10 +951,11 @@ contains
 !-----------------------------------------------------------------------
     allocate(irange(nthreads,2))
     allocate(tmpvec(matdim,nthreads))
+    allocate(oii(matdim))
     allocate(oij(buf_size))
     allocate(indxi(buf_size))
     allocate(indxj(buf_size))
-
+    
 !-----------------------------------------------------------------------
 ! Open the operator matrix file
 !-----------------------------------------------------------------------
@@ -966,15 +964,27 @@ contains
          form='unformatted')
 
 !-----------------------------------------------------------------------
-! Matrix-vector product
+! Contribution from the on-diagonal elements to the matrix-vector
+! product
 !-----------------------------------------------------------------------
-    ! Initialisation
-    v2=czero
-    tmpvec=czero    
-
     ! Read past the buffer size, which we already know
     read(unit) tmp
+
+    ! Read the on-diagonal elements
+    read(unit) oii
+
+    ! Contribution from the on-diagonal elements
+    do k=1,matdim
+       v2(k)=oii(k)*v1(k)
+    enddo
     
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements to the matrix-vector
+! product
+!-----------------------------------------------------------------------
+    ! Initialisation
+    tmpvec=czero
+
     ! Loop over records
     do n=1,nrec
 
@@ -1002,8 +1012,8 @@ contains
           do k=irange(tid,1),irange(tid,2)
              tmpvec(indxi(k),tid)=tmpvec(indxi(k),tid)&
                   +oij(k)*v1(indxj(k))
-             !tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
-             !     +oij(k)*v1(indxi(k))
+             tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
+                  +oij(k)*v1(indxi(k))
           enddo
        enddo
        !$omp end parallel do
@@ -1011,7 +1021,7 @@ contains
     enddo
 
     do i=1,nthreads
-       v2=v2+tmpvec(:,i)
+       v2(:)=v2(:)+tmpvec(:,i)
     enddo
     
 !-----------------------------------------------------------------------
@@ -1019,6 +1029,7 @@ contains
 !-----------------------------------------------------------------------
     deallocate(irange)
     deallocate(tmpvec)
+    deallocate(oii)
     deallocate(oij)
     deallocate(indxi)
     deallocate(indxj)
