@@ -55,8 +55,6 @@ contains
 
 !----------------------------------------------------------------------    
 ! Calculate the MO representation of the projector onto the CAP region
-! At present, this is only supported for analytically calculated
-! monomial-type caps
 !----------------------------------------------------------------------
     if (icap.eq.1) then
        call monomial_ana(gam,theta_mo,0,1.0d0)

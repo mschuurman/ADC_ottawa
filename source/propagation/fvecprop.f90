@@ -15,6 +15,7 @@ module fvecprop
   integer                               :: matdim,iout0,iout1,iout2
   integer*8                             :: noffdiag
   real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
+  real(d)                               :: norm0
   complex(d), dimension(:), allocatable :: psi0
 
 contains
@@ -329,7 +330,6 @@ contains
 
     integer                                :: i
     real(d), dimension(matdim), intent(in) :: fvec
-    real(d)                                :: norm
     
 !----------------------------------------------------------------------
 ! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
@@ -338,8 +338,8 @@ contains
        psi0(i)=dcmplx(fvec(i),0.0d0)
     enddo
 
-    norm=sqrt(dot_product(psi0,psi0))
-    psi0=psi0/norm
+    norm0=sqrt(dot_product(psi0,psi0))
+    psi0=psi0/norm0
 
     return
     
@@ -436,14 +436,14 @@ contains
 ! Output the autocorrelation functions at time t=0
 !----------------------------------------------------------------------
     ! Zeroth-order autocorrelation function at time t=0
-    auto0=dot_product(psi0,psi0)
+    auto0=dot_product(psi0,psi0)*norm0**2
     call wrauto(iout0,auto0,0.0d0)
     
     ! First-order autocorrelation functions at time t=0
     if (autoord.ge.1) then
        call matxvec_treal(time,matdim,noffdiag,psi0,hpsi)
        hpsi=hpsi*ci
-       auto1=dot_product(psi0,hpsi)
+       auto1=dot_product(psi0,hpsi)*norm0**2
        call wrauto(iout1,auto1,0.0d0)
     endif
     
@@ -451,7 +451,7 @@ contains
     if (autoord.eq.2) then
        call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
        h2psi=h2psi*ci
-       auto2=dot_product(psi0,h2psi)
+       auto2=dot_product(psi0,h2psi)*norm0**2
        call wrauto(iout2,auto2,0.0d0)
     endif
 
@@ -503,7 +503,7 @@ contains
 
        ! Calculate and output the zeroth-order autocorrelation 
        ! function at the current timestep
-       auto0=dot_product(conjg(psi),psi)
+       auto0=dot_product(conjg(psi),psi)*norm0**2
        call wrauto(iout0,auto0,i*intperiod*2.0d0)
 
        ! Calculate and output the first-order autocorrelation
@@ -511,7 +511,7 @@ contains
        if (autoord.ge.1) then
           call matxvec_treal(time,matdim,noffdiag,psi,hpsi)
           hpsi=hpsi*ci
-          auto1=dot_product(conjg(psi),hpsi)
+          auto1=dot_product(conjg(psi),hpsi)*norm0**2
           call wrauto(iout1,auto1,i*intperiod*2.0d0)
        endif
 
@@ -520,7 +520,7 @@ contains
        if (autoord.eq.2) then
           call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
           h2psi=h2psi*ci
-          auto2=dot_product(conjg(psi),h2psi)
+          auto2=dot_product(conjg(psi),h2psi)*norm0**2
           call wrauto(iout2,auto2,i*intperiod*2.0d0)
        endif
 
