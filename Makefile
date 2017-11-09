@@ -85,6 +85,7 @@ EIGEN=  source/eigen/block_davidson.o \
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
 	source/propagation/csillib.o \
+	source/propagation/bslib.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
 	source/propagation/fdstates.o \
@@ -199,6 +200,7 @@ ADC_OBJ=accuracy.o \
 	tdselib.o \
 	sillib.o \
 	csillib.o \
+	bslib.o \
 	relaxation.o \
 	fvecprop.o \
 	fdstates.o \

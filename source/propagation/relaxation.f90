@@ -1,7 +1,6 @@
 !#######################################################################
 ! Routines for the calcuation of eigenstates of the ADC(2) Hamiltonian
-! via imaginary time wavepacket propagations using the XSIL
-! algorithm.
+! via imaginary time wavepacket propagations
 !#######################################################################
 
   module relaxmod
@@ -30,7 +29,6 @@
     integer                              :: maxvec,maxdim,nlin
     real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
                                             vec_conv,alphamat,betamat
-    
   contains
 
 !#######################################################################
@@ -88,10 +86,18 @@
       call initvec(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! Perform the relaxation calculation using the XSIL algorithm
+! Perform the relaxation calculation using
 !-----------------------------------------------------------------------
-      call xsil_rlx(matdim,noffd)
-      
+      select case(integrator)
+
+      case(1) ! XSIL integrator
+         call xsil_rlx(matdim,noffd)
+
+      case(2) ! Bulirsch-Stoer integator
+         call bs_rlx(matdim,noffd)
+         
+      end select
+         
 !-----------------------------------------------------------------------
 ! Exit here if not all states have converged
 !-----------------------------------------------------------------------
@@ -192,7 +198,7 @@
            krydim
 
 !-----------------------------------------------------------------------
-! Perform the relaxation calculations using the SIL-Liu algorithm
+! Perform the relaxation calculations using the XSIL integrator
 !-----------------------------------------------------------------------
       ! Loop over states
       do s=1,nstates
@@ -297,6 +303,56 @@
       
     end subroutine xsil_rlx
 
+!#######################################################################
+
+    subroutine bs_rlx(matdim,noffd)
+
+      implicit none
+
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: s
+      real(d)               :: inttime,stepsize,intperiod
+      
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: Bulirsch-Stoer'
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      intperiod=step
+      
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the Bulirsch-Stoer
+! integrator
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+
+         ! Perform the imaginary time propagation
+         inttime=0.0d0
+100      continue
+         
+         ! Update the required stepsize
+         stepsize=intperiod-inttime
+
+         ! dtpsi = -H|Psi>
+         !call matxvec(matdim,noffdiag,psi,dtpsi)
+         
+      enddo
+         
+      stop
+      
+      
+      return
+      
+    end subroutine bs_rlx
+    
 !#######################################################################
 
     subroutine initialise(matdim)
@@ -729,7 +785,7 @@
       allocate(work(3*subdim))
 
 !-----------------------------------------------------------------------
-! Set the full space-to-subsace mappings
+! Set the full space-to-subspace mappings
 !-----------------------------------------------------------------------
       full2sub=0
       do i=1,subdim
@@ -753,8 +809,6 @@
       !
       ! Open the off-diagonal element file
       call freeunit(iham)
-
-
       if (hamflag.eq.'i') then
          filename='SCRATCH/hmlt.offi'
       else if (hamflag.eq.'f') then
@@ -762,8 +816,6 @@
       endif
       open(iham,file=filename,status='old',access='sequential',&
            form='unformatted')
-
-
 
       ! Allocate arrays
       allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))

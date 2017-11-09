@@ -119,6 +119,9 @@
       
       ! Final space
       lnoise_f=.false.
+
+      ! Integrator
+      integrator=1
       
 !-----------------------------------------------------------------------
 ! Lanczos parameters

@@ -52,7 +52,7 @@
 ! *   Noffd:     No. non-zero off-diagonal Hamiltonian matrix          *
 ! *              elements. This shouldn't really be here, but this     *
 ! *              number has to be passed to the matrix-vector          *
-! *              multiplication routine.
+! *              multiplication routine.                               *
 ! *   IntPeriod: Length of time interval to be integrated.             *
 ! *   IntOrder:  Maximum integration order.                            *
 ! *   TolError:  Maximum error that is tolerated.                      *
