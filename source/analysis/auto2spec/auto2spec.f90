@@ -5,6 +5,7 @@ module auto2specmod
   save
 
   integer                               :: maxtp,iauto,epoints
+  integer                               :: padesolver
   real(d)                               :: dt,t0,emin,emax,tau,sigma,&
                                            dele,a0,b0,tcutoff
   real(d), dimension(:,:), allocatable  :: sp
@@ -78,6 +79,9 @@ contains
     ! Pade approximant of the Fourier transform
     lpade=.false.
 
+    ! Method for calculating the Pade approximant coefficients
+    padesolver=1
+    
     ! Timestep cutofff (in fs)
     tcutoff=1e+10_d
 
@@ -125,7 +129,17 @@ contains
     else if (string1.eq.'-pade') then
        ! Pade approximant of the Fourier transform
        lpade=.true.
-
+       ! Calculation of the Pade approximant coefficients using
+       ! matrix inversion
+       padesolver=1
+       
+    else if (string1.eq.'-pade_lu') then
+       ! Pade approximant of the Fourier transform
+       lpade=.true.
+       ! Calculation of the Pade approximant coefficients using
+       ! LU factorisation
+       padesolver=2
+       
     else if (string1.eq.'-tcut') then
        ! Time cutoff
        i=i+1
@@ -322,7 +336,7 @@ contains
 
     integer                                 :: k,m,n
     complex(d), dimension(:), allocatable   :: cvec,dvec
-    complex(d), dimension(:,:), allocatable :: gmat,invgmat
+    complex(d), dimension(:,:), allocatable :: gmat
 
 !----------------------------------------------------------------------
 ! Allocate and initialisae arrays
@@ -339,9 +353,7 @@ contains
     dvec=0.0d0
     allocate(gmat(n,n))
     gmat=0.0d0
-    allocate(invgmat(n,n))
-    invgmat=0.0d0
-
+    
 !----------------------------------------------------------------------
 ! c-coefficients
 !----------------------------------------------------------------------
@@ -368,15 +380,12 @@ contains
     enddo
 
 !----------------------------------------------------------------------
-! Calculate the b-coefficients: b = G^-1 . d
+! Calculate the b-coefficients by colving the system of linear
+! equations G.b = d
 ! N.B., we use the usual convention for diagonal Pade approximant
 ! schemes and set b0=1
 !----------------------------------------------------------------------
-    call pseudoinverse_cmplx(gmat,invgmat,n)
-
-    bvec(0)=cone
-
-    bvec(1:n)=matmul(invgmat,dvec)
+    call calc_bcoeff(gmat,dvec,n)
 
 !----------------------------------------------------------------------
 ! Calculate the a-coefficients
@@ -392,11 +401,131 @@ contains
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
-    deallocate(cvec,dvec,gmat,invgmat)
+    deallocate(cvec,dvec,gmat)
     
     return
     
   end subroutine pade_coeff
+
+!######################################################################
+
+  subroutine calc_bcoeff(gmat,dvec,n)
+
+    use constants
+    
+    implicit none
+
+    integer                                 :: n
+    complex(d), dimension(n,n)              :: gmat
+    complex(d), dimension(n)                :: dvec
+    complex(d), dimension(:,:), allocatable :: invgmat
+
+    select case(padesolver)
+
+    case(1) ! Solution of G b = d via the inversion of G
+       call calc_bcoeff_inv(gmat,dvec,n)
+       
+    case(2) ! Solution of G b = d using the LU factorisation of G
+       call calc_bcoeff_lu(gmat,dvec,n)
+
+    end select
+    
+    return
+
+  end subroutine calc_bcoeff
+
+!######################################################################
+
+  subroutine calc_bcoeff_inv(gmat,dvec,n)
+
+    use constants
+    
+    implicit none
+
+    integer                                 :: n
+    complex(d), dimension(n,n)              :: gmat
+    complex(d), dimension(n)                :: dvec
+    complex(d), dimension(:,:), allocatable :: invgmat
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(invgmat(n,n))
+    invgmat=0.0d0
+
+!----------------------------------------------------------------------
+! Calculate the pseudoinverse of G
+!----------------------------------------------------------------------
+    call pseudoinverse_cmplx(gmat,invgmat,n)
+
+!----------------------------------------------------------------------
+! Calculate the b-coefficients
+!----------------------------------------------------------------------
+    bvec(0)=cone
+
+    bvec(1:n)=matmul(invgmat,dvec)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(invgmat)
+    
+    return
+    
+  end subroutine calc_bcoeff_inv
+
+!######################################################################
+
+   subroutine calc_bcoeff_lu(gmat,dvec,n)
+
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer                            :: n,info
+    integer, dimension(:), allocatable :: ipiv
+    complex(d), dimension(n,n)         :: gmat
+    complex(d), dimension(n)           :: dvec
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(ipiv(n))
+    
+!----------------------------------------------------------------------
+! LU factorisation of G
+!----------------------------------------------------------------------
+    call zgetrf(n,n,gmat,n,ipiv,info)
+
+    if (info.ne.0) then
+       write(6,'(/,2x,a,/)') 'LU decomposition of the G-matrix &
+            failed in subroutine calc_bcoeff_lu'
+       stop
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the b-coefficients
+!----------------------------------------------------------------------
+    bvec(0)=cone
+
+    bvec(1:n)=dvec(1:n)
+    call zgetrs('N',n,1,gmat,n,ipiv,bvec(1:n),n,info)
+
+    if (info.ne.0) then
+       write(6,'(/,2x,a,/)') 'Failed call to zgetrs in subroutine &
+            subroutine calc_bcoeff_lu'
+       stop
+    endif
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(ipiv)
+    
+    return
+    
+  end subroutine calc_bcoeff_lu
     
 !######################################################################
 
@@ -424,9 +553,9 @@ contains
     if (info.ne.0) then
        write(6,'(/,2x,a)') &
             'SVD failure in subroutine pseudoinverse_cmplx'
-       STOP
+       stop
     endif
-    
+
 !-----------------------------------------------------------------------
 ! Pseudo-inverse
 !-----------------------------------------------------------------------
