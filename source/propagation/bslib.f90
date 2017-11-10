@@ -57,7 +57,7 @@ contains
 ! *   Psi:             The (complex) initial-value vector.             *
 ! *   DtPsi:           Time derivative of the initial-value vector.    *
 ! *   PsiDim           Length of Psi and DtPsi vectors.                *
-! *   Noffd:           No. non-zero off-diagonal Hamiltonian matrix    *
+! *   NOffD:           No. non-zero off-diagonal Hamiltonian matrix    *
 ! *                    elements. This shouldn't really be here, but    *
 ! *                    this number has to be passed to the             *
 ! *                    matrix-vector multiplication routine.           *
@@ -68,6 +68,11 @@ contains
 ! *                    be equal to IntPeriod if no better value is     *
 ! *                    known).                                         *
 ! *   TolError:        Maximum error that is tolerated.                *
+! *   Relaxation:      Logical flag. True if a relaxation calculation  *
+! *                    is being performed, in which case, the result   *
+! *                    of Func is multiplied by -i to convert from the *
+! *                    real time derivative to the negative imaginary  *
+! *                    time derivative.                                *
 ! *                                                                    *
 ! * Output parameters:                                                 *
 ! *   Psi:             Solution of the ODE at time                     *
@@ -94,7 +99,7 @@ contains
 ! * External routines:                                                 *
 ! *   Func:            Computes the time derivative DtPsi of Psi at    *
 ! *                    time AbsTime. Called as                         *
-! *                    Func(AbsTime,Psi,DtPsi)                        .*
+! *                    Func(AbsTime,Psi,DtPsi).                        *
 ! *   CalcError:       Determines the error of the current integration *
 ! *                    step. Called as                                 *
 ! *                    CalcError(Psi,Delta_Psi,PsiDim,Error)           *
@@ -110,10 +115,10 @@ contains
 ! *                                                                    *
 ! **********************************************************************
 
-  Subroutine BSStep (Psi,DtPsi,PsiDim,NoffD,IntPeriod,AbsTime,&
+  Subroutine BSStep (Psi,DtPsi,PsiDim,NOffD,IntPeriod,AbsTime,&
                      IntOrder,LargeStep,TolError,ActualLargeStep,&
                      NextLargeStep,SmallSteps,ErrorCode,AuxPsi,&
-                     Func,CalcError,Extrapol)
+                     Func,CalcError,Extrapol,Relaxation)
 
 !    use wrintegrat, only: writestep
 
@@ -126,20 +131,21 @@ contains
 
     Integer, Parameter   :: MaxOrder = 16
 
-    Integer, intent(out)                                   :: SmallSteps, &
-                                                              ErrorCode
-    Integer, intent(in)                                    :: PsiDim
-    Integer*8, intent(in)                                  :: Noffd
-    Integer, intent(inout)                                 :: IntOrder
-    Real(dop), intent(in)                                  :: IntPeriod,&
-                                                              AbsTime, &
-                                                              TolError,&
-                                                              LargeStep
-    Real(dop), intent(out)                                 :: ActualLargeStep,&
-                                                              NextLargeStep
-    Complex(dop), dimension(PsiDim), intent(inout)         :: Psi,DtPsi
-    Complex(dop), dimension(PsiDim,IntOrder+2), intent(out):: AuxPsi
-    External                                               :: Func,CalcError,Extrapol
+    Integer, intent(out)                                    :: SmallSteps, &
+                                                               ErrorCode
+    Integer, intent(in)                                     :: PsiDim
+    Integer*8, intent(in)                                   :: NOffd
+    Integer, intent(inout)                                  :: IntOrder
+    Real(dop), intent(in)                                   :: IntPeriod,&
+                                                               AbsTime, &
+                                                               TolError,&
+                                                               LargeStep
+    Real(dop), intent(out)                                  :: ActualLargeStep,&
+                                                               NextLargeStep
+    Complex(dop), dimension(PsiDim), intent(inout)          :: Psi,DtPsi
+    Complex(dop), dimension(PsiDim,IntOrder+2), intent(out) :: AuxPsi
+    Logical, intent(in)                                     :: Relaxation
+    External                                                :: Func,CalcError,Extrapol
 
     Logical(kind=4)                               :: StepIsReduced
     Integer                                       :: D,P,P1,P2
@@ -252,8 +258,8 @@ contains
 !    --- INTEGRATE WITH MODIFIED MIDPOINT METHOD ---
 
        Call ModMidpoint(AuxPsi(1,1),Psi,DtPsi,AuxPsi(1,3),AuxPsi(1,2),&
-                        PsiDim,ActualLargeStep,AbsTime,&
-                        NumberOfSteps(P),Func)
+                        PsiDim,NOffD,ActualLargeStep,AbsTime,&
+                        NumberOfSteps(P),Func,Relaxation)
 
 !    --- EXTRAPOLATE TO ZERO STEP SIZE ---
        
@@ -373,6 +379,11 @@ contains
 ! *   LargeStepSize: Time interval to be integrated.                   *
 ! *   InitialTime:   Absolute time, i. e. SavedPsi=Psi(InitialTime).   *
 ! *   NumberOfSteps: Number of integration steps to be made.           *
+! *   Relaxation:    Logical flag. True if a relaxation calculation    *
+! *                  is being performed, in which case, the result     *
+! *                  of Func is multiplied by -i to convert from the   *
+! *                  real time derivative to the negative imaginary    *
+! *                  time derivative.                                  *
 ! *                                                                    *
 ! * Output parameters:                                                 *
 ! *   EstimatedPsi:  Solution of the ODE at time                       *
@@ -391,22 +402,24 @@ contains
 ! **********************************************************************
 
   Subroutine ModMidpoint (SavedPsi,EstimatedPsi,DtPsi,Psi1,Psi2,&
-                          PsiDim,LargeStepSize,InitialTime,&
-                          NumberOfSteps,Func)
+                          PsiDim,NOffD,LargeStepSize,InitialTime,&
+                          NumberOfSteps,Func,Relaxation)
 
     Implicit None
 
     Integer, intent(in)                          :: PsiDim,NumberOfSteps
+    Integer*8, intent(in)                        :: NOffD
     Real(dop), intent(in)                        :: LargeStepSize,InitialTime
     Complex(dop), dimension(PsiDim), intent(in)  :: SavedPsi,DtPsi
     Complex(dop), dimension(PsiDim), intent(out) :: EstimatedPsi,Psi2,Psi1
+    Logical, intent(in)                          :: relaxation
+
+    External                :: Func
+    Integer                 :: D,P
+    Real(dop)               :: StepSize,DoubleStepSize,CurrentTime
+    Complex(dop)            :: Swap
+    Complex(dop), parameter :: ci=(0._dop,1._dop)
     
-
-    External            :: Func
-    Integer             :: D,P
-    Real(dop)           :: StepSize,DoubleStepSize,CurrentTime
-    Complex(dop)        :: Swap
-
 ! --- INITIALIZE VARIABLES ---
 
     StepSize = LargeStepSize/NumberOfSteps
@@ -422,8 +435,9 @@ contains
          
 ! --- EVALUATE FUNCTION WITH ESTIMATED PSI ---
 
-    Call Func(CurrentTime,Psi2,EstimatedPsi)
-
+    Call Func(CurrentTime,PsiDim,NOffD,Psi2,EstimatedPsi)
+    if (Relaxation) EstimatedPsi=-ci*EstimatedPsi
+    
 ! --- LOOP OVER NUMBER OF INTEGRATION STEPS ---
 
     Do P = 2,NumberOfSteps
@@ -439,7 +453,8 @@ contains
 
 !    --- EVALUATE FUNCTION WITH ESTIMATED PSI ---
 
-       Call Func(CurrentTime,Psi2,EstimatedPsi)
+       Call Func(CurrentTime,PsiDim,NOffD,Psi2,EstimatedPsi)
+       if (Relaxation) EstimatedPsi=-ci*EstimatedPsi
     EndDo
 
 ! --- TAKE MEAN VALUE FROM LAST AND NEXT ESTIMATE ---

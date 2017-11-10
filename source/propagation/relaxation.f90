@@ -15,7 +15,7 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,&
-                                            subdim,nmult
+                                            subdim
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
@@ -119,7 +119,7 @@
 !-----------------------------------------------------------------------    
 ! Output timings and the no. matrix-vector multiplications
 !-----------------------------------------------------------------------    
-      write(ilog,'(/,a,1x,i4)') 'No. matrix-vector multiplications:',&
+      write(ilog,'(/,a,1x,i5)') 'No. matrix-vector multiplications:',&
            nmult
 
       call times(tw2,tc2)
@@ -307,12 +307,25 @@
 
     subroutine bs_rlx(matdim,noffd)
 
+      use tdsemod
+      use bslib
+      
       implicit none
 
-      integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
-      integer               :: s
-      real(d)               :: inttime,stepsize,intperiod
+      integer, intent(in)     :: matdim
+      integer*8, intent(in)   :: noffd
+      integer                 :: s,i,j
+      real(d)                 :: energy,residual
+      complex(d), allocatable :: psi(:),dtpsi(:)
+
+      ! BS variables
+      integer                 :: smallsteps,errorcode,intorder
+      real(d)                 :: inttime,stepsize,intperiod,time,&
+                                 truestepsize,nextstep,stepguess,&
+                                 tfinal
+      real(d), parameter      :: tiny=1e-9_d
+      complex(d), allocatable :: auxpsi(:,:)
+      logical                 :: relaxation
       
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
@@ -322,7 +335,45 @@
 !-----------------------------------------------------------------------
 ! Initialisation
 !-----------------------------------------------------------------------
+      ! Integration period
       intperiod=step
+
+      ! Current time
+      time=0.0d0
+
+      ! Suggestion for the next large BS stepsize
+      nextstep=0.0d0
+
+      ! Small BS step counter
+      smallsteps=0
+
+      ! Maximum BS integration order
+      intorder=12
+
+      ! Maximum propagation time
+      tfinal=niter*step
+
+      ! This is a relaxation calculation
+      relaxation=.true.
+      
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      ! Wavepacket (complex*16)
+      allocate(psi(matdim))
+      psi=czero
+
+      ! Time-derivative of the wavepacket (complex*16)
+      allocate(dtpsi(matdim))
+      dtpsi=czero
+
+      ! Converged wavefunctions (real*8)
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+
+      ! Bulirsch-Stoer arrays (complex*16)
+      allocate(auxpsi(matdim,intorder+2))
+      auxpsi=czero
       
 !-----------------------------------------------------------------------
 ! Perform the relaxation calculations using the Bulirsch-Stoer
@@ -334,20 +385,93 @@
          ! Write the table header for the current state
          call wrheader_1vec(s)
 
-         ! Perform the imaginary time propagation
-         inttime=0.0d0
-100      continue
-         
-         ! Update the required stepsize
-         stepsize=intperiod-inttime
+         ! Wavepacket initialisation
+         do j=1,matdim
+            psi(j)=dcmplx(vec_old(j,s),0.0d0)
+         enddo
+            
+         ! Perform the imaginary time propagation for the current state
+         !
+         ! Loop over timesteps
+         do i=1,int(tfinal/intperiod)
+            
+            inttime=0.0d0
+100         continue
+            
+            ! Update the required stepsize
+            stepsize=intperiod-inttime
+            
+            ! dtpsi = -H|Psi>
+            call matxvec_treal(time,matdim,noffd,psi,dtpsi)
+            dtpsi=-ci*dtpsi
 
-         ! dtpsi = -H|Psi>
-         !call matxvec(matdim,noffdiag,psi,dtpsi)
+            ! Take one step using the Bulirsch-Stoer integrator
+            call bsstep(psi,dtpsi,matdim,noffd,intperiod,time,&
+                 intorder,stepsize,toler,truestepsize,&
+                 nextstep,smallsteps,errorcode,auxpsi,&
+                 matxvec_treal,absbserror,polyextrapol,relaxation)
+
+            ! Exit if the Bulirsch-Stoer integration step failed
+            if (errorcode.ne.0) then
+               call bserrormsg(errorcode,errmsg)
+               errmsg='Failure in the Bulirsch-Stoer integrator: '&
+                    //trim(errmsg)
+               call error_control
+            endif
+              
+            ! Update the propagation time
+            time=time+truestepsize
+            
+            ! Check whether the integration is complete
+            inttime=inttime+truestepsize
+            if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+            ! Orthogonalise against the previously converged states and
+            ! renormalise
+            do j=1,s-1
+               psi=psi-dot_product(psi,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            psi=psi/sqrt(dot_product(psi,psi))
+            
+            ! Calculate the residual
+            call residual_1vec(real(psi),matdim,noffd,energy,residual)
+            
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(i,energy,residual)
+            
+            ! Exit if convergence has been reached
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state and energy
+               vec_conv(:,s)=real(psi(:))
+               vec_new(:,s)=real(psi(:))
+               ener(s)=energy
+               ! Output some things
+               write(ilog,'(/,2x,a,/)') 'Converged'
+               ! Terminate the relaxation for the current state
+               exit
+            endif
+            
+         enddo
+
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
          
       enddo
-         
-      stop
-      
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(psi)
+      deallocate(dtpsi)      
+      deallocate(vec_conv)
+      deallocate(auxpsi)
       
       return
       
@@ -357,6 +481,8 @@
 
     subroutine initialise(matdim)
 
+      use tdsemod
+      
       implicit none
 
       integer, intent(in) :: matdim
@@ -388,6 +514,10 @@
          subdim=guessdim_f
       endif
 
+      ! Number of matrix-vector multiplications: common to both
+      ! initial and final space calculations
+      nmult=0
+      
 !-----------------------------------------------------------------------
 ! Files holding the non-zero elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
@@ -974,7 +1104,7 @@
       ! alpha_1
       call matxvec(matdim,noffd,q,r)
       r=-r
-      nmult=nmult+1
+      !nmult=nmult+1
       
       alpha(1)=dot_product(q,r)
       
@@ -997,7 +1127,7 @@
 
          call matxvec(matdim,noffd,q,r)
          r=-r
-         nmult=nmult+1
+         !nmult=nmult+1
 
          r=r-beta(j1-1)*v
          alpha(j1)=dot_product(q,r)
@@ -1384,13 +1514,26 @@
 
       integer :: s,i
 
-      write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(a,i3)') 'State',s
-      write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(2(a,8x),a,10x,a)') 'Iteration','Energy',&
-           'Residual','Subdim'
-      write(ilog,'(64a)') ('=',i=1,64)
-      
+      select case(integrator)
+
+      case(1) ! XSIL integrator
+         write(ilog,'(64a)') ('=',i=1,64)
+         write(ilog,'(a,i3)') 'State',s
+         write(ilog,'(64a)') ('=',i=1,64)
+         write(ilog,'(2(a,8x),a,10x,a)') 'Iteration','Energy',&
+              'Residual','Subdim'
+         write(ilog,'(64a)') ('=',i=1,64)
+         
+      case(2) ! Bulirsch-Stoer integator
+         write(ilog,'(44a)') ('=',i=1,44)
+         write(ilog,'(a,i3)') 'State',s
+         write(ilog,'(44a)') ('=',i=1,44)
+         write(ilog,'(2(a,8x),a)') 'Iteration','Energy',&
+              'Residual'
+         write(ilog,'(44a)') ('=',i=1,44)
+         
+      end select
+         
       return
       
     end subroutine wrheader_1vec
@@ -1403,10 +1546,19 @@
 
       integer :: n
       real(d) :: energy,residual
-
-      write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
-           residual,nlin
       
+      select case(integrator)
+         
+      case(1) ! XSIL integrator
+         write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
+              residual,nlin
+         
+      case(2) ! Bulirsch-Stoer integator
+         write(ilog,'(i3,11x,F12.7,5x,E13.7)') n,energy*eh2ev,&
+              residual
+            
+      end select
+         
       return
 
     end subroutine wrtable_1vec

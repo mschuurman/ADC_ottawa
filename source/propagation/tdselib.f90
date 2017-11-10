@@ -9,7 +9,7 @@ module tdsemod
   
   save
 
-  integer                            :: mxbl,nrecord
+  integer                            :: mxbl,nrecord,nmult
   integer, dimension(:), allocatable :: iindx,jindx
   real(d), dimension(:), allocatable :: hon,hoff
   logical                            :: hincore
@@ -126,6 +126,9 @@ contains
     else
        call matxvec_ext(matdim,noffdiag,v1,v2)
     endif
+
+    ! Update nmult
+    nmult=nmult+1
     
     return
     
@@ -333,7 +336,10 @@ contains
     else
        call matxvec_treal_ext(matdim,noffdiag,v1,v2)
     endif
-       
+
+    ! Update nmult
+    nmult=nmult+1
+    
     return
 
   end subroutine matxvec_treal
