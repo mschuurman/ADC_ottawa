@@ -348,14 +348,14 @@
       smallsteps=0
 
       ! Maximum BS integration order
-      intorder=12
+      intorder=16
 
       ! Maximum propagation time
       tfinal=niter*step
 
       ! This is a relaxation calculation
       relaxation=.true.
-      
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -382,14 +382,18 @@
       ! Loop over states
       do s=1,nstates
 
-         ! Write the table header for the current state
-         call wrheader_1vec(s)
-
          ! Wavepacket initialisation
          do j=1,matdim
             psi(j)=dcmplx(vec_old(j,s),0.0d0)
          enddo
-            
+         
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+         
+         ! Output the initial energy and residual
+         call residual_1vec(real(psi),matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+                  
          ! Perform the imaginary time propagation for the current state
          !
          ! Loop over timesteps
@@ -399,7 +403,13 @@
 100         continue
             
             ! Update the required stepsize
-            stepsize=intperiod-inttime
+            if (inttime.eq.0.0d0) then
+               stepsize=intperiod
+            else if (inttime+nextstep.gt.intperiod) then
+               stepsize=intperiod-inttime
+            else
+               stepsize=nextstep
+            endif
             
             ! dtpsi = -H|Psi>
             call matxvec_treal(time,matdim,noffd,psi,dtpsi)
@@ -418,10 +428,10 @@
                     //trim(errmsg)
                call error_control
             endif
-              
+            
             ! Update the propagation time
             time=time+truestepsize
-            
+
             ! Check whether the integration is complete
             inttime=inttime+truestepsize
             if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
