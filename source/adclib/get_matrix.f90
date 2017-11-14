@@ -643,7 +643,7 @@ contains
 
 
 !-----------------------------------------------------------------------
-! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+! Precompute the results of calls to Ca1_ph_ph and Cb1_ph_ph
 !-----------------------------------------------------------------------
     call times(tw1,tc1)
 

@@ -231,7 +231,7 @@
 ! Write the initial space ADC(2) Hamiltonian to disk
 !-----------------------------------------------------------------------
       if (method.eq.2) then
-         write(ilog,*) 'Calculating the initial space ADC(2)-s Hamiltonian &
+         write(ilog,*) 'Calculating the initial space ADC(2)-s &
               matrix-vector multiplication'
       else
          write(ilog,*) 'Only available for ADC(2)-s'
@@ -307,8 +307,8 @@
       write(ilog,*) 'FINAL SPACE ADC2 calculation'
 
       if (method.eq.2) then
-         write(ilog,*) 'Calculating the final space ADC(2)-s Hamiltonian &
-              matrix'
+         write(ilog,*) 'Calculating the final space ADC(2)-s &
+              matrix-vector product'
       else
          write(ilog,*) 'Only available for ADC(2)-s'
          stop

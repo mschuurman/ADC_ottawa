@@ -303,7 +303,7 @@ contains
   end function Cc2_ph_ph
 
 !!#######################################################################
-!
+! IS
 !!!$ a'|=b' and k'|=l'; spin case 1
 !
 !  function C11_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)

@@ -70,7 +70,7 @@
         call set_dpl
 
 !-----------------------------------------------------------------------
-! Diagonalisation in the initial space
+! Diagonalisation in the initial space - IS
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) &
              call init_space_diag(time,kpq,ndim,ndims,noffd)
