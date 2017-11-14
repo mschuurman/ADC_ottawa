@@ -925,6 +925,7 @@
       use adc_ph
       use misc
       use filetools
+!      use omp_lib
 
       implicit none
 
@@ -961,7 +962,7 @@
 !      allocate(hii(matdim))
 
       hii=0.0d0
-      !$omp parallel do private(m,n,inda,indb,indj,indk,spin) shared(wmat,vmat,kpq)
+      !$omp parallel do private(m,inda,indb,indj,indk,spin) shared(hii,kpq)
 !      do n=1,currdim
          do m=1,ndim1
             call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
@@ -975,7 +976,7 @@
 !      enddo
       !$omp end parallel do
 
-      !$omp parallel do private(m,n,inda,indb,indj,indk,spin) shared(kpq,wmat,vmat)
+      !$omp parallel do private(m,inda,indb,indj,indk,spin) shared(hii,kpq)
 !      do n=1,currdim
          do m=ndim1+1,matdim
             call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
