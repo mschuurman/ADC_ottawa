@@ -9,6 +9,18 @@ module filetools
 contains
 
 !!$---------------------------------------------------
+  subroutine wrtinterm(untnr,ndim,maxbl,diag)
+
+    integer, intent(in) :: untnr,maxbl,ndim
+    real(d), dimension(ndim,ndim), intent(in) :: diag
+
+    integer :: j
+
+    write(untnr) ndim
+    write(untnr) ndim,maxbl,diag(:,:)
+
+  end subroutine wrtinterm
+!!$---------------------------------------------------
   subroutine wrtdg(untnr,ndim,maxbl,nbuf,type,diag)
   
     integer, intent(in) :: untnr,maxbl,ndim,nbuf,type
