@@ -122,6 +122,7 @@
 
       ! Integrator
       integrator=1
+      integrator_f=1
       
 !-----------------------------------------------------------------------
 ! Lanczos parameters

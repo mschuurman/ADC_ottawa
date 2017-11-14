@@ -15,7 +15,7 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,&
-                                            subdim
+                                            subdim,algorithm
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
@@ -86,15 +86,18 @@
       call initvec(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! Perform the relaxation calculation using
+! Perform the relaxation calculation
 !-----------------------------------------------------------------------
-      select case(integrator)
+      select case(algorithm)
 
       case(1) ! XSIL integrator
          call xsil_rlx(matdim,noffd)
 
       case(2) ! Bulirsch-Stoer integator
          call bs_rlx(matdim,noffd)
+
+      case(3) ! 4th/5th-order Runge-Kutta-Fehlberg integrator
+         call rkf45_rlx(matdim,noffd)
          
       end select
          
@@ -130,7 +133,9 @@
     end subroutine relaxation
 
 !#######################################################################
-
+! Relaxation using the XSIL algorithm
+!#######################################################################
+    
     subroutine xsil_rlx(matdim,noffd)
 
       implicit none
@@ -304,7 +309,9 @@
     end subroutine xsil_rlx
 
 !#######################################################################
-
+! Relaxation using the Bulirsch-Stoer algorithm
+!#######################################################################
+    
     subroutine bs_rlx(matdim,noffd)
 
       use tdsemod
@@ -391,7 +398,7 @@
          call wrheader_1vec(s)
          
          ! Output the initial energy and residual
-         call residual_1vec(real(psi),matdim,noffd,energy,residual)
+         call residual_1vec(real(psi,8),matdim,noffd,energy,residual)
          call wrtable_1vec(0,energy,residual)
                   
          ! Perform the imaginary time propagation for the current state
@@ -444,7 +451,7 @@
             psi=psi/sqrt(dot_product(psi,psi))
             
             ! Calculate the residual
-            call residual_1vec(real(psi),matdim,noffd,energy,residual)
+            call residual_1vec(real(psi,8),matdim,noffd,energy,residual)
             
             ! Output the residual and energy for the current iteration
             call wrtable_1vec(i,energy,residual)
@@ -454,8 +461,8 @@
                ! Update the number of converged states
                nconv=nconv+1
                ! Save the converged state and energy
-               vec_conv(:,s)=real(psi(:))
-               vec_new(:,s)=real(psi(:))
+               vec_conv(:,s)=real(psi(:),8)
+               vec_new(:,s)=real(psi(:),8)
                ener(s)=energy
                ! Output some things
                write(ilog,'(/,2x,a,/)') 'Converged'
@@ -486,7 +493,133 @@
       return
       
     end subroutine bs_rlx
+
+!#######################################################################
+! Relaxation using the 4th/5th-order Runge-Kutta-Fehlberg algorithm
+!#######################################################################
     
+    subroutine rkf45_rlx(matdim,noffd)
+
+      use tdsemod
+      use rkf45rlxlib
+      
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: s,i,j
+      real(d)               :: energy,residual
+      real(d), allocatable  :: psi(:),dtpsi(:)
+
+      ! RKF45 variables
+      integer               :: errorcode
+      real(d)               :: time,tout
+      
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: 4th/5th-order &
+           Runge-Kutta-Fehlberg'
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      ! Wavepacket
+      allocate(psi(matdim))
+      psi=czero
+
+      ! Time-derivative of the wavepacket
+      allocate(dtpsi(matdim))
+      dtpsi=czero
+
+      ! Converged wavefunctions
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the RKF45 integrator
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! Wavepacket initialisation
+         psi=vec_old(:,s)
+
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+         
+         ! Output the initial energy and residual
+         call residual_1vec(psi,matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+
+         ! Initialisation of RKF45 variables
+         time=0.0d0
+         errorcode=1
+         
+         ! Perform the imaginary time propagation for the current state
+         !
+         ! Loop over timesteps
+         do i=1,maxiter
+
+            ! Take one step using the RKF45 integrator
+            call r8_rkf45(matxvec,matdim,noffd,psi,dtpsi,time,i*step,&
+                 toler,toler,errorcode)
+
+            ! Exit if the integration failed
+            if (errorcode.ne.2) then
+               errmsg='Error in the RKF45 integrator. Error code: '
+               write(errmsg(44:44),'(i1)') errorcode
+               call error_control
+            endif
+
+            ! Orthogonalise against the previously converged states and
+            ! renormalise
+            do j=1,s-1
+               psi=psi-dot_product(psi,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            psi=psi/sqrt(dot_product(psi,psi))
+
+            ! Calculate the residual
+            call residual_1vec(psi,matdim,noffd,energy,residual)
+            
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(i,energy,residual)
+
+            ! Exit if convergence has been reached
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state and energy
+               vec_conv(:,s)=psi(:)
+               vec_new(:,s)=psi(:)
+               ener(s)=energy
+               ! Output some things
+               write(ilog,'(/,2x,a,/)') 'Converged'
+               ! Terminate the relaxation for the current state
+               exit
+            endif
+            
+         enddo
+
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
+         
+      enddo
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(psi)
+      deallocate(dtpsi)
+      deallocate(vec_conv)
+      
+      return
+      
+    end subroutine rkf45_rlx
+      
 !#######################################################################
 
     subroutine initialise(matdim)
@@ -511,6 +644,7 @@
          toler=siltol
          maxdim=maxsubdim
          subdim=guessdim
+         algorithm=integrator
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -522,6 +656,7 @@
          toler=siltol_f
          maxdim=maxsubdim
          subdim=guessdim_f
+         algorithm=integrator_f
       endif
 
       ! Number of matrix-vector multiplications: common to both
@@ -1524,7 +1659,7 @@
 
       integer :: s,i
 
-      select case(integrator)
+      select case(algorithm)
 
       case(1) ! XSIL integrator
          write(ilog,'(64a)') ('=',i=1,64)
@@ -1534,7 +1669,7 @@
               'Residual','Subdim'
          write(ilog,'(64a)') ('=',i=1,64)
          
-      case(2) ! Bulirsch-Stoer integator
+      case(2:3) ! Bulirsch-Stoer and RKF45 integators
          write(ilog,'(44a)') ('=',i=1,44)
          write(ilog,'(a,i3)') 'State',s
          write(ilog,'(44a)') ('=',i=1,44)
@@ -1557,13 +1692,13 @@
       integer :: n
       real(d) :: energy,residual
       
-      select case(integrator)
+      select case(algorithm)
          
       case(1) ! XSIL integrator
          write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
               residual,nlin
          
-      case(2) ! Bulirsch-Stoer integator
+      case(2:3) ! Bulirsch-Stoer and RKF45 integators
          write(ilog,'(i3,11x,F12.7,5x,E13.7)') n,energy*eh2ev,&
               residual
             

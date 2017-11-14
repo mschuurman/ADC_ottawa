@@ -995,6 +995,8 @@
                         integrator=1
                      else if (keyword(i).eq.'bs') then
                         integrator=2
+                     else if (keyword(i).eq.'rkf45') then
+                        integrator=3
                      else
                         errmsg='Unknown keyword: '//trim(keyword(i))
                         call error_control
@@ -1198,6 +1200,19 @@
                   solver_f=1
                else if (keyword(i).eq.'relaxation') then
                   solver_f=2
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     if (keyword(i).eq.'xsil') then
+                        integrator=1
+                     else if (keyword(i).eq.'bs') then
+                        integrator=2
+                     else if (keyword(i).eq.'rkf45') then
+                        integrator=3
+                     else
+                        errmsg='Unknown keyword: '//trim(keyword(i))
+                        call error_control
+                     endif
+                  endif
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control

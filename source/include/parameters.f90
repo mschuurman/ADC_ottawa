@@ -209,7 +209,7 @@ module parameters
 !!$**********Relaxation Parameters*****************
 !!$************************************************
   integer :: kdim,kdim_f,guessdim,guessdim_f
-  integer :: integrator
+  integer :: integrator,integrator_f
   real(d) :: stepsize,stepsize_f,siltol,siltol_f
 
 
