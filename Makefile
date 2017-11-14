@@ -14,6 +14,7 @@
 F90	= gfortran
 F77	= gfortran
 CC	= gcc
+#F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fcheck=bounds -fcheck=all -fopenmp -O3 -fbacktrace
 F90OPTS = -cpp -g -ffixed-line-length-none -ffree-line-length-none -fopenmp -O3 -fbacktrace
 CCOPTS  = -g -O0
 
@@ -78,9 +79,8 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-EIGEN=  source/eigen/block_davidson.o \
-	source/eigen/diagmod.o \
-	source/eigen/block_lanczos.o 
+#EIGEN1= source/eigen/diagmod.o \
+        source/eigen/block_lanczos.o
 
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
@@ -120,8 +120,14 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/density.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
-	source/adclib/target_matching.o \
-	source/adclib/adc2common.o
+	source/adclib/target_matching.o 
+#	source/adclib/adc2common.o
+
+EIGEN2= source/eigen/block_davidson.o \
+        source/eigen/diagmod.o \
+        source/eigen/block_lanczos.o
+
+ADCLIB1= source/adclib/adc2common.o
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_opa.o \
@@ -140,8 +146,9 @@ ADC =   $(INCLUDE) \
 	$(UTILITIES) \
 	$(QCLIB) \
 	$(PROPAGATION) \
-	$(EIGEN) \
 	$(ADCLIB) \
+        $(EIGEN2) \
+        $(ADCLIB1) \
 	$(CAP) \
 	$(ADC_MAIN)
 

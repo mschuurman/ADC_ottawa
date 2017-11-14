@@ -52,7 +52,413 @@ contains
     
   end function C1_ph_ph
 
+!!#######################################################################
+!
+!!!$First order contribution C_ak,a'k'
+!
+!  real(d) function C1a_ph_ph(a,k)
+!
+!    implicit none
+!
+!!    integer, intent(in) :: a,k,a1,k1,i,c,r,s,nsym1,nsym2
+!    integer :: a,k,a1,k1,i,c,r,s,nsym1,nsym2
+!    real(d)             :: term
+!
+!    C1a_ph_ph=0._d
+!    do c=nOcc+1,nBas
+!       r=roccnum(c)
+!       do i=1,nOcc
+!          s=roccnum(i)
+!
+!          nsym1=MT(orbSym(r),orbSym(s))
+!          nsym2=MT(orbSym(k),orbSym(a))
+!
+!          if(MT(nsym1,nsym2) .eq. 1) then
+!
+!             term=0._d
+!
+!             term=term+2.0d0*vpqrs(a,k,r,s)-vpqrs(s,k,r,a)
+!
+!
+!             C1a_ph_ph=C1a_ph_ph+term
+!
+!          end if
+!       end do
+!    end do
+!
+!    return
+!
+!  end function C1a_ph_ph
+!
+!!#######################################################################
+
+!!$Second order contribution CA_ak,a'k'. The condition that k=k' is
+!!$checked in the calling procedure.
+
+  real(d) function Ca1_ph_ph(a,a1)
+
+    integer, intent(in) :: a,a1
+
+    integer :: c,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
+    real(d) :: DA,eija,eijc,term
+
+    Ca1_ph_ph=0._d
+    cnt=0
+    do c=nOcc+1,nBas
+       r=roccnum(c)
+       do i=1,nOcc
+          u=roccnum(i)
+          do j=1,nOcc
+             v=roccnum(j)
+
+             nsym1=MT(orbSym(u),orbSym(v))
+             nsym2=MT(orbSym(a),orbSym(r))
+             nsym3=MT(orbSym(a1),orbSym(r))
+
+
+             if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
+
+                cnt=cnt+1
+                term=0._d
+
+!                eijc=e(u)+e(v)-e(r)
+!                DA=(eijc-0.5_d*(e(a)+e(a1)))/((eijc-e(a))*(eijc-e(a1)))
+                eija=e(r)+e(a)-e(u)-e(v)
+                eijc=e(r)+e(a1)-e(u)-e(v)
+                DA=1._d/((e(r)+e(a)-e(u)-e(v))*(e(r)+e(a1)-e(u)-e(v)))
+
+!                term=term+eijc*vpqrs(a1,u,r,v)*(2._d*vpqrs(v,a,u,r)-vpqrs(v,r,u,a))
+!                term=term+eija*vpqrs(a,u,r,v)*(2._d*vpqrs(v,a1,u,r)-vpqrs(v,r,u,a1))
+                term=term+eijc*vpqrs(a1,u,r,v)*(2._d*vpqrs(u,a,v,r)-vpqrs(u,r,v,a))
+                term=term+eija*vpqrs(a,v,r,u)*(2._d*vpqrs(u,r,v,a1)-vpqrs(u,a1,v,r))
+
+                term=DA*term
+
+                Ca1_ph_ph=Ca1_ph_ph+term
+
+             end if
+          end do
+       end do
+    end do
+
+    Ca1_ph_ph=0.5_d*Ca1_ph_ph
+
+  end function Ca1_ph_ph
+
 !#######################################################################
+             
+!!$Second order contribution CB_ak,a'k'. The condition that a=a' is
+!!$checked in the calling procedure.
+
+  real(d) function Cb1_ph_ph(k,k1)
+
+    integer, intent(in) :: k,k1
+    
+    integer :: c,dd,i, nsym1, nsym2, nsym3,u,r,s
+    real(d) :: DB,eicd,ejcd,term
+
+!!$    CB_ph_ph=0._d             
+  
+!!$! Faster version (taking symmetries into account)
+
+    Cb1_ph_ph=0._d   
+    do c=nOcc+1,nBas
+       r=roccnum(c)
+       do dd=nOcc+1,nBas
+          s=roccnum(dd)
+          do i=1,nOcc
+             u=roccnum(i)
+
+             nsym1=MT(orbSym(roccnum(c)),orbSym(roccnum(dd)))
+             nsym2=MT(orbSym(k),orbSym(roccnum(i)))
+             nsym3=MT(orbSym(k1),orbSym(roccnum(i)))
+             
+             if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
+            
+                term=0._d
+                
+!                eicd=e(roccnum(i))-e(roccnum(c))-e(roccnum(dd))
+!                DB=(eicd+0.5_d*(e(k)+e(k1)))/((eicd+e(k))*(eicd+e(k1)))
+
+                eicd=e(r)+e(s)-e(u)-e(k)
+                ejcd=e(r)+e(s)-e(u)-e(k1)
+                DB=1._d/((e(r)+e(s)-e(u)-e(k))*(e(r)+e(s)-e(u)-e(k1)))
+
+!                term=term+ejcd*vpqrs(k1,r,u,s)*(2._d*vpqrs(r,k,s,u)-vpqrs(s,k,r,u))
+!                term=term+eicd*vpqrs(k,r,u,s)*(2._d*vpqrs(r,k1,s,u)-vpqrs(s,k1,r,u))
+                term=term+ejcd*vpqrs(r,k1,s,u)*(2._d*vpqrs(k,r,u,s)-vpqrs(k,s,u,r))
+                term=term+eicd*vpqrs(r,u,s,k)*(2._d*vpqrs(k1,s,u,r)-vpqrs(k1,r,u,s))
+                
+                term=DB*term
+                
+                Cb1_ph_ph=Cb1_ph_ph+term
+                
+             end if
+             
+          end do
+       end do
+    end do
+    
+    Cb1_ph_ph=0.5_d*Cb1_ph_ph   
+   
+  end function Cb1_ph_ph
+
+!#######################################################################
+
+!!$Second order contribution CC_ak,a'k'.
+
+  real(d) function Cc1_ph_ph(a,k,a1,k1)
+
+    integer, intent(in) :: a,a1,k,k1
+
+    integer :: c,i, nsym1, nsym2, nsym3,r,s
+    real(d) :: DC,eic,term
+
+    real(d), dimension(nocc) :: tau
+
+    Cc1_ph_ph=0._d
+
+    do c=nOcc+1,nBas
+       r=roccnum(c)
+       do i=1,nOcc
+          s=roccnum(i)
+
+
+          nsym1=MT(orbSym(r),orbSym(s))
+          nsym2=MT(orbSym(k),orbSym(a))
+          nsym3=MT(orbSym(k1),orbSym(a1))
+
+
+          if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
+
+             term=0._d
+
+!             eic=e(s)-e(r)
+!             DC=(0.5_d*(e(k)+e(k1)-e(a)-e(a1))+eic)/((e(k)-e(a)+eic)*(e(k1)-e(a1)+eic))
+
+             DC=1._d/(e(r)+e(a)-e(s)-e(k))
+
+!             term=(2._d*vpqrs(k,a,s,r)-vpqrs(k,r,s,a))*(2._d*vpqrs(a1,k1,r,s)-vpqrs(r,k1,a1,s))
+             term=(2._d*vpqrs(a,k,r,s)-vpqrs(a,s,r,k))*(2._d*vpqrs(a1,k1,r,s)-vpqrs(a1,s,r,k1))
+             term=term*DC
+
+             Cc1_ph_ph=Cc1_ph_ph+term
+
+          end if
+
+       end do
+    end do
+
+    Cc1_ph_ph=-0.5_d*Cc1_ph_ph
+
+  end function Cc1_ph_ph
+
+!#######################################################################
+
+!!$Second order contribution CC_ak,a'k'.
+
+  real(d) function Cc2_ph_ph(a,k,a1,k1)
+
+    integer, intent(in) :: a,a1,k,k1
+
+    integer :: c,i, nsym1, nsym2, nsym3,r,s
+    real(d) :: DC,eic,term
+
+    real(d), dimension(nocc) :: tau
+
+    Cc2_ph_ph=0._d
+
+    do c=nOcc+1,nBas
+       r=roccnum(c)
+       do i=1,nOcc
+          s=roccnum(i)
+
+
+          nsym1=MT(orbSym(r),orbSym(s))
+          nsym2=MT(orbSym(k),orbSym(a))
+          nsym3=MT(orbSym(k1),orbSym(a1))
+
+
+          if((MT(nsym1,nsym2) .eq. 1) .and. (MT(nsym1,nsym3) .eq. 1)) then
+
+             term=0._d
+
+!             eic=e(s)-e(r)
+!             DC=(0.5_d*(e(k)+e(k1)-e(a)-e(a1))+eic)/((e(k)-e(a)+eic)*(e(k1)-e(a1)+eic))
+
+             DC=1._d/(e(r)+e(a1)-e(s)-e(k1))
+
+             term=(2._d*vpqrs(a,k,r,s)-vpqrs(a,s,r,k))*(2._d*vpqrs(a1,k1,r,s)-vpqrs(a1,s,r,k1))
+             term=term*DC
+
+             Cc2_ph_ph=Cc2_ph_ph+term
+
+          end if
+
+       end do
+    end do
+
+    Cc2_ph_ph=-0.5_d*Cc2_ph_ph
+
+  end function Cc2_ph_ph
+
+!!#######################################################################
+!
+!!!$ a'|=b' and k'|=l'; spin case 1
+!
+!  function C11_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+!
+!    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func-2._d*(vpqrs(kpr,k,lpr,bpr)+6._d*vpqrs(kpr,bpr,lpr,k))
+!
+!    if (a.eq.bpr) func=func-2._d*(vpqrs(kpr,k,lpr,apr)+6._d*vpqrs(kpr,apr,lpr,k))
+!
+!    if (k.eq.kpr) func=func-2._d*(vpqrs(a,apr,lpr,bpr)+6._d*vpqrs(a,bpr,lpr,apr))
+!
+!    if (k.eq.lpr) func=func-2._d*(vpqrs(a,apr,kpr,bpr)+6._d*vpqrs(a,bpr,kpr,apr))
+!
+!    func=func/sqrt(12.0d0)
+!
+!    return
+!
+!  end function C11_ph_2p2h
+!
+!!#######################################################################
+!
+!!!$ a'|=b' and k'|=l'; spin case 2
+!
+!  function C22_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+!
+!    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func+(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+!
+!    if (a.eq.bpr) func=func+(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+!
+!    if (k.eq.kpr) func=func+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+!
+!    if (k.eq.lpr) func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+!
+!!    func=sqrt(3.0d0)*func/sqrt(2.0d0)
+!
+!  end function C22_ph_2p2h
+!
+!!#######################################################################
+!
+!!!$ a'=b' and k'|=l' 
+!
+!  function C33_ph_2p2h(j,k,ipr,kpr,lpr) result(func)
+!
+!    integer, intent(in) :: j,k,ipr,kpr,lpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (j.eq.ipr) func=func+vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k)
+!
+!    if (k.eq.kpr) func=func+vpqrs(j,ipr,lpr,ipr)+vpqrs(ipr,lpr,ipr,j)
+!
+!    if (k.eq.lpr) func=func+vpqrs(j,ipr,kpr,ipr)+vpqrs(ipr,kpr,ipr,j)
+!
+!    func=func/sqrt(2.0d0)
+!
+!  end function C33_ph_2p2h
+!
+!!#######################################################################
+!
+!!!$ a'|=b' and k'=l'
+!
+!  function C44_ph_2p2h(a,k,apr,bpr,kpr) result(func)
+!
+!    integer, intent(in) :: a,k,apr,bpr,kpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,bpr)+vpqrs(kpr,bpr,kpr,k)
+!
+!    if (a.eq.bpr) func=func+vpqrs(kpr,k,kpr,apr)+vpqrs(kpr,apr,kpr,k)
+!
+!    if (k.eq.kpr) func=func+vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr)
+!
+!    func=func/sqrt(2.0d0)
+!
+!  end function C44_ph_2p2h
+!
+!!#######################################################################
+!
+!!!$ a'=b' and k'=l'
+!
+!  function C55_ph_2p2h(a,k,apr,kpr) result(func)
+!
+!    integer, intent(in) :: a,k,apr,kpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func+vpqrs(kpr,apr,kpr,k)
+!
+!    if (k.eq.kpr) func=func-vpqrs(a,apr,kpr,apr)
+!
+!    func=sqrt(2.0d0)*func
+!
+!  end function C55_ph_2p2h
+!
+!!#######################################################################
+!
+!  function C1a_ph_ph(a,k,apr,bpr,kpr,lpr) result(func)
+!    
+!    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+!    
+!    if (a.eq.bpr) func=func-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+!
+!    if (k.eq.kpr) func=func+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+!    
+!    if (k.eq.lpr) func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+!
+!    func=func/sqrt(2.0d0)
+!    
+!    return
+!
+!  end function C1a_ph_ph
+!
+!!#######################################################################
+!
+!  function C1b_ph_ph(a,k,apr,bpr,kpr,lpr) result(func)
+!    
+!    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+!    real(d)             :: func
+!
+!    func=0.0d0
+!
+!    if (a.eq.apr) func=func-(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+!    
+!    if (a.eq.bpr) func=func-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+!
+!    if (k.eq.kpr) func=func+(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+!    
+!    if (k.eq.lpr) func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+!
+!    func=func/sqrt(2.0d0)
+!    
+!    return
+!
+!  end function C1b_ph_ph
+!
+!
+!!#######################################################################
 
 !!$Second order contribution CA_ak,a'k'. The condition that k=k' is
 !!$checked in the calling procedure.

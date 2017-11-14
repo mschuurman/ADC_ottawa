@@ -6,6 +6,13 @@
   module block_davidson
 
     use constants
+    use parameters
+    use adc_ph
+    use misc
+    use filetools
+    use channels
+    use timingmod
+    use omp_lib
 
     implicit none
 
@@ -25,25 +32,33 @@
     character(len=36)                    :: vecfile
     logical                              :: lincore,lrdadc1,lsub,&
                                             ldeflate
+!    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
   contains
 
 !#######################################################################
     
-    subroutine davdiag_block(matdim,noffd)
+    subroutine davdiag_block(matdim,kpq,chr)
 
       use channels
       use constants
       use parameters
       use timingmod
+!      use adc_ph
+      use misc
+!      use filetools
+
 
       implicit none
 
       integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
+!      integer*8, intent(in) :: noffd
       integer               :: k
       real(d)               :: tw1,tw2,tc1,tc2
       character(len=120)    :: atmp
+      character(len=1)      :: chr
+!      real(d), allocatable  :: diag(:),offdij(:)
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
       
 !-----------------------------------------------------------------------
 ! Start timing
@@ -53,6 +68,8 @@
 !-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
+      hamflag=chr
+
       atmp='Block Davidson diagonalisation in the'
       if (hamflag.eq.'i') then
          atmp=trim(atmp)//' initial space'
@@ -68,58 +85,82 @@
 !-----------------------------------------------------------------------
       call davinitialise(matdim)
 
+!      ndim1 = kpq(1,0)
+!      ndim2 = matdim - ndim1
+!      ndim  = matdim
+!
+!      if (hamflag.eq.'i') then
+!         call mxv_diag_adc2_omp(ndim1,ndim2,kpq,nbuf,diag,'i')
+!         call get_offdiag_adc2_save_omp(ndim,kpq,nbuf,count,offdij,'i')
+!      else if (hamflag.eq.'f') then
+!         if (method_f.eq.2) then
+!            call mxv_diag_adc2_omp(ndim1,ndim2,kpq,nbuf,diag,'f')
+!            ! ADC(2)-s
+!            if (lcvsfinal) then
+!               call get_offdiag_adc2_omp(ndim,kpq,nbuf,count,offdij,'f')
+!            else
+!               call get_offdiag_adc2_cvs_omp(ndim,kpq,nbuf,count,offdij,'f')
+!            endif
+!         endif
+!      endif
+
+
 !-----------------------------------------------------------------------
 ! Set the initial vectors
 ! -----------------------------------------------------------------------
       ! Determine whether the initial vectors are to be constructed
       ! from the ADC(1) eigenvectors, the eigenvectors of the
       ! Hamiltonian represented in a subspace of ISs, or as single ISs
-      if (hamflag.eq.'i'.and.ladc1guess) then
-         lrdadc1=.true.
-      else if (hamflag.eq.'f'.and.ladc1guess_f) then
-         lrdadc1=.true.
-      else
-         lrdadc1=.false.
-      endif
-      if (hamflag.eq.'i'.and.lsubdiag) then
-         lsub=.true.
-      else if (hamflag.eq.'f'.and.lsubdiag_f) then
-         lsub=.true.
-      endif
-
-      if (lrdadc1) then
+!      if (hamflag.eq.'i'.and.ladc1guess) then
+!         lrdadc1=.true.
+!      else if (hamflag.eq.'f'.and.ladc1guess_f) then
+!         lrdadc1=.true.
+!      else
+!         lrdadc1=.false.
+!      endif
+!      if (hamflag.eq.'i'.and.lsubdiag) then
+!         lsub=.true.
+!      else if (hamflag.eq.'f'.and.lsubdiag_f) then
+!         lsub=.true.
+!      endif
+!
+!      if (lrdadc1) then
          ! Construct the initial vectors from the ADC(1) eigenvectors
-         call initvec_adc1
-      else if (lsub) then
-         ! Construct the initial vectors from the eigenvectors of the
-         ! Hamiltonian represented in a subspace of ISs
-         call initvec_subdiag(matdim,noffd)
-      else
-         ! Use a single IS for each initial vector
-         call initvec_ondiag(matdim)
-      endif
+       call initvec_adc1
+!      else if (lsub) then
+!         ! Construct the initial vectors from the eigenvectors of the
+!         ! Hamiltonian represented in a subspace of ISs
+!         call initvec_subdiag(matdim,noffd)
+!      else
+!         ! Use a single IS for each initial vector
+!         call initvec_ondiag(matdim)
+!      endif
 
 !-----------------------------------------------------------------------
 ! Determine whether or not we can perform the matrix-vector
 ! multiplication in-core
 !-----------------------------------------------------------------------
-      call isincore(matdim,noffd)
-
+!      call isincore(matdim,noffd)
+!
 !-----------------------------------------------------------------------
 ! Read the on-diagonal elements of the Hamiltonian matrix from disk
 !-----------------------------------------------------------------------
-      call rdham_on(matdim)
-
+!      call rdham_on(matdim)
+!
+!-----------------------------------------------------------------------
+! Calculate on-diagonal elements
+!-----------------------------------------------------------------------
+      call hiivec(matdim,kpq)
 !-----------------------------------------------------------------------
 ! If the matrix-vector multiplication is to proceed in-core, then
 ! read the off-diagonal Hamiltonian matrix from disk
 !-----------------------------------------------------------------------
-      if (lincore) call rdham_off(noffd)
-
+!      if (lincore) call rdham_off(noffd)
+!
 !-----------------------------------------------------------------------
 ! Perform the block Davidson iterations
 !-----------------------------------------------------------------------
-      call run_block_davidson(matdim,noffd)
+      call run_block_davidson(matdim,kpq)
 
 !-----------------------------------------------------------------------
 ! Save the converged Ritz vectors and Ritz values to file
@@ -202,6 +243,11 @@
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
+
+      ! Diagonal elements of matrix-vector product
+      allocate(hii(matdim))
+      hii=0.0d0
+
       ! Matrix of subspace vectors
       allocate(vmat(matdim,maxvec))
       vmat=0.0d0
@@ -703,18 +749,23 @@
 
 !#######################################################################
 
-    subroutine run_block_davidson(matdim,noffd)
+    subroutine run_block_davidson(matdim,kpq)
 
       use iomod
       use constants
       use channels
       use parameters
+!      use adc_ph
+      use misc
+!      use filetools
 
       implicit none
 
       integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
+!      integer*8, intent(in) :: noffd
       integer               :: k
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+!      real(d), dimension(:),allocatable :: hii
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -744,10 +795,18 @@
 ! Perform the Davidson iterations
 !-----------------------------------------------------------------------
       do k=1,niter
-         
-         ! Calculate the matrix-vector product
-         call hxvec(matdim,noffd)
 
+!         if ( k == 1 ) then
+!            goto 200
+!         else
+!            goto 100
+!         endif
+         
+100      continue
+         ! Calculate the matrix-vector product
+         call hxvec(matdim,kpq)
+
+200      continue
          ! Caulculate the Rayleigh matrix
          call calcrmat(matdim)
          
@@ -838,18 +897,541 @@
 
 !#######################################################################
 
-    subroutine hxvec(matdim,noffd)
+!    subroutine hxvec(matdim,noffd)
+!
+!      implicit none
+!
+!      integer, intent(in)   :: matdim
+!      integer*8, intent(in) :: noffd
+!
+!      if (lincore) then
+!         call hxvec_incore(matdim,noffd)
+!      else
+!          call hxvec_ext(matdim,noffd)
+!      endif
+!
+!      return
+!
+!    end subroutine hxvec
+
+
+!#######################################################################
+
+    subroutine hiivec(matdim,kpq)
+
+      use iomod, only: freeunit
+      use constants
+      use parameters
+      use adc_ph
+      use misc
+      use filetools
 
       implicit none
 
       integer, intent(in)   :: matdim
-      integer*8, intent(in) :: noffd
+      integer               :: interm1,interm2,ndim3,ndim4,ndim5,ndim6,count,dim_count
+      integer               :: inda,indb,indj,indk,spin,indapr,indbpr,&
+                               indjpr,indkpr,spinpr
+!      integer*8, intent(in) :: noffd
+      integer               :: m,n,i,j,k,ndim1,ndim2,ndim
+      real(d), dimension(:,:), allocatable :: ca,cb
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+!      character(len=30)     :: name
+      integer                              :: nvir
+!      real(d), dimension(:), allocatable,  :: hii
 
-      if (lincore) then
-         call hxvec_incore(matdim,noffd)
-      else
-          call hxvec_ext(matdim,noffd)
+!-----------------------------------------------------------------------
+! Update the no. matrix-vector multiplications
+!-----------------------------------------------------------------------
+      nmult=nmult+currdim
+      ndim1 = kpq(1,0)
+      ndim2 = matdim - ndim1
+      ndim  = matdim
+
+
+!-----------------------------------------------------------------------
+! Open the intermediate elements file
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements of the Hamiltonian matrix
+!-----------------------------------------------------------------------
+!      write(ilog,*) "Matrix-Vector Multiplication in progress in"
+
+!      allocate(hii(matdim))
+
+      hii=0.0d0
+      !$omp parallel do private(m,n,inda,indb,indj,indk,spin) shared(wmat,vmat,kpq)
+!      do n=1,currdim
+         do m=1,ndim1
+            call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
+            hii(m) = K_ph_ph(e(inda),e(indj)) ! * vmat(m,n)
+            hii(m) = hii(m) + C1_ph_ph(inda,indj,inda,indj) ! * vmat(m,n)
+            hii(m) = hii(m) + Ca1_ph_ph(inda,inda) ! * vmat(m,n)
+            hii(m) = hii(m) + Cb1_ph_ph(indj,indj) ! * vmat(m,n)
+            hii(m) = hii(m) + Cc1_ph_ph(inda,indj,inda,indj) ! * vmat(m,n)
+            hii(m) = hii(m) + Cc2_ph_ph(inda,indj,inda,indj) ! * vmat(m,n)
+         enddo
+!      enddo
+      !$omp end parallel do
+
+      !$omp parallel do private(m,n,inda,indb,indj,indk,spin) shared(kpq,wmat,vmat)
+!      do n=1,currdim
+         do m=ndim1+1,matdim
+            call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
+            hii(m) = K_2p2h_2p2h(e(inda),e(indb),e(indj),e(indk)) ! * vmat(m,n)
+         enddo
+!      enddo
+      !$omp end parallel do
+
+    end subroutine hiivec
+
+!#######################################################################
+
+    subroutine hxvec(matdim,kpq)
+
+      use iomod, only: freeunit
+      use constants
+      use parameters
+      use adc_ph
+      use misc
+      use filetools
+      use omp_lib
+
+      implicit none
+
+      integer, intent(in)   :: matdim
+      integer               :: interm1,interm2,ndim3,ndim4,ndim5,ndim6,count,dim_count
+      integer               :: inda,indb,indj,indk,spin,indapr,indbpr,&
+                               indjpr,indkpr,spinpr
+!      integer*8, intent(in) :: noffd
+      integer               :: m,n,i,j,k,ndim1,ndim2,ndim
+      real(d), dimension(:,:), allocatable :: ca,cb
+      integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+!      character(len=30)     :: name
+      integer                              :: nvir,indxi,indxj
+!      real(d), dimension(:), allocatable,  :: hii
+      real(d)                              :: hik,hjk,haa
+      real(d), parameter                   :: small=1e-12_d
+
+!-----------------------------------------------------------------------
+! Update the no. matrix-vector multiplications
+!-----------------------------------------------------------------------
+      nmult=nmult+currdim
+      ndim1 = kpq(1,0)
+      ndim2 = matdim - ndim1
+      ndim  = matdim
+
+
+!-----------------------------------------------------------------------
+! Open the intermediate elements file
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal matrix-vector product
+!-----------------------------------------------------------------------
+!      write(ilog,*) "Matrix-Vector Multiplication in progress in"
+
+!      allocate(hii(matdim))
+
+      wmat=0.0d0
+      !$omp parallel do private(m,n,haa,inda,indb,indj,indk,spin) shared(wmat,vmat,kpq)
+      do n=1,currdim
+         do m=1,ndim1
+!            if ( m == n ) then
+            call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
+            haa = K_ph_ph(e(inda),e(indj)) * vmat(m,n)
+            haa = haa + C1_ph_ph(inda,indj,inda,indj) * vmat(m,n)
+            haa = haa + Ca1_ph_ph(inda,inda) * vmat(m,n)
+            haa = haa + Cb1_ph_ph(indj,indj) * vmat(m,n)
+            haa = haa + Cc1_ph_ph(inda,indj,inda,indj) * vmat(m,n)
+            haa = haa + Cc2_ph_ph(inda,indj,inda,indj) * vmat(m,n)
+            wmat(m,n) = haa !wmat(m,n)*vmat(m,n)
+!            endif
+         enddo
+      enddo
+      !$omp end parallel do
+
+      !$omp parallel do private(m,n,haa,inda,indb,indj,indk,spin) shared(kpq,wmat,vmat)
+      do n=1,currdim
+         do m=ndim1+1,matdim
+!            if ( m == n ) then
+            call get_indices(kpq(:,m),inda,indb,indj,indk,spin)
+            haa = K_2p2h_2p2h(e(inda),e(indb),e(indj),e(indk)) * vmat(m,n)
+            wmat(m,n) = haa !wmat(m,n) * vmat(m,n)
+!            endif
+         enddo
+      enddo
+      !$omp end parallel do
+
+!      allocate(hii(matdim))
+
+!      if (niter.eq.1) then
+!         hii=0._d
+!         do n=1,currdim
+!            hii(1:matdim)=wmat(:,n)
+!         enddo
+!      else if (niter.gt.1) then
+!         hii=hii
+!      endif
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+
+      nvir=nbas-nocc
+
+      allocate(ca(nvir,nvir),cb(nocc,nocc))
+
+      ! CA_ph_ph
+      ca=0.0d0
+      do i=1,nvir
+         do j=i,nvir
+            ca(i,j)=Ca1_ph_ph(nocc+i,nocc+j)
+            ca(j,i)=ca(i,j)
+         enddo
+      enddo
+
+
+      ! CB_ph_ph
+      cb=0.0d0
+      do i=1,nocc
+         do j=i,nocc
+            cb(i,j)=Cb1_ph_ph(i,j)
+            cb(j,i)=cb(i,j)
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal matrix-vector product
+!-----------------------------------------------------------------------
+
+      if ((hamflag.eq.'i').or.((hamflag.eq.'f').and.(.not.lcvsfinal))) then
+      ! ADC(2)-s
+!         ndim1=kpq(1,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,kpq,vmat)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=i+1,ndim1
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                      hik = C1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+!                      hjk = C1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(i,k)
+         
+                      if (indj .eq. indjpr) then
+                         hik = hik + ca(inda-nocc,indapr-nocc) ! * vmat(j,k)
+!                         hjk = hjk + ca(inda-nocc,indapr-nocc) ! * vmat(i,k)
+                      endif
+         
+                      if (inda .eq. indapr) then
+                         hik = hik + cb(indj,indjpr) ! * vmat(j,k)
+!                         hjk = hjk + cb(indj,indjpr) ! * vmat(i,k)
+                      endif
+         
+                      hik = hik + Cc1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+                      hik = hik + Cc2_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+
+!                      hjk = hjk + CC_ph_ph(inda,indj,indapr,indjpr) ! * vmat(i,k)
+!                      hjk = hjk + Cc2_ph_ph(inda,indj,indapr,indjpr) * vmat(i,k)
+
+                      if ( abs(hik) .gt. small ) then !.or. abs(hjk) .gt. small ) then 
+
+                         indxi=i
+                         indxj=j
+
+                         wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k)
+                         wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k)
+                      endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+
+         deallocate(ca,cb)
+
+         ! All ph-2p2h terms are taken from old code - IS: correct
+         !-----------------------------------------------------------------------
+         ! ph-2p2h block 
+         !-----------------------------------------------------------------------
+         !!$ Coupling to the i=j,a=b configs
+         
+         dim_count=kpq(1,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,vmat,kpq,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(2,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                  hik = C5_ph_2p2h(inda,indj,indapr,indjpr) ! * vmat(j,k) ! (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C5_ph_2p2h(inda,indj,indapr,indjpr) ! * vmat(i,k) ! (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then ! .or. abs(hjk) .gt. small ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+         
+         !!$ Coupling to the i=j,a|=b configs   
+         
+         dim_count=dim_count+kpq(2,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,vmat,kpq,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(3,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                  hik = C4_ph_2p2h(inda,indj,indapr,indbpr,indjpr) ! * vmat(j,k) ! (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C4_ph_2p2h(inda,indj,indapr,indbpr,indjpr) ! * vmat(i,k) ! (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then !.or. abs(hjk) .gt. small ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+         
+         !!$ Coupling to the i|=j,a=b configs
+         
+         dim_count=dim_count+kpq(3,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,vmat,kpq,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(4,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                  hik = C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr) ! * vmat(j,k) ! (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr) ! * vmat(i,k) ! (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then !.or. abs(hjk) .gt. small ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+         
+         !!$ Coupling to the i|=j,a|=b I configs
+         
+         dim_count=dim_count+kpq(4,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,vmat,kpq,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(5,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                  hik = C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * vmat(j,k) ! (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * vmat(i,k) ! (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then !.or. abs(hjk) .gt. small ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+         
+         !!$ Coupling to the i|=j,a|=b II configs
+         
+         !!$ Coupling to the i|=j,a|=b II configs
+         
+         dim_count=dim_count+kpq(5,0)
+         
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,vmat,kpq,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(5,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+
+                  hik = C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * vmat(j,k) ! (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * vmat(i,k) ! (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then !.or. (abs(hjk) .gt. small) ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+         
+         !write(ilog,*) 2*count,' off-diagonal M-v elements in',name
+
+
+      else if ((hamflag.eq.'f').and.(method_f.eq.2).and.lcvsfinal) then
+      ! ADC(2)-s CVS
+          !-----------------------------------------------------------------------
+          
+!         write(ilog,*) "Matrix-Vector Multiplication in progress in",name
+          
+         !-----------------------------------------------------------------------
+         ! Initialise counters
+         !-----------------------------------------------------------------------
+         ! count=0
+         ! 
+         !-----------------------------------------------------------------------
+         ! ph-ph block
+         !-----------------------------------------------------------------------
+          
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,kpq,vmat,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=1,i-1
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          
+                  hik = C1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+!                  hjk = C1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(i,k)
+          
+                  if (indj .eq. indjpr) then
+                     hik = hik + ca(inda-nocc,indapr-nocc) ! * vmat(j,k)
+!                     hjk = hjk + ca(inda-nocc,indapr-nocc) ! * vmat(i,k)
+                  endif
+          
+                  if (inda .eq. indapr) then
+                     hik = hik + cb(indj,indjpr) ! * vmat(j,k)
+!                     hjk = hjk + cb(indj,indjpr) ! * vmat(i,k)
+                  endif
+          
+!                  hik = hik + Cc1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+!                  hik = hik + Cc2_ph_ph(inda,indj,indapr,indjpr) ! * vmat(j,k)
+                  hik = hik + Cc1_ph_ph(inda,indj,indapr,indjpr) 
+                  hik = hik + Cc2_ph_ph(inda,indj,indapr,indjpr)
+          
+!                  hjk = hjk + Cc1_ph_ph(inda,indj,indapr,indjpr) ! * vmat(i,k)
+!                  hjk = hjk + Cc2_ph_ph(inda,indj,indapr,indjpr) ! * vmat(i,k)
+                  if ( abs(hik) .gt. small ) then !.or. (abs(hjk) .gt. small) ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+          
+         !-----------------------------------------------------------------------
+         ! ph-2p2h block 
+         !-----------------------------------------------------------------------
+         !!$ Coupling to the i|=j,a=b configs
+          
+         dim_count=kpq(1,0)
+          
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,kpq,vmat,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(4,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          
+                  hik = C3_ph_2p2h(inda,indj,indapr,indjpr,indkpr) ! * (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C33_ph_2p2h(inda,indj,indapr,indjpr,indkpr) ! * (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then ! .or. (abs(hjk) .gt. small) ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+          
+         !!$ Coupling to the i|=j,a|=b I configs
+          
+         dim_count=dim_count+kpq(4,0)
+          
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,kpq,vmat,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(5,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          
+                  hik = C1_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C11_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then ! .or. (abs(hjk) .gt. small) ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+          
+         !!$ Coupling to the i|=j,a|=b II configs
+          
+         dim_count=dim_count+kpq(5,0)
+          
+         !$omp parallel do private(i,j,k,hik,hjk,indxi,indxj,inda,indb,indj,indk,spin,indapr,indbpr,indjpr,indkpr,spinpr) shared(wmat,kpq,vmat,count)
+         do k=1,currdim
+            do i=1,ndim1
+               call get_indices(kpq(:,i),inda,indb,indj,indk,spin)
+               do j=dim_count+1,dim_count+kpq(5,0)
+                  call get_indices(kpq(:,j),indapr,indbpr,indjpr,indkpr,spinpr)
+          
+                  hik = C2_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * (2._d*vmat(j,k)-vmat(i,k))
+!                  hjk = C22_ph_2p2h(inda,indj,indapr,indbpr,indjpr,indkpr) ! * (2._d*vmat(i,k)-vmat(j,k))
+                  if ( abs(hik) .gt. small ) then !.or. (abs(hjk) .gt. small) ) then
+
+                     indxi=i
+                     indxj=j
+
+                     wmat(indxi,k) = wmat(indxi,k) + hik * vmat(indxj,k) ! (2.0d0*vmat(indxj,k)-vmat(indxi,k)) ! vmat(indxj,k)
+                     wmat(indxj,k) = wmat(indxj,k) + hik * vmat(indxi,k) ! (2.0d0*vmat(indxi,k)-vmat(indxj,k)) ! vmat(indxi,k)
+                  endif
+               enddo
+            enddo
+         enddo
+         !$omp end parallel do
+          
+         !    write(ilog,*) 'counts'
+!              write(ilog,*) 2*count,' off-diagonal M-v elements in',name
+
+     
       endif
+
+!      deallocate(hii)
 
       return
 

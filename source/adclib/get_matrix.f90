@@ -622,6 +622,88 @@ contains
   end subroutine get_offdiag_adc2_save
 
 !#######################################################################
+
+  subroutine get_interm_adc2_save(ndim,kpq,chr)
+
+    
+    integer, intent(in)                                 :: ndim
+!    integer, intent(out)                                :: nbuf
+    integer*8                                           :: count
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
+    character(1), intent(in)                            :: chr
+    
+    
+    character(30)                :: name,file
+    integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
+    real(d)                      :: ar_offdiag_ij
+
+    integer                              :: nvirt,a,b,nzero
+    real(d), dimension(:,:), allocatable :: ca,cb
+    real(d)                              :: tw1,tw2,tc1,tc2
+
+
+!-----------------------------------------------------------------------
+! Precompute the results of calls to CA_ph_ph and CB_ph_ph
+!-----------------------------------------------------------------------
+    call times(tw1,tc1)
+
+    name="SCRATCH/hmlt.intermCa"//chr
+    file="SCRATCH/hmlt.intermCb"//chr
+    unt=12
+
+    write(ilog,*) "Writing intermediate terms of ADC matrix in file ", name
+    OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
+         FORM='UNFORMATTED')
+
+    nvirt=nbas-nocc
+
+    rec_count=nvirt*nvirt
+    dim_count=nocc*nocc
+
+    allocate(ca(nvirt,nvirt),cb(nocc,nocc))
+
+    ! CA_ph_ph
+    do i=1,nvirt
+       do j=i,nvirt
+          ca(i,j)=Ca1_ph_ph(nocc+i,nocc+j)
+          ca(j,i)=ca(i,j)
+       enddo
+    enddo
+
+    call wrtinterm(unt,nvirt,rec_count,ca)
+
+    close(unt)
+
+    write(ilog,*) "Writing intermediate terms of ADC matrix in file ", file
+    OPEN(UNIT=unt,FILE=file,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
+         FORM='UNFORMATTED')
+
+    ! CB_ph_ph
+    do i=1,nocc
+       do j=i,nocc
+          cb(i,j)=Cb1_ph_ph(i,j)
+          cb(j,i)=cb(i,j)
+       enddo
+    enddo
+
+    call wrtinterm(unt,nocc,dim_count,cb)
+
+    close(unt)
+
+    count=rec_count+dim_count
+
+    deallocate(ca,cb)
+       
+
+    write(ilog,*) count,' intermediate terms saved'
+
+    call times(tw2,tc2)
+    write(ilog,'(/,2x,a,F8.2,1x,a1)') &
+         'Time taken to save intermediate vectors:',tw2-tw1,'s'
+
+  end subroutine get_interm_adc2_save
+
+!#######################################################################
   
   subroutine get_offdiag_adc2_save_omp(ndim,kpq,nbuf,count,chr)
 

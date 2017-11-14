@@ -73,7 +73,7 @@
 ! Diagonalisation in the initial space
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) &
-             call initial_space_diag(time,kpq,ndim,ndims,noffd)
+             call init_space_diag(time,kpq,ndim,ndims,noffd)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the initial states
@@ -189,7 +189,7 @@
         real(d), dimension(:,:), allocatable      :: travec2
 
         if (ldiagfinal) then
-           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
+           call davidson_fin_space_diag(ndim,ndimf,ndimsf,kpq,&
                 kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
         else
            call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&

@@ -42,9 +42,9 @@
 !-----------------------------------------------------------------------
 ! Call to the main eigensolver routine
 !-----------------------------------------------------------------------
-      if (es.eq.1) then
-         call davdiag_block(ndim,noffd)
-      else if (es.eq.2) then
+!      if (es.eq.1) then
+!         call davdiag_block(ndim,noffd)
+      if (es.eq.2) then
          call relaxation(ndim,noffd)
       endif
          
