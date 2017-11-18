@@ -72,7 +72,7 @@ contains
 ! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
     if (lcap) call cap_isbas_adc2(cap_mo,kpqf,ndimf)
-    
+
 !-----------------------------------------------------------------------
 ! Calculate the dipole matrices
 !-----------------------------------------------------------------------

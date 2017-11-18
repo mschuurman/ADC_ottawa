@@ -73,6 +73,11 @@ contains
     endif
 
 !----------------------------------------------------------------------
+! Analysis of the MO representation of the CAP
+!----------------------------------------------------------------------
+    call analyse_cap_support(gam,cap_mo)
+
+!----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
     call times(tw2,tc2)
@@ -219,6 +224,100 @@ contains
     
   end subroutine numerical_cap
 
+!######################################################################  
+
+  subroutine analyse_cap_support(gam,cap_mo)
+
+    use channels
+    use constants
+    use parameters
+    use iomod
+    use import_gamess
+    use density
+    
+    implicit none
+
+    integer                        :: c,i,j,p,q,unit
+    integer, parameter             :: npnts=101
+    real(dp), parameter            :: dr=0.25d0
+    real(dp), dimension(nbas,nbas) :: cap_mo
+    real(dp), dimension(3)         :: r
+    real(dp), allocatable          :: aovalues(:)
+    real(dp), allocatable          :: movalues(:)
+    real(dp), allocatable          :: capval(:,:)
+    type(gam_structure)            :: gam
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(aovalues(gam%nbasis))
+    aovalues=0.0d0
+
+    allocate(movalues(nbas))
+    movalues=0.0d0
+
+    allocate(capval(npnts,3))
+    capval=0.0d0
+    
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='mocapvals.dat',form='formatted',status='unknown')
+    
+!----------------------------------------------------------------------
+! Calculate and output the values of the MO representation of the
+! CAP at points along the x-, y-, and z-directions
+!----------------------------------------------------------------------
+    capval=0.0d0
+    
+    ! Loop over points
+    do i=1,npnts
+       
+       ! Loop over directions
+       do c=1,3
+          
+          ! Current coordinates
+          r=0.0d0
+          r(c)=(i-1)*dr
+          
+          ! Calculate the values of the AOs at the current point
+          call get_ao_values(gam,aovalues,r)
+
+          ! Calculate the values of the MOs at the current point
+          movalues(1:nbas)=matmul(transpose(ao2mo),aovalues)
+          
+          ! Calculate the value of the MO representation of the
+          ! CAP at the current point
+          do p=1,nbas
+             do q=1,nbas
+                capval(i,c)=capval(i,c) &
+                     +cap_mo(p,q)*movalues(p)*movalues(q)
+             enddo
+          enddo
+
+       enddo
+
+       ! Output the CAP values
+       write(unit,*) (i-1)*dr,(capval(i,j),j=1,3)
+       
+    enddo
+
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(aovalues)
+    deallocate(movalues)    
+    
+    return
+    
+  end subroutine analyse_cap_support
+    
 !######################################################################  
   
 end module capmod
