@@ -233,11 +233,11 @@ contains
     use parameters
     use iomod
     use import_gamess
-    use density
+    use density, only: get_ao_values
     
     implicit none
 
-    integer                        :: c,i,j,p,q,unit
+    integer                        :: c,i,j,p,q,nao,unit
     integer, parameter             :: npnts=101
     real(dp), parameter            :: dr=0.25d0
     real(dp), dimension(nbas,nbas) :: cap_mo
@@ -250,7 +250,10 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(aovalues(gam%nbasis))
+    ! No. AOs
+    nao=gam%nbasis
+    
+    allocate(aovalues(nao))
     aovalues=0.0d0
 
     allocate(movalues(nbas))
@@ -282,11 +285,11 @@ contains
           r(c)=(i-1)*dr
           
           ! Calculate the values of the AOs at the current point
-          call get_ao_values(gam,aovalues,r)
+          call get_ao_values(gam,aovalues,r,nao)
 
           ! Calculate the values of the MOs at the current point
           movalues(1:nbas)=matmul(transpose(ao2mo),aovalues)
-          
+
           ! Calculate the value of the MO representation of the
           ! CAP at the current point
           do p=1,nbas

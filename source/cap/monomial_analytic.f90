@@ -78,7 +78,7 @@ contains
 ! Waals radius
 !
 ! If an automatic determination of the CAP box has been requested,
-! then we will choose the starting postions based on ana analysis of
+! then we will choose the starting postions based on an analysis of
 ! the initial state density
 !----------------------------------------------------------------------
     if (lautobox) then

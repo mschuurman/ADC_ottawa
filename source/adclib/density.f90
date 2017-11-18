@@ -9,12 +9,6 @@ module density
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
   integer, parameter  :: dp=selected_real_kind(8)
-
-  ! Conversion factors
-  real(dp), parameter :: ang2bohr=1.889725989d0
-  
-  ! Number of AOs
-  integer             :: naos
   
 contains
 
@@ -30,7 +24,7 @@ contains
     
     implicit none
 
-    integer                        :: p,q
+    integer                        :: naos,p,q
     real(dp), dimension(nbas,nbas) :: rho
     real(dp), dimension(3)         :: r
     real(dp)                       :: func
@@ -53,7 +47,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the values of the AOs at the point r
 !----------------------------------------------------------------------
-    call get_ao_values(gam,aovalues,r)
+    call get_ao_values(gam,aovalues,r,naos)
 
 !----------------------------------------------------------------------
 ! Calculate the values of the MOs at the point r
@@ -84,18 +78,19 @@ contains
 ! get_ao_values: calcuation of the values of all AOs at the point r
 !######################################################################
   
-  subroutine get_ao_values(gam,aovalues,r)
+  subroutine get_ao_values(gam,aovalues,r,dim)
 
     use parameters
     use import_gamess
     use gamess_internal
 
     implicit none
-    
-    integer                   :: count,atm,sh,l,comp,pos,nx,ny,nz
-    real(dp), dimension(naos) :: aovalues
+
+    integer                   :: dim,count,atm,sh,l,comp,pos,nx,ny,nz
+    real(dp), dimension(dim)  :: aovalues
     real(dp), dimension(3)    :: r
     real(dp)                  :: x,y,z,angc
+    real(dp), parameter       :: ang2bohr=1.889725989d0
     type(gam_structure)       :: gam
     
     ! AO counter
