@@ -299,7 +299,7 @@ contains
        enddo
 
        ! Output the CAP values
-       write(unit,*) (i-1)*dr,(capval(i,j),j=1,3)
+       write(unit,'(F10.7,3(2x,ES15.8))') (i-1)*dr,(capval(i,j),j=1,3)
        
     enddo
 
