@@ -91,14 +91,14 @@ contains
     
     write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
     
-    if (method.eq.2) then
+    if (method_f.eq.2) then
        ! ADC(2)-s
        if (lcvsfinal) then
           call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
        else
           call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
        endif
-    else if (method.eq.3) then
+    else if (method_f.eq.3) then
        ! ADC(2)-x
        if (lcvsfinal) then
           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
