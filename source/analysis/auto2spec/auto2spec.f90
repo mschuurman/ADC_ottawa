@@ -6,7 +6,8 @@ module auto2specmod
 
   integer                               :: maxtp,iauto,epoints
   integer                               :: padesolver
-  real(d)                               :: dt,t0,emin,emax,tau,sigma,&
+  integer                               :: ishape
+  real(d)                               :: dt,t0,emin,emax,tau,fwhm,&
                                            dele,a0,b0,tcutoff
   real(d), dimension(:,:), allocatable  :: sp
   real(d), parameter                    :: eh2ev=27.2113845d0
@@ -24,7 +25,7 @@ program auto2spec
   use auto2specmod
   
   implicit none
-
+  
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -70,8 +71,8 @@ contains
     ! No. energy points
     epoints=1000
 
-    ! Damping time
-    tau=-1.0d0
+    ! FWHM
+    fwhm=-1.0d0
     
     ! Name of the output file
     outfile=''
@@ -87,6 +88,9 @@ contains
 
     ! Normalisation of the spectra
     lnormalise=.false.
+
+    ! Lineshape type: 1 <-> Lorentzian, 2 <-> Gaussian
+    ishape=1
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -98,11 +102,10 @@ contains
        ! FWHM in eV
        i=i+1
        call getarg(i,string2)
-       read(string2,*) sigma
-       ! Convert to tau in au
-       sigma=sigma/eh2ev
-       tau=2.0d0/sigma
-
+       read(string2,*) fwhm
+       ! Convert to au
+       fwhm=fwhm/eh2ev
+       
     else if (string1.eq.'-e') then
        ! Energy range in eV
        i=i+1
@@ -151,6 +154,19 @@ contains
        ! Normalisation of the spectra
        lnormalise=.true.
 
+    else if (string1.eq.'-shape') then
+       ! Lineshape
+       i=i+1
+       call getarg(i,string2)
+       if (string2.eq.'lorentzian'.or.string2.eq.'Lorentzian') then
+          ishape=1
+       else if (string2.eq.'gaussian'.or.string2.eq.'Gaussian') then
+          ishape=2
+       else
+          errmsg='Unknown lineshape: '//trim(string2)
+          call error_control
+       endif
+          
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -169,13 +185,22 @@ contains
        call error_control
     endif
 
-    if (tau.eq.-1.0d0) then
+    if (fwhm.eq.-1.0d0) then
        errmsg='The spectral broadening has not been given'
        call error_control
     endif
     
     if (outfile.eq.'') then
        outfile='spectrum.dat'
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the lineshape parameter
+!----------------------------------------------------------------------
+    if (ishape.eq.1) then
+       tau=2.0d0/fwhm
+    else if (ishape.eq.2) then
+       tau=fwhm/(2.0d0*sqrt(2.0d0*log(2.0d0)))
     endif
 
     return
@@ -299,8 +324,8 @@ contains
 
           t=i*dt
 
-          cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*exp(-(t/tau))
-
+          cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*damping_function(t)
+                    
           sum0=sum0+cc
           sum1=sum1+cc*cos(pia*i)
           sum2=sum2+cc*cos(pia*i)**2
@@ -323,6 +348,33 @@ contains
     
   end subroutine calc_spectrum
 
+!######################################################################
+! damping_function: returns the value of the damping function at the
+!                   time t
+!######################################################################
+  
+  function damping_function(t) result(func)
+
+    use auto2specmod
+    
+    implicit none
+
+    real(d) :: t,func
+
+    select case(ishape)
+
+    case(1) ! Lorentzian lineshape
+       func=exp(-(t/tau))
+       
+    case(2) ! Gaussian lineshape
+       func=exp(-0.5d0*(t**2)*(tau**2))
+              
+    end select
+       
+    return
+    
+  end function damping_function
+    
 !######################################################################
 ! pade_coeff: the notation used here is the same as that used in
 !             Equations 29-35 in Bruner et. al., JCTC, 12, 3741 (2016)
@@ -360,7 +412,7 @@ contains
     cvec(0)=dcmplx(a0,b0)
 
     do k=1,iauto
-       cvec(k)=auto(k)*exp(-(k*dt)/tau)
+       cvec(k)=auto(k)*damping_function(k*dt)
     enddo
        
 !----------------------------------------------------------------------
@@ -638,7 +690,7 @@ contains
 !----------------------------------------------------------------------
 ! Write the spectra to file
 !----------------------------------------------------------------------
-    write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
+    write(iout,'(a,x,F7.4)') '# FHWM (eV):',fwhm*eh2ev
 
     if (lpade) then
        write(iout,'(/,100a)') ('#',i=1,100)
