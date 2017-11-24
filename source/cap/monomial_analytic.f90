@@ -10,6 +10,8 @@ module monomial_analytic
   implicit none
 
   save
+
+  private :: dp
   
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead

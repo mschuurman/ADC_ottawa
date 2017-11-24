@@ -7,6 +7,8 @@ module autocapbox
   
   implicit none
 
+  private :: dp
+  
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
   integer, parameter    :: dp=selected_real_kind(8)
@@ -188,7 +190,7 @@ contains
     real(dp), dimension(3*nbas)    :: work
     
 !----------------------------------------------------------------------
-! Loop over the x, y, and z-drections, diagonalising the MO
+! Loop over the x, y, and z-directions, diagonalising the MO
 ! MO representation of the position operator for each component
 !----------------------------------------------------------------------
     do i=1,3

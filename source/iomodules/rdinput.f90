@@ -788,7 +788,7 @@
          endif
 
          ! CAP order
-         if (icap.eq.1.or.icap.eq.2.or.icap.eq.3) then
+         if (icap.eq.1.or.icap.eq.2.or.icap.eq.3.or.icap.eq.7) then
             if (capord.eq.-1) then
                msg='The monomial CAP order has not been set'
                goto 999
@@ -796,7 +796,11 @@
          endif
 
          ! Integration grid
-         if (icap.gt.1) then
+         if (icap.eq.2 &
+              .or.icap.eq.3 &
+              .or.icap.eq.4 &
+              .or.icap.eq.5 &
+              .or.icap.eq.6) then
             if (nang(1).ne.110.and.nang(1).ne.302&
                  .and.nang(1).ne.770) then
                msg='The number of angular grid points can only be &
@@ -1959,6 +1963,8 @@
                   icap=5
                else if (keyword(i).eq.'sigmoidal') then
                   icap=6
+               else if (keyword(i).eq.'monomial_dvr') then
+                  icap=7
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control

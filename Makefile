@@ -66,7 +66,8 @@ UTILITIES=source/utilities/timingmod.o \
 	source/utilities/misc.o \
 	source/utilities/lineq.o \
 	source/utilities/eigchess.o \
-	source/utilities/gammainc.o
+	source/utilities/gammainc.o \
+	source/utilities/simdiag.o
 
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
@@ -95,6 +96,7 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/proplib_adc1.o
 
 CAP=	source/cap/auto_cap_box.o \
+	source/cap/fdvr.o \
 	source/cap/monomial_analytic.o \
 	source/cap/lebedev.o \
 	source/cap/atoms.o \
@@ -175,6 +177,7 @@ ADC_OBJ=accuracy.o \
 	lineq.o \
 	eigchess.o \
 	gammainc.o \
+	simdiag.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
@@ -219,6 +222,7 @@ ADC_OBJ=accuracy.o \
 	adc2common.o \
 	guessvecs.o \
 	auto_cap_box.o \
+	fdvr.o \
 	monomial_analytic.o \
 	lebedev.o \
 	atoms.o \
