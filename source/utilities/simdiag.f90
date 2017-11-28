@@ -8,7 +8,7 @@ module simdiag
 contains
 
 !######################################################################
-! simdiag_jacobi: Simulataneous diagonalisation of a set of matrices
+! simdiag_jacobi: Simultaneous diagonalisation of a set of matrices
 !                 using a Jacobi rotation scheme.
 !
 !                 For a set of real symmetric matrices A, returns an
@@ -28,36 +28,50 @@ contains
     use constants
     use iomod
     use channels
+    use timingmod
     
     implicit none
 
     integer                          :: dim,nmat
-    integer                          :: i,j,k,l,m,n,error
-    integer, parameter               :: maxit=100
+    integer                          :: i,j,k,l,m,n,noff,error
+    integer, parameter               :: maxit=250
     real(d), dimension(dim,dim,nmat) :: A1,A
-    real(d), dimension(dim,dim)      :: Q,R,tmp
+    real(d), dimension(dim,dim)      :: Q,tmp
     real(d), dimension(dim)          :: lambda
     real(d), dimension(3*dim)        :: work
-    real(d)                          :: off,c,s
+    real(d)                          :: off,c,s,cs,sc
     real(d)                          :: last
-    real(d), parameter               :: thrsh=1e-6_d
+    real(d), parameter               :: thrsh=1e-12_d
+    real(d)                          :: tw1,tw2,tc1,tc2
     logical                          :: converged
-
-    A=A1
 
 !----------------------------------------------------------------------
 ! Ouput what we are doing
 !----------------------------------------------------------------------
-    write(ilog,'(/,2x,a)') 'Approximate simultaneous diagonalisation &
+    write(ilog,'(2x,a)') 'Approximate simultaneous diagonalisation &
          of X, Y, and Z'
-    write(ilog,'(2x,a)') 'Alorithm: Jacobi'
+    write(ilog,'(2x,a,/)') 'Alorithm: Jacobi'
+
+!----------------------------------------------------------------------
+! Start timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
     
 !----------------------------------------------------------------------
 ! Initialisation: set the orthogonal transformation matrix Q as the
 ! matrix that diagonalises one of the sum matrices in the set A
 !----------------------------------------------------------------------
-    ! Diagonalise sum_k A_k
-    Q=A(:,:,1)+A(:,:,2)+A(:,:,3)
+    ! Number of off-diagonal elements in the lower triangle
+    noff=dim*(dim-1)/2    
+
+    ! Make a copy of the set of matrices to diagonalise
+    A=A1
+
+    ! Diagonalise sum_k A_k/nmat
+    Q=0.0d0
+    do k=1,nmat
+       Q=Q+A(:,:,k)/nmat
+    enddo
     call dsyev('V','U',dim,Q,dim,lambda,work,3*dim,error)    
     if (error.ne.0) then
        errmsg='Initialisation failure in subroutine simdiag_jacobi'
@@ -69,20 +83,21 @@ contains
        tmp=A(:,:,k)
        A(:,:,k)=matmul(transpose(Q),matmul(tmp,Q))
     enddo
-    
+
     ! Compute and save the initial objective function value
     off=0.0d0
     do k=1,nmat
        do i=1,dim-1
           do j=i+1,dim
-             off=off+A(i,j,k)**2
+             off=off+A(j,i,k)**2/(nmat*noff)
           enddo
        enddo
     enddo
     last=off
 
     ! Output our progress
-    write(ilog,'(2x,a10,i3,a2,F11.7)') 'Iteration ',0,': ',off
+    write(ilog,'(2x,a10,i3,a2,ES15.7,2x,ES15.7)') &
+         'Iteration ',n,': ',off,abs(last-off)
     
 !----------------------------------------------------------------------
 ! Perform the simultaneous diagonalisation
@@ -95,27 +110,32 @@ contains
        do i=1,dim-1
           do j=i+1,dim
 
-             ! Compute the elements of the rotation matrix R(i,j,c,s)
+             ! Compute cosine and sine of the rotation angle
              call get_cs(i,j,A,c,s,dim,nmat)
              
-             R=0.0d0
-             do k=1,dim
-                R(k,k)=1.0d0
+             ! Update the matrices in the set A
+             do l=1,nmat
+
+                ! Recalculate rows i and j
+                do k=1,dim
+                   cs=c*A(i,k,l)+s*A(j,k,l)
+                   sc=-s*A(i,k,l)+c*A(j,k,l)
+                   A(i,k,l)=cs
+                   A(j,k,l)=sc
+                enddo
+                ! New matrix A_{n+1} from A_{n}
+                do k=1,dim
+                   cs=c*A(k,i,l)+s*A(k,j,l)
+                   sc=-s*A(k,i,l)+c*A(k,j,l)
+                   A(k,i,l)=cs
+                   A(k,j,l)=sc
+                enddo
              enddo
-             R(i,i)=c
-             R(j,j)=c
-             R(i,j)=s
-             R(j,i)=-s
-             
-             ! Update the transformation matrix Q
+
+             ! Update the matrix of eigenvectors
              tmp=Q
-             Q=matmul(tmp,transpose(R))
-             
-             ! Similarity transform the matrices in the set A
-             do k=1,nmat
-                tmp=A(:,:,k)
-                A(:,:,k)=matmul(R,matmul(tmp,transpose(R)))
-             enddo
+             Q(:,i)=c*tmp(:,i)+s*tmp(:,j)
+             Q(:,j)=c*tmp(:,j)-s*tmp(:,i)
              
           enddo
        enddo
@@ -125,13 +145,14 @@ contains
        do k=1,nmat
           do i=1,dim-1
              do j=i+1,dim
-                off=off+A(i,j,k)**2
+                off=off+A(j,i,k)**2/(nmat*noff)
              enddo
           enddo
        enddo
        
        ! Output our progress
-       write(ilog,'(2x,a10,i3,a2,F11.7)') 'Iteration ',n,': ',off
+       write(ilog,'(2x,a10,i3,a2,ES15.7,2x,ES15.7)') &
+            'Iteration ',n,': ',off,abs(last-off)
        
        ! Exit if we have reached convergence
        if (abs(last-off).lt.thrsh) then
@@ -151,6 +172,31 @@ contains
        call error_control
     endif
 
+!-----------------------------------------------------------------------    
+! Output timings
+!-----------------------------------------------------------------------    
+    call times(tw2,tc2)
+    write(ilog,'(/,a,1x,F11.4,1x,a)') 'Time taken:',tw2-tw1," s"
+
+!-----------------------------------------------------------------------    
+! Check
+!-----------------------------------------------------------------------    
+    !do k=1,nmat
+    !   A(:,:,k)=matmul(transpose(Q),matmul(A1(:,:,k),Q))
+    !enddo
+    !off=0.0d0
+    !do k=1,nmat
+    !   do i=1,dim-1
+    !      do j=i+1,dim
+    !         off=off+A(i,j,k)**2/(nmat*noff)
+    !      enddo
+    !   enddo
+    !enddo
+    !print*,
+    !print*,'off: ',off
+    !print*,
+    !stop
+    
     return
       
   end subroutine simdiag_jacobi
