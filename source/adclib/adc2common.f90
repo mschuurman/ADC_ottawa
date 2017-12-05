@@ -216,7 +216,7 @@
 !      use diagmod
       use select_fano
       use misc
-      use block_davidson
+      use dmatvec_davidson
       use get_matrix
 
       implicit none
@@ -236,6 +236,7 @@
       else
          write(ilog,*) 'Only available for ADC(2)-s'
          stop
+         call error_control
       endif
 
 
@@ -250,7 +251,7 @@
 
 !      if (method.eq.2) then
          ! ADC(2)-s
-         call davdiag_block(ndim,kpq(:,:),'i')
+         call davdir_block(ndim,kpq(:,:),'i')
 !      else if (method.eq.3) then
          ! ADC(2)-x
 !         call write_fspace_adc2e_1(ndim,kpq(:,:),noffd,'i')
@@ -280,7 +281,7 @@
       use get_matrix_dipole
 !      use diagmod
       use guessvecs
-      use block_davidson
+      use dmatvec_davidson
       use get_matrix
       use select_fano
       use misc
@@ -312,6 +313,7 @@
       else
          write(ilog,*) 'Only available for ADC(2)-s'
          stop
+         call error_control
       endif
 
       call get_interm_adc2_save(ndimf,kpqf(:,:),'f')
@@ -340,7 +342,7 @@
 !-----------------------------------------------------------------------
 ! Diagonalisation in the final space
 !-----------------------------------------------------------------------
-      call davdiag_block(ndimf,kpqf(:,:),'f')
+      call davdir_block(ndimf,kpqf(:,:),'f')
 
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS
@@ -381,7 +383,7 @@
       use constants
       use parameters
       use fspace
-!      use diagmod
+      use diagmod
         
       implicit none
 
@@ -419,7 +421,7 @@
 !-----------------------------------------------------------------------
 ! Diagonalisation
 !-----------------------------------------------------------------------
-!      call master_eig(ndim,noffd,'i')
+      call master_eig(ndim,noffd,'i')
       
       return
 
@@ -434,7 +436,7 @@
       use parameters
       use fspace
       use get_matrix_dipole
-!      use diagmod
+      use diagmod
       use guessvecs
         
       implicit none
@@ -477,7 +479,7 @@
 !-----------------------------------------------------------------------
 ! Diagonalisation in the final space
 !-----------------------------------------------------------------------
-!      call master_eig(ndimf,noffdf,'f')
+      call master_eig(ndimf,noffdf,'f')
         
 !-----------------------------------------------------------------------
 ! Allocate the travec array that will hold the contraction of the IS

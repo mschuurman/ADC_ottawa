@@ -302,6 +302,309 @@ contains
 
   end function Cc2_ph_ph
 
+!#######################################################################
+
+!!$*******************************************************************************
+!!$*******************************************************************************
+!!$*********************************PH-2PH BLOCK**********************************
+!!$*******************************************************************************
+!!$*******************************************************************************
+
+!!$  We distinguish here between five different types of coupling. 
+!!$ Calculating Cak,a'b'k'l'
+
+!#######################################################################
+  
+!!$ a'|=b' and k'|=l'; spin case 1
+  
+  function C11_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+    real(d)             :: func
+ 
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+vpqrs(kpr,k,lpr,bpr)+vpqrs(lpr,k,kpr,bpr)
+    if (a.eq.apr) func=func+vpqrs(k,kpr,lpr,bpr)+vpqrs(k,lpr,kpr,bpr)
+    
+!    if (a.eq.bpr) func=func+vpqrs(kpr,k,lpr,apr)+vpqrs(lpr,k,kpr,apr)
+    if (a.eq.bpr) func=func+vpqrs(k,kpr,lpr,apr)+vpqrs(k,lpr,kpr,apr)
+
+!    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+
+!    if (k.eq.lpr) func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+    if (k.eq.lpr) func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+    func=func/sqrt(2.0d0)
+    
+    return
+
+  end function C11_ph_2p2h
+
+!#######################################################################
+
+!!$ a'|=b' and k'|=l'; spin case 2
+  
+  function C22_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+    real(d)             :: func
+
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+    if (a.eq.apr) func=func+(vpqrs(k,kpr,lpr,bpr)+vpqrs(k,lpr,kpr,bpr)) 
+
+    if (a.eq.bpr) then
+!       func=func-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+       func=func-(vpqrs(k,kpr,lpr,apr)+vpqrs(k,lpr,kpr,apr))
+!       func=sqrt(2.0d0)*func/3.0d0
+       func=func/3.0d0
+    endif
+
+!    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+
+    if (k.eq.lpr) then
+!       func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+       func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+!       func=sqrt(2.0d0)*func/3.0d0
+       func=func/3.0d0
+    endif
+
+    func=sqrt(3.0d0)*func/sqrt(2.0d0)
+   
+  end function C22_ph_2p2h
+  
+!#######################################################################
+
+!!$ a'=b' and k'|=l' 
+  
+  function C33_ph_2p2h(j,k,ipr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: j,k,ipr,kpr,lpr
+    real(d)             :: func
+
+    func=0.0d0
+    
+    if (j.eq.ipr) then
+!       func=func+(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
+       func=func+(vpqrs(k,kpr,lpr,ipr)+vpqrs(k,lpr,kpr,ipr))
+       func=func/sqrt(2.0d0)
+    endif
+
+!    if (k.eq.kpr) func=func-vpqrs(j,ipr,lpr,ipr)
+    if (k.eq.kpr) func=func-vpqrs(j,ipr,lpr,ipr)
+    
+!    if (k.eq.lpr) func=func-vpqrs(j,ipr,kpr,ipr)
+    if (k.eq.lpr) func=func-vpqrs(j,ipr,kpr,ipr)
+
+!    func=func/sqrt(2.0d0)
+    func=sqrt(2.0d0)*func
+
+  end function C33_ph_2p2h
+
+!#######################################################################
+
+!!$ a'|=b' and k'=l'
+
+  function C44_ph_2p2h(a,k,apr,bpr,kpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr
+    real(d)             :: func
+  
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,bpr)
+    if (a.eq.apr) func=func+vpqrs(k,kpr,kpr,bpr)
+
+!    if (a.eq.bpr) func=func+vpqrs(kpr,k,kpr,apr)
+    if (a.eq.bpr) func=func+vpqrs(k,kpr,kpr,apr)
+
+    if (k.eq.kpr) then
+!       func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+       func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+       func=func/sqrt(2.0d0)
+    endif
+
+!    func=func/sqrt(2.0d0)
+    func=sqrt(2.0d0)*func
+
+  end function C44_ph_2p2h
+
+!#######################################################################
+
+!!$ a'=b' and k'=l'
+  
+  function C55_ph_2p2h(a,k,apr,kpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,kpr
+    real(d)             :: func
+
+    func=0.0d0
+     
+!    if (a.eq.apr) func=func+vpqrs(kpr,apr,kpr,k)
+    if (a.eq.apr) func=func+vpqrs(k,kpr,kpr,apr)
+
+!    if (k.eq.kpr) func=func-vpqrs(a,apr,kpr,apr)
+    if (k.eq.kpr) func=func-vpqrs(a,apr,kpr,apr)
+    
+    func=sqrt(2.0d0)*func
+   
+  end function C55_ph_2p2h
+
+!#######################################################################
+  
+!!$ a'|=b' and k'|=l'; spin case 1
+  
+  function C11_1_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+    real(d)             :: func
+ 
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+vpqrs(kpr,k,lpr,bpr)+vpqrs(lpr,k,kpr,bpr)
+    !if (a.eq.apr) 
+    func=func+vpqrs(k,kpr,lpr,bpr)!+vpqrs(k,lpr,kpr,bpr)
+    
+!    if (a.eq.bpr) func=func+vpqrs(kpr,k,lpr,apr)+vpqrs(lpr,k,kpr,apr)
+    !if (a.eq.bpr) 
+    func=func+vpqrs(k,kpr,lpr,apr)!+vpqrs(k,lpr,kpr,apr)
+
+!    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+    !if (k.eq.kpr) 
+    func=func-vpqrs(a,apr,lpr,bpr)!+vpqrs(a,bpr,lpr,apr)
+
+!    if (k.eq.lpr) func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+    !if (k.eq.lpr) 
+    func=func-vpqrs(a,apr,kpr,bpr)!+vpqrs(a,bpr,kpr,apr)
+
+    !func=func/sqrt(2.0d0)
+    
+    return
+
+  end function C11_1_ph_2p2h
+
+!#######################################################################
+
+!!$ a'|=b' and k'|=l'; spin case 2
+  
+  function C22_1_ph_2p2h(a,k,apr,bpr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr,lpr
+    real(d)             :: func
+
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+(vpqrs(kpr,k,lpr,bpr)+vpqrs(kpr,bpr,lpr,k))
+    !if (a.eq.apr) 
+    func=func+3.0d0*(vpqrs(k,kpr,lpr,bpr))!+vpqrs(k,lpr,kpr,bpr)) 
+
+    !if (a.eq.bpr) then
+!       func=func-(vpqrs(kpr,k,lpr,apr)+vpqrs(kpr,apr,lpr,k))
+       func=func+(vpqrs(k,kpr,lpr,apr))!+vpqrs(k,lpr,kpr,apr))
+!       func=func/3.0d0
+    !endif
+
+!    if (k.eq.kpr) func=func-(vpqrs(a,apr,lpr,bpr)+vpqrs(a,bpr,lpr,apr))
+    !if (k.eq.kpr) 
+    func=func-3.0d0*(vpqrs(a,apr,lpr,bpr))!+vpqrs(a,bpr,lpr,apr))
+
+    !if (k.eq.lpr) then
+!       func=func+(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+       func=func+(vpqrs(a,apr,kpr,bpr))!+vpqrs(a,bpr,kpr,apr))
+!       func=func/3.0d0
+    !endif
+
+!    func=sqrt(3.0d0)*func!/sqrt(2.0d0)
+    func=2.0d0*func/sqrt(12.0d0)
+   
+  end function C22_1_ph_2p2h
+  
+!#######################################################################
+
+!!$ a'=b' and k'|=l' 
+  
+  function C33_1_ph_2p2h(j,k,ipr,kpr,lpr) result(func)
+    
+    integer, intent(in) :: j,k,ipr,kpr,lpr
+    real(d)             :: func
+
+    func=0.0d0
+    
+    !if (j.eq.ipr) then
+!       func=func+(vpqrs(kpr,k,lpr,ipr)+vpqrs(kpr,ipr,lpr,k))
+       func=func+(vpqrs(k,kpr,lpr,ipr))!+vpqrs(k,lpr,kpr,ipr))
+!       func=func/sqrt(2.0d0)
+    !endif
+
+!    if (k.eq.kpr) func=func-vpqrs(j,ipr,lpr,ipr)
+    !if (k.eq.kpr) 
+    func=func-vpqrs(j,ipr,lpr,ipr)
+    
+!    if (k.eq.lpr) func=func-vpqrs(j,ipr,kpr,ipr)
+    !if (k.eq.lpr) 
+    func=func-vpqrs(j,ipr,kpr,ipr)
+
+!    func=func/sqrt(2.0d0)
+    func=sqrt(2.0d0)*func
+
+  end function C33_1_ph_2p2h
+
+!#######################################################################
+
+!!$ a'|=b' and k'=l'
+
+  function C44_1_ph_2p2h(a,k,apr,bpr,kpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,bpr,kpr
+    real(d)             :: func
+  
+    func=0.0d0
+
+!    if (a.eq.apr) func=func+vpqrs(kpr,k,kpr,bpr)
+    !if (a.eq.apr) 
+    func=func+vpqrs(k,kpr,kpr,bpr)
+
+!    if (a.eq.bpr) func=func+vpqrs(kpr,k,kpr,apr)
+    !if (a.eq.bpr) 
+    func=func+vpqrs(k,kpr,kpr,apr)
+
+    !if (k.eq.kpr) then
+!       func=func-(vpqrs(a,apr,kpr,bpr)+vpqrs(a,bpr,kpr,apr))
+       func=func-(vpqrs(a,apr,kpr,bpr))!+vpqrs(a,bpr,kpr,apr))
+!       func=func/sqrt(2.0d0)
+    !endif
+
+!    func=func/sqrt(2.0d0)
+    func=sqrt(2.0d0)*func
+
+  end function C44_1_ph_2p2h
+
+!#######################################################################
+
+!!$ a'=b' and k'=l'
+  
+  function C55_1_ph_2p2h(a,k,apr,kpr) result(func)
+    
+    integer, intent(in) :: a,k,apr,kpr
+    real(d)             :: func
+
+    func=0.0d0
+     
+!    if (a.eq.apr) func=func+vpqrs(kpr,apr,kpr,k)
+    !if (a.eq.apr) 
+    func=func+vpqrs(k,kpr,kpr,apr)
+
+!    if (k.eq.kpr) func=func-vpqrs(a,apr,kpr,apr)
+    !if (k.eq.kpr) 
+    func=func+vpqrs(a,apr,kpr,apr)
+    
+    func=sqrt(2.0d0)*func
+   
+  end function C55_1_ph_2p2h
+
 !!#######################################################################
 ! IS
 !!!$ a'|=b' and k'|=l'; spin case 1

@@ -16,6 +16,7 @@
       integer            :: i,k,n,l
       character(len=120) :: atmp1,atmp2
       logical            :: iscvs,energyonly,ldiag,llanc,ldiffsection
+!      logical            :: lmatvec
 
 !-----------------------------------------------------------------------
 ! Set 'traps'
@@ -25,6 +26,7 @@
       llanc=.false.
       iscvs=.false.
       ldiffsection=.false.
+      lmatvec=.false.
 
 !-----------------------------------------------------------------------
 ! Read input file
@@ -121,6 +123,9 @@
 
          else if (keyword(i).eq.'tpa') then
             ltpa=.true.
+
+         else if (keyword(i).eq.'matvec') then
+            lmatvec=.true.
 
          else if (keyword(i).eq.'energy_only') then
             energyonly=.true.

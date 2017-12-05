@@ -169,6 +169,7 @@ module parameters
   logical                              :: ldipole
   real(d), dimension(:), allocatable   :: dipmom,dipmom_f
   logical                              :: lcis
+  logical                              :: lmatvec
 
 !!$************************************************
 !!$**********Physical Constants********************

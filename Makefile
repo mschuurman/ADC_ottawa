@@ -81,7 +81,7 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/scf_electronic_structure.o 
 
 #EIGEN1= source/eigen/diagmod.o \
-        source/eigen/block_lanczos.o
+#        source/eigen/block_lanczos.o
 
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
@@ -125,6 +125,7 @@ ADCLIB= source/adclib/defaults.o \
 #	source/adclib/adc2common.o
 
 EIGEN2= source/eigen/block_davidson.o \
+        source/eigen/dmatvec_davidson.o \
         source/eigen/diagmod.o \
         source/eigen/block_lanczos.o
 
@@ -204,6 +205,7 @@ ADC_OBJ=accuracy.o \
 	fspacetrial.o \
 	fspace2.o \
 	block_davidson.o \
+        dmatvec_davidson.o \
 	tdselib.o \
 	sillib.o \
 	csillib.o \
