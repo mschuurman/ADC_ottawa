@@ -35,7 +35,7 @@ contains
     integer                          :: dim,nmat
     integer                          :: i,j,k,l,m,n,noff,error
     integer                          :: ks
-    integer, parameter               :: maxit=1500
+    integer, parameter               :: maxit=15000
     real(d)                          :: thrsh
     real(d), dimension(dim,dim,nmat) :: A1,A
     real(d), dimension(dim,dim)      :: Q,tmp
@@ -61,7 +61,8 @@ contains
 !----------------------------------------------------------------------
 ! Convergence threshold
 !----------------------------------------------------------------------
-    thrsh=sqrt(epsilon(thrsh))
+    !thrsh=sqrt(epsilon(thrsh))
+    thrsh=1e-6_d
 
 !----------------------------------------------------------------------
 ! Initialisation: set the orthogonal transformation matrix Q as the
@@ -103,7 +104,7 @@ contains
     last=func
 
     ! Output our progress
-    write(ilog,'(2x,a10,i3,a2,ES15.7)') &
+    write(ilog,'(2x,a10,i4,a2,ES15.7)') &
          'Iteration ',0,': ',func
     
 !----------------------------------------------------------------------
@@ -170,9 +171,9 @@ contains
        func=sum(off(1:nmat))/nmat
        
        ! Output our progress
-       write(ilog,'(2x,a10,i3,a2,ES15.7,2x,ES15.7)') &
+       write(ilog,'(2x,a10,i4,a2,ES15.7,2x,ES15.7)') &
             'Iteration ',n,': ',func,abs(last-func)
-       
+
        ! Exit if we have reached convergence
        if (converged) then
           exit
@@ -190,9 +191,9 @@ contains
        call error_control
     endif
 
-!-----------------------------------------------------------------------    
+!----------------------------------------------------------------------
 ! Output timings
-!-----------------------------------------------------------------------    
+!----------------------------------------------------------------------
     call times(tw2,tc2)
     write(ilog,'(/,a,1x,F11.4,1x,a)') 'Time taken:',tw2-tw1," s"
 

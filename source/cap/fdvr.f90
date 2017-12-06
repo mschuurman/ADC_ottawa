@@ -29,6 +29,7 @@ contains
     real(dp), dimension(nbas,nbas) :: cap_mo
     real(dp), allocatable          :: Q(:,:)
     real(dp), allocatable          :: r(:,:)
+    real(dp), allocatable          :: w(:)
     type(gam_structure)            :: gam
 
 !----------------------------------------------------------------------
@@ -40,44 +41,76 @@ contains
 
     ! F-DVR points
     allocate(r(3,nbas))
-    r=0.0d0    
+    r=0.0d0
     
+    ! F-DVR weights
+    allocate(w(nbas))
+    w=0.0d0
+
 !----------------------------------------------------------------------
-! Determine the F-DVR points and transformation matrix
+! Determine the F-DVR points, weights and transformation matrix
 !----------------------------------------------------------------------
-    call calc_dvr(Q,r)
+    call calc_dvr(Q,r,w,gam)
+
+!----------------------------------------------------------------------
+!
+!----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(Q)
     deallocate(r)
-    
+    deallocate(w)
+
     return
     
   end subroutine monomial_fdvr
 
 !######################################################################
 
-  subroutine calc_dvr(Q,r)
+  subroutine calc_dvr(Q,r,w,gam)
 
     use channels
     use parameters
     use simdiag
-    
+    use import_gamess
+    use density, only: get_ao_values
+
     implicit none
 
-    integer                        :: i,j
+    integer                        :: i,j,nao
     real(dp), dimension(nbas,nbas) :: Q
     real(dp), dimension(3,nbas)    :: r
-    real(dp), dimension(nbas,nbas) :: xdvr
+    real(dp), dimension(3)         :: ri
+    real(dp), dimension(nbas)      :: w
+    real(dp), allocatable          :: xdvr(:,:)
     real(dp), allocatable          :: xmo(:,:,:)
+    real(dp), allocatable          :: aovalues(:)
+    real(dp), allocatable          :: movalues(:)
+    real(dp), allocatable          :: dvrvalues(:)
+    type(gam_structure)            :: gam
 
 !----------------------------------------------------------------------    
 ! Allocate arrays
 !----------------------------------------------------------------------
+    ! No. AOs
+    nao=gam%nbasis
+
     allocate(xmo(nbas,nbas,3))
     xmo=0.0d0
+
+    allocate(xdvr(nbas,nbas))
+    xdvr=0.0d0
+
+    allocate(aovalues(nao))
+    aovalues=0.0d0
+
+    allocate(movalues(nbas))
+    movalues=0.0d0
+
+    allocate(dvrvalues(nbas))
+    dvrvalues=0.0d0
 
 !----------------------------------------------------------------------
 ! Set up the MO representations of the three components of the
@@ -104,15 +137,43 @@ contains
        enddo
     enddo
 
+!----------------------------------------------------------------------
+! Calculate the F-DVR weights
+!----------------------------------------------------------------------
     do i=1,nbas
-       print*,i,r(i,1),r(i,2),r(i,3)
+       
+       ! Current F-DVR point
+       ri(1:3)=r(1:3,i)
+
+       ! AO values at the current F-DVR point
+       call get_ao_values(gam,aovalues,ri,nao)
+
+       ! MO values at the current F-DVR point
+       movalues=matmul(transpose(ao2mo),aovalues)
+
+       ! F-DVR values at the current F-DVR point
+       dvrvalues=matmul(transpose(Q),movalues)
+
+       ! F-DVR weight
+       w(i)=1.0d0/(dvrvalues(i)**2)
+
+    enddo
+
+    ! CHECK
+    do i=1,nbas
+       write(ilog,'(i4,3(3x,F8.4),3x,ES15.8)') i,r(1,i),r(2,i),r(3,i),w(i)
     enddo
     stop
-    
+    ! CHECK
+
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(xmo)
+    deallocate(xdvr)
+    deallocate(aovalues)
+    deallocate(movalues)
+    deallocate(dvrvalues)
     
     return
     
