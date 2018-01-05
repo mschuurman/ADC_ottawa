@@ -1,0 +1,43 @@
+method = adc2-s, adc2-s
+
+initial_state = 0
+istate_symm = 1
+
+dipole_component = z
+dipole_symm = 1
+
+frozen_core=initial
+
+no_tdm
+
+cvs
+
+matvec
+
+scf_iter=120
+
+mem=18000
+
+diag_section
+ preconditioner = olsen
+ nstates = 7
+ block_size = 12
+ maxvec = 36
+ tol = 1e-6
+ maxit = 500
+ guess = adc1
+ deflate
+end-diag_section
+
+diag_final_section
+ preconditioner = olsen
+ nstates = 50
+ block_size = 80
+ maxvec = 320
+ tol = 1e-6
+ maxit = 500
+ guess = adc1
+end-diag_final_section
+
+end-input
+
