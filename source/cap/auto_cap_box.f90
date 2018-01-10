@@ -108,7 +108,7 @@ contains
     use channels
     use parameters
     use iomod
-    use density
+    use electron_density
     use import_gamess
 
     implicit none

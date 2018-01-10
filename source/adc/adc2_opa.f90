@@ -25,7 +25,8 @@
         use guessvecs
         use mp2
         use targetmatching
-
+        use nto
+        
         implicit none
 
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
@@ -145,6 +146,11 @@
         call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
              travec2,ndim)
 
+!-----------------------------------------------------------------------
+! If requested, calculate NTOs
+!-----------------------------------------------------------------------
+        if (ldiagfinal.and.lnto) call adc2_nto(ndimf,kpqf)
+        
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------

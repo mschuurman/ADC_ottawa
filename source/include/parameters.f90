@@ -26,7 +26,6 @@ module parameters
   character*3,dimension(8)             :: labSym
   real(d), dimension(:), allocatable   :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
-  real(d), dimension(:,:), allocatable :: density_matrix
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
   character*100                        :: moType ! Either 'incore' or 'disk'
   integer                              :: imotype
@@ -169,7 +168,8 @@ module parameters
   logical                              :: ldipole
   real(d), dimension(:), allocatable   :: dipmom,dipmom_f
   logical                              :: lcis
-
+  logical                              :: lnto
+  
 !!$************************************************
 !!$**********Physical Constants********************
 !!$************************************************

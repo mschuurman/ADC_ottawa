@@ -2,7 +2,7 @@
 ! Routines for evaluating the electron density
 !######################################################################
 
-module density
+module electron_density
 
   implicit none
 
@@ -200,4 +200,4 @@ contains
   
 !######################################################################
   
-end module density
+end module electron_density

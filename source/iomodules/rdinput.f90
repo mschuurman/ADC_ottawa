@@ -348,6 +348,9 @@
             if (keyword(1).ne.'end-diffuse_section') goto 75
             i=inkw
 
+         else if (keyword(i).eq.'nto') then
+            lnto=.true.
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -447,7 +450,7 @@
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
       call checkinp(ldiag,llanc,energyonly)
-        
+      
 !-----------------------------------------------------------------------
 ! Read the geometry section if necessary
 !-----------------------------------------------------------------------
@@ -879,6 +882,16 @@
       if (method.eq.4.and..not.lpropagation) then
          msg='ADC(1)-x calculations are only currently supported for &
               wavepacket propagation calculations'
+         goto 999
+      endif
+
+!-----------------------------------------------------------------------
+! Natural transition orbitals: currently these are only available for
+! excitation from the ground state
+!-----------------------------------------------------------------------
+      if (lnto.and.statenumber.ne.0) then
+         msg='NTOs are currently only available for excitation from &
+              the ground state'
          goto 999
       endif
       

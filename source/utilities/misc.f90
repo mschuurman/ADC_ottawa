@@ -1158,24 +1158,4 @@ contains
 
 !#######################################################################
 
-  subroutine read_density_matrix
-
-
-  integer ::  k,a
-  integer :: i
-  real*8, dimension(nBas,nOcc) :: density_matrix
-
-  OPEN(unit=77,file="density.dat",status='OLD',access='SEQUENTIAL',form='FORMATTED')
-  write(ilog,*) "nBas from read_density_matrix",nBas
-
-  do i=1,nBas
-  read(77) k,a,density_matrix(a,k)
-  end do
-
-  close(77)
-
-  end subroutine read_density_matrix
- 
-!#######################################################################
-
 end module misc

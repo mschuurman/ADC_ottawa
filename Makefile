@@ -121,7 +121,9 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/fspace2.o \
         source/adclib/guessvecs.o \
 	source/adclib/mp2.o \
-	source/adclib/density.o \
+	source/adclib/electron_density.o \
+	source/adclib/density_matrix.o \
+	source/adclib/nto.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
@@ -215,7 +217,9 @@ ADC_OBJ=accuracy.o \
 	diagmod.o \
 	block_lanczos.o \
 	mp2.o \
-	density.o \
+	electron_density.o \
+	density_matrix.o \
+	nto.o \
 	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \

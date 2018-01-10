@@ -38,7 +38,8 @@
       hinit=1
       maxmem=250.0d0
       ldipole=.false.
-
+      lnto=.false.
+      
 !-----------------------------------------------------------------------
 ! CIS calculation (use the unmodified ground-to-excited state
 ! transition moments)

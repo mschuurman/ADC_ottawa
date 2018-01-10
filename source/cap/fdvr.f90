@@ -75,7 +75,7 @@ contains
     use parameters
     use simdiag
     use import_gamess
-    use density, only: get_ao_values
+    use electron_density, only: get_ao_values
 
     implicit none
 
