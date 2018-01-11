@@ -38,7 +38,7 @@
         real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
         real(d), dimension(:), allocatable   :: travec
         real(d)                              :: e_init,e0
-        real(d), dimension(:,:), allocatable :: rvec,travec2
+        real(d), dimension(:,:), allocatable :: rvec
         real(d), dimension(:), allocatable   :: vec_init
         real*8, dimension(:), allocatable    :: mtmf
         type(gam_structure)                  :: gam
@@ -84,6 +84,9 @@
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state to the Davidson states
+!
+! Note that it is in initial_space_tdm that the rvec array is
+! allocated and filled in
 !-----------------------------------------------------------------------
         if (statenumber.gt.0) call initial_space_tdm(ener,rvec,ndim,&
              mtm,tmvec,osc_str,kpq)
@@ -126,7 +129,7 @@
 ! Calculation of the final space states
 !-----------------------------------------------------------------------
         call final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffd,noffdf,rvec,travec2)
+             vec_init,mtmf,noffd,noffdf)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the final states
@@ -143,8 +146,15 @@
 ! Note that if we are NOT considering ionization, then we will also
 ! output the final Davidson state energies and configurations here 
 !-----------------------------------------------------------------------
+        ! TEMPORARY BODGE
+        ! final_space_tdm assumes that travec has been allocated, but
+        ! this is only true if the intitial state is not the ground
+        ! state...
+        if (.not.allocated(travec)) allocate(travec(ndimf))
+        ! TEMPORARY BODGE
+
         call final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
-             travec2,ndim)
+             ndim)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate NTOs
@@ -160,7 +170,6 @@
         if (allocated(travec)) deallocate(travec)
         if (allocated(dipmom)) deallocate(dipmom)
         if (allocated(dipmom_f)) deallocate(dipmom_f)
-        if (allocated(travec2)) deallocate(travec2)
         if (allocated(dpl_all)) deallocate(dpl_all)
         if (allocated(travec_ic)) deallocate(travec_ic)
         if (allocated(travec_iv)) deallocate(travec_iv)
@@ -177,7 +186,7 @@
 !#######################################################################
 
       subroutine final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-           vec_init,mtmf,noffd,noffdf,rvec,travec2)
+           vec_init,mtmf,noffd,noffdf)
 
         use constants
         use parameters
@@ -191,15 +200,13 @@
         integer*8                                 :: noffd,noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2
 
         if (ldiagfinal) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-                kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
+                kpqf,travec,vec_init,mtmf,noffdf)
         else
            call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-                kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
+                kpqf,travec,vec_init,mtmf,noffdf)
         endif
         
         return
@@ -209,7 +216,7 @@
 !#######################################################################
       
       subroutine lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
-           travec,vec_init,mtmf,noffdf,rvec,travec2)
+           travec,vec_init,mtmf,noffdf)
 
         use constants
         use parameters
@@ -225,8 +232,6 @@
         integer*8                                 :: noffdf
         real(d), dimension(:), allocatable        :: travec,mtmf
         real(d), dimension(ndim)                  :: vec_init
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2
 
 !-----------------------------------------------------------------------        
 ! Acknowledging that we cannot use 2h2p unit vectors as initial
@@ -266,7 +271,7 @@
 ! and passed back in the travec array
 !-----------------------------------------------------------------------
         call lanczos_guess_vecs(vec_init,ndim,ndimsf,&
-             travec,ndimf,kpq,kpqf,mtmf,rvec,travec2)
+             travec,ndimf,kpq,kpqf,mtmf)
 
 !-----------------------------------------------------------------------
 ! Write the final space ADC(2) Hamiltonian matrix to file
@@ -301,7 +306,7 @@
 !#######################################################################
 
       subroutine lanczos_guess_vecs(vec_init,ndim,ndimsf,travec,ndimf,&
-           kpq,kpqf,mtmf,rvec,travec2)
+           kpq,kpqf,mtmf)
 
         use constants
         use parameters
@@ -313,8 +318,6 @@
         real(d), dimension(ndim)                  :: vec_init
         real(d), dimension(ndimf)                 :: travec
         real(d), dimension(:), allocatable        :: mtmf
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2
 
         if (statenumber.eq.0) then
            ! Ionisation from the ground state
@@ -659,7 +662,7 @@
 !#######################################################################
 
       subroutine final_space_tdm(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
-           travec2,ndim)
+           ndim)
 
         use constants
         use parameters
@@ -670,7 +673,6 @@
         integer                                   :: ndimf,ndimsf,ndim
         real(d), dimension(ndimf)                 :: travec,mtmf
         real(d)                                   :: e_init
-        real(d), dimension(ndimf,3*(davstates+1)) :: travec2
 
         if (ldiagfinal) then
            ! Davidson states

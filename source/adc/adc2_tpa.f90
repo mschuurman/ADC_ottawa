@@ -32,7 +32,7 @@ contains
     real(d)                              :: e_init,e0,time
     real(d), dimension(:), allocatable   :: ener,mtm,mtmf,tmvec,osc_str,&
                                             vec_init,travec
-    real(d), dimension(:,:), allocatable :: rvec,travec2
+    real(d), dimension(:,:), allocatable :: rvec
     type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
@@ -122,7 +122,7 @@ contains
 ! Calculation of the final space states
 !-----------------------------------------------------------------------
     call final_space_diag_tpa(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-         vec_init,mtmf,noffd,noffdf,rvec,travec2)
+         vec_init,mtmf,noffd,noffdf,rvec)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the final states
@@ -135,7 +135,7 @@ contains
 ! Calculate and output the TPA cross-sections
 !-----------------------------------------------------------------------
     call final_space_tdm_tpa(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
-         travec2,ndim)
+         ndim)
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -146,7 +146,6 @@ contains
     if (allocated(travec)) deallocate(travec)
     if (allocated(dipmom)) deallocate(dipmom)
     if (allocated(dipmom_f)) deallocate(dipmom_f)
-    if (allocated(travec2)) deallocate(travec2)
     if (allocated(dpl_all)) deallocate(dpl_all)
     if (allocated(travec_ic)) deallocate(travec_ic)
     if (allocated(travec_iv)) deallocate(travec_iv)
@@ -208,7 +207,7 @@ contains
 !#######################################################################
 
   subroutine final_space_diag_tpa(ndim,ndimf,ndimsf,kpq,kpqf,travec,&
-       vec_init,mtmf,noffd,noffdf,rvec,travec2)
+       vec_init,mtmf,noffd,noffdf,rvec)
 
     use constants
     use parameters
@@ -223,7 +222,6 @@ contains
     real(d), dimension(:), allocatable        :: travec,mtmf
     real(d), dimension(ndim)                  :: vec_init
     real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2
 
 !-----------------------------------------------------------------------
 ! Generate the contractions of the initial and final state vectors
@@ -231,8 +229,7 @@ contains
 !-----------------------------------------------------------------------
     if (lcvsfinal) then
        call davidson_final_space_diag(ndim,ndimf,ndimsf,&
-            kpq,kpqf,travec,vec_init,mtmf,noffdf,rvec,&
-            travec2)
+            kpq,kpqf,travec,vec_init,mtmf,noffdf)
        call dipole_ispace_contraction_tpxas(ndim,ndimf,kpq,kpqf)
     else
        call dipole_ispace_contraction_tpa(ndim,ndimf,kpq,kpqf)
@@ -995,7 +992,7 @@ contains
 !#######################################################################  
 
   subroutine final_space_tdm_tpa(ndimf,ndimsf,travec,e_init,mtmf,kpqf,&
-       travec2,ndim)
+       ndim)
 
     use constants
     use parameters
@@ -1006,7 +1003,6 @@ contains
     integer                                   :: ndimf,ndimsf,ndim
     real(d), dimension(ndimf)                 :: travec,mtmf
     real(d)                                   :: e_init
-    real(d), dimension(ndimf,3*(davstates+1)) :: travec2
 
     if (lcvsfinal) then
        call tdm_tpxas(ndim,ndimf,e_init)

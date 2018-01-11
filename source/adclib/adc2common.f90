@@ -261,7 +261,7 @@
 !#######################################################################
 
     subroutine davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,kpqf,&
-         travec,vec_init,mtmf,noffdf,rvec,travec2)
+         travec,vec_init,mtmf,noffdf)
 
       use constants
       use parameters
@@ -277,8 +277,6 @@
       integer*8                                 :: noffdf
       real(d), dimension(:), allocatable        :: travec,mtmf
       real(d), dimension(ndim)                  :: vec_init
-      real(d), dimension(ndim,davstates)        :: rvec
-      real(d), dimension(:,:), allocatable      :: travec2
 
 !-----------------------------------------------------------------------        
 ! If requested, determine the Davidson guess vectors by diagonalising 

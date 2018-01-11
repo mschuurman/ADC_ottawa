@@ -366,7 +366,7 @@ contains
 ! Finish timing and output the wall time taken
 !-----------------------------------------------------------------------
     call times(tw2,tc2)
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+    write(ilog,'(2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
 
     return
     
@@ -403,8 +403,8 @@ contains
 !-----------------------------------------------------------------------
     fret=0.0d0
 
-    do i=occ1,nocc
-       i1=roccnum(i1)
+    do i1=occ1,nocc
+       i=roccnum(i1)
        
        do j1=occ1,nocc
           j=roccnum(j1)
