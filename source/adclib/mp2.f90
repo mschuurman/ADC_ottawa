@@ -1,3 +1,8 @@
+!#######################################################################
+! mp2: routines for the calculation of various MP2 quantities: energies
+!      density matrices and the D2 diagnostic
+!#######################################################################
+
 module mp2
 
 contains
@@ -413,7 +418,6 @@ contains
              c=roccnum(c1)
              
              delta_ijac=1.0d0/(e(a)+e(c)-e(i)-e(j))
-             
              delta_ijbc=1.0d0/(e(b)+e(c)-e(i)-e(j))
              
              ftmp=vpqrs(a,i,c,j)*(2.0d0*vpqrs(i,b,j,c)-vpqrs(i,c,j,b))&
@@ -456,7 +460,7 @@ contains
     else
        occ1=1
     endif
-
+    
 !-----------------------------------------------------------------------
 ! Calculate the matrix element
 !-----------------------------------------------------------------------

@@ -33,8 +33,15 @@ contains
     real(d), dimension(nbas,nbas,nstates)     :: trdens
     real(d), dimension(ndimf,nstates)         :: rvec
     real(d), allocatable                      :: rhomp2(:,:)
-    real(d)                                  :: tw1,tw2,tc1,tc2
-      
+    real(d)                                   :: tw1,tw2,tc1,tc2
+
+
+
+    integer :: p,q
+    real(d) :: chk
+
+
+    
 !----------------------------------------------------------------------
 ! Output what we are doing
 !----------------------------------------------------------------------
@@ -87,6 +94,11 @@ contains
 !----------------------------------------------------------------------
     call adc2_trdens_gs_virt_occ(trdens,ndimf,kpqf,rvec,nstates,&
          rhomp2)
+
+!----------------------------------------------------------------------
+! Calculation of the occupied-virtual block
+!----------------------------------------------------------------------
+    call adc2_trdens_gs_occ_virt(trdens,ndimf,kpqf,rvec,nstates)
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -99,7 +111,22 @@ contains
     call times(tw2,tc2)
 
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
-      
+
+    !! CHECK
+    !print*,
+    !do i=1,nstates
+    !   chk=0.0d0
+    !   do p=1,nbas
+    !      do q=1,nbas
+    !         chk=chk+trdens(p,q,i)*dpl(p,q)
+    !      enddo
+    !   enddo
+    !   print*,i,chk
+    !enddo
+    !print*,
+    !STOP
+    !! CHECK
+
     return
       
   end subroutine adc2_trden_gs
@@ -151,7 +178,7 @@ contains
     
     trdens(1:nocc,1:nocc,:)=trdens(1:nocc,1:nocc,:) &
          +2.0d0*sqrt(2.0d0)*tmp(1:nocc,1:nocc,:)
-      
+                  
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
 !----------------------------------------------------------------------
@@ -240,7 +267,7 @@ contains
     
     trdens(1:nocc,1:nocc,:)=trdens(1:nocc,1:nocc,:) &
          +sqrt(3.0d0)*tmp(1:nocc,1:nocc,:)
-
+         
 !----------------------------------------------------------------------
 ! 2h2p a|=b, i|=j II contributions
 !----------------------------------------------------------------------
@@ -320,7 +347,7 @@ contains
     trdens(nocc+1:nbas,nocc+1:nbas,:)=&
          trdens(nocc+1:nbas,nocc+1:nbas,:)&
          -2.0d0*sqrt(2.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
-
+         
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
 !----------------------------------------------------------------------
@@ -413,7 +440,7 @@ contains
     trdens(nocc+1:nbas,nocc+1:nbas,:)=&
          trdens(nocc+1:nbas,nocc+1:nbas,:)&
          -sqrt(3.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
-
+         
 !----------------------------------------------------------------------
 ! 2h2p a|=b, i|=j II contributions
 !----------------------------------------------------------------------
@@ -448,8 +475,8 @@ contains
 
 !######################################################################
 ! adc2_trden_gs_virt_occ: calculation of the virtual-occupied block of
-!                          the ADC(2) ground-to-excited state
-!                          transition density matrix
+!                         the ADC(2) ground-to-excited state
+!                         transition density matrix
 !######################################################################
   
   subroutine adc2_trdens_gs_virt_occ(trdens,ndimf,kpqf,rvec,nstates,&
@@ -593,6 +620,160 @@ contains
 
   end subroutine adc2_trdens_gs_virt_occ
   
+!######################################################################
+! adc2_trden_gs_occ_virt: calculation of the occupied-virtual block of
+!                         the ADC(2) ground-to-excited state
+!                         transition density matrix
+!######################################################################
+  
+  subroutine adc2_trdens_gs_occ_virt(trdens,ndimf,kpqf,rvec,nstates)
+
+    implicit none
+
+    integer                                   :: ndimf,nstates
+    integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
+    integer                                   :: cnt,nlim1,nlim2
+    integer                                   :: i,j,a,b
+    real(d), dimension(nbas,nbas,nstates)     :: trdens
+    real(d), dimension(ndimf,nstates)         :: rvec
+    real(d), dimension(nbas,nbas)             :: rhomp2
+    real(d), allocatable                      :: tmp(:,:,:)
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(tmp(nbas,nbas,nstates))
+
+!----------------------------------------------------------------------
+! 1h1p contributions
+!----------------------------------------------------------------------
+    nlim1=1
+    nlim2=kpqf(1,0)
+
+    tmp=0.0d0
+
+    do a=nocc+1,nbas
+       do i=1,nocc
+          do cnt=nlim1,nlim2
+             j=kpqf(3,cnt)
+             b=kpqf(5,cnt)
+             tmp(i,a,:)=tmp(i,a,:)+mu(i,j,a,b)*rvec(cnt,:)
+          enddo
+       enddo
+    enddo
+
+    trdens(1:nocc,nocc+1:nbas,:)=trdens(1:nocc,nocc+1:nbas,:) &
+         -sqrt(2.0d0)*tmp(1:nocc,nocc+1:nbas,:)
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(tmp)
+    
+    return
+
+  end subroutine adc2_trdens_gs_occ_virt
+    
+!######################################################################
+! mu: calculates the intermediates entering into the working equation
+!     for the occupied-virtual block of the ADC(2) ground-to-excited
+!     state transition density matrix
+!######################################################################
+  
+  function mu(i,j,a,b)
+
+    implicit none
+
+    integer :: i,j,a,b
+    integer :: c,dd,k,l
+    real(d) :: mu
+    real(d) :: delta_ijab,delta_ikac,delta_jkbc,delta_jkac,&
+               delta_ikbc,delta_ijcd,delta_klab
+    
+    mu=0.0d0
+
+!----------------------------------------------------------------------
+! mu1
+!----------------------------------------------------------------------
+    do c=nocc+1,nbas
+       do k=1,nocc
+          delta_ikac=1.0d0/(e(i)+e(k)-e(a)-e(c))
+          mu=mu+delta_ikac &
+               *(2.0d0*vpqrs(b,j,k,c)-vpqrs(b,c,k,j)) &
+               *(2.0d0*vpqrs(c,k,a,i)-vpqrs(c,i,a,k))
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! mu2
+!----------------------------------------------------------------------
+    do c=nocc+1,nbas
+       do k=1,nocc
+          delta_jkbc=1.0d0/(e(j)+e(k)-e(b)-e(c))
+          mu=mu+delta_ikac &
+               *(2.0d0*vpqrs(k,c,a,i)-vpqrs(k,i,a,c)) &
+               *(2.0d0*vpqrs(b,j,c,k)-vpqrs(b,k,c,j))
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! mu3
+!----------------------------------------------------------------------
+    do c=nocc+1,nbas
+       do k=1,nocc
+          delta_jkac=1.0d0/(e(j)+e(k)-e(a)-e(c))
+          mu=mu-delta_jkac &
+               *(vpqrs(b,i,k,c)*(2.0d0*vpqrs(c,k,a,j)-vpqrs(c,j,a,k)) &
+               +vpqrs(b,c,k,i)*(2.0d0*vpqrs(c,j,a,k)-vpqrs(c,k,a,j)))
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! mu4
+!----------------------------------------------------------------------
+    do c=nocc+1,nbas
+       do k=1,nocc
+          delta_ikbc=1.0d0/(e(i)+e(k)-e(b)-e(c))
+          mu=mu-delta_ikbc &
+               *(vpqrs(b,i,c,k)*(2.0d0*vpqrs(k,c,a,j)-vpqrs(k,j,a,c)) &
+               +vpqrs(b,k,c,i)*(2.0d0*vpqrs(k,j,a,c)-vpqrs(k,c,a,j)))
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! mu5
+!----------------------------------------------------------------------
+    do c=nocc+1,nbas
+       do dd=nocc+1,nbas
+          delta_ijcd=1.0d0/(e(i)+e(j)-e(c)-e(dd))
+          mu=mu+delta_ijcd &
+               *(vpqrs(b,c,a,dd)*(2.0d0*vpqrs(c,j,dd,i)-vpqrs(c,i,dd,j)) &
+               +vpqrs(b,dd,a,c)*(2.0d0*vpqrs(c,i,dd,j)-vpqrs(c,j,dd,i)))
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! mu6
+!----------------------------------------------------------------------
+    do k=1,nocc
+       do l=1,nocc
+          delta_klab=1.0d0/(e(k)+e(l)-e(a)-e(b))
+          mu=mu+delta_klab &
+               *(vpqrs(b,k,a,l)*(2.0d0*vpqrs(k,j,l,i)-vpqrs(k,i,l,j)) &
+               +vpqrs(b,l,a,k)*(2.0d0*vpqrs(k,i,l,j)-vpqrs(k,j,l,i)))
+       enddo
+    enddo
+    
+!----------------------------------------------------------------------
+! Prefactor
+!----------------------------------------------------------------------
+    delta_ijab=1.0d0/(e(i)+e(j)-e(a)-e(b))
+    mu=delta_ijab*mu
+    
+    return
+    
+  end function mu
+    
 !######################################################################
   
 end module density_matrix
