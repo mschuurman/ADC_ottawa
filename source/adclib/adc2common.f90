@@ -233,10 +233,9 @@
       if (method.eq.2) then
          write(ilog,*) 'Calculating the initial space ADC(2)-s &
               matrix-vector multiplication'
-      else
-         write(ilog,*) 'Only available for ADC(2)-s'
-         stop
-         call error_control
+      else if (method.eq.3) then
+         write(ilog,*) 'Calculating the initial space ADC(2)-x &
+              matrix-vector multiplication'
       endif
 
 
@@ -310,10 +309,9 @@
       if (method.eq.2) then
          write(ilog,*) 'Calculating the final space ADC(2)-s &
               matrix-vector product'
-      else
-         write(ilog,*) 'Only available for ADC(2)-s'
-         stop
-         call error_control
+      else if (method.eq.3) then
+         write(ilog,*) 'Calculating the final space ADC(2)-x &
+              matrix-vector product'
       endif
 
       call get_interm_adc2_save(ndimf,kpqf(:,:),'f')
