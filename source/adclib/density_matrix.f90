@@ -35,12 +35,8 @@ contains
     real(d), allocatable                      :: rhomp2(:,:)
     real(d)                                   :: tw1,tw2,tc1,tc2
 
-
-
     integer :: p,q
     real(d) :: chk
-
-
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -112,20 +108,20 @@ contains
 
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
 
-    !! CHECK
-    !print*,
-    !do i=1,nstates
-    !   chk=0.0d0
-    !   do p=1,nbas
-    !      do q=1,nbas
-    !         chk=chk+trdens(p,q,i)*dpl(p,q)
-    !      enddo
-    !   enddo
-    !   print*,i,chk
-    !enddo
-    !print*,
-    !STOP
-    !! CHECK
+    ! CHECK: transition dipoles
+    print*,
+    do i=1,nstates
+       chk=0.0d0
+       do p=1,nbas
+          do q=1,nbas
+             chk=chk+trdens(p,q,i)*dpl(p,q)
+          enddo
+       enddo
+       print*,i,chk
+    enddo
+    print*,
+    STOP
+    ! CHECK: transition dipoles
 
     return
       
@@ -177,7 +173,7 @@ contains
     enddo
     
     trdens(1:nocc,1:nocc,:)=trdens(1:nocc,1:nocc,:) &
-         +2.0d0*sqrt(2.0d0)*tmp(1:nocc,1:nocc,:)
+         +sqrt(2.0d0)*tmp(1:nocc,1:nocc,:)
                   
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
@@ -346,7 +342,7 @@ contains
 
     trdens(nocc+1:nbas,nocc+1:nbas,:)=&
          trdens(nocc+1:nbas,nocc+1:nbas,:)&
-         -2.0d0*sqrt(2.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
+         -sqrt(2.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
          
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
@@ -555,7 +551,7 @@ contains
     enddo
 
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
-         +sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
+         +0.5d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
 
 !----------------------------------------------------------------------
 ! Second-order 1h1p contribution no. 2
@@ -571,7 +567,7 @@ contains
     enddo
 
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
-         -sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
+         -0.5d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
 
 !----------------------------------------------------------------------
 ! Second-order 1h1p contribution no. 3

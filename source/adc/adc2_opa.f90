@@ -157,9 +157,9 @@
              ndim)
 
 !-----------------------------------------------------------------------
-! If requested, calculate NTOs
+! If requested, calculate and output NTOs
 !-----------------------------------------------------------------------
-        if (ldiagfinal.and.lnto) call adc2_nto(ndimf,kpqf)
+        if (ldiagfinal.and.lnto) call adc2_nto(gam,ndimf,kpqf)
         
 !-----------------------------------------------------------------------
 ! Deallocate arrays

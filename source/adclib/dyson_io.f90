@@ -218,7 +218,7 @@
               do k=1,np
                  pk=pk+1
                  alpha=gam%atoms(i)%p_zet(p1-1+k)
-                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)                
+                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)
                  write(imolden,*) alpha,coeff
               enddo
 
