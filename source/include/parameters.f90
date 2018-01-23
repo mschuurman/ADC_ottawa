@@ -25,12 +25,12 @@ module parameters
   integer*4, dimension(:), allocatable :: orbSym
   character*3,dimension(8)             :: labSym
   real(d), dimension(:), allocatable   :: e,occNum
-  real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
-  real(d), dimension(:,:), allocatable :: density_matrix
-  type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
-  character*100                        :: moType ! Either 'incore' or 'disk'
-  integer                              :: imotype
-  real(d), dimension(:,:), allocatable :: hcore
+  real(d), dimension(:,:), allocatable    :: x_dipole,y_dipole,z_dipole,dpl
+  real(d), dimension(:,:), allocatable    :: density_matrix
+  real(d), dimension(:,:,:,:),allocatable :: moIntegrals
+  character*100                           :: moType ! Either 'incore' or 'disk'
+  integer                                 :: imotype
+  real(d), dimension(:,:), allocatable    :: hcore
   
 !!$**************************************************
 !!$*********User provided variables******************

@@ -2,14 +2,14 @@
 !     type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
 !     integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
 !     integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-!     complex(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
-!     complex(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
-!     complex(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
-!     complex(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO(s)
-!     complex(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
-!     complex(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals, single L
-!     complex(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
-!     complex(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! fourth index is spin - samee as in buf_jkl
+!     real(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
+!     real(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
+!     real(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
+!     real(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO(s)
+!     real(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
+!     real(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals, single L
+!     real(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
+!     real(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
 !     real(rk), intent(in)             :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !

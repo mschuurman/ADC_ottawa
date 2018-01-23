@@ -163,13 +163,14 @@
   implicit none
   type(gam_structure)               :: gam ! gamess info (orbitals, geom, etc.) 
   type(int2e_cache)                 :: int2e    ! Currently active integrals context
+  type(moint2e_cache)               :: moint2e
   integer, parameter                :: iu_2e_ao   = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
   integer(hik)                      :: iosize_2e  = 120000000   ! Integral I/O
 
-  real(xrk), dimension(:,:),allocatable                       :: mos_real,hao,hmo,fmo,smat
+  real(xrk), dimension(:,:),allocatable                       :: hao,mos_spin,hmo,fmo,smat
   complex(xrk),dimension(:,:),allocatable                     :: mos_cmplx,hao_cmplx
   character(len=clen)                                         :: ao_mode,int_type
-  integer(ik)                                                 :: a,i,j
+  integer(ik)                                                 :: a,i,j, ibnd(2), jbnd(2), kbnd(2), lbnd(2)
   integer(ik)                                                 :: nmo,nao,nao_spin,nocc_spin
   integer(ik)                                                 :: factable
   real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1, e2
@@ -191,10 +192,11 @@
 
   ! allocate arrays
   allocate(occnum(nmo),roccnum(nmo))
-  allocate(mos_cmplx(nao_spin,nmo),mos_real(nao_spin,nmo),hao_cmplx(nao_spin,nao_spin),hao(nao,nao),hmo(nmo,nmo),fmo(nmo,nmo),smat(nmo,nmo))
+  allocate(hao(nao,nao),mos_spin(nao_spin,nmo), hmo(nmo,nmo),fmo(nmo,nmo),smat(nmo,nmo))
+  allocate(hao_cmplx(nao_spin, nao_spin), mos_cmplx(nao_spin, nao_spin))
   allocate(x_dipole(nmo,nmo),y_dipole(nmo,nmo),z_dipole(nmo,nmo),dpl(nmo,nmo))
 
-  occnum   = 0
+  occnum      = 0
 
   ! assume for the time being ao integrals stored in core
   ao_mode = 'incore'
@@ -202,17 +204,17 @@
 
   ! form 1e Hamiltonian (in AO basis)
   call core_hamiltonian(gam,hao)
-  hao_cmplx                                = cz 
-  hao_cmplx(1:nao,1:nao)                   = cmplx(hao(1:nao,1:nao),kind=xrk)
-  hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = cmplx(hao(1:nao,1:nao),kind=xrk)
+  hao_cmplx                                = cz
+  hao_cmplx(1:nao,1:nao)                   = cmplx(hao(1:nao,1:nao),kind=d)
+  hao_cmplx(nao+1:nao_spin,nao+1:nao_spin) = cmplx(hao(1:nao,1:nao),kind=d)
 
   ! read orbitals from gamess output
-  mos_cmplx                          = cz
+  mos_cmplx                         = cz
   if(nmo <= nao) then     ! Cartesian RHF case
-   mos_cmplx(    1:nao     ,1:nmo)   = cmplx(gam%vectors(1:nao,1:nmo),kind=xrk)
+   mos_cmplx(    1:nao     ,1:nmo)   = cmplx(gam%vectors(1:nao,1:nmo),kind=d)
   else if(nmo > nao) then ! Cartesian UHF case
-   mos_cmplx(1:nao         ,1:nmo:2) = cmplx(gam%vectors(1:nao,1:nao),kind=xrk)
-   mos_cmplx(nao+1:nao_spin,2:nmo:2) = cmplx(gam%vectors(1:nao,nao+1:nmo),kind=xrk)
+   mos_cmplx(1:nao         ,1:nmo:2) = cmplx(gam%vectors(1:nao,1:nao),kind=d)
+   mos_cmplx(nao+1:nao_spin,2:nmo:2) = cmplx(gam%vectors(1:nao,nao+1:nmo),kind=d)
   endif
 
   ! tighten up orbitals with a couple scf runs, if requested
@@ -222,7 +224,7 @@
   gam%vectors(1:nao,1:nmo)=real(real(mos_cmplx(1:nao,1:nmo)))
   
   ! ensure orbitals have not developed any complex character
-  mos_real = real(real(mos_cmplx))
+  mos_spin = real(real(mos_cmplx))
   refval = sum(real(aimag(mos_cmplx)))
   if(refval.gt.eps)then
    write(ilog,"(/'******* WARNING: imag part of mos_cmplx .gt. ',f14.10,': ',f14.10,' *********')")eps,refval
@@ -244,15 +246,17 @@
       stop 'load_mo_integrals - confusing number of mos'
    endif 
 
-  ! actual call to generate integrals in MO basis 
-  call transform_moint2e_real(int2e,moType,mos_cmplx,mos_cmplx,mos_cmplx,mos_cmplx,moIntegrals,io_unit=99,l_block=10)
+   call init_moIntegrals(nmo)
+
+  ! tranform all
+  call transform_moint2e_real(int2e,moType, mos_spin, mos_spin, mos_spin, mos_spin, moint2e,io_unit=99,l_block=10)
+  call unfold_all(moint2e, nmo)
+
+  ! destroy the integral cache
+  call destroy_moint2e(moint2e)
 
   ! form 1e Hamiltonian in MO basis  (only take the real part)
-  hmo = real(real((matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx))))
-  refval = sum(real(aimag((matmul(matmul(transpose(mos_cmplx),hao_cmplx),mos_cmplx)))))
-  if(refval.gt.eps)then
-   write(ilog,"(/'******* WARNING: imag part of hmo .gt. ',f14.10,': ',f14.10,' *********')")eps,refval
-  endif
+  hmo = matmul(matmul(transpose(mos_spin),real(real(hao_cmplx))),mos_spin)
 
   ! form Fock matrix in spin-MO basis (i.e. diagonal)
   fmo = hmo
@@ -307,11 +311,11 @@
 
   ! load up the dipole moment integrals
   int_type = 'AO DIPOLE X'
-  call dipole_integrals(gam,int_type,nao_spin,nmo,x_dipole,mos_real)
+  call dipole_integrals(gam,int_type,nao_spin,nmo,x_dipole,mos_spin)
   int_type = 'AO DIPOLE Y'
-  call dipole_integrals(gam,int_type,nao_spin,nmo,y_dipole,mos_real)
+  call dipole_integrals(gam,int_type,nao_spin,nmo,y_dipole,mos_spin)
   int_type = 'AO DIPOLE Z'
-  call dipole_integrals(gam,int_type,nao_spin,nmo,z_dipole,mos_real)
+  call dipole_integrals(gam,int_type,nao_spin,nmo,z_dipole,mos_spin)
 
   ! print out summary (compare to GAMESS output)
   write(ilog,"(60('-'))")
@@ -326,7 +330,7 @@
   call clear_2e(int2e)
  
   ! clean up all the allocated arrays
-  deallocate(mos_real)
+  deallocate(mos_spin)
   deallocate(mos_cmplx)
   deallocate(hao_cmplx)
   deallocate(hao)

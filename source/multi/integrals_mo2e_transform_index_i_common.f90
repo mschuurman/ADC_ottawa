@@ -1,10 +1,10 @@
 !   subroutine transform_index_i(nao,nmo,mo_i,buf_jkl,buffer)
       integer(ik), intent(in)  :: nao              ! Number of spin-less atomic orbitals
       integer(ik), intent(in)  :: nmo(:)           ! Number of MOs for each index
-!     complex(rk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
-!     complex(rk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+!     real(rk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
+!     real(rk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
 !                                                  ! The fourth index is spin of the J component.
-!     complex(rk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
+!     real(rk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
 !     !
       integer(ik) :: k
       !
@@ -18,8 +18,9 @@
       !
       !$omp parallel do default(none) private(k) shared(nao,nmo,buf_jkl,buffer,mo_i)
       transform_k: do k=1,nmo(3)
-        buffer(:,:,k) = cmplx(matmul(transpose(mo_i(  :nao,:)),buf_jkl(:,:,k,1)) &
-                            + matmul(transpose(mo_i(nao+1:,:)),buf_jkl(:,:,k,2)),kind=kind(buffer))
+        buffer(:,:,k) = matmul(transpose(mo_i(  :nao,:)),buf_jkl(:,:,k,1))
+!        buffer(:,:,k) = cmplx(matmul(transpose(mo_i(  :nao,:)),buf_jkl(:,:,k,1)) &
+!                            + matmul(transpose(mo_i(nao+1:,:)),buf_jkl(:,:,k,2)),kind=kind(buffer))
       end do transform_k
       !$omp end parallel do
 !   end subroutine transform_index_i

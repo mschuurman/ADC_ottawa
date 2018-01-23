@@ -1,12 +1,12 @@
 !   subroutine transform_moint2e_real(int2e,mode,mo_i,mo_j,mo_k,mo_l,moint2e,io_unit,l_block,storage_mode)
 !     type(int2e_cache), intent(inout)       :: int2e        ! 2E integrals over spin-less AOs
 !     character(len=*), intent(in)           :: mode         ! Mode of operation; either 'incore' or 'disk'
-!     complex(rk), intent(in)                :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
+!     real(rk), intent(in)                :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
 !                                                            ! Index 1: all spin-alpha AOs, followed by all spin-beta AOs
 !                                                            ! Index 2: MO index
-!     complex(rk), intent(in)                :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
-!     complex(rk), intent(in)                :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
-!     complex(rk), intent(in)                :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
+!     real(rk), intent(in)                :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
+!     real(rk), intent(in)                :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
+!     real(rk), intent(in)                :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
 !                                                            ! Note that all mo_* arrays must have the same first dimension;
 !                                                            ! the second dimension however does not need to be identical
 !     type(moint2e_cache), intent(inout)     :: moint2e      ! MO integral descriptor
@@ -17,7 +17,7 @@
 !                                                            ! 'real', 'quad', or 'as-is'. The default is the same kind
 !                                                            ! as used for the MOs (ie storage_mode='as-is')
       !
-      !  Below this line we should not assume a specific kind of the real/complex types
+      !  Below this line we should not assume a specific kind of the real/real types
       !
       integer(ik)               :: ios, alloc, kind_bytes, store_bytes
       integer(ik)               :: nao_spin, nao
@@ -25,13 +25,13 @@
       integer(ik)               :: l_in_pass, lb1, lbn, l_pos1, l_posn
       integer(hik)              :: rec_len
       !
-      complex(rk), pointer              :: buf_r  (:,:,:,:)   ! Real buffer for fully-transformed integrals; stored in moint2e
-      complex(xrk), pointer             :: buf_q  (:,:,:,:)   ! Quad buffer for fully-transformed integrals; stored in moint2e
-      complex(kind(mo_i)), allocatable  :: buf_l  (:,:,:,:,:) ! Integrals transformed over (a single value of) the last index 
+      real(rk), pointer              :: buf_r  (:,:,:,:)   ! Real buffer for fully-transformed integrals; stored in moint2e
+      real(xrk), pointer             :: buf_q  (:,:,:,:)   ! Quad buffer for fully-transformed integrals; stored in moint2e
+      real(kind(mo_i)), allocatable  :: buf_l  (:,:,:,:,:) ! Integrals transformed over (a single value of) the last index 
                                                               ! The first three indices are spin-less AOs; the fourth index
                                                               ! is 1 (spin-alpha) or 2 (spin-beta); the fifth index is L
-      complex(kind(mo_i)), allocatable  :: buf_kl (:,:,:)     ! Integrals transformed over two last indices
-      complex(kind(mo_i)), allocatable  :: buf_jkl(:,:,:,:)   ! Integrals transformed over three last indices
+      real(kind(mo_i)), allocatable  :: buf_kl (:,:,:)     ! Integrals transformed over two last indices
+      real(kind(mo_i)), allocatable  :: buf_jkl(:,:,:,:)   ! Integrals transformed over three last indices
                                                               ! Fourth index is spin
       !
       call TimerStart('AO>MO 2E transformation')

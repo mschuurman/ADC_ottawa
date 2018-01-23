@@ -114,11 +114,11 @@
                                                      ! actual accuracy may be lower.
       integer(ik)           :: io_unit               ! Direct I/O file containing transformed integrals integrals
       integer(ik)           :: mo_l                  ! Current value for the l index; only meaningful if mode='disk'
-      complex(rk), pointer  :: buffer_real(:,:,:,:)  ! Integral buffer for the (i,j,k,l) indices, for ints_math=='real'
+      real(rk), pointer  :: buffer_real(:,:,:,:)  ! Integral buffer for the (i,j,k,l) indices, for ints_math=='real'
                                                      ! The meaning of the last index depends on the mode:
                                                      ! For mode='incore', it is l;
                                                      ! For mode='disk', the last index must be 1.
-      complex(xrk), pointer :: buffer_quad(:,:,:,:)  ! Integral buffer for the (i,j,k,l) indices, for ints_math=='quad'
+      real(xrk), pointer :: buffer_quad(:,:,:,:)  ! Integral buffer for the (i,j,k,l) indices, for ints_math=='quad'
     end type moint2e_cache
     !
     contains
@@ -297,8 +297,8 @@
       integer(ik), intent(in)    :: sz(:)          ! Number of AOs
       real(rk), intent(in)       :: a2e(:,:,:,:)   ! 2-e integrals over AOs
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       interface 
         subroutine func(p0,sz,a2e,mol,buf_l)
@@ -306,8 +306,8 @@
           integer(ik), intent(in)    :: p0(:)         ! First orbital in the block, including the spin
           integer(ik), intent(in)    :: sz(:)         ! Number of orbitals
           real(rk), intent(in)       :: a2e(:,:,:,:)  ! spinless 2-e integrals over AOs
-          complex(rk), intent(in)    :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
-          complex(rk), intent(inout) :: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
+          real(rk), intent(in)    :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
+          real(rk), intent(inout) :: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
         end subroutine func
       end interface
       !
@@ -323,8 +323,8 @@
       integer(ik), intent(in)    :: sz(:)          ! Number of AOs
       real(rk), intent(in)       :: a2e(:,:,:,:)   ! 2-e integrals over AOs
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       interface 
         subroutine func(p0,sz,a2e,mol,buf_l)
@@ -332,8 +332,8 @@
           integer(ik), intent(in)    :: p0(:)         ! First orbital in the block, including the spin
           integer(ik), intent(in)    :: sz(:)         ! Number of orbitals
           real(rk), intent(in)       :: a2e(:,:,:,:)  ! spinless 2-e integrals over AOs
-          complex(xrk), intent(in)   :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
-          complex(xrk), intent(inout):: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
+          real(xrk), intent(in)   :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
+          real(xrk), intent(inout):: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
         end subroutine func
       end interface
       !
@@ -349,8 +349,8 @@
       integer(ik), intent(in)    :: sz(:)          ! Number of AOs
       real(xrk), intent(in)      :: a2e(:,:,:,:)   ! 2-e integrals over AOs
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       interface 
         subroutine func(p0,sz,a2e,mol,buf_l)
@@ -358,8 +358,8 @@
           integer(ik), intent(in)    :: p0(:)         ! First orbital in the block, including the spin
           integer(ik), intent(in)    :: sz(:)         ! Number of orbitals
           real(xrk), intent(in)      :: a2e(:,:,:,:)  ! spinless 2-e integrals over AOs
-          complex(rk), intent(in)    :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
-          complex(rk), intent(inout) :: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
+          real(rk), intent(in)    :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
+          real(rk), intent(inout) :: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
         end subroutine func
       end interface
       !
@@ -375,8 +375,8 @@
       integer(ik), intent(in)    :: sz(:)          ! Number of AOs
       real(xrk), intent(in)      :: a2e(:,:,:,:)   ! 2-e integrals over AOs
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       interface 
         subroutine func(p0,sz,a2e,mol,buf_l)
@@ -384,8 +384,8 @@
           integer(ik), intent(in)    :: p0(:)         ! First orbital in the block, including the spin
           integer(ik), intent(in)    :: sz(:)         ! Number of orbitals
           real(xrk), intent(in)      :: a2e(:,:,:,:)  ! spinless 2-e integrals over AOs
-          complex(xrk), intent(in)   :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
-          complex(xrk), intent(inout):: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
+          real(xrk), intent(in)   :: mol(:)        ! spinless-AO coefficients for the fourth-index orbital
+          real(xrk), intent(inout):: buf_l(:,:,:)  ! Spin-block of partially-transformed integrals
         end subroutine func
       end interface
       !
@@ -407,8 +407,8 @@
       real(rk), intent(in)       :: a2e(:,:,:,:)   ! Integrals block, for the canonical order of block indices
                                                    ! (i<j) < (k<l)
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(rk), intent(inout) :: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       integer(ik) :: p2(4)                         ! Same as p0, after index swapping 
       integer(ik) :: s2(4)                         ! Same as sz, after index swapping
@@ -430,8 +430,8 @@
       real(rk), intent(in)       :: a2e(:,:,:,:)   ! Integrals block, for the canonical order of block indices
                                                    ! (i<j) < (k<l)
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       integer(ik) :: p2(4)                         ! Same as p0, after index swapping 
       integer(ik) :: s2(4)                         ! Same as sz, after index swapping
@@ -453,8 +453,8 @@
       real(xrk), intent(in)      :: a2e(:,:,:,:)   ! Integrals block, for the canonical order of block indices
                                                    ! (i<j) < (k<l)
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(rk), intent(inout):: buf_l(:,:,:,:)  ! Partially-transformed integrals
+      real(rk), intent(in)    :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(rk), intent(inout):: buf_l(:,:,:,:)  ! Partially-transformed integrals
       !
       integer(ik) :: p2(4)                         ! Same as p0, after index swapping 
       integer(ik) :: s2(4)                         ! Same as sz, after index swapping
@@ -476,8 +476,8 @@
       real(xrk), intent(in)      :: a2e(:,:,:,:)   ! Integrals block, for the canonical order of block indices
                                                    ! (i<j) < (k<l)
       integer(ik), intent(in)    :: nao            ! Number of spin-less atomic orbitals
-      complex(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
-      complex(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
+      real(xrk), intent(in)   :: mol(:)         ! AO coefficients for the fourth-index orbital
+      real(xrk), intent(inout):: buf_l(:,:,:,:) ! Partially-transformed integrals
       !
       integer(ik) :: p2(4)                         ! Same as p0, after index swapping 
       integer(ik) :: s2(4)                         ! Same as sz, after index swapping
@@ -493,73 +493,73 @@
     end subroutine transform_ao_integral_block_qq
     !
     subroutine transform_index_k_real(nao,nmo,mo_k,buf_l,buf_kl)
-      complex(rk), intent(in)  :: mo_k(:,:)      ! Third-index MOs coefficients
-      complex(rk), intent(in)  :: buf_l(:,:,:,:) ! Integrals transformed over the last index; L index is fixed
+      real(rk), intent(in)  :: mo_k(:,:)      ! Third-index MOs coefficients
+      real(rk), intent(in)  :: buf_l(:,:,:,:) ! Integrals transformed over the last index; L index is fixed
                                                  ! The fourth index is spin of the L component.
-      complex(rk), intent(out) :: buf_kl(:,:,:)  ! Integrals transformed over the last two indices; L index is fixed
+      real(rk), intent(out) :: buf_kl(:,:,:)  ! Integrals transformed over the last two indices; L index is fixed
       !
       include 'integrals_mo2e_transform_index_k_common.f90'
     end subroutine transform_index_k_real
     !
     subroutine transform_index_k_quad(nao,nmo,mo_k,buf_l,buf_kl)
-      complex(xrk), intent(in)  :: mo_k(:,:)      ! Third-index MOs coefficients
-      complex(xrk), intent(in)  :: buf_l(:,:,:,:) ! Integrals transformed over the last index; L index is fixed
+      real(xrk), intent(in)  :: mo_k(:,:)      ! Third-index MOs coefficients
+      real(xrk), intent(in)  :: buf_l(:,:,:,:) ! Integrals transformed over the last index; L index is fixed
                                                   ! The fourth index is spin of the L component.
-      complex(xrk), intent(out) :: buf_kl(:,:,:)  ! Integrals transformed over the last two indices; L index is fixed
+      real(xrk), intent(out) :: buf_kl(:,:,:)  ! Integrals transformed over the last two indices; L index is fixed
       !
       include 'integrals_mo2e_transform_index_k_common.f90'
     end subroutine transform_index_k_quad
     !
     subroutine transform_index_j_real(nao,nmo,mo_j,buf_kl,buf_jkl)
-      complex(rk), intent(in)  :: mo_j(:,:)        ! Second-index MO coefficients to transform over
-      complex(rk), intent(in)  :: buf_kl(:,:,:)    ! Integrals transformed over the last two indices; L index is fixed
-      complex(rk), intent(out) :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(rk), intent(in)  :: mo_j(:,:)        ! Second-index MO coefficients to transform over
+      real(rk), intent(in)  :: buf_kl(:,:,:)    ! Integrals transformed over the last two indices; L index is fixed
+      real(rk), intent(out) :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                    ! The fourth index is spin of the J component.
       !
       include 'integrals_mo2e_transform_index_j_common.f90'
     end subroutine transform_index_j_real
     !
     subroutine transform_index_j_quad(nao,nmo,mo_j,buf_kl,buf_jkl)
-      complex(xrk), intent(in)  :: mo_j(:,:)        ! Second-index MO coefficients to transform over
-      complex(xrk), intent(in)  :: buf_kl(:,:,:)    ! Integrals transformed over the last two indices; L index is fixed
-      complex(xrk), intent(out) :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(xrk), intent(in)  :: mo_j(:,:)        ! Second-index MO coefficients to transform over
+      real(xrk), intent(in)  :: buf_kl(:,:,:)    ! Integrals transformed over the last two indices; L index is fixed
+      real(xrk), intent(out) :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                    ! The fourth index is spin of the J component.
       !
       include 'integrals_mo2e_transform_index_j_common.f90'
     end subroutine transform_index_j_quad
     !
     subroutine transform_index_i_rr(nao,nmo,mo_i,buf_jkl,buffer)
-      complex(rk), intent(in)   :: mo_i(:,:)        ! First-index MO coefficient to transform over
-      complex(rk), intent(in)   :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(rk), intent(in)   :: mo_i(:,:)        ! First-index MO coefficient to transform over
+      real(rk), intent(in)   :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                     ! The fourth index is spin of the J component.
-      complex(rk), intent(out)  :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
+      real(rk), intent(out)  :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
       !
       include 'integrals_mo2e_transform_index_i_common.f90'
     end subroutine transform_index_i_rr
     !
     subroutine transform_index_i_rq(nao,nmo,mo_i,buf_jkl,buffer)
-      complex(rk), intent(in)   :: mo_i(:,:)        ! First-index MO coefficient to transform over
-      complex(rk), intent(in)   :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(rk), intent(in)   :: mo_i(:,:)        ! First-index MO coefficient to transform over
+      real(rk), intent(in)   :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                     ! The fourth index is spin of the J component.
-      complex(xrk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
+      real(xrk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
       !
       include 'integrals_mo2e_transform_index_i_common.f90'
     end subroutine transform_index_i_rq
     !
     subroutine transform_index_i_qr(nao,nmo,mo_i,buf_jkl,buffer)
-      complex(xrk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
-      complex(xrk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(xrk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
+      real(xrk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                     ! The fourth index is spin of the J component.
-      complex(rk), intent(out)  :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
+      real(rk), intent(out)  :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
       !
       include 'integrals_mo2e_transform_index_i_common.f90'
     end subroutine transform_index_i_qr
     !
     subroutine transform_index_i_qq(nao,nmo,mo_i,buf_jkl,buffer)
-      complex(xrk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
-      complex(xrk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
+      real(xrk), intent(in)  :: mo_i(:,:)        ! First-index MO coefficient to transform over
+      real(xrk), intent(in)  :: buf_jkl(:,:,:,:) ! Integrals transformed over the all but first index; L index is fixed
                                                     ! The fourth index is spin of the J component.
-      complex(xrk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
+      real(xrk), intent(out) :: buffer(:,:,:)    ! Fully transformed MOs; L index is fixed
       !
       include 'integrals_mo2e_transform_index_i_common.f90'
     end subroutine transform_index_i_qq
@@ -568,14 +568,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
-      complex(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
-      complex(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
-      complex(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
-      complex(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
+      real(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
+      real(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
+      real(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
+      real(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
+      real(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(rk), intent(in)             :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -586,14 +586,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
-      complex(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
-      complex(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
-      complex(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
-      complex(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
+      real(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
+      real(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
+      real(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
+      real(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
+      real(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(rk), intent(in)             :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -604,14 +604,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
-      complex(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
-      complex(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
-      complex(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
-      complex(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
-      complex(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
+      real(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
+      real(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
+      real(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
+      real(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
+      real(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
+      real(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(xrk), intent(in)            :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -622,14 +622,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
-      complex(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
-      complex(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
-      complex(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
-      complex(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
-      complex(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(rk), intent(in)          :: mo_i(:,:)          ! First-index MOs
+      real(rk), intent(in)          :: mo_j(:,:)          ! Second-index MOs
+      real(rk), intent(in)          :: mo_k(:,:)          ! Third-index MOs
+      real(rk), intent(in)          :: mo_l(:,:)          ! Current fourth-index MO block
+      real(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L); 
+      real(rk), intent(out)         :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(rk), intent(out)         :: buf_kl (:,:,:)     ! ditto
+      real(rk), intent(out)         :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(xrk), intent(in)            :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -640,14 +640,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
-      complex(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
-      complex(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
-      complex(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
-      complex(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
+      real(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
+      real(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
+      real(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
+      real(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
+      real(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(rk), intent(in)             :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -658,14 +658,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
-      complex(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
-      complex(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
-      complex(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
-      complex(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
+      real(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
+      real(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
+      real(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
+      real(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
+      real(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(rk), intent(in)             :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -676,14 +676,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
-      complex(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
-      complex(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
-      complex(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
-      complex(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
+      real(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
+      real(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
+      real(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
+      real(rk), intent(out)         :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
+      real(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(xrk), intent(in)            :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -694,14 +694,14 @@
       type(int2e_cache), intent(inout) :: int2e              ! 2E integrals over spin-less AOs
       integer(ik), intent(in)          :: nao                ! Number of spin-less atomic orbitals
       integer(ik), intent(in)          :: nmo(:)             ! Number of MOs for each index
-      complex(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
-      complex(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
-      complex(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
-      complex(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
-      complex(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
-      complex(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
-      complex(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
-      complex(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
+      real(xrk), intent(in)         :: mo_i(:,:)          ! First-index MOs
+      real(xrk), intent(in)         :: mo_j(:,:)          ! Second-index MOs
+      real(xrk), intent(in)         :: mo_k(:,:)          ! Third-index MOs
+      real(xrk), intent(in)         :: mo_l(:,:)          ! Current fourth-index MO block
+      real(xrk), intent(out)        :: buffer (:,:,:,:)   ! Integrals over (i,j,k,L);
+      real(xrk), intent(out)        :: buf_jkl(:,:,:,:)   ! Scratch for partially transformed integrals
+      real(xrk), intent(out)        :: buf_kl (:,:,:)     ! ditto
+      real(xrk), intent(out)        :: buf_l  (:,:,:,:,:) ! ditto; fourth index is spin - samee as in buf_jkl
                                                              ! last index is L
       real(xrk), intent(in)            :: ints_kind          ! Serves only to fix the kind of the AO integrals
       !
@@ -711,12 +711,12 @@
     subroutine transform_moint2e_real(int2e,mode,mo_i,mo_j,mo_k,mo_l,moint2e,io_unit,l_block,storage_mode)
       type(int2e_cache), intent(inout)       :: int2e        ! 2E integrals over spin-less AOs
       character(len=*), intent(in)           :: mode         ! Mode of operation; either 'incore' or 'disk'
-      complex(rk), intent(in)                :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
+      real(rk), intent(in)                :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
                                                              ! Index 1: all spin-alpha AOs, followed by all spin-beta AOs
                                                              ! Index 2: MO index
-      complex(rk), intent(in)                :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
-      complex(rk), intent(in)                :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
-      complex(rk), intent(in)                :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
+      real(rk), intent(in)                :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
+      real(rk), intent(in)                :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
+      real(rk), intent(in)                :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
                                                              ! Note that all mo_* arrays must have the same first dimension;
                                                              ! the second dimension however does not need to be identical
       type(moint2e_cache), intent(inout)     :: moint2e      ! MO integral descriptor
@@ -733,12 +733,12 @@
     subroutine transform_moint2e_quad(int2e,mode,mo_i,mo_j,mo_k,mo_l,moint2e,io_unit,l_block,storage_mode)
       type(int2e_cache), intent(inout)       :: int2e        ! 2E integrals over spin-less AOs
       character(len=*), intent(in)           :: mode         ! Mode of operation; either 'incore' or 'disk'
-      complex(xrk), intent(in)               :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
+      real(xrk), intent(in)               :: mo_i(:,:)    ! Spin-MOs to be used for the first integral index
                                                              ! Index 1: all spin-alpha AOs, followed by all spin-beta AOs
                                                              ! Index 2: MO index
-      complex(xrk), intent(in)               :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
-      complex(xrk), intent(in)               :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
-      complex(xrk), intent(in)               :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
+      real(xrk), intent(in)               :: mo_j(:,:)    ! Spin-MOs to be used for the second integral index
+      real(xrk), intent(in)               :: mo_k(:,:)    ! Spin-MOs to be used for the third integral index
+      real(xrk), intent(in)               :: mo_l(:,:)    ! Spin-MOs to be used for the fourth integral index
                                                              ! Note that all mo_* arrays must have the same first dimension;
                                                              ! the second dimension however does not need to be identical
       type(moint2e_cache), intent(inout)     :: moint2e      ! MO integral descriptor
