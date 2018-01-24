@@ -108,20 +108,20 @@ contains
 
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
 
-    ! CHECK: transition dipoles
-    print*,
-    do i=1,nstates
-       chk=0.0d0
-       do p=1,nbas
-          do q=1,nbas
-             chk=chk+trdens(p,q,i)*dpl(p,q)
-          enddo
-       enddo
-       print*,i,chk
-    enddo
-    print*,
-    STOP
-    ! CHECK: transition dipoles
+    !! CHECK: transition dipoles
+    !print*,
+    !do i=1,nstates
+    !   chk=0.0d0
+    !   do p=1,nbas
+    !      do q=1,nbas
+    !         chk=chk+trdens(p,q,i)*dpl(p,q)
+    !      enddo
+    !   enddo
+    !   print*,i,chk
+    !enddo
+    !print*,
+    !STOP
+    !! CHECK: transition dipoles
 
     return
       
@@ -173,7 +173,7 @@ contains
     enddo
     
     trdens(1:nocc,1:nocc,:)=trdens(1:nocc,1:nocc,:) &
-         +sqrt(2.0d0)*tmp(1:nocc,1:nocc,:)
+         +0.5d0*sqrt(2.0d0)*tmp(1:nocc,1:nocc,:)
                   
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
@@ -342,7 +342,7 @@ contains
 
     trdens(nocc+1:nbas,nocc+1:nbas,:)=&
          trdens(nocc+1:nbas,nocc+1:nbas,:)&
-         -sqrt(2.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
+         -0.5d0*sqrt(2.0d0)*tmp(nocc+1:nbas,nocc+1:nbas,:)
          
 !----------------------------------------------------------------------
 ! 2h2p a=b, i=j contributions
@@ -516,6 +516,28 @@ contains
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
          -sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
 
+
+
+    !! TEST
+    !nlim1=1
+    !nlim2=kpqf(1,0)
+    !
+    !do i=1,nstates
+    !   rvec(:,i)=rvec(:,i)/sqrt(dot_product(rvec(1:nlim2,i),rvec(1:nlim2,i)))
+    !enddo
+    !
+    !tmp=0.0d0
+    !
+    !do cnt=nlim1,nlim2
+    !   i=kpqf(3,cnt)
+    !   a=kpqf(5,cnt)
+    !   trdens(a,i,:)=-sqrt(2.0d0)*rvec(cnt,:)
+    !enddo
+    !
+    !return
+    !! TEST
+
+    
 !----------------------------------------------------------------------
 ! First-order 1h1p contribution
 !----------------------------------------------------------------------
@@ -551,7 +573,7 @@ contains
     enddo
 
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
-         +0.5d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
+         +0.25d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
 
 !----------------------------------------------------------------------
 ! Second-order 1h1p contribution no. 2
@@ -567,7 +589,7 @@ contains
     enddo
 
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
-         -0.5d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
+         -0.25d0*sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
 
 !----------------------------------------------------------------------
 ! Second-order 1h1p contribution no. 3
@@ -639,9 +661,9 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     allocate(tmp(nbas,nbas,nstates))
-
+    
 !----------------------------------------------------------------------
-! 1h1p contributions
+! Second-order 1h1p contributions
 !----------------------------------------------------------------------
     nlim1=1
     nlim2=kpqf(1,0)
@@ -742,7 +764,7 @@ contains
     do c=nocc+1,nbas
        do dd=nocc+1,nbas
           delta_ijcd=1.0d0/(e(i)+e(j)-e(c)-e(dd))
-          mu=mu+delta_ijcd &
+          mu=mu+0.5d0*delta_ijcd &
                *(vpqrs(b,c,a,dd)*(2.0d0*vpqrs(c,j,dd,i)-vpqrs(c,i,dd,j)) &
                +vpqrs(b,dd,a,c)*(2.0d0*vpqrs(c,i,dd,j)-vpqrs(c,j,dd,i)))
        enddo
@@ -754,7 +776,7 @@ contains
     do k=1,nocc
        do l=1,nocc
           delta_klab=1.0d0/(e(k)+e(l)-e(a)-e(b))
-          mu=mu+delta_klab &
+          mu=mu+0.5d0*delta_klab &
                *(vpqrs(b,k,a,l)*(2.0d0*vpqrs(k,j,l,i)-vpqrs(k,i,l,j)) &
                +vpqrs(b,l,a,k)*(2.0d0*vpqrs(k,i,l,j)-vpqrs(k,j,l,i)))
        enddo

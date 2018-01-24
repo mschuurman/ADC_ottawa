@@ -23,14 +23,15 @@ program adc
   use rungamess
   use import_gamess
   use timingmod
+  use moldenmod
   
   implicit none
   
-  integer               :: i
-  integer, dimension(2) :: shp
-  real(d)               :: tw1,tw2,tc1,tc2
-  character(len=72)     :: gam_chkpt,gam_log
-  type(gam_structure)   :: gamess_info
+  integer                  :: i
+  integer, dimension(2)    :: shp
+  real(d)                  :: tw1,tw2,tc1,tc2
+  character(len=72)        :: gam_chkpt,gam_log,moldenfile
+  type(gam_structure)      :: gamess_info
 
 !-----------------------------------------------------------------------
 ! Start timing
@@ -57,7 +58,7 @@ program adc
   call open_files
 
 !-----------------------------------------------------------------------
-! Read the input file: new code based on the use of keywords
+! Read the input file
 !-----------------------------------------------------------------------
   call read_input
 
@@ -83,6 +84,14 @@ program adc
   call rdgeom(gam_log)
   call load_gamess(gam_chkpt,gam_log,gamess_info)
 
+!-----------------------------------------------------------------------  
+! Write the MOs to a molden file
+!-----------------------------------------------------------------------  
+  i=index(ain,'.inp')
+  moldenfile=ain(1:i-1)//'.molden'
+  call write_molden(gamess_info,moldenfile,gamess_info%nbasis,nbas,&
+       ao2mo,e(1:nbas),occnum(1:nbas))
+  
 !-----------------------------------------------------------------------  
 ! Rearranging orbitals such that occ. orbs preceed unoccupied orbs.
 !-----------------------------------------------------------------------  

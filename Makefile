@@ -72,7 +72,8 @@ UTILITIES=source/utilities/timingmod.o \
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
 	source/iomodules/rdinput.o \
-	source/iomodules/read_param.o
+	source/iomodules/read_param.o \
+	source/iomodules/molden.o
 
 QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/rungamess.o \
@@ -183,6 +184,7 @@ ADC_OBJ=accuracy.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
+	molden.o \
 	timingmod.o \
 	defaults.o \
 	orbindx.o \

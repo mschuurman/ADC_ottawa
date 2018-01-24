@@ -67,12 +67,13 @@ contains
     use gamess_internal
     use diagmod, only: readdavvc
     use density_matrix
+    use moldenmod
     
     implicit none
     
     integer                                   :: ndimf
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-    integer                                   :: i,j
+    integer                                   :: i,j,aa,npair
     integer                                   :: nao,lwork,ierr
     real(dp), allocatable                     :: rvec(:,:)
     real(dp), allocatable                     :: ener(:)
@@ -82,11 +83,27 @@ contains
     real(dp), allocatable                     :: VT(:,:,:)
     real(dp), allocatable                     :: U(:,:,:)
     real(dp), allocatable                     :: work(:)
-    real(dp), allocatable                     :: nto_p(:,:,:)
-    real(dp), allocatable                     :: nto_h(:,:,:)
-    character(len=36)                         :: filename
+    real(dp), allocatable                     :: hole(:,:)
+    real(dp), allocatable                     :: particle(:,:)
+    real(dp), allocatable                     :: orb(:,:)
+    real(dp), allocatable                     :: val(:)
+    real(dp), allocatable                     :: occ(:)
+    real(dp), parameter                       :: thrsh=0.01d0
+    character(len=70)                         :: filename
+    character(len=3)                          :: ai
     type(gam_structure)                       :: gam
 
+    nvirt=nbas-nocc
+    
+!----------------------------------------------------------------------
+! Note that we are here assuming that nocc < nvirt, which should
+! almost always hold true
+!----------------------------------------------------------------------
+    if (nocc.gt.nvirt) then
+       errmsg='Error in calculating the NTOs: nocc > nvirt'
+       call error_control
+    endif
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
@@ -99,27 +116,36 @@ contains
     allocate(trdens(nbas,nbas,davstates_f))
     trdens=0.0d0
 
-    allocate(tmp(nbas,nbas))
+    allocate(tmp(nocc,nvirt))
     tmp=0.0d0
-
-    allocate(sigma(nbas,davstates_f))
+    
+    allocate(sigma(nocc,davstates_f))
     sigma=0.0d0
-
-    allocate(VT(nbas,nbas,davstates_f))
-    VT=0.0d0
-
-    allocate(U(nbas,nbas,davstates_f))
+    
+    allocate(U(nocc,nocc,davstates_f))
     U=0.0d0
-
-    lwork=5*nbas
+    
+    allocate(VT(nvirt,nvirt,davstates_f))
+    VT=0.0d0
+    
+    lwork=3*nocc+nvirt
     allocate(work(lwork))
     work=0.0d0
 
     nao=gam%nbasis
-    allocate(nto_p(nao,nbas,davstates_f))
-    allocate(nto_h(nao,nbas,davstates_f))
-    nto_p=0.0d0
-    nto_h=0.0d0
+    allocate(hole(nao,nocc))
+    allocate(particle(nao,nvirt))
+    hole=0.0d0
+    particle=0.0d0
+
+    allocate(orb(nao,nbas))
+    orb=0.0d0
+
+    allocate(val(nbas))
+    val=0.0d0
+
+    allocate(occ(nbas))
+    occ=0.0d0
     
 !----------------------------------------------------------------------
 ! Read the ADC(2) vectors
@@ -137,32 +163,59 @@ contains
 ! transition density matrices
 !----------------------------------------------------------------------
     do i=1,davstates_f
-
-       tmp=trdens(:,:,i)
        
-       call dgesvd('A','A',nbas,nbas,tmp,nbas,sigma(:,i),U(:,:,i),&
-            nbas,VT(:,:,i),nbas,work,lwork,ierr)
-
+       tmp=transpose(trdens(nocc+1:nbas,1:nocc,i))
+       
+       call dgesvd('A','A',nocc,nvirt,tmp,nocc,sigma(:,i),U(:,:,i),&
+            nocc,VT(:,:,i),nvirt,work,lwork,ierr)
+       
        if (ierr.ne.0) then
           errmsg='SVD of the transition density matrices failed in &
                subroutine adc2_nto_gs'
+          call error_control
        endif
        
     enddo
 
 !----------------------------------------------------------------------
-! Calculate the NTOs
+! Calculate and output the NTOs
 !----------------------------------------------------------------------
     do i=1,davstates_f
 
-       print*,i,sigma(1,i)**2,sigma(nbas,i)**2
-       
-       ! Particle NTOs in terms of the AOs
-              
        ! Hole NTOs in terms of the AOs
+       hole=transpose(matmul(transpose(U(:,:,i)),&
+            transpose(ao2mo(1:nao,1:nocc))))
+
+       ! Particle NTOs in terms of the AOs
+       particle=transpose(matmul(VT(:,:,i),&
+            transpose(ao2mo(1:nao,nocc+1:nbas))))
+
+       ! No. NTO pairs
+       npair=0
+       do j=1,nocc
+          if (sigma(j,i)**2.ge.thrsh) npair=npair+1
+       enddo
+
+       ! Dominant NTOs and singular values
+       orb=0.0d0
+       val=0.0d0
+       occ=0.0d0
+       do j=1,npair
+          orb(:,npair-j+1)=hole(:,j)
+          orb(:,npair+j)=particle(:,j)
+          val(npair-j+1)=-0.5d0*sigma(j,i)**2
+          val(npair+j)=0.5d0*sigma(j,i)**2
+       enddo
+       occ(1:npair)=1.0d0
        
+       ! Write the molden file
+       write(ai,'(i3)') i
+       filename='nto_0_'//trim(adjustl(ai))//'.molden'
+       call write_molden(gam,filename,nao,2*npair,&
+            orb(1:nao,1:2*npair),val(1:2*npair),occ(1:2*npair))
+
     enddo
-       
+
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -171,11 +224,14 @@ contains
     deallocate(trdens)
     deallocate(tmp)
     deallocate(sigma)
-    deallocate(VT)
     deallocate(U)
+    deallocate(VT)
     deallocate(work)
-    deallocate(nto_p)
-    deallocate(nto_h)
+    deallocate(hole)
+    deallocate(particle)
+    deallocate(orb)
+    deallocate(val)
+    deallocate(occ)
     
     return
     
