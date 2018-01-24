@@ -25,15 +25,16 @@ contains
 ! adc2_nto: gateway subroutine for the calculation of ADC(2) NTOs
 !######################################################################
   
-  subroutine adc2_nto(gam,ndimf,kpqf)
+  subroutine adc2_nto(gam,ndimf,kpqf,vecfile,nstates)
 
     use gamess_internal
     
     implicit none
 
-    integer                                   :: ndimf
+    integer                                   :: ndimf,nstates
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: i
+    character(len=*)                          :: vecfile
     type(gam_structure)                       :: gam
     
 !----------------------------------------------------------------------
@@ -47,7 +48,7 @@ contains
 ! Calculate the NTOs
 !----------------------------------------------------------------------
     if (statenumber.eq.0) then
-       call adc2_nto_gs(gam,ndimf,kpqf)
+       call adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates)
     else
        errmsg='WRITE THE EXCITED STATE-TO-EXCITED STATE NTO CODE!'
        call error_control
@@ -62,7 +63,7 @@ contains
 !              ground state
 !######################################################################
   
-  subroutine adc2_nto_gs(gam,ndimf,kpqf)
+  subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates)
 
     use gamess_internal
     use diagmod, only: readdavvc
@@ -71,12 +72,11 @@ contains
     
     implicit none
     
-    integer                                   :: ndimf
+    integer                                   :: ndimf,nstates
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: i,j,aa,npair
     integer                                   :: nao,lwork,ierr
     real(dp), allocatable                     :: rvec(:,:)
-    real(dp), allocatable                     :: ener(:)
     real(dp), allocatable                     :: trdens(:,:,:)
     real(dp), allocatable                     :: tmp(:,:)
     real(dp), allocatable                     :: sigma(:,:)
@@ -89,6 +89,7 @@ contains
     real(dp), allocatable                     :: val(:)
     real(dp), allocatable                     :: occ(:)
     real(dp), parameter                       :: thrsh=0.01d0
+    character(len=*)                          :: vecfile
     character(len=70)                         :: filename
     character(len=3)                          :: ai
     type(gam_structure)                       :: gam
@@ -107,25 +108,22 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(rvec(ndimf,davstates_f))
+    allocate(rvec(ndimf,nstates))
     rvec=0.0d0
 
-    allocate(ener(davstates_f))
-    ener=0.0d0
-
-    allocate(trdens(nbas,nbas,davstates_f))
+    allocate(trdens(nbas,nbas,nstates))
     trdens=0.0d0
 
     allocate(tmp(nocc,nvirt))
     tmp=0.0d0
     
-    allocate(sigma(nocc,davstates_f))
+    allocate(sigma(nocc,nstates))
     sigma=0.0d0
     
-    allocate(U(nocc,nocc,davstates_f))
+    allocate(U(nocc,nocc,nstates))
     U=0.0d0
     
-    allocate(VT(nvirt,nvirt,davstates_f))
+    allocate(VT(nvirt,nvirt,nstates))
     VT=0.0d0
     
     lwork=3*nocc+nvirt
@@ -148,21 +146,21 @@ contains
     occ=0.0d0
     
 !----------------------------------------------------------------------
-! Read the ADC(2) vectors
+! Read the ADC(2) vectors from file
 !----------------------------------------------------------------------
-    call readdavvc(davstates_f,ener,rvec,'f',ndimf)
-
+    call rdvecs(vecfile,rvec,ndimf,nstates)
+    
 !----------------------------------------------------------------------
 ! Calculate the ADC(2) ground state-to-excited state transition
 ! density matrices
 !----------------------------------------------------------------------
-    call adc2_trden_gs(trdens,ndimf,kpqf,rvec,davstates_f)
+    call adc2_trden_gs(trdens,ndimf,kpqf,rvec,nstates)
 
 !----------------------------------------------------------------------
-! Calculate the SVDs of the ADC(2) ground state-to-excited state
-! transition density matrices
+! Calculate the SVDs of the occupied-virtual blocks of the ADC(2)
+! ground state-to-excited state transition density matrices
 !----------------------------------------------------------------------
-    do i=1,davstates_f
+    do i=1,nstates
        
        tmp=transpose(trdens(nocc+1:nbas,1:nocc,i))
        
@@ -180,7 +178,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate and output the NTOs
 !----------------------------------------------------------------------
-    do i=1,davstates_f
+    do i=1,nstates
 
        ! Hole NTOs in terms of the AOs
        hole=transpose(matmul(transpose(U(:,:,i)),&
@@ -220,7 +218,6 @@ contains
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(rvec)
-    deallocate(ener)
     deallocate(trdens)
     deallocate(tmp)
     deallocate(sigma)
@@ -236,6 +233,42 @@ contains
     return
     
   end subroutine adc2_nto_gs
+    
+!######################################################################
+
+  subroutine rdvecs(vecfile,rvec,ndimf,nvec)
+
+    implicit none
+
+    integer                         :: ndimf,nvec
+    integer                         :: ivec,tmp,i
+    real(dp), dimension(ndimf,nvec) :: rvec
+    real(dp)                        :: ener
+    character(len=*)                :: vecfile
+
+!-----------------------------------------------------------------------
+! Open the vector file
+!-----------------------------------------------------------------------
+    call freeunit(ivec)
+      
+    open(unit=ivec,file=vecfile,status='old',access='sequential',&
+         form='unformatted')
+
+!-----------------------------------------------------------------------
+! Read the vectors
+!-----------------------------------------------------------------------
+    do i=1,nvec
+       read(ivec) tmp,ener,rvec(:,i)
+    enddo
+
+!-----------------------------------------------------------------------
+! Close the vector file
+!-----------------------------------------------------------------------
+    close(ivec)
+    
+    return
+    
+  end subroutine rdvecs
     
 !######################################################################
   

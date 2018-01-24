@@ -20,6 +20,7 @@ contains
     use misc
     use mp2
     use fdstates
+    use nto
     use import_gamess
     
     implicit none
@@ -81,6 +82,11 @@ contains
 ! Output the results of the calculation
 !-----------------------------------------------------------------------
     call wrfdstates(kpqf,ndimf)
+
+!-----------------------------------------------------------------------
+! If requested, calculate and output NTOs
+!-----------------------------------------------------------------------
+    if (lnto) call adc2_nto(gam,ndimf,kpqf,'SCRATCH/fdstates',nsel)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
