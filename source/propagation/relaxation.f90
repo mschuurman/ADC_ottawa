@@ -53,7 +53,7 @@
 !-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
-      atmp='Block-relaxation in the'
+      atmp='Relaxation in the'
       if (hamflag.eq.'i') then
          atmp=trim(atmp)//' initial space'
       else if (hamflag.eq.'f') then
@@ -1400,8 +1400,7 @@
 ! Perform Lowdin's canonical orthogonalisation of the subspace basis
 ! vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
-      call canonical_ortho(nvec,nnull,istep,hmat1,coeff0,&
-           transmat)
+      call canonical_ortho(nvec,nnull,istep,hmat1,coeff0,transmat)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
