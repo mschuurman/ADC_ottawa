@@ -66,7 +66,7 @@ contains
   subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates)
 
     use gamess_internal
-    use diagmod, only: readdavvc
+    use adc2common, only: readdavvc
     use density_matrix
     use moldenmod
     

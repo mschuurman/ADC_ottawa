@@ -819,7 +819,7 @@ contains
     use parameters
     use iomod, only: freeunit
     use misc, only: dsortindxa1,table2
-    use diagmod, only: readdavvc
+    use adc2common, only: readdavvc
         
     implicit none
     

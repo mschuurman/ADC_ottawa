@@ -303,7 +303,6 @@ contains
     use get_matrix_dipole
     use guessvecs
     use misc
-    use diagmod
     
     implicit none
 

@@ -152,7 +152,9 @@
       lautospec=.false.
       autotol=1e-5_d
       autoord=0
-
+      autoprop=1
+      chebyord=0
+      
 !-----------------------------------------------------------------------
 ! Filter diagonalisation state calculation parameters
 !-----------------------------------------------------------------------

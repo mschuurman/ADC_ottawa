@@ -718,7 +718,8 @@
 !-----------------------------------------------------------------------
 ! Autospec section
 !-----------------------------------------------------------------------
-      if (lautospec) then
+      ! Wavepacket propagation
+      if (lautospec.and.autoprop.eq.1) then
 
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
@@ -741,6 +742,18 @@
 
       endif
 
+      ! Chebyshev recursion
+      if (lautospec.and.autoprop.eq.2) then
+
+         ! Order of the Chebyshev expansion
+         if (chebyord.eq.0) then
+            msg='The number of terms in the Chebyshev expansion &
+                 of delta(E-H) has not been given'
+            goto 999
+         endif
+
+      endif
+      
 !-----------------------------------------------------------------------
 ! Filter diagonalisation states section
 !-----------------------------------------------------------------------
@@ -1804,6 +1817,29 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'propagation') then
+                  autoprop=1
+               else if (keyword(i).eq.'chebyshev') then
+                  autoprop=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'nterms') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) chebyord
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -1976,8 +2012,6 @@
                   icap=5
                else if (keyword(i).eq.'sigmoidal') then
                   icap=6
-               else if (keyword(i).eq.'monomial_dvr') then
-                  icap=7
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control

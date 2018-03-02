@@ -1177,5 +1177,37 @@ contains
   end subroutine matxvec_treal_laser_adc1
     
 !#######################################################################
+! matxvec_chebyshev: Calculates the Chebyshev vectors using the
+!                    two-term Chebyshev recursion relation.
+!
+!                    Used in Chebyshev propagation and the calculation
+!                    of the Chebyshev order-domain autocorrelation
+!                    function.
+!
+!                    It is debatable whether this is the most suitable
+!                    module in which to have this routine, but putting
+!                    it here allows us to make use of the
+!                    load_hamiltonian, etc routines.
+!#######################################################################  
 
+  subroutine matxvec_chebyshev(matdim,noffdiag,bounds,qk,q1,q2)
+
+    use constants
+    
+    implicit none
+
+    integer, intent(in)               :: matdim
+    integer*8, intent(in)             :: noffdiag
+    real(d), dimension(2), intent(in) :: bounds
+    real(d), dimension(matdim)        :: qk,q1,q2
+
+    print*,"FINISH WRITING THE MATXVEC_CHEBYSHEV ROUTINE!"
+    STOP
+    
+    return
+    
+  end subroutine matxvec_chebyshev
+    
+!#######################################################################
+  
 end module tdsemod

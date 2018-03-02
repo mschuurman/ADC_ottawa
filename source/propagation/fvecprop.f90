@@ -1,5 +1,6 @@
 !######################################################################
-! fvecprop: Routines for the real-time propagation of the f-vector
+! fvecprop: Routines for the calculation of wavepacket autocorrelation
+!           functions using an initial state given by the f-vector
 !           f_J = < Psi_J | D | Psi_0 >
 !######################################################################
 module fvecprop
@@ -73,20 +74,24 @@ contains
     call open_autofiles
 
 !----------------------------------------------------------------------
-! Propagation and calculation of the autocorrelation function
+! Propagation and calculation of the autocorrelation functions
 !----------------------------------------------------------------------
     call propagate_sillib
-
+           
 !----------------------------------------------------------------------
 ! Close the autocorrelation function output file
 !----------------------------------------------------------------------
     call close_autofiles
 
 !----------------------------------------------------------------------
-! Output timings
+! Output timings and the no. matrix-vector multiplications
 !----------------------------------------------------------------------
-    call times(tw2,tc2)
     write(ilog,'(70a)') ('+',k=1,70)
+
+    write(ilog,'(/,a,1x,i5)') 'No. matrix-vector multiplications:',&
+           nmult
+
+    call times(tw2,tc2)
     write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
     
 !----------------------------------------------------------------------
@@ -127,14 +132,14 @@ contains
          'will be calculated'
 
 !----------------------------------------------------------------------
-! SIL parameters
+! Wavepacket propagation information
 !----------------------------------------------------------------------         
-    write(ilog,'(2x,a,/)') 'Wavepacket propagation performed using &
-         the SIL method'
-    write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
-         kdim
+    write(ilog,'(2x,a,/)') 'Wavepacket propagation performed &
+         using the SIL method'
+    write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace &
+         dimension:',kdim
     write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',autotol
-
+       
 !----------------------------------------------------------------------
 ! Matrix-vector multiplication algorithm
 !----------------------------------------------------------------------
@@ -145,6 +150,11 @@ contains
        write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
             will proceed out-of-core'
     endif
+
+!----------------------------------------------------------------------
+! Initialisation of the matrix-vector multiplication counter
+!----------------------------------------------------------------------
+    nmult=0
     
     return
 
@@ -199,10 +209,10 @@ contains
     memavail=memavail-8.0d0*7.0d0*(1+nbas**2*4*nocc**2)/1024.0d0**2
     
     ! Psi(0) and Psi(t)
-    memavail=memavail-2.0d0*8.0d0*matdim/1024.0d0**2
+    memavail=memavail-2.0d0*16.0d0*matdim/1024.0d0**2
     
     ! Lanczos vectors used in the SIL propagation method
-    memavail=memavail-(kdim-1)*8.0d0*matdim/1024.0d0**2
+    memavail=memavail-(kdim-1)*16.0d0*matdim/1024.0d0**2
 
     ! Be cautious and only use say 90% of the available memory
     memavail=memavail*0.9d0 
@@ -346,7 +356,11 @@ contains
   end subroutine init_wavepacket
 
 !######################################################################
-
+! propagate_sillib: wavepacket propagation using the short iterative
+!                   Lanczos method to yield the time-domain wavepacket
+!                   autocorrelation functions a_n(t), n=0,1,2
+!######################################################################
+  
   subroutine propagate_sillib
 
     use sillib
@@ -549,7 +563,7 @@ contains
   end subroutine propagate_sillib
 
 !######################################################################
-
+  
   subroutine wrprogress(t,norm)
 
     implicit none

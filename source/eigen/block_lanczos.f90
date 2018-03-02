@@ -127,15 +127,8 @@ module block_lanczos
     
     subroutine init_vec
       
-      use iomod, only: freeunit
-      
       implicit none
       
-      integer                              :: i,j,k
-      integer                              :: iadc1,idim,ivecs
-      real(d), dimension(:,:), allocatable :: adc1vec
-      real(d)                              :: fac
-
 !-----------------------------------------------------------------------
 ! lancguess = 1 <-> Construction the initial vectors as the IS unit
 !                   vectors with the greatest transition dipoles with 
@@ -158,123 +151,40 @@ module block_lanczos
 !
 !             6 <-> TPA calculation - read the initial vectors from
 !                   file
+!
+!             7 <-> Random, orthonormal vectors
+!
+!             8 <-> Double subspace diagonalisation (used for spectral
+!                   bounds estimation)
 !-----------------------------------------------------------------------
 
-      if (lancguess.eq.1) then
+      select case(lancguess)
 
-         ! Copy the 1h1p of interest into the qmat2 array
-         do i=1,blocksize
-            k=stvc_lbl(i)
-            qmat2(k,i)=1.0d0
-         enddo
+      case(1)
+         call init_vec_unit
 
-      else if (lancguess.eq.2) then
-         
-         ! Read the ADC(1) eigenvectors from file
-         call freeunit(iadc1)
+      case(2)
+         call init_vec_adc1         
             
-         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
-              status='old')
-            
-         read(iadc1) idim
-            
-         allocate(adc1vec(idim,idim))
-            
-         rewind(iadc1)
-
-         read(iadc1) idim,adc1vec
-            
-         close(iadc1)
-
-         ! Copy the ADC(1) vectors of interest into the qmat2 array
-         do i=1,blocksize
-            k=stvc_lbl(i)
-            do j=1,idim
-               qmat2(j,i)=adc1vec(j,k)
-            enddo
-         enddo
-            
-      else if (lancguess.eq.3) then
-
-         ! Copy the linear combinations of the 1h1p and 2h2p ISs into
-         ! the qmat2 array
-         fac=1.0d0/sqrt(2.0d0)
-         do i=1,blocksize
-            k=stvc_mxc(i*3-1)
-            qmat2(k,i)=fac            
-            k=stvc_mxc(i*3)
-            if (stvc_mxc(i*3-2).gt.0) then  
-               qmat2(k,i)=fac
-            else
-               qmat2(k,i)=-fac
-            endif
-         enddo
-      
-      else if (lancguess.eq.4) then
-
-         ! Read the ADC(1) eigenvectors from file
-         call freeunit(iadc1)
+      case(3)
+         call init_vec_1h1p2h2p
          
-         open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
-              status='old')
+      case(4)
+         call init_vec_adc12h2p
+
+      case(5)
+         call init_vec_rixs
          
-         read(iadc1) idim
+      case(6)
+         call init_vecs_tpa
 
-         allocate(adc1vec(idim,idim))
+      case(7)
+         call init_vecs_random
+
+      case(8)
+         call init_vec_doublesubspace
          
-         rewind(iadc1)
-
-         read(iadc1) idim,adc1vec
-         
-         close(iadc1)
-
-         ! Copy the linear combinations of the ADC(1) vectors and 2h2p
-         ! ISs into the qmat2 array
-         fac=1.0d0/sqrt(2.0d0)
-         do i=1,blocksize
-
-            k=stvc_mxc(i*3-1)
-
-            do j=1,idim
-               qmat2(j,i)=fac*adc1vec(j,k)
-            enddo
-
-            k=stvc_mxc(i*3)
-            if (stvc_mxc(i*3-2).gt.0) then  
-               qmat2(k,i)=fac
-            else
-               qmat2(k,i)=-fac
-            endif
-
-         enddo
-
-      else if (lancguess.eq.5) then
-         ! RIXS calculation: read the initial vectors from file
-         call freeunit(ivecs)
-         open(ivecs,file='SCRATCH/rixs_ivecs',form='unformatted',&
-              status='old')
-         read(ivecs) qmat2
-         close(ivecs)
-         
-      else if (lancguess.eq.6) then
-         ! TPA calculation
-         if (hflag.eq.'i') then
-            ! Valence-excited space calculation
-            call freeunit(ivecs)
-            open(ivecs,file='SCRATCH/tpa_initi',form='unformatted',&
-                 status='old')
-            read(ivecs) qmat2
-            close(ivecs)
-         else if (hflag.eq.'c') then
-            ! Core-excited space calculation
-            call freeunit(ivecs)
-            open(ivecs,file='SCRATCH/tpa_initc',form='unformatted',&
-                 status='old')
-            read(ivecs) qmat2
-            close(ivecs)
-         endif
-         
-      endif
+      end select
       
       return
       
@@ -282,6 +192,553 @@ module block_lanczos
 
 !#######################################################################
 
+    subroutine init_vec_unit
+
+      implicit none
+
+      integer :: i,k
+
+!-----------------------------------------------------------------------
+! Copy the 1h1p of interest into the qmat2 array
+!-----------------------------------------------------------------------
+      do i=1,blocksize
+         k=stvc_lbl(i)
+         qmat2(k,i)=1.0d0
+      enddo
+      
+      return
+      
+    end subroutine init_vec_unit
+
+!#######################################################################
+
+    subroutine init_vec_adc1
+
+      use iomod, only: freeunit
+      
+      implicit none
+
+      integer                              :: iadc1,idim,i,j,k
+      real(d), dimension(:,:), allocatable :: adc1vec
+
+!-----------------------------------------------------------------------
+! Read the ADC(1) eigenvectors from file
+!-----------------------------------------------------------------------
+      call freeunit(iadc1)
+            
+      open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+           status='old')
+      
+      read(iadc1) idim
+            
+      allocate(adc1vec(idim,idim))
+            
+      rewind(iadc1)
+
+      read(iadc1) idim,adc1vec
+            
+      close(iadc1)
+
+!-----------------------------------------------------------------------
+! Copy the ADC(1) vectors of interest into the qmat2 array
+!-----------------------------------------------------------------------
+      do i=1,blocksize
+         k=stvc_lbl(i)
+         do j=1,idim
+            qmat2(j,i)=adc1vec(j,k)
+         enddo
+      enddo
+      
+      return
+      
+    end subroutine init_vec_adc1
+
+!#######################################################################
+
+    subroutine init_vec_1h1p2h2p
+
+      implicit none
+
+      integer :: i,k
+      real(d) :: fac
+
+!-----------------------------------------------------------------------
+! Copy the linear combinations of the 1h1p and 2h2p ISs into the qmat2
+! array
+!-----------------------------------------------------------------------
+      fac=1.0d0/sqrt(2.0d0)
+      do i=1,blocksize
+         k=stvc_mxc(i*3-1)
+         qmat2(k,i)=fac            
+         k=stvc_mxc(i*3)
+         if (stvc_mxc(i*3-2).gt.0) then  
+            qmat2(k,i)=fac
+         else
+            qmat2(k,i)=-fac
+         endif
+      enddo
+      
+      return
+      
+    end subroutine init_vec_1h1p2h2p
+      
+!#######################################################################
+
+    subroutine init_vec_adc12h2p
+
+      use iomod, only: freeunit
+      
+      implicit none
+
+      integer                              :: iadc1,idim,i,j,k
+      real(d)                              :: fac
+      real(d), dimension(:,:), allocatable :: adc1vec
+
+!-----------------------------------------------------------------------
+! Read the ADC(1) eigenvectors from file
+!-----------------------------------------------------------------------
+      call freeunit(iadc1)
+         
+      open(iadc1,file='SCRATCH/adc1_vecs',form='unformatted',&
+           status='old')
+         
+      read(iadc1) idim
+
+      allocate(adc1vec(idim,idim))
+         
+      rewind(iadc1)
+
+      read(iadc1) idim,adc1vec
+         
+      close(iadc1)
+
+!-----------------------------------------------------------------------
+! Copy the linear combinations of the ADC(1) vectors and 2h2p ISs into
+! the qmat2 array
+!-----------------------------------------------------------------------
+      fac=1.0d0/sqrt(2.0d0)
+      do i=1,blocksize
+
+         k=stvc_mxc(i*3-1)
+
+         do j=1,idim
+            qmat2(j,i)=fac*adc1vec(j,k)
+         enddo
+            
+         k=stvc_mxc(i*3)
+         if (stvc_mxc(i*3-2).gt.0) then  
+            qmat2(k,i)=fac
+         else
+            qmat2(k,i)=-fac
+         endif
+
+      enddo
+      
+      return
+      
+    end subroutine init_vec_adc12h2p
+
+!#######################################################################
+
+    subroutine init_vec_rixs
+
+      use iomod, only: freeunit
+      
+      implicit none
+
+      integer :: ivecs
+
+!-----------------------------------------------------------------------
+! RIXS calculation: read the initial vectors from file
+!-----------------------------------------------------------------------
+      call freeunit(ivecs)
+      open(ivecs,file='SCRATCH/rixs_ivecs',form='unformatted',&
+           status='old')
+      read(ivecs) qmat2
+      close(ivecs)
+      
+      return
+      
+    end subroutine init_vec_rixs
+
+!#######################################################################
+
+    subroutine init_vecs_tpa
+
+      use iomod, only: freeunit
+      
+      implicit none
+
+      integer :: ivecs
+      
+      if (hflag.eq.'i') then
+         ! Valence-excited space calculation
+         call freeunit(ivecs)
+         open(ivecs,file='SCRATCH/tpa_initi',form='unformatted',&
+              status='old')
+         read(ivecs) qmat2
+         close(ivecs)
+      else if (hflag.eq.'c') then
+         ! Core-excited space calculation
+         call freeunit(ivecs)
+         open(ivecs,file='SCRATCH/tpa_initc',form='unformatted',&
+              status='old')
+         read(ivecs) qmat2
+         close(ivecs)
+      endif
+      
+      return
+      
+    end subroutine init_vecs_tpa
+
+!#######################################################################
+
+    subroutine init_vecs_random
+
+      implicit none
+
+      integer :: i,j
+      real(d) :: dp
+
+!-----------------------------------------------------------------------
+! Random vectors
+!-----------------------------------------------------------------------
+      do i=1,blocksize
+         do j=1,matdim
+            call random_number(qmat2(j,i))
+         enddo
+         qmat2(:,i)=qmat2(:,i)/sqrt(dot_product(qmat2(:,i),qmat2(:,i)))
+      enddo
+
+!-----------------------------------------------------------------------
+! Orthonormalisation of the random vectors: double MGS
+!-----------------------------------------------------------------------
+      do i=1,blocksize
+         do j=1,i-1
+            dp=dot_product(qmat2(:,i),qmat2(:,j))
+            qmat2(:,i)=qmat2(:,i)-dp*qmat2(:,j)
+         enddo
+         qmat2(:,i)=qmat2(:,i)/sqrt(dot_product(qmat2(:,i),qmat2(:,i)))
+      enddo
+      do i=1,blocksize
+         do j=1,i-1
+            dp=dot_product(qmat2(:,i),qmat2(:,j))
+            qmat2(:,i)=qmat2(:,i)-dp*qmat2(:,j)
+         enddo
+         qmat2(:,i)=qmat2(:,i)/sqrt(dot_product(qmat2(:,i),qmat2(:,i)))
+      enddo
+      
+      return
+      
+    end subroutine init_vecs_random
+      
+!#######################################################################
+
+    subroutine init_vec_doublesubspace
+
+      use iomod
+      use misc, only: dsortindxa1
+      
+      implicit none
+
+      integer, dimension(:), allocatable   :: full2sub,sub2full,&
+                                              indxhii,indxi,indxj
+      integer                              :: i,j,k,i1,j1,e2,error,&
+                                              iham,nlim,l,subdim,&
+                                              maxbl,nrec,dim
+      real(d), dimension(:), allocatable   :: hii,hij
+      real(d), dimension(:,:), allocatable :: hsub
+      real(d), dimension(:), allocatable   :: subeig,work
+      character(len=70)                    :: filename
+
+!**********************************************************************
+! Important: We are here assuming that blocksize is an even number.
+!**********************************************************************
+      
+!-----------------------------------------------------------------------
+! Subspace dimension
+!-----------------------------------------------------------------------
+      subdim=800
+      
+!-----------------------------------------------------------------------
+! Read the on-diagonal elements from file
+!-----------------------------------------------------------------------
+      allocate(hii(matdim))
+
+      call freeunit(iham)
+      
+      if (hflag.eq.'i') then
+         filename='SCRATCH/hmlt.diai'
+      else if (hflag.eq.'c') then
+         filename='SCRATCH/hmlt.diac'
+      endif
+
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      read(iham) maxbl,nrec
+      read(iham) hii
+
+      close(iham)
+
+!-----------------------------------------------------------------------
+! Sort the on-diagonal Hamiltonian matrix elements in order of
+! ascending value for use in subspace diagonalisation 1
+!-----------------------------------------------------------------------
+      ! Stupidly, matdim is declared as integer*8, but needs to be
+      ! passed as integer*4 to dsortindxa1
+      dim=matdim
+
+      allocate(indxhii(dim))
+      call dsortindxa1('A',dim,hii,indxhii)
+
+!-----------------------------------------------------------------------
+! Ensure that the subdim'th IS is not degenerate with subdim+1'th IS,
+! and if it is, increase subdim accordingly
+!-----------------------------------------------------------------------
+5     continue
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+         subdim=subdim+1
+         goto 5
+      endif
+      
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(full2sub(matdim))
+      allocate(sub2full(subdim))
+      allocate(hsub(subdim,subdim))
+      allocate(subeig(subdim))
+      allocate(work(3*subdim))
+
+!-----------------------------------------------------------------------
+! Set the full space-to-subspace mappings
+!-----------------------------------------------------------------------
+      full2sub=0
+      do i=1,subdim
+         k=indxhii(i)
+         sub2full(i)=k
+         full2sub(k)=i
+      enddo
+      
+!-----------------------------------------------------------------------
+! Construct the Hamiltonian matrix in the subspace 1
+!-----------------------------------------------------------------------
+      hsub=0.0d0
+
+      ! (i) On-diagonal elements
+      do i=1,subdim
+         k=sub2full(i)
+         hsub(i,i)=hii(k)
+      enddo
+
+      ! (ii) Off-diagonal elements
+      !
+      ! Open the off-diagonal element file
+      call freeunit(iham)
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.offc'
+      endif
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      ! Allocate arrays
+      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      ! Loop over records
+      do k=1,nrec
+         read(iham) hij(:),indxi(:),indxj(:),nlim
+         ! Loop over the non-zero elements of the full space
+         ! Hamiltonian in the current record
+         do l=1,nlim
+            ! Indices of the current off-diagonal element of the
+            ! full space Hamiltonian
+            i=indxi(l)
+            j=indxj(l)
+            ! If both indices correspond to subspace ISs, then
+            ! add the element to subspace Hamiltonian
+            if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
+               i1=full2sub(i)
+               j1=full2sub(j)
+               hsub(i1,j1)=hij(l)
+               hsub(j1,i1)=hsub(i1,j1)
+            endif
+         enddo
+      enddo
+      ! Close the off-diagonal element file
+      close(iham)
+      ! Deallocate arrays
+      deallocate(hij,indxi,indxj)
+      
+!-----------------------------------------------------------------------
+! Diagonalise the subspace Hamiltonian 1
+!-----------------------------------------------------------------------
+      e2=3*subdim
+      call dsyev('V','U',subdim,hsub,subdim,subeig,work,e2,error)
+
+      if (error.ne.0) then
+         errmsg='The diagonalisation of the subspace Hamiltonian 1 &
+              failed.'
+         call error_control
+      endif
+
+!-----------------------------------------------------------------------
+! Construct half the initial vectors from the subspace vectors.
+! Note that after calling dsyev, hsub now holds the eigenvectors of
+! the subspace Hamiltonian 1.
+!-----------------------------------------------------------------------
+      do i=1,blocksize/2
+         do j=1,subdim
+            k=sub2full(j)
+            qmat2(k,i)=hsub(j,i)            
+         enddo
+      enddo
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(full2sub)
+      deallocate(sub2full)
+      deallocate(hsub)
+      deallocate(subeig)
+      deallocate(work)
+
+!-----------------------------------------------------------------------
+! Reset the subspace dimension
+!-----------------------------------------------------------------------
+      subdim=800
+      
+!-----------------------------------------------------------------------
+! Sort the on-diagonal Hamiltonian matrix elements in order of
+! descending value for use in subspace diagonalisation 2
+!-----------------------------------------------------------------------
+      ! Stupidly, matdim is declared as integer*8, but needs to be
+      ! passed as integer*4 to dsortindxa1
+      dim=matdim
+      
+      call dsortindxa1('D',dim,hii,indxhii)
+
+!-----------------------------------------------------------------------
+! Ensure that the subdim'th IS is not degenerate with subdim+1'th IS,
+! and if it is, increase subdim accordingly
+!-----------------------------------------------------------------------
+6     continue
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+         subdim=subdim+1
+         goto 6
+      endif
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      allocate(full2sub(matdim))
+      allocate(sub2full(subdim))
+      allocate(hsub(subdim,subdim))
+      allocate(subeig(subdim))
+      allocate(work(3*subdim))
+      
+!-----------------------------------------------------------------------
+! Set the full space-to-subspace mappings
+!-----------------------------------------------------------------------
+      full2sub=0
+      do i=1,subdim
+         k=indxhii(i)
+         sub2full(i)=k
+         full2sub(k)=i
+      enddo
+
+!-----------------------------------------------------------------------
+! Construct the Hamiltonian matrix in the subspace 2
+!-----------------------------------------------------------------------
+      hsub=0.0d0
+
+      ! (i) On-diagonal elements
+      do i=1,subdim
+         k=sub2full(i)
+         hsub(i,i)=hii(k)
+      enddo
+
+      ! (ii) Off-diagonal elements
+      !
+      ! Open the off-diagonal element file
+      call freeunit(iham)
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.offc'
+      endif
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      ! Allocate arrays
+      allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
+      ! Loop over records
+      do k=1,nrec
+         read(iham) hij(:),indxi(:),indxj(:),nlim
+         ! Loop over the non-zero elements of the full space
+         ! Hamiltonian in the current record
+         do l=1,nlim
+            ! Indices of the current off-diagonal element of the
+            ! full space Hamiltonian
+            i=indxi(l)
+            j=indxj(l)
+            ! If both indices correspond to subspace ISs, then
+            ! add the element to subspace Hamiltonian
+            if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
+               i1=full2sub(i)
+               j1=full2sub(j)
+               hsub(i1,j1)=hij(l)
+               hsub(j1,i1)=hsub(i1,j1)
+            endif
+         enddo
+      enddo
+      ! Close the off-diagonal element file
+      close(iham)
+      ! Deallocate arrays
+      deallocate(hij,indxi,indxj)
+
+!-----------------------------------------------------------------------
+! Diagonalise the subspace Hamiltonian 2
+!-----------------------------------------------------------------------
+      e2=3*subdim
+      call dsyev('V','U',subdim,hsub,subdim,subeig,work,e2,error)
+
+      if (error.ne.0) then
+         errmsg='The diagonalisation of the subspace Hamiltonian 1 &
+              failed.'
+         call error_control
+      endif
+
+!-----------------------------------------------------------------------
+! Construct half the initial vectors from the subspace vectors.
+! Note that after calling dsyev, hsub now holds the eigenvectors of
+! the subspace Hamiltonian 2.
+!-----------------------------------------------------------------------
+      do i=blocksize/2+1,blocksize
+         do j=1,subdim
+            k=sub2full(j)
+            qmat2(k,i)=hsub(j,i)            
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(hii)
+      deallocate(indxhii)
+      deallocate(full2sub)
+      deallocate(sub2full)
+      deallocate(hsub)
+      deallocate(subeig)
+      deallocate(work)
+      
+      return
+      
+    end subroutine init_vec_doublesubspace
+      
+!#######################################################################
+      
     function machine_precision() result(epsilon)
       
       implicit none

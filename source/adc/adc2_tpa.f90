@@ -259,8 +259,7 @@ contains
     use fspace
     use guessvecs
     use iomod
-    use diagmod
-
+    
     implicit none
     
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
@@ -687,7 +686,6 @@ contains
     use fspace
     use guessvecs
     use iomod
-    use diagmod
 
     implicit none
 

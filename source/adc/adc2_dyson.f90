@@ -60,7 +60,7 @@
         use parameters
         use guessvecs
         use fspace
-        use diagmod
+        use adc2common
         use iomod, only: freeunit
         use misc
         use targetmatching
@@ -335,7 +335,7 @@
         use fspace
         use iomod, only: freeunit
         use fspace
-        use diagmod
+        use adc2common
         use guessvecs
 
         implicit none

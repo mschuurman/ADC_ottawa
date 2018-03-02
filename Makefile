@@ -29,7 +29,7 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
+LIBS= ${LIB_LAPACK} ${LIB_BLAS}
 
 #-----------------------------------------------------------------------
 # Define object files
@@ -66,8 +66,7 @@ UTILITIES=source/utilities/timingmod.o \
 	source/utilities/misc.o \
 	source/utilities/lineq.o \
 	source/utilities/eigchess.o \
-	source/utilities/gammainc.o \
-	source/utilities/simdiag.o
+	source/utilities/gammainc.o
 
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
@@ -81,23 +80,23 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/scf_electronic_structure.o 
 
 EIGEN=  source/eigen/block_davidson.o \
-	source/eigen/diagmod.o \
-	source/eigen/block_lanczos.o 
+	source/eigen/block_lanczos.o
 
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
 	source/propagation/csillib.o \
 	source/propagation/bslib.o \
 	source/propagation/rkf45rlxlib.o \
+	source/propagation/specbounds.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
+	source/propagation/chebyspec.o \
 	source/propagation/fdstates.o \
 	source/propagation/flux.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
 
 CAP=	source/cap/auto_cap_box.o \
-	source/cap/fdvr.o \
 	source/cap/monomial_analytic.o \
 	source/cap/lebedev.o \
 	source/cap/atoms.o \
@@ -124,11 +123,12 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/mp2.o \
 	source/adclib/electron_density.o \
 	source/adclib/density_matrix.o \
-	source/adclib/nto.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
 	source/adclib/target_matching.o \
-	source/adclib/adc2common.o
+	source/adclib/adc2common.o \
+	source/adclib/nto.o 
+
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_opa.o \
@@ -146,8 +146,8 @@ ADC =   $(INCLUDE) \
 	$(IOMODULES) \
 	$(UTILITIES) \
 	$(QCLIB) \
-	$(PROPAGATION) \
 	$(EIGEN) \
+	$(PROPAGATION) \
 	$(ADCLIB) \
 	$(CAP) \
 	$(ADC_MAIN)
@@ -180,7 +180,6 @@ ADC_OBJ=accuracy.o \
 	lineq.o \
 	eigchess.o \
 	gammainc.o \
-	simdiag.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
@@ -205,30 +204,30 @@ ADC_OBJ=accuracy.o \
 	fspacetrial.o \
 	fspace2.o \
 	block_davidson.o \
+	block_lanczos.o \
 	tdselib.o \
 	sillib.o \
 	csillib.o \
 	bslib.o \
 	rkf45rlxlib.o \
+	specbounds.o \
 	relaxation.o \
+	chebyspec.o \
 	fvecprop.o \
 	fdstates.o \
 	flux.o \
 	proplib_adc2.o \
 	proplib_adc1.o \
-	diagmod.o \
-	block_lanczos.o \
 	mp2.o \
 	electron_density.o \
 	density_matrix.o \
-	nto.o \
 	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \
 	adc2common.o \
+	nto.o \
 	guessvecs.o \
 	auto_cap_box.o \
-	fdvr.o \
 	monomial_analytic.o \
 	lebedev.o \
 	atoms.o \

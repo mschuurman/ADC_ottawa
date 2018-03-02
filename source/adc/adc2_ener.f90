@@ -9,7 +9,7 @@
       use constants
       use parameters
       use select_fano
-      use diagmod
+      use adc2common
       use fspace
       use get_moment
       use misc

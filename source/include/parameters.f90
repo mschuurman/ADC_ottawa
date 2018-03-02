@@ -312,6 +312,8 @@ logical                                :: ltpa
 real(d)                               :: tfinal,tout,&
                                          autotol
 integer                               :: autoord
+integer                               :: autoprop
+integer                               :: chebyord
 logical                               :: lautospec
 
 !!$************************************************

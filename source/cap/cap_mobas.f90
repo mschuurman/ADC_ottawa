@@ -26,7 +26,6 @@ contains
     use parameters
     use timingmod
     use monomial_analytic
-    use fdvr
     use import_gamess
     use misc, only: get_vdwr
     
@@ -70,10 +69,6 @@ contains
     if (icap.eq.1) then
        ! Monomial CAP, analytic evaluation of the CAP matrix elements
        call monomial_ana(gam,cap_mo,capord,capstr)
-    else if (icap.eq.7) then
-       ! Monomial CAP, evaluation of the CAP matrix elements using
-       ! an F-DVR procedure
-       call monomial_fdvr(gam,cap_mo,capord,capstr)
     else
        ! Numerical evaluation of the CAP matrix elements using
        ! Becke-type integration grids
