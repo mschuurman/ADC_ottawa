@@ -7,6 +7,8 @@
 
     save
 
+    private :: dp
+    
     ! Annoyingly, the gamess_internal module contains a variable
     ! named 'd', so we will use 'dp' here instead
     integer, parameter :: dp=selected_real_kind(8)
@@ -216,7 +218,7 @@
               do k=1,np
                  pk=pk+1
                  alpha=gam%atoms(i)%p_zet(p1-1+k)
-                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)                
+                 coeff=gam%atoms(i)%p_c_orig(p1-1+k)
                  write(imolden,*) alpha,coeff
               enddo
 

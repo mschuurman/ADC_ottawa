@@ -10,6 +10,8 @@ module monomial_analytic
   implicit none
 
   save
+
+  private :: dp
   
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
@@ -28,7 +30,6 @@ module monomial_analytic
   ! CAP arrays
   real(dp), allocatable  :: cap(:)
   real(dp), allocatable  :: cap_ao(:,:)
-  real(dp), allocatable  :: vdwr(:)
   real(dp), parameter    :: dscale=3.5d0
 
   ! Monomial CAP arrays
@@ -57,7 +58,7 @@ contains
     implicit none
 
     integer                        :: order
-    integer                        :: natom,i
+    integer                        :: i
     real(dp)                       :: eta
     real(dp), dimension(nbas,nbas) :: cap_mo
     type(gam_structure)            :: gam
@@ -66,15 +67,6 @@ contains
 ! Calculate the geometric centre of the molecule
 !----------------------------------------------------------------------
     call calc_geomcent(gam)
-
-!----------------------------------------------------------------------
-! Fill in the van der Waals radius array
-!----------------------------------------------------------------------
-    natom=gam%natoms
-    allocate(vdwr(natom))
-    vdwr=0.0d0
-
-    call get_vdwr(gam,vdwr,natom)
 
 !----------------------------------------------------------------------
 ! Precalculation of terms that appear a lot in the working equations
@@ -88,7 +80,7 @@ contains
 ! Waals radius
 !
 ! If an automatic determination of the CAP box has been requested,
-! then we will choose the starting postions based on ana analysis of
+! then we will choose the starting postions based on an analysis of
 ! the initial state density
 !----------------------------------------------------------------------
     if (lautobox) then
@@ -903,7 +895,7 @@ contains
 !######################################################################
 
   subroutine finalise
-
+    
     implicit none
 
     deallocate(amunu)
@@ -913,7 +905,6 @@ contains
     deallocate(alpha)
     deallocate(kmu)
     deallocate(Nmu)
-    deallocate(vdwr)
     deallocate(cap_pbas)
     deallocate(cap_ao)
     

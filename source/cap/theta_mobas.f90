@@ -9,6 +9,8 @@ module thetamod
   implicit none
 
   save
+
+  private :: dp
   
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
@@ -55,8 +57,6 @@ contains
 
 !----------------------------------------------------------------------    
 ! Calculate the MO representation of the projector onto the CAP region
-! At present, this is only supported for analytically calculated
-! monomial-type caps
 !----------------------------------------------------------------------
     if (icap.eq.1) then
        call monomial_ana(gam,theta_mo,0,1.0d0)
@@ -92,7 +92,6 @@ contains
     real(dp), dimension(nbas,nbas)           :: theta_mo
     real(dp), dimension(:,:), allocatable    :: theta_ao,smat,lmat
     real(dp), parameter                      :: ang2bohr=1.889725989d0
-    real(dp), dimension(:), allocatable      :: vdwr
     real(dp), parameter                      :: dscale=3.5
     real(dp)                                 :: x,r
     complex(dp), dimension(:,:), allocatable :: theta_ao_cmplx
@@ -102,11 +101,13 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     nao=gam%nbasis
-
     natom=gam%natoms
-    allocate(vdwr(natom))
-    vdwr=0.0d0
     
+    if (.not.allocated(vdwr)) then
+       allocate(vdwr(natom))
+       vdwr=0.0d0
+    endif
+       
     allocate(theta_ao(nao,nao))
     theta_ao=0.0d0
 
@@ -128,6 +129,9 @@ contains
     else if (icap.eq.3) then
        ! Atom-centred monomial CAP
        cap_type='atom monomial'
+    else if (icap.eq.6) then
+       ! Cavity-type sigmoidal CAP
+       cap_type='sigmoidal'       
     else
        errmsg='Flux analysis is not yet supported for ECS-type &
             absorbing potentials'
@@ -154,7 +158,7 @@ contains
 !----------------------------------------------------------------------
     if (boxpar(1).eq.0.0d0) then
        ! The user has not specified a cap box, 
-       call get_vdwr(gam,vdwr,natom)
+       call get_vdwr(gam)
        cap_r0=-1.0d0
        do n=1,natom
           if (gam%atoms(n)%name.eq.'x') cycle

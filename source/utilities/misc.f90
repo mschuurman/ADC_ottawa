@@ -133,7 +133,7 @@ contains
 
 !#######################################################################
 
-  subroutine get_vdwr(gam,vdwr,natom)
+  subroutine get_vdwr(gam)
 
     use constants
     use channels
@@ -144,15 +144,15 @@ contains
     
     implicit none
     
-    integer                   :: natom,i
-    real(d), dimension(natom) :: vdwr
-    real(d), parameter        :: ang2bohr=1.889725989d0
-    character(len=20)         :: name
-    type(gam_structure)       :: gam
+    integer             :: natom,i
+    real(d), parameter  :: ang2bohr=1.889725989d0
+    character(len=20)   :: name
+    type(gam_structure) :: gam
     
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------   
+    natom=gam%natoms
     vdwr=0.0d0
 
 !----------------------------------------------------------------------
@@ -1156,26 +1156,6 @@ contains
 
   end subroutine mat_vec_multiply
 
-!#######################################################################
-
-  subroutine read_density_matrix
-
-
-  integer ::  k,a
-  integer :: i
-  real*8, dimension(nBas,nOcc) :: density_matrix
-
-  OPEN(unit=77,file="density.dat",status='OLD',access='SEQUENTIAL',form='FORMATTED')
-  write(ilog,*) "nBas from read_density_matrix",nBas
-
-  do i=1,nBas
-  read(77) k,a,density_matrix(a,k)
-  end do
-
-  close(77)
-
-  end subroutine read_density_matrix
- 
 !#######################################################################
 
 end module misc

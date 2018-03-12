@@ -31,7 +31,7 @@ CCOPTS  = -g -O0
 #-----------------------------------------------------------------------
 # External libraries
 #-----------------------------------------------------------------------
-LIBS= -L/usr/lib64 ${LIB_LAPACK} ${LIB_BLAS}
+LIBS= ${LIB_LAPACK} ${LIB_BLAS}
 
 #-----------------------------------------------------------------------
 # Define object files
@@ -73,21 +73,30 @@ UTILITIES=source/utilities/timingmod.o \
 IOMODULES=source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
 	source/iomodules/rdinput.o \
-	source/iomodules/read_param.o
+	source/iomodules/read_param.o \
+	source/iomodules/molden.o
 
 QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/rungamess.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-#EIGEN1= source/eigen/diagmod.o \
-#        source/eigen/block_lanczos.o
+EIGEN1= source/eigen/block_lanczos.o
+
+# FROM ADC_nrc
+#EIGEN=  source/eigen/block_davidson.o \
+#	source/eigen/block_lanczos.o
+# FROM ADC_nrc
 
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
 	source/propagation/csillib.o \
+	source/propagation/bslib.o \
+	source/propagation/rkf45rlxlib.o \
+	source/propagation/specbounds.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
+	source/propagation/chebyspec.o \
 	source/propagation/fdstates.o \
 	source/propagation/flux.o \
 	source/propagation/proplib_adc2.o \
@@ -118,18 +127,25 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/fspace2.o \
         source/adclib/guessvecs.o \
 	source/adclib/mp2.o \
-	source/adclib/density.o \
+	source/adclib/electron_density.o \
+	source/adclib/density_matrix.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
-	source/adclib/target_matching.o 
+	source/adclib/target_matching.o \
+	source/adclib/nto.o
 #	source/adclib/adc2common.o
 
 EIGEN2= source/eigen/block_davidson.o \
         source/eigen/dmatvec_davidson.o \
-        source/eigen/diagmod.o \
         source/eigen/block_lanczos.o
 
 ADCLIB1= source/adclib/adc2common.o
+
+# FROM ADC_nrc
+#	source/adclib/target_matching.o \
+#	source/adclib/adc2common.o \
+#	source/adclib/nto.o 
+# FROM ADC_nrc
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc2_opa.o \
@@ -147,9 +163,9 @@ ADC =   $(INCLUDE) \
 	$(IOMODULES) \
 	$(UTILITIES) \
 	$(QCLIB) \
+	$(EIGEN2) \
 	$(PROPAGATION) \
 	$(ADCLIB) \
-        $(EIGEN2) \
         $(ADCLIB1) \
 	$(CAP) \
 	$(ADC_MAIN)
@@ -185,6 +201,7 @@ ADC_OBJ=accuracy.o \
 	iomod.o \
 	parsemod.o \
 	rdinput.o \
+	molden.o \
 	timingmod.o \
 	defaults.o \
 	orbindx.o \
@@ -206,23 +223,28 @@ ADC_OBJ=accuracy.o \
 	fspace2.o \
 	block_davidson.o \
         dmatvec_davidson.o \
+	block_lanczos.o \
 	tdselib.o \
 	sillib.o \
 	csillib.o \
+	bslib.o \
+	rkf45rlxlib.o \
+	specbounds.o \
 	relaxation.o \
+	chebyspec.o \
 	fvecprop.o \
 	fdstates.o \
 	flux.o \
 	proplib_adc2.o \
 	proplib_adc1.o \
-	diagmod.o \
-	block_lanczos.o \
 	mp2.o \
-	density.o \
+	electron_density.o \
+	density_matrix.o \
 	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \
 	adc2common.o \
+	nto.o \
 	guessvecs.o \
 	auto_cap_box.o \
 	monomial_analytic.o \

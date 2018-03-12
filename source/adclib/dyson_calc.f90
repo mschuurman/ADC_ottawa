@@ -592,14 +592,14 @@
       ! Term D
       do i=1,ndimsf
          ilbl=kpqf(3,i)
-         dyscoeff(ilbl)=dyscoeff(ilbl)-0.5d0*rhogs2(alpha,alpha)*invsqrt2*vec(i)
+         dyscoeff(ilbl)=dyscoeff(ilbl)-0.25d0*rhogs2(alpha,alpha)*invsqrt2*vec(i)
       enddo
 
       ! Term E
       do i=1,nocc
          do j=1,ndimsf
             jlbl=kpqf(3,j)
-            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,jlbl)*invsqrt2*vec(j)
+            dyscoeff(i)=dyscoeff(i)+0.25d0*rhogs2(i,jlbl)*invsqrt2*vec(j)
          enddo
       enddo
 
@@ -655,7 +655,7 @@
       do b=nocc+1,nbas
          do n=1,ndimsf 
             i=kpqf(3,n)
-            dyscoeff(b)=dyscoeff(b)+invsqrt2*vec(n)*rhogs2(i,b)
+            dyscoeff(b)=dyscoeff(b)+0.5d0*invsqrt2*vec(n)*rhogs2(i,b)
          enddo
       enddo
 
@@ -730,7 +730,7 @@
       ! Term H
       do i=1,nocc
          do b=nocc+1,nbas
-            dyscoeff(i)=dyscoeff(i)+rhogs2(i,b)*pmat(alpha,b)
+            dyscoeff(i)=dyscoeff(i)+0.5d0*rhogs2(i,b)*pmat(alpha,b)
          enddo
       enddo
 
@@ -830,7 +830,8 @@
       ! Term 1
       do b=nocc+1,nbas
          do c=nocc+1,nbas
-            ftmp=rhogs2(alpha,c)*pmat(c,b) + pmat(alpha,c)*rhogs2(c,b)
+            ftmp=0.5d0*rhogs2(alpha,c)*pmat(c,b) &
+                 +pmat(alpha,c)*0.5d0*rhogs2(c,b)
             dyscoeff(b)=dyscoeff(b)-0.5d0*ftmp
          enddo
       enddo

@@ -5,7 +5,9 @@ module auto2specmod
   save
 
   integer                               :: maxtp,iauto,epoints
-  real(d)                               :: dt,t0,emin,emax,tau,sigma,&
+  integer                               :: padesolver
+  integer                               :: ishape
+  real(d)                               :: dt,t0,emin,emax,tau,fwhm,&
                                            dele,a0,b0,tcutoff
   real(d), dimension(:,:), allocatable  :: sp
   real(d), parameter                    :: eh2ev=27.2113845d0
@@ -23,7 +25,7 @@ program auto2spec
   use auto2specmod
   
   implicit none
-
+  
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -69,8 +71,8 @@ contains
     ! No. energy points
     epoints=1000
 
-    ! Damping time
-    tau=-1.0d0
+    ! FWHM
+    fwhm=-1.0d0
     
     ! Name of the output file
     outfile=''
@@ -78,11 +80,17 @@ contains
     ! Pade approximant of the Fourier transform
     lpade=.false.
 
+    ! Method for calculating the Pade approximant coefficients
+    padesolver=1
+    
     ! Timestep cutofff (in fs)
     tcutoff=1e+10_d
 
     ! Normalisation of the spectra
     lnormalise=.false.
+
+    ! Lineshape type: 1 <-> Lorentzian, 2 <-> Gaussian
+    ishape=1
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -94,11 +102,10 @@ contains
        ! FWHM in eV
        i=i+1
        call getarg(i,string2)
-       read(string2,*) sigma
-       ! Convert to tau in au
-       sigma=sigma/eh2ev
-       tau=2.0d0/sigma
-
+       read(string2,*) fwhm
+       ! Convert to au
+       fwhm=fwhm/eh2ev
+       
     else if (string1.eq.'-e') then
        ! Energy range in eV
        i=i+1
@@ -125,7 +132,17 @@ contains
     else if (string1.eq.'-pade') then
        ! Pade approximant of the Fourier transform
        lpade=.true.
-
+       ! Calculation of the Pade approximant coefficients using
+       ! matrix inversion
+       padesolver=1
+       
+    else if (string1.eq.'-pade_lu') then
+       ! Pade approximant of the Fourier transform
+       lpade=.true.
+       ! Calculation of the Pade approximant coefficients using
+       ! LU factorisation
+       padesolver=2
+       
     else if (string1.eq.'-tcut') then
        ! Time cutoff
        i=i+1
@@ -137,6 +154,19 @@ contains
        ! Normalisation of the spectra
        lnormalise=.true.
 
+    else if (string1.eq.'-shape') then
+       ! Lineshape
+       i=i+1
+       call getarg(i,string2)
+       if (string2.eq.'lorentzian'.or.string2.eq.'Lorentzian') then
+          ishape=1
+       else if (string2.eq.'gaussian'.or.string2.eq.'Gaussian') then
+          ishape=2
+       else
+          errmsg='Unknown lineshape: '//trim(string2)
+          call error_control
+       endif
+          
     else
        errmsg='Unknown keyword: '//trim(string1)
        call error_control
@@ -155,13 +185,22 @@ contains
        call error_control
     endif
 
-    if (tau.eq.-1.0d0) then
+    if (fwhm.eq.-1.0d0) then
        errmsg='The spectral broadening has not been given'
        call error_control
     endif
     
     if (outfile.eq.'') then
        outfile='spectrum.dat'
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the lineshape parameter
+!----------------------------------------------------------------------
+    if (ishape.eq.1) then
+       tau=2.0d0/fwhm
+    else if (ishape.eq.2) then
+       tau=fwhm/(2.0d0*sqrt(2.0d0*log(2.0d0)))
     endif
 
     return
@@ -285,8 +324,8 @@ contains
 
           t=i*dt
 
-          cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*exp(-(t/tau))
-
+          cc=dble(exp(dcmplx(0.0d0,eau*t))*auto(i))*damping_function(t)
+                    
           sum0=sum0+cc
           sum1=sum1+cc*cos(pia*i)
           sum2=sum2+cc*cos(pia*i)**2
@@ -310,6 +349,33 @@ contains
   end subroutine calc_spectrum
 
 !######################################################################
+! damping_function: returns the value of the damping function at the
+!                   time t
+!######################################################################
+  
+  function damping_function(t) result(func)
+
+    use auto2specmod
+    
+    implicit none
+
+    real(d) :: t,func
+
+    select case(ishape)
+
+    case(1) ! Lorentzian lineshape
+       func=exp(-(t/tau))
+       
+    case(2) ! Gaussian lineshape
+       func=exp(-0.5d0*(t**2)*(tau**2))
+              
+    end select
+       
+    return
+    
+  end function damping_function
+    
+!######################################################################
 ! pade_coeff: the notation used here is the same as that used in
 !             Equations 29-35 in Bruner et. al., JCTC, 12, 3741 (2016)
 !######################################################################
@@ -322,7 +388,7 @@ contains
 
     integer                                 :: k,m,n
     complex(d), dimension(:), allocatable   :: cvec,dvec
-    complex(d), dimension(:,:), allocatable :: gmat,invgmat
+    complex(d), dimension(:,:), allocatable :: gmat
 
 !----------------------------------------------------------------------
 ! Allocate and initialisae arrays
@@ -339,16 +405,14 @@ contains
     dvec=0.0d0
     allocate(gmat(n,n))
     gmat=0.0d0
-    allocate(invgmat(n,n))
-    invgmat=0.0d0
-
+    
 !----------------------------------------------------------------------
 ! c-coefficients
 !----------------------------------------------------------------------
     cvec(0)=dcmplx(a0,b0)
 
     do k=1,iauto
-       cvec(k)=auto(k)*exp(-(k*dt)/tau)
+       cvec(k)=auto(k)*damping_function(k*dt)
     enddo
        
 !----------------------------------------------------------------------
@@ -368,15 +432,12 @@ contains
     enddo
 
 !----------------------------------------------------------------------
-! Calculate the b-coefficients: b = G^-1 . d
+! Calculate the b-coefficients by colving the system of linear
+! equations G.b = d
 ! N.B., we use the usual convention for diagonal Pade approximant
 ! schemes and set b0=1
 !----------------------------------------------------------------------
-    call pseudoinverse_cmplx(gmat,invgmat,n)
-
-    bvec(0)=cone
-
-    bvec(1:n)=matmul(invgmat,dvec)
+    call calc_bcoeff(gmat,dvec,n)
 
 !----------------------------------------------------------------------
 ! Calculate the a-coefficients
@@ -392,11 +453,131 @@ contains
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
-    deallocate(cvec,dvec,gmat,invgmat)
+    deallocate(cvec,dvec,gmat)
     
     return
     
   end subroutine pade_coeff
+
+!######################################################################
+
+  subroutine calc_bcoeff(gmat,dvec,n)
+
+    use constants
+    
+    implicit none
+
+    integer                                 :: n
+    complex(d), dimension(n,n)              :: gmat
+    complex(d), dimension(n)                :: dvec
+    complex(d), dimension(:,:), allocatable :: invgmat
+
+    select case(padesolver)
+
+    case(1) ! Solution of G b = d via the inversion of G
+       call calc_bcoeff_inv(gmat,dvec,n)
+       
+    case(2) ! Solution of G b = d using the LU factorisation of G
+       call calc_bcoeff_lu(gmat,dvec,n)
+
+    end select
+    
+    return
+
+  end subroutine calc_bcoeff
+
+!######################################################################
+
+  subroutine calc_bcoeff_inv(gmat,dvec,n)
+
+    use constants
+    
+    implicit none
+
+    integer                                 :: n
+    complex(d), dimension(n,n)              :: gmat
+    complex(d), dimension(n)                :: dvec
+    complex(d), dimension(:,:), allocatable :: invgmat
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(invgmat(n,n))
+    invgmat=0.0d0
+
+!----------------------------------------------------------------------
+! Calculate the pseudoinverse of G
+!----------------------------------------------------------------------
+    call pseudoinverse_cmplx(gmat,invgmat,n)
+
+!----------------------------------------------------------------------
+! Calculate the b-coefficients
+!----------------------------------------------------------------------
+    bvec(0)=cone
+
+    bvec(1:n)=matmul(invgmat,dvec)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(invgmat)
+    
+    return
+    
+  end subroutine calc_bcoeff_inv
+
+!######################################################################
+
+   subroutine calc_bcoeff_lu(gmat,dvec,n)
+
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer                            :: n,info
+    integer, dimension(:), allocatable :: ipiv
+    complex(d), dimension(n,n)         :: gmat
+    complex(d), dimension(n)           :: dvec
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(ipiv(n))
+    
+!----------------------------------------------------------------------
+! LU factorisation of G
+!----------------------------------------------------------------------
+    call zgetrf(n,n,gmat,n,ipiv,info)
+
+    if (info.ne.0) then
+       write(6,'(/,2x,a,/)') 'LU decomposition of the G-matrix &
+            failed in subroutine calc_bcoeff_lu'
+       stop
+    endif
+
+!----------------------------------------------------------------------
+! Calculate the b-coefficients
+!----------------------------------------------------------------------
+    bvec(0)=cone
+
+    bvec(1:n)=dvec(1:n)
+    call zgetrs('N',n,1,gmat,n,ipiv,bvec(1:n),n,info)
+
+    if (info.ne.0) then
+       write(6,'(/,2x,a,/)') 'Failed call to zgetrs in subroutine &
+            subroutine calc_bcoeff_lu'
+       stop
+    endif
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(ipiv)
+    
+    return
+    
+  end subroutine calc_bcoeff_lu
     
 !######################################################################
 
@@ -424,9 +605,9 @@ contains
     if (info.ne.0) then
        write(6,'(/,2x,a)') &
             'SVD failure in subroutine pseudoinverse_cmplx'
-       STOP
+       stop
     endif
-    
+
 !-----------------------------------------------------------------------
 ! Pseudo-inverse
 !-----------------------------------------------------------------------
@@ -509,7 +690,7 @@ contains
 !----------------------------------------------------------------------
 ! Write the spectra to file
 !----------------------------------------------------------------------
-    write(iout,'(a,x,F7.4)') '# FHWM (eV):',sigma*eh2ev
+    write(iout,'(a,x,F7.4)') '# FHWM (eV):',fwhm*eh2ev
 
     if (lpade) then
        write(iout,'(/,100a)') ('#',i=1,100)

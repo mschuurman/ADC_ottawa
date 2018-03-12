@@ -12,22 +12,7 @@ mem=2000
 
 cvs
 
-# Relaxation
 diag_section
- method=relaxation_liu
- nstates = 3
- block_size = 3
- tol = 1e-6
- timestep = 10.0
- krydim = 20
- maxvec = 100
- maxit = 12
- siltol = 1e-6
- guess = subdiag
- #guess = adc1
-end-diag_section
-
-diag_final_section
  nstates = 3
  block_size = 6
  maxvec = 18
@@ -35,11 +20,11 @@ diag_final_section
  maxit = 1000
  guess = subdiag
  nodfl
-end-diag_final_section
+end-diag_section
 
-#lanczos_section
-# block_size=50
-# iter=20
-#end-lanczos_section
+lanczos_section
+ block_size=50
+ iter=20
+end-lanczos_section
 
 end-input

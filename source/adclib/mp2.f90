@@ -1,3 +1,8 @@
+!#######################################################################
+! mp2: routines for the calculation of various MP2 quantities: energies
+!      density matrices and the D2 diagnostic
+!#######################################################################
+
 module mp2
 
 contains
@@ -308,6 +313,11 @@ contains
     real(d), dimension(nbas,nbas) :: rho
     real(d)                       :: tw1,tw2,tc1,tc2
 
+    integer                       :: error,workdim
+    real(d), allocatable          :: natvec(:,:)
+    real(d), allocatable          :: natocc(:)
+    real(d), allocatable          :: work(:)
+    
 !-----------------------------------------------------------------------
 ! Start timing
 !-----------------------------------------------------------------------
@@ -363,11 +373,42 @@ contains
     enddo
 
 !-----------------------------------------------------------------------
+! Check: natural orbital occupation numbers
+!-----------------------------------------------------------------------
+    !workdim=3*nbas
+    !allocate(work(workdim))
+    !allocate(natvec(nbas,nbas))
+    !allocate(natocc(nbas))
+    !
+    !natvec=rho
+    !
+    !call dsyev('N','U',nbas,natvec,nbas,natocc,work,workdim,error)
+    !
+    !if (error.ne.0) then
+    !   errmsg='Error in the diagonalisation of the MP2 density matrix'
+    !endif
+    !
+    !print*,
+    !do i=1,nbas
+    !   write(6,'(i2,2x,F7.4)') i,natocc(nbas-i+1)
+    !enddo
+    !print*,
+    !print*,sum(natocc(1:nbas))
+    !print*,sum(natocc(nbas-nocc+1:nbas))
+    !print*,sum(natocc(1:nbas-nocc))
+    !print*,
+    !STOP
+    !
+    !deallocate(work)
+    !deallocate(natvec)
+    !deallocate(natocc)
+
+!-----------------------------------------------------------------------
 ! Finish timing and output the wall time taken
 !-----------------------------------------------------------------------
     call times(tw2,tc2)
-    write(ilog,'(/,2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
-
+    write(ilog,'(2x,a,2x,F7.2,1x,a1,/)') 'Time taken:',tw2-tw1,'s'
+    
     return
     
   end subroutine rho_mp2
@@ -403,8 +444,8 @@ contains
 !-----------------------------------------------------------------------
     fret=0.0d0
 
-    do i=occ1,nocc
-       i1=roccnum(i1)
+    do i1=occ1,nocc
+       i=roccnum(i1)
        
        do j1=occ1,nocc
           j=roccnum(j1)
@@ -413,9 +454,8 @@ contains
              c=roccnum(c1)
              
              delta_ijac=1.0d0/(e(a)+e(c)-e(i)-e(j))
-             
              delta_ijbc=1.0d0/(e(b)+e(c)-e(i)-e(j))
-             
+                          
              ftmp=vpqrs(a,i,c,j)*(2.0d0*vpqrs(i,b,j,c)-vpqrs(i,c,j,b))&
                   +vpqrs(c,i,a,j)*(2.0d0*vpqrs(i,c,j,b)-vpqrs(i,b,j,c))
              
@@ -424,8 +464,6 @@ contains
           enddo
        enddo
     enddo
-
-    fret=0.5d0*fret
 
     return
 
@@ -456,7 +494,7 @@ contains
     else
        occ1=1
     endif
-
+    
 !-----------------------------------------------------------------------
 ! Calculate the matrix element
 !-----------------------------------------------------------------------
@@ -475,13 +513,11 @@ contains
              ftmp=vpqrs(a,i,b,k)*(2.0d0*vpqrs(j,a,k,b)-vpqrs(j,b,k,a))&
                   +vpqrs(b,i,a,k)*(2.0d0*vpqrs(j,b,k,a)-vpqrs(j,a,k,b))
              
-             fret=fret+delta_ikab*delta_jkab*ftmp
+             fret=fret-delta_ikab*delta_jkab*ftmp
              
           enddo
        enddo
     enddo
-
-    fret=-0.5d0*fret
 
     return
 
@@ -554,7 +590,7 @@ contains
        enddo
     enddo
 
-    fret=-0.5d0*(term1+term2)/(e(a)-e(i))
+    fret=-(term1+term2)/(e(a)-e(i))
     
     return
 

@@ -338,7 +338,7 @@ contains
     use parameters
     use fspace
     use get_matrix_dipole
-    use diagmod
+    use adc2common
     use guessvecs
     
     implicit none

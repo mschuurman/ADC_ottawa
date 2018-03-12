@@ -7,6 +7,8 @@ module autocapbox
   
   implicit none
 
+  private :: dp
+  
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
   integer, parameter    :: dp=selected_real_kind(8)
@@ -47,12 +49,6 @@ contains
        call error_control
     endif
 
-!----------------------------------------------------------------------
-! Analysis of the eigenvalues of the MO representation of the position
-! operator
-!----------------------------------------------------------------------
-!    call position_eigenvalues
-    
 !----------------------------------------------------------------------
 ! Calculate the initial state density matrix
 !----------------------------------------------------------------------
@@ -112,7 +108,7 @@ contains
     use channels
     use parameters
     use iomod
-    use density
+    use electron_density
     use import_gamess
 
     implicit none
@@ -172,49 +168,6 @@ contains
     
   end subroutine density_analysis
 
-!######################################################################
-
-  subroutine position_eigenvalues
-
-    use channels
-    use parameters
-    use iomod
-        
-    implicit none
-
-    integer                        :: i,j,error
-    real(dp), dimension(nbas,nbas) :: eigvec
-    real(dp), dimension(nbas)      :: eigval
-    real(dp), dimension(3*nbas)    :: work
-    
-!----------------------------------------------------------------------
-! Loop over the x, y, and z-drections, diagonalising the MO
-! MO representation of the position operator for each component
-!----------------------------------------------------------------------
-    do i=1,3
-
-       eigvec=-dpl_all(i,:,:)
-       
-       call dsyev('V','U',nbas,eigvec,nbas,eigval,work,3*nbas,error)
-
-       if (error.ne.0) then
-          errmsg='Diagonalisation of the MO dipole matrix failed'
-          call error_control
-       endif
-
-       write(ilog,'(/)')
-       do j=1,nbas
-          write(ilog,*) j,eigval(j)
-       enddo
-       
-    enddo
-
-!    STOP
-    
-    return
-    
-  end subroutine position_eigenvalues
-  
 !######################################################################
   
 end module autocapbox

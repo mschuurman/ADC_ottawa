@@ -1,7 +1,13 @@
 !#######################################################################
-! Calculation of the electronic absorption spectrum from the Fourier
-! transform of the autocorrelation function obtained by propagation
-! of |Psi(t=0)> = D |Psi_0>
+! Calculation of autocorrelation functions for use in the calculation
+! of linear electronic absorption spectra.
+!
+! These can be: (1) The time-domain autocorrelation functions
+!                   calculated from a wavepacket propagation.
+!
+!               (2) The Chebyshev order-domain autocorrelation function
+!                   calculated using the two-term Chebyshev recursion
+!                   relations.
 !#######################################################################
 
 module adc2automod
@@ -23,6 +29,7 @@ contains
     use mp2
     use targetmatching
     use fvecprop
+    use chebyspec
     
     implicit none
     
@@ -62,12 +69,20 @@ contains
     call calc_hamiltonian(ndimf,kpqf,noffdf)
     
 !-----------------------------------------------------------------------
-! Perform the wavepacket propagation and autocorrelation function
-! calculation
+! Calculate the autocorrelation function(s)
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_fvec(dpsi,ndimf,noffdf)
 
+    if (autoprop.eq.1) then
+       ! Calculation of the time-domain wavepacket autocorrelation
+       ! functions a_n(t)
+       call propagate_fvec(dpsi,ndimf,noffdf)
+    else if (autoprop.eq.2) then
+       ! Calculation of the Chebyshev order-domain autocorrelation
+       ! function C_k
+       call chebyshev_recursion(dpsi,ndimf,noffdf)
+    endif
+       
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -91,14 +106,14 @@ contains
     
     write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
     
-    if (method.eq.2) then
+    if (method_f.eq.2) then
        ! ADC(2)-s
        if (lcvsfinal) then
           call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
        else
           call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
        endif
-    else if (method.eq.3) then
+    else if (method_f.eq.3) then
        ! ADC(2)-x
        if (lcvsfinal) then
           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
@@ -123,7 +138,6 @@ contains
     use get_matrix_dipole
     use guessvecs
     use misc
-    use diagmod
     
     implicit none
 

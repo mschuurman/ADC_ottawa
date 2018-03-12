@@ -9,7 +9,7 @@ module tdsemod
   
   save
 
-  integer                            :: mxbl,nrecord
+  integer                            :: mxbl,nrecord,nmult
   integer, dimension(:), allocatable :: iindx,jindx
   real(d), dimension(:), allocatable :: hon,hoff
   logical                            :: hincore
@@ -126,6 +126,9 @@ contains
     else
        call matxvec_ext(matdim,noffdiag,v1,v2)
     endif
+
+    ! Update nmult
+    nmult=nmult+1
     
     return
     
@@ -333,7 +336,10 @@ contains
     else
        call matxvec_treal_ext(matdim,noffdiag,v1,v2)
     endif
-       
+
+    ! Update nmult
+    nmult=nmult+1
+    
     return
 
   end subroutine matxvec_treal
@@ -755,14 +761,14 @@ contains
     real(d)               :: t
 
 !----------------------------------------------------------------------
-! 'Wave' value
+! Carrier wave value
 !----------------------------------------------------------------------
     if (ipulse.eq.1) then
        ! cosine pulse
-       pulse=cos(freq*t)
+       pulse=cos(freq*(t-t0)-phase)
     else if (ipulse.eq.2) then
        ! sine pulse
-       pulse=sin(freq*t)
+       pulse=sin(freq*(t-t0)-phase)
     endif
 
 !----------------------------------------------------------------------
@@ -772,11 +778,14 @@ contains
        ! Cosine squared envelope
        envelope=cos2_envelope(t)
     else if (ienvelope.eq.2) then
-       ! Sin squared-ramp envelope
+       ! Sine squared-ramp envelope
        envelope=sin2ramp_envelope(t)
     else if (ienvelope.eq.3) then
        ! Box-type envelope
        envelope=box_envelope(t)
+    else if (ienvelope.eq.4) then
+       ! Sine squared envelope
+       envelope=sin2_envelope(t)
     endif
  
 !----------------------------------------------------------------------
@@ -800,17 +809,17 @@ contains
 
     implicit none
 
-    real(d) :: t,func,t0,fwhm
+    real(d) :: t,func,tzero,fwhm
 
-    ! t0
-    t0=envpar(1)
+    ! tzero
+    tzero=envpar(1)
 
     ! fwhm
     fwhm=envpar(2)
 
     ! Envelope value
-    if (t.gt.t0-fwhm.and.t.lt.t0+fwhm) then
-       func=(cos(pi*(t-t0)/(2.0d0*fwhm)))**2
+    if (t.gt.tzero-fwhm.and.t.lt.tzero+fwhm) then
+       func=(cos(pi*(t-tzero)/(2.0d0*fwhm)))**2
     else
        func=0.0d0
     endif
@@ -819,6 +828,37 @@ contains
     
   end function cos2_envelope
 
+!#######################################################################
+! sin2_envelope: calculates the value of a sine squared envelope
+!                function at the time t
+!#######################################################################
+  
+  function sin2_envelope(t) result(func)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    real(d) :: t,func,tzero,fwhm
+
+    ! tzero
+    tzero=envpar(1)
+
+    ! fwhm
+    fwhm=envpar(2)
+
+    ! Envelope value
+    if (t.gt.tzero.and.t.lt.tzero+2.0d0*fwhm) then
+       func=(sin(pi*(t-tzero)/(2.0d0*fwhm)))**2
+    else
+       func=0.0d0
+    endif
+    
+    return
+    
+  end function sin2_envelope
+  
 !#######################################################################
 ! sin2ramp_envelope: calculates the value of a sine-squared ramp
 !                    envelope function at the time t.
@@ -883,9 +923,6 @@ contains
 !#######################################################################
 ! opxvec_treal_ext: calculates v2 = O * v1 using an externally stored
 !                   operator matrix O
-!
-! NOTE THAT IN ITS CURRENT STATE, THIS SUBROUTINE ASSUMES THAT ALL
-! MATRIX ELEMENTS ARE SAVED TO DISK
 !#######################################################################
 
   subroutine opxvec_ext(matdim,v1,v2,filename,nrec)
@@ -903,7 +940,7 @@ contains
                                                tid,npt,tmp
     integer, dimension(:), allocatable      :: indxi,indxj
     integer*8, dimension(:,:), allocatable  :: irange
-    real(d), dimension(:), allocatable      :: oij
+    real(d), dimension(:), allocatable      :: oij,oii
     complex(d), dimension(matdim)           :: v1,v2
     complex(d), dimension(:,:), allocatable :: tmpvec
     character(len=70)                       :: filename
@@ -920,10 +957,11 @@ contains
 !-----------------------------------------------------------------------
     allocate(irange(nthreads,2))
     allocate(tmpvec(matdim,nthreads))
+    allocate(oii(matdim))
     allocate(oij(buf_size))
     allocate(indxi(buf_size))
     allocate(indxj(buf_size))
-
+    
 !-----------------------------------------------------------------------
 ! Open the operator matrix file
 !-----------------------------------------------------------------------
@@ -932,15 +970,27 @@ contains
          form='unformatted')
 
 !-----------------------------------------------------------------------
-! Matrix-vector product
+! Contribution from the on-diagonal elements to the matrix-vector
+! product
 !-----------------------------------------------------------------------
-    ! Initialisation
-    v2=czero
-    tmpvec=czero    
-
     ! Read past the buffer size, which we already know
     read(unit) tmp
+
+    ! Read the on-diagonal elements
+    read(unit) oii
+
+    ! Contribution from the on-diagonal elements
+    do k=1,matdim
+       v2(k)=oii(k)*v1(k)
+    enddo
     
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements to the matrix-vector
+! product
+!-----------------------------------------------------------------------
+    ! Initialisation
+    tmpvec=czero
+
     ! Loop over records
     do n=1,nrec
 
@@ -968,8 +1018,8 @@ contains
           do k=irange(tid,1),irange(tid,2)
              tmpvec(indxi(k),tid)=tmpvec(indxi(k),tid)&
                   +oij(k)*v1(indxj(k))
-             !tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
-             !     +oij(k)*v1(indxi(k))
+             tmpvec(indxj(k),tid)=tmpvec(indxj(k),tid)&
+                  +oij(k)*v1(indxi(k))
           enddo
        enddo
        !$omp end parallel do
@@ -977,7 +1027,7 @@ contains
     enddo
 
     do i=1,nthreads
-       v2=v2+tmpvec(:,i)
+       v2(:)=v2(:)+tmpvec(:,i)
     enddo
     
 !-----------------------------------------------------------------------
@@ -985,6 +1035,7 @@ contains
 !-----------------------------------------------------------------------
     deallocate(irange)
     deallocate(tmpvec)
+    deallocate(oii)
     deallocate(oij)
     deallocate(indxi)
     deallocate(indxj)
@@ -1126,5 +1177,37 @@ contains
   end subroutine matxvec_treal_laser_adc1
     
 !#######################################################################
+! matxvec_chebyshev: Calculates the Chebyshev vectors using the
+!                    two-term Chebyshev recursion relation.
+!
+!                    Used in Chebyshev propagation and the calculation
+!                    of the Chebyshev order-domain autocorrelation
+!                    function.
+!
+!                    It is debatable whether this is the most suitable
+!                    module in which to have this routine, but putting
+!                    it here allows us to make use of the
+!                    load_hamiltonian, etc routines.
+!#######################################################################  
 
+  subroutine matxvec_chebyshev(matdim,noffdiag,bounds,qk,q1,q2)
+
+    use constants
+    
+    implicit none
+
+    integer, intent(in)               :: matdim
+    integer*8, intent(in)             :: noffdiag
+    real(d), dimension(2), intent(in) :: bounds
+    real(d), dimension(matdim)        :: qk,q1,q2
+
+    print*,"FINISH WRITING THE MATXVEC_CHEBYSHEV ROUTINE!"
+    STOP
+    
+    return
+    
+  end subroutine matxvec_chebyshev
+    
+!#######################################################################
+  
 end module tdsemod

@@ -1734,7 +1734,6 @@ do b1=nOcc+1,nBas
      if (sym .eq. CHECK_dip) then
 
      D2_2_ph_ph = D2_2_ph_ph + 2.0d0*density(l,a)*dpl(apr,l)
-!     D2_2_ph_ph=+2.0*density_matrix(l,a)*dpl(apr,l)
 
 !     write(ilog,*) 'd2',l,a,densityhc(l,a)
      end if
@@ -1764,7 +1763,6 @@ do b1=nOcc+1,nBas
      sym=MT(orbSym(b),orbSym(k))
      if (sym .eq. CHECK_dip) then
 
-!     D2_3_ph_ph=+2.0*density_matrix(kpr,b)*dpl(b,k)
      D2_3_ph_ph = D2_3_ph_ph + 2.0d0*density(kpr,b)*dpl(b,k)
 
 
@@ -1797,7 +1795,6 @@ do b1=nOcc+1,nBas
      if (sym .eq. CHECK_dip) then
 
      D2_4_ph_ph = D2_4_ph_ph + 2.0d0*density(k,b)*dpl(b,kpr)
-!     D2_4_ph_ph=+2.0*density_matrix(k,b)*dpl(b,kpr)
 
 !     write(ilog,*) 'd4',k,b,densityhc(k,b)
 

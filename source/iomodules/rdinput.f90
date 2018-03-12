@@ -353,6 +353,9 @@
             if (keyword(1).ne.'end-diffuse_section') goto 75
             i=inkw
 
+         else if (keyword(i).eq.'nto') then
+            lnto=.true.
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -452,7 +455,7 @@
 ! Check that all required information has been given
 !-----------------------------------------------------------------------
       call checkinp(ldiag,llanc,energyonly)
-        
+      
 !-----------------------------------------------------------------------
 ! Read the geometry section if necessary
 !-----------------------------------------------------------------------
@@ -720,7 +723,8 @@
 !-----------------------------------------------------------------------
 ! Autospec section
 !-----------------------------------------------------------------------
-      if (lautospec) then
+      ! Wavepacket propagation
+      if (lautospec.and.autoprop.eq.1) then
 
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
@@ -743,6 +747,18 @@
 
       endif
 
+      ! Chebyshev recursion
+      if (lautospec.and.autoprop.eq.2) then
+
+         ! Order of the Chebyshev expansion
+         if (chebyord.eq.0) then
+            msg='The number of terms in the Chebyshev expansion &
+                 of delta(E-H) has not been given'
+            goto 999
+         endif
+
+      endif
+      
 !-----------------------------------------------------------------------
 ! Filter diagonalisation states section
 !-----------------------------------------------------------------------
@@ -793,7 +809,7 @@
          endif
 
          ! CAP order
-         if (icap.eq.1.or.icap.eq.2.or.icap.eq.3) then
+         if (icap.eq.1.or.icap.eq.2.or.icap.eq.3.or.icap.eq.7) then
             if (capord.eq.-1) then
                msg='The monomial CAP order has not been set'
                goto 999
@@ -801,7 +817,11 @@
          endif
 
          ! Integration grid
-         if (icap.gt.1) then
+         if (icap.eq.2 &
+              .or.icap.eq.3 &
+              .or.icap.eq.4 &
+              .or.icap.eq.5 &
+              .or.icap.eq.6) then
             if (nang(1).ne.110.and.nang(1).ne.302&
                  .and.nang(1).ne.770) then
                msg='The number of angular grid points can only be &
@@ -880,6 +900,16 @@
       if (method.eq.4.and..not.lpropagation) then
          msg='ADC(1)-x calculations are only currently supported for &
               wavepacket propagation calculations'
+         goto 999
+      endif
+
+!-----------------------------------------------------------------------
+! Natural transition orbitals: currently these are only available for
+! excitation from the ground state
+!-----------------------------------------------------------------------
+      if (lnto.and.statenumber.ne.0) then
+         msg='NTOs are currently only available for excitation from &
+              the ground state'
          goto 999
       endif
       
@@ -994,6 +1024,19 @@
                   solver=1
                else if (keyword(i).eq.'relaxation') then
                   solver=2
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     if (keyword(i).eq.'xsil') then
+                        integrator=1
+                     else if (keyword(i).eq.'bs') then
+                        integrator=2
+                     else if (keyword(i).eq.'rkf45') then
+                        integrator=3
+                     else
+                        errmsg='Unknown keyword: '//trim(keyword(i))
+                        call error_control
+                     endif
+                  endif
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -1192,6 +1235,19 @@
                   solver_f=1
                else if (keyword(i).eq.'relaxation') then
                   solver_f=2
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     if (keyword(i).eq.'xsil') then
+                        integrator=1
+                     else if (keyword(i).eq.'bs') then
+                        integrator=2
+                     else if (keyword(i).eq.'rkf45') then
+                        integrator=3
+                     else
+                        errmsg='Unknown keyword: '//trim(keyword(i))
+                        call error_control
+                     endif
+                  endif
                else
                   errmsg='Unknown keyword: '//trim(keyword(i))
                   call error_control
@@ -1766,6 +1822,29 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'propagation') then
+                  autoprop=1
+               else if (keyword(i).eq.'chebyshev') then
+                  autoprop=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'nterms') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) chebyord
+            else
+               goto 100
+            endif
+            
          else
             ! Exit if the keyword is not recognised
             errmsg='Unknown keyword: '//trim(keyword(i))
@@ -1936,6 +2015,8 @@
                   icap=4
                else if (keyword(i).eq.'atom_moiseyev') then
                   icap=5
+               else if (keyword(i).eq.'sigmoidal') then
+                  icap=6
                else
                   errmsg='Unknown CAP type: '//trim(keyword(i))
                   call error_control
@@ -2201,7 +2282,23 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'pulse') then
+         else if (keyword(i).eq.'pulse_t0') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) t0
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_phase') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) phase
+            else
+               goto 100
+            endif
+            
+         else if (keyword(i).eq.'pulse'.or.keyword(i).eq.'carrier') then
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'cos') then
@@ -2228,6 +2325,9 @@
                   nenvpar=1
                else if (keyword(i).eq.'box') then
                   ienvelope=3
+                  nenvpar=2
+               else if (keyword(i).eq.'sin2') then
+                  ienvelope=4
                   nenvpar=2
                else
                   errmsg='Unknown evelope type: '//trim(keyword(i))

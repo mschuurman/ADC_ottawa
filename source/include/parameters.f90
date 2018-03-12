@@ -26,7 +26,6 @@ module parameters
   character*3,dimension(8)             :: labSym
   real(d), dimension(:), allocatable   :: e,occNum
   real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
-  real(d), dimension(:,:), allocatable :: density_matrix
   type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
   character*100                        :: moType ! Either 'incore' or 'disk'
   integer                              :: imotype
@@ -170,6 +169,7 @@ module parameters
   real(d), dimension(:), allocatable   :: dipmom,dipmom_f
   logical                              :: lcis
   logical                              :: lmatvec
+  logical                              :: lnto
 
 !!$************************************************
 !!$**********Physical Constants********************
@@ -210,6 +210,7 @@ module parameters
 !!$**********Relaxation Parameters*****************
 !!$************************************************
   integer :: kdim,kdim_f,guessdim,guessdim_f
+  integer :: integrator,integrator_f
   real(d) :: stepsize,stepsize_f,siltol,siltol_f
 
 
@@ -312,6 +313,8 @@ logical                                :: ltpa
 real(d)                               :: tfinal,tout,&
                                          autotol
 integer                               :: autoord
+integer                               :: autoprop
+integer                               :: chebyord
 logical                               :: lautospec
 
 !!$************************************************
@@ -343,32 +346,35 @@ real(d), dimension(3)        :: pulse_vec
 real(d)                      :: proptol
 real(d)                      :: freq
 real(d)                      :: strength
+real(d)                      :: t0
+real(d)                      :: phase
 real(d), dimension(mxenvpar) :: envpar
 logical                      :: lpropagation
 
 !!$************************************************
 !!$***************CAP Parameters*******************
 !!$************************************************
-integer                       :: icap
-integer                       :: capord
-integer*8                     :: nel_cap
-integer                       :: nbuf_cap
-integer*8                     :: nel_theta
-integer                       :: nbuf_theta
-integer, dimension(2)         :: nrad,nang
-real(d)                       :: capstr
-real(d), dimension(3)         :: boxpar
-real(d)                       :: densthrsh
-real(d)                       :: w00
-real(d), allocatable          :: w0j(:)
-real(d), allocatable          :: wij(:,:)
-real(d)                       :: theta00
-real(d), allocatable          :: theta0j(:)
-real(d), allocatable          :: thetaij(:,:)
-logical                       :: lcap
-logical                       :: lprojcap
-logical                       :: lautobox
-logical                       :: lflux
+integer               :: icap
+integer               :: capord
+integer*8             :: nel_cap
+integer               :: nbuf_cap
+integer*8             :: nel_theta
+integer               :: nbuf_theta
+integer, dimension(2) :: nrad,nang
+real(d)               :: capstr
+real(d), dimension(3) :: boxpar
+real(d)               :: densthrsh
+real(d)               :: w00
+real(d), allocatable  :: w0j(:)
+real(d), allocatable  :: wij(:,:)
+real(d)               :: theta00
+real(d), allocatable  :: theta0j(:)
+real(d), allocatable  :: thetaij(:,:)
+real(d), allocatable  :: vdwr(:)
+logical               :: lcap
+logical               :: lprojcap
+logical               :: lautobox
+logical               :: lflux
 
 !!$************************************************
 !!$***************ADC(1) Hamiltonian***************

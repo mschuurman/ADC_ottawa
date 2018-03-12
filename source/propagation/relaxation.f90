@@ -1,7 +1,6 @@
 !#######################################################################
 ! Routines for the calcuation of eigenstates of the ADC(2) Hamiltonian
-! via imaginary time wavepacket propagations using the XSIL
-! algorithm.
+! via imaginary time wavepacket propagations
 !#######################################################################
 
   module relaxmod
@@ -16,7 +15,7 @@
 
     integer                              :: maxbl,nrec,nblock,nconv,&
                                             nstates,krydim,niter,&
-                                            subdim,nmult
+                                            subdim,algorithm
     integer, dimension(:), allocatable   :: indxi,indxj,sildim
     real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
     real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
@@ -30,7 +29,6 @@
     integer                              :: maxvec,maxdim,nlin
     real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
                                             vec_conv,alphamat,betamat
-    
   contains
 
 !#######################################################################
@@ -55,7 +53,7 @@
 !-----------------------------------------------------------------------
 ! Write to the log file
 !-----------------------------------------------------------------------
-      atmp='Block-relaxation in the'
+      atmp='Relaxation in the'
       if (hamflag.eq.'i') then
          atmp=trim(atmp)//' initial space'
       else if (hamflag.eq.'f') then
@@ -88,10 +86,21 @@
       call initvec(matdim,noffd)
 
 !-----------------------------------------------------------------------
-! Perform the relaxation calculation using the XSIL algorithm
+! Perform the relaxation calculation
 !-----------------------------------------------------------------------
-      call xsil_rlx(matdim,noffd)
-      
+      select case(algorithm)
+
+      case(1) ! XSIL integrator
+         call xsil_rlx(matdim,noffd)
+
+      case(2) ! Bulirsch-Stoer integator
+         call bs_rlx(matdim,noffd)
+
+      case(3) ! 4th/5th-order Runge-Kutta-Fehlberg integrator
+         call rkf45_rlx(matdim,noffd)
+         
+      end select
+         
 !-----------------------------------------------------------------------
 ! Exit here if not all states have converged
 !-----------------------------------------------------------------------
@@ -113,7 +122,7 @@
 !-----------------------------------------------------------------------    
 ! Output timings and the no. matrix-vector multiplications
 !-----------------------------------------------------------------------    
-      write(ilog,'(/,a,1x,i4)') 'No. matrix-vector multiplications:',&
+      write(ilog,'(/,a,1x,i5)') 'No. matrix-vector multiplications:',&
            nmult
 
       call times(tw2,tc2)
@@ -124,7 +133,9 @@
     end subroutine relaxation
 
 !#######################################################################
-
+! Relaxation using the XSIL algorithm
+!#######################################################################
+    
     subroutine xsil_rlx(matdim,noffd)
 
       implicit none
@@ -192,7 +203,7 @@
            krydim
 
 !-----------------------------------------------------------------------
-! Perform the relaxation calculations using the SIL-Liu algorithm
+! Perform the relaxation calculations using the XSIL integrator
 !-----------------------------------------------------------------------
       ! Loop over states
       do s=1,nstates
@@ -298,9 +309,323 @@
     end subroutine xsil_rlx
 
 !#######################################################################
+! Relaxation using the Bulirsch-Stoer algorithm
+!#######################################################################
+    
+    subroutine bs_rlx(matdim,noffd)
+
+      use tdsemod
+      use bslib
+      
+      implicit none
+
+      integer, intent(in)     :: matdim
+      integer*8, intent(in)   :: noffd
+      integer                 :: s,i,j
+      real(d)                 :: energy,residual
+      complex(d), allocatable :: psi(:),dtpsi(:)
+
+      ! BS variables
+      integer                 :: smallsteps,errorcode,intorder
+      real(d)                 :: inttime,stepsize,intperiod,time,&
+                                 truestepsize,nextstep,stepguess,&
+                                 tfinal
+      real(d), parameter      :: tiny=1e-9_d
+      complex(d), allocatable :: auxpsi(:,:)
+      logical                 :: relaxation
+      
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: Bulirsch-Stoer'
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+      ! Integration period
+      intperiod=step
+
+      ! Current time
+      time=0.0d0
+
+      ! Suggestion for the next large BS stepsize
+      nextstep=0.0d0
+
+      ! Small BS step counter
+      smallsteps=0
+
+      ! Maximum BS integration order
+      intorder=16
+
+      ! Maximum propagation time
+      tfinal=niter*step
+
+      ! This is a relaxation calculation
+      relaxation=.true.
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      ! Wavepacket (complex*16)
+      allocate(psi(matdim))
+      psi=czero
+
+      ! Time-derivative of the wavepacket (complex*16)
+      allocate(dtpsi(matdim))
+      dtpsi=czero
+
+      ! Converged wavefunctions (real*8)
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+
+      ! Bulirsch-Stoer arrays (complex*16)
+      allocate(auxpsi(matdim,intorder+2))
+      auxpsi=czero
+      
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the Bulirsch-Stoer
+! integrator
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! Wavepacket initialisation
+         do j=1,matdim
+            psi(j)=dcmplx(vec_old(j,s),0.0d0)
+         enddo
+         
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+         
+         ! Output the initial energy and residual
+         call residual_1vec(real(psi,8),matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+                  
+         ! Perform the imaginary time propagation for the current state
+         !
+         ! Loop over timesteps
+         do i=1,int(tfinal/intperiod)
+            
+            inttime=0.0d0
+100         continue
+            
+            ! Update the required stepsize
+            if (inttime.eq.0.0d0) then
+               stepsize=intperiod
+            else if (inttime+nextstep.gt.intperiod) then
+               stepsize=intperiod-inttime
+            else
+               stepsize=nextstep
+            endif
+            
+            ! dtpsi = -H|Psi>
+            call matxvec_treal(time,matdim,noffd,psi,dtpsi)
+            dtpsi=-ci*dtpsi
+
+            ! Take one step using the Bulirsch-Stoer integrator
+            call bsstep(psi,dtpsi,matdim,noffd,intperiod,time,&
+                 intorder,stepsize,toler,truestepsize,&
+                 nextstep,smallsteps,errorcode,auxpsi,&
+                 matxvec_treal,absbserror,polyextrapol,relaxation)
+
+            ! Exit if the Bulirsch-Stoer integration step failed
+            if (errorcode.ne.0) then
+               call bserrormsg(errorcode,errmsg)
+               errmsg='Failure in the Bulirsch-Stoer integrator: '&
+                    //trim(errmsg)
+               call error_control
+            endif
+            
+            ! Update the propagation time
+            time=time+truestepsize
+
+            ! Check whether the integration is complete
+            inttime=inttime+truestepsize
+            if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
+
+            ! Orthogonalise against the previously converged states and
+            ! renormalise
+            do j=1,s-1
+               psi=psi-dot_product(psi,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            psi=psi/sqrt(dot_product(psi,psi))
+            
+            ! Calculate the residual
+            call residual_1vec(real(psi,8),matdim,noffd,energy,residual)
+            
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(i,energy,residual)
+            
+            ! Exit if convergence has been reached
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state and energy
+               vec_conv(:,s)=real(psi(:),8)
+               vec_new(:,s)=real(psi(:),8)
+               ener(s)=energy
+               ! Output some things
+               write(ilog,'(/,2x,a,/)') 'Converged'
+               ! Terminate the relaxation for the current state
+               exit
+            endif
+            
+         enddo
+
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
+         
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(psi)
+      deallocate(dtpsi)      
+      deallocate(vec_conv)
+      deallocate(auxpsi)
+      
+      return
+      
+    end subroutine bs_rlx
+
+!#######################################################################
+! Relaxation using the 4th/5th-order Runge-Kutta-Fehlberg algorithm
+!#######################################################################
+    
+    subroutine rkf45_rlx(matdim,noffd)
+
+      use tdsemod
+      use rkf45rlxlib
+      
+      integer, intent(in)   :: matdim
+      integer*8, intent(in) :: noffd
+      integer               :: s,i,j
+      real(d)               :: energy,residual
+      real(d), allocatable  :: psi(:),dtpsi(:)
+
+      ! RKF45 variables
+      integer               :: errorcode
+      real(d)               :: time,tout
+      
+!-----------------------------------------------------------------------
+! Output some information about the relaxation calculation
+!-----------------------------------------------------------------------
+      write(ilog,'(2x,a,/)') 'Algorithm: 4th/5th-order &
+           Runge-Kutta-Fehlberg'
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+      ! Wavepacket
+      allocate(psi(matdim))
+      psi=czero
+
+      ! Time-derivative of the wavepacket
+      allocate(dtpsi(matdim))
+      dtpsi=czero
+
+      ! Converged wavefunctions
+      allocate(vec_conv(matdim,nblock))
+      vec_conv=0.0d0
+
+!-----------------------------------------------------------------------
+! Perform the relaxation calculations using the RKF45 integrator
+!-----------------------------------------------------------------------
+      ! Loop over states
+      do s=1,nstates
+
+         ! Wavepacket initialisation
+         psi=vec_old(:,s)
+
+         ! Write the table header for the current state
+         call wrheader_1vec(s)
+         
+         ! Output the initial energy and residual
+         call residual_1vec(psi,matdim,noffd,energy,residual)
+         call wrtable_1vec(0,energy,residual)
+
+         ! Initialisation of RKF45 variables
+         time=0.0d0
+         errorcode=1
+         
+         ! Perform the imaginary time propagation for the current state
+         !
+         ! Loop over timesteps
+         do i=1,maxiter
+
+            ! Take one step using the RKF45 integrator
+            call r8_rkf45(matxvec,matdim,noffd,psi,dtpsi,time,i*step,&
+                 toler,toler,errorcode)
+
+            ! Exit if the integration failed
+            if (errorcode.ne.2) then
+               errmsg='Error in the RKF45 integrator. Error code: '
+               write(errmsg(44:44),'(i1)') errorcode
+               call error_control
+            endif
+
+            ! Orthogonalise against the previously converged states and
+            ! renormalise
+            do j=1,s-1
+               psi=psi-dot_product(psi,vec_conv(:,s))*vec_conv(:,s)
+            enddo
+            psi=psi/sqrt(dot_product(psi,psi))
+
+            ! Calculate the residual
+            call residual_1vec(psi,matdim,noffd,energy,residual)
+            
+            ! Output the residual and energy for the current iteration
+            call wrtable_1vec(i,energy,residual)
+
+            ! Exit if convergence has been reached
+            if (residual.le.eps) then
+               ! Update the number of converged states
+               nconv=nconv+1
+               ! Save the converged state and energy
+               vec_conv(:,s)=psi(:)
+               vec_new(:,s)=psi(:)
+               ener(s)=energy
+               ! Output some things
+               write(ilog,'(/,2x,a,/)') 'Converged'
+               ! Terminate the relaxation for the current state
+               exit
+            endif
+            
+         enddo
+
+         ! Quit here if convergence was not reached for the
+         ! current state
+         if (residual.gt.eps) then
+            write(errmsg,'(a,x,i2)')&
+                 'Convergence not reached for state:',s
+            call error_control
+         endif
+         
+      enddo
+      
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(psi)
+      deallocate(dtpsi)
+      deallocate(vec_conv)
+      
+      return
+      
+    end subroutine rkf45_rlx
+      
+!#######################################################################
 
     subroutine initialise(matdim)
 
+      use tdsemod
+      
       implicit none
 
       integer, intent(in) :: matdim
@@ -319,6 +644,7 @@
          toler=siltol
          maxdim=maxsubdim
          subdim=guessdim
+         algorithm=integrator
       else if (hamflag.eq.'f') then
          vecfile=davname_f
          nstates=davstates_f
@@ -330,8 +656,13 @@
          toler=siltol_f
          maxdim=maxsubdim
          subdim=guessdim_f
+         algorithm=integrator_f
       endif
 
+      ! Number of matrix-vector multiplications: common to both
+      ! initial and final space calculations
+      nmult=0
+      
 !-----------------------------------------------------------------------
 ! Files holding the non-zero elements of the Hamiltonian matrix
 !-----------------------------------------------------------------------
@@ -729,7 +1060,7 @@
       allocate(work(3*subdim))
 
 !-----------------------------------------------------------------------
-! Set the full space-to-subsace mappings
+! Set the full space-to-subspace mappings
 !-----------------------------------------------------------------------
       full2sub=0
       do i=1,subdim
@@ -753,8 +1084,6 @@
       !
       ! Open the off-diagonal element file
       call freeunit(iham)
-
-
       if (hamflag.eq.'i') then
          filename='SCRATCH/hmlt.offi'
       else if (hamflag.eq.'f') then
@@ -762,8 +1091,6 @@
       endif
       open(iham,file=filename,status='old',access='sequential',&
            form='unformatted')
-
-
 
       ! Allocate arrays
       allocate(hij(maxbl),indxi(maxbl),indxj(maxbl))
@@ -922,7 +1249,7 @@
       ! alpha_1
       call matxvec(matdim,noffd,q,r)
       r=-r
-      nmult=nmult+1
+      !nmult=nmult+1
       
       alpha(1)=dot_product(q,r)
       
@@ -945,7 +1272,7 @@
 
          call matxvec(matdim,noffd,q,r)
          r=-r
-         nmult=nmult+1
+         !nmult=nmult+1
 
          r=r-beta(j1-1)*v
          alpha(j1)=dot_product(q,r)
@@ -1073,8 +1400,7 @@
 ! Perform Lowdin's canonical orthogonalisation of the subspace basis
 ! vectors to generate a linearly independent basis
 !----------------------------------------------------------------------
-      call canonical_ortho(nvec,nnull,istep,hmat1,coeff0,&
-           transmat)
+      call canonical_ortho(nvec,nnull,istep,hmat1,coeff0,transmat)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -1332,13 +1658,26 @@
 
       integer :: s,i
 
-      write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(a,i3)') 'State',s
-      write(ilog,'(64a)') ('=',i=1,64)
-      write(ilog,'(2(a,8x),a,10x,a)') 'Iteration','Energy',&
-           'Residual','Subdim'
-      write(ilog,'(64a)') ('=',i=1,64)
-      
+      select case(algorithm)
+
+      case(1) ! XSIL integrator
+         write(ilog,'(64a)') ('=',i=1,64)
+         write(ilog,'(a,i3)') 'State',s
+         write(ilog,'(64a)') ('=',i=1,64)
+         write(ilog,'(2(a,8x),a,10x,a)') 'Iteration','Energy',&
+              'Residual','Subdim'
+         write(ilog,'(64a)') ('=',i=1,64)
+         
+      case(2:3) ! Bulirsch-Stoer and RKF45 integators
+         write(ilog,'(44a)') ('=',i=1,44)
+         write(ilog,'(a,i3)') 'State',s
+         write(ilog,'(44a)') ('=',i=1,44)
+         write(ilog,'(2(a,8x),a)') 'Iteration','Energy',&
+              'Residual'
+         write(ilog,'(44a)') ('=',i=1,44)
+         
+      end select
+         
       return
       
     end subroutine wrheader_1vec
@@ -1351,10 +1690,19 @@
 
       integer :: n
       real(d) :: energy,residual
-
-      write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
-           residual,nlin
       
+      select case(algorithm)
+         
+      case(1) ! XSIL integrator
+         write(ilog,'(i3,11x,F12.7,5x,E13.7,5x,i3)') n,energy*eh2ev,&
+              residual,nlin
+         
+      case(2:3) ! Bulirsch-Stoer and RKF45 integators
+         write(ilog,'(i3,11x,F12.7,5x,E13.7)') n,energy*eh2ev,&
+              residual
+            
+      end select
+         
       return
 
     end subroutine wrtable_1vec

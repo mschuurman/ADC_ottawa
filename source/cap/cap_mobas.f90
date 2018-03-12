@@ -8,6 +8,8 @@ module capmod
   implicit none  
   
   save
+
+  private :: dp
   
   ! Annoyingly, the gamess_internal module contains a variable
   ! named 'd', so we will use 'dp' here instead
@@ -25,6 +27,7 @@ contains
     use timingmod
     use monomial_analytic
     use import_gamess
+    use misc, only: get_vdwr
     
     implicit none
 
@@ -52,6 +55,14 @@ contains
     allocate(cap_mo(nbas,nbas))
     cap_mo=0.0d0
 
+    allocate(vdwr(gam%natoms))
+    vdwr=0.0d0
+
+!----------------------------------------------------------------------
+! Fetch the van der Waals radius array
+!----------------------------------------------------------------------
+    call get_vdwr(gam)
+    
 !----------------------------------------------------------------------
 ! Calculate the MO representation of the CAP operator
 !----------------------------------------------------------------------
@@ -59,16 +70,22 @@ contains
        ! Monomial CAP, analytic evaluation of the CAP matrix elements
        call monomial_ana(gam,cap_mo,capord,capstr)
     else
-       ! Numerical evaluation of the CAP matrix elements
+       ! Numerical evaluation of the CAP matrix elements using
+       ! Becke-type integration grids
        call numerical_cap(gam,cap_mo)
     endif
+
+!----------------------------------------------------------------------
+! Analysis of the MO representation of the CAP
+!----------------------------------------------------------------------
+    call analyse_cap_support(gam,cap_mo)
 
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
     call times(tw2,tc2)
     write(ilog,'(/,2x,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
-
+    
     return
     
   end subroutine cap_mobas
@@ -90,7 +107,6 @@ contains
     real(dp), dimension(nbas,nbas)           :: cap_mo
     real(dp), dimension(:,:), allocatable    :: cap_ao,smat,lmat
     real(dp), parameter                      :: ang2bohr=1.889725989d0
-    real(dp), dimension(:), allocatable      :: vdwr
     real(dp), parameter                      :: dscale=3.5
     real(dp)                                 :: x,r
     complex(dp), dimension(:,:), allocatable :: cap_ao_cmplx
@@ -100,11 +116,8 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     nao=gam%nbasis
-
     natom=gam%natoms
-    allocate(vdwr(natom))
-    vdwr=0.0d0
-    
+        
     allocate(cap_ao(nao,nao))
     cap_ao=0.0d0
 
@@ -132,6 +145,9 @@ contains
     else if (icap.eq.5) then
        ! Moiseyev's non-local perfect CAP, atom-centered spheres
        cap_type='atom moiseyev'
+    else if (icap.eq.6) then
+       ! Cavity-like sigmoidal CAP
+       cap_type='sigmoidal'
     endif
 
 !----------------------------------------------------------------------
@@ -153,8 +169,7 @@ contains
 ! Waals radius multiplied by dscale
 !----------------------------------------------------------------------
     if (boxpar(1).eq.0.0d0) then
-       ! The user has not specified a cap box, 
-       call get_vdwr(gam,vdwr,natom)
+       ! The user has not specified a cap box
        cap_r0=-1.0d0
        do n=1,natom
           if (gam%atoms(n)%name.eq.'x') cycle
@@ -212,6 +227,103 @@ contains
     
   end subroutine numerical_cap
 
+!######################################################################  
+
+  subroutine analyse_cap_support(gam,cap_mo)
+
+    use channels
+    use constants
+    use parameters
+    use iomod
+    use import_gamess
+    use electron_density, only: get_ao_values
+    
+    implicit none
+
+    integer                        :: c,i,j,p,q,nao,unit
+    integer, parameter             :: npnts=101
+    real(dp), parameter            :: dr=0.25d0
+    real(dp), dimension(nbas,nbas) :: cap_mo
+    real(dp), dimension(3)         :: r
+    real(dp), allocatable          :: aovalues(:)
+    real(dp), allocatable          :: movalues(:)
+    real(dp), allocatable          :: capval(:,:)
+    type(gam_structure)            :: gam
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! No. AOs
+    nao=gam%nbasis
+    
+    allocate(aovalues(nao))
+    aovalues=0.0d0
+
+    allocate(movalues(nbas))
+    movalues=0.0d0
+
+    allocate(capval(npnts,3))
+    capval=0.0d0
+    
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='mocapvals.dat',form='formatted',status='unknown')
+    
+!----------------------------------------------------------------------
+! Calculate and output the values of the MO representation of the
+! CAP at points along the x-, y-, and z-directions
+!----------------------------------------------------------------------
+    capval=0.0d0
+    
+    ! Loop over points
+    do i=1,npnts
+       
+       ! Loop over directions
+       do c=1,3
+          
+          ! Current coordinates
+          r=0.0d0
+          r(c)=(i-1)*dr
+          
+          ! Calculate the values of the AOs at the current point
+          call get_ao_values(gam,aovalues,r,nao)
+
+          ! Calculate the values of the MOs at the current point
+          movalues(1:nbas)=matmul(transpose(ao2mo),aovalues)
+
+          ! Calculate the value of the MO representation of the
+          ! CAP at the current point
+          do p=1,nbas
+             do q=1,nbas
+                capval(i,c)=capval(i,c) &
+                     +cap_mo(p,q)*movalues(p)*movalues(q)
+             enddo
+          enddo
+
+       enddo
+
+       ! Output the CAP values
+       write(unit,'(F10.7,3(2x,ES15.8))') (i-1)*dr,(capval(i,j),j=1,3)
+       
+    enddo
+
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(aovalues)
+    deallocate(movalues)    
+    
+    return
+    
+  end subroutine analyse_cap_support
+    
 !######################################################################  
   
 end module capmod

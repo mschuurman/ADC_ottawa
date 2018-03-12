@@ -72,7 +72,7 @@ contains
 ! in the the ground state + intermediate state basis
 !-----------------------------------------------------------------------
     if (lcap) call cap_isbas_adc2(cap_mo,kpqf,ndimf)
-    
+
 !-----------------------------------------------------------------------
 ! Calculate the dipole matrices
 !-----------------------------------------------------------------------
@@ -120,14 +120,14 @@ contains
     
     write(ilog,*) 'Saving complete FINAL SPACE ADC2 matrix in file'
     
-    if (method.eq.2) then
+    if (method_f.eq.2) then
        ! ADC(2)-s
        if (lcvsfinal) then
           call write_fspace_adc2_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
        else
           call write_fspace_adc2_1(ndimf,kpqf(:,:),noffdf,'c')
        endif
-    else if (method.eq.3) then
+    else if (method_f.eq.3) then
        ! ADC(2)-x
        if (lcvsfinal) then
           call write_fspace_adc2e_1_cvs(ndimf,kpqf(:,:),noffdf,'c')
@@ -214,8 +214,11 @@ contains
     
     filename='SCRATCH/cap'
     
-    call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-         nbuf_cap,nel_cap,filename)
+    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+    !     nbuf_cap,nel_cap,filename)
+
+    call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_cap,nel_cap,&
+         filename)
     
 !----------------------------------------------------------------------
 ! Reset the dpl array
@@ -305,8 +308,11 @@ contains
 
        dpl(:,:)=dpl_all(c,:,:)
        
-       call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-            nbuf_dip(c),nel_dip(c),filename)
+       !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+       !     nbuf_dip(c),nel_dip(c),filename)
+
+       call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_dip(c),&
+            nel_dip(c),filename)
        
     enddo
 
@@ -383,9 +389,12 @@ contains
     
     filename='SCRATCH/theta'
     
-    call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-         nbuf_theta,nel_theta,filename)
+    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
+    !     nbuf_theta,nel_theta,filename)
 
+    call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_theta,nel_theta,&
+         filename)
+    
 !----------------------------------------------------------------------
 ! Reset the dpl array
 !----------------------------------------------------------------------

@@ -1,5 +1,6 @@
 !######################################################################
-! fvecprop: Routines for the real-time propagation of the f-vector
+! fvecprop: Routines for the calculation of wavepacket autocorrelation
+!           functions using an initial state given by the f-vector
 !           f_J = < Psi_J | D | Psi_0 >
 !######################################################################
 module fvecprop
@@ -15,6 +16,7 @@ module fvecprop
   integer                               :: matdim,iout0,iout1,iout2
   integer*8                             :: noffdiag
   real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
+  real(d)                               :: norm0
   complex(d), dimension(:), allocatable :: psi0
 
 contains
@@ -72,20 +74,24 @@ contains
     call open_autofiles
 
 !----------------------------------------------------------------------
-! Propagation and calculation of the autocorrelation function
+! Propagation and calculation of the autocorrelation functions
 !----------------------------------------------------------------------
     call propagate_sillib
-
+           
 !----------------------------------------------------------------------
 ! Close the autocorrelation function output file
 !----------------------------------------------------------------------
     call close_autofiles
 
 !----------------------------------------------------------------------
-! Output timings
+! Output timings and the no. matrix-vector multiplications
 !----------------------------------------------------------------------
-    call times(tw2,tc2)
     write(ilog,'(70a)') ('+',k=1,70)
+
+    write(ilog,'(/,a,1x,i5)') 'No. matrix-vector multiplications:',&
+           nmult
+
+    call times(tw2,tc2)
     write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
     
 !----------------------------------------------------------------------
@@ -126,14 +132,14 @@ contains
          'will be calculated'
 
 !----------------------------------------------------------------------
-! SIL parameters
+! Wavepacket propagation information
 !----------------------------------------------------------------------         
-    write(ilog,'(2x,a,/)') 'Wavepacket propagation performed using &
-         the SIL method'
-    write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace dimension:',&
-         kdim
+    write(ilog,'(2x,a,/)') 'Wavepacket propagation performed &
+         using the SIL method'
+    write(ilog,'(2x,a,x,i2,/)') 'Maximum Krylov subspace &
+         dimension:',kdim
     write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',autotol
-
+       
 !----------------------------------------------------------------------
 ! Matrix-vector multiplication algorithm
 !----------------------------------------------------------------------
@@ -144,6 +150,11 @@ contains
        write(ilog,'(/,2x,a,/)') 'Matrix-vector multiplication &
             will proceed out-of-core'
     endif
+
+!----------------------------------------------------------------------
+! Initialisation of the matrix-vector multiplication counter
+!----------------------------------------------------------------------
+    nmult=0
     
     return
 
@@ -198,10 +209,10 @@ contains
     memavail=memavail-8.0d0*7.0d0*(1+nbas**2*4*nocc**2)/1024.0d0**2
     
     ! Psi(0) and Psi(t)
-    memavail=memavail-2.0d0*8.0d0*matdim/1024.0d0**2
+    memavail=memavail-2.0d0*16.0d0*matdim/1024.0d0**2
     
     ! Lanczos vectors used in the SIL propagation method
-    memavail=memavail-(kdim-1)*8.0d0*matdim/1024.0d0**2
+    memavail=memavail-(kdim-1)*16.0d0*matdim/1024.0d0**2
 
     ! Be cautious and only use say 90% of the available memory
     memavail=memavail*0.9d0 
@@ -329,7 +340,6 @@ contains
 
     integer                                :: i
     real(d), dimension(matdim), intent(in) :: fvec
-    real(d)                                :: norm
     
 !----------------------------------------------------------------------
 ! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
@@ -338,15 +348,19 @@ contains
        psi0(i)=dcmplx(fvec(i),0.0d0)
     enddo
 
-    norm=sqrt(dot_product(psi0,psi0))
-    psi0=psi0/norm
+    norm0=sqrt(dot_product(psi0,psi0))
+    psi0=psi0/norm0
 
     return
     
   end subroutine init_wavepacket
 
 !######################################################################
-
+! propagate_sillib: wavepacket propagation using the short iterative
+!                   Lanczos method to yield the time-domain wavepacket
+!                   autocorrelation functions a_n(t), n=0,1,2
+!######################################################################
+  
   subroutine propagate_sillib
 
     use sillib
@@ -436,14 +450,14 @@ contains
 ! Output the autocorrelation functions at time t=0
 !----------------------------------------------------------------------
     ! Zeroth-order autocorrelation function at time t=0
-    auto0=dot_product(psi0,psi0)
+    auto0=dot_product(psi0,psi0)*norm0**2
     call wrauto(iout0,auto0,0.0d0)
     
     ! First-order autocorrelation functions at time t=0
     if (autoord.ge.1) then
        call matxvec_treal(time,matdim,noffdiag,psi0,hpsi)
        hpsi=hpsi*ci
-       auto1=dot_product(psi0,hpsi)
+       auto1=dot_product(psi0,hpsi)*norm0**2
        call wrauto(iout1,auto1,0.0d0)
     endif
     
@@ -451,7 +465,7 @@ contains
     if (autoord.eq.2) then
        call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
        h2psi=h2psi*ci
-       auto2=dot_product(psi0,h2psi)
+       auto2=dot_product(psi0,h2psi)*norm0**2
        call wrauto(iout2,auto2,0.0d0)
     endif
 
@@ -503,7 +517,7 @@ contains
 
        ! Calculate and output the zeroth-order autocorrelation 
        ! function at the current timestep
-       auto0=dot_product(conjg(psi),psi)
+       auto0=dot_product(conjg(psi),psi)*norm0**2
        call wrauto(iout0,auto0,i*intperiod*2.0d0)
 
        ! Calculate and output the first-order autocorrelation
@@ -511,7 +525,7 @@ contains
        if (autoord.ge.1) then
           call matxvec_treal(time,matdim,noffdiag,psi,hpsi)
           hpsi=hpsi*ci
-          auto1=dot_product(conjg(psi),hpsi)
+          auto1=dot_product(conjg(psi),hpsi)*norm0**2
           call wrauto(iout1,auto1,i*intperiod*2.0d0)
        endif
 
@@ -520,7 +534,7 @@ contains
        if (autoord.eq.2) then
           call matxvec_treal(time,matdim,noffdiag,hpsi,h2psi)
           h2psi=h2psi*ci
-          auto2=dot_product(conjg(psi),h2psi)
+          auto2=dot_product(conjg(psi),h2psi)*norm0**2
           call wrauto(iout2,auto2,i*intperiod*2.0d0)
        endif
 
@@ -549,7 +563,7 @@ contains
   end subroutine propagate_sillib
 
 !######################################################################
-
+  
   subroutine wrprogress(t,norm)
 
     implicit none

@@ -38,7 +38,8 @@
       hinit=1
       maxmem=250.0d0
       ldipole=.false.
-
+      lnto=.false.
+      
 !-----------------------------------------------------------------------
 ! CIS calculation (use the unmodified ground-to-excited state
 ! transition moments)
@@ -119,6 +120,10 @@
       
       ! Final space
       lnoise_f=.false.
+
+      ! Integrator
+      integrator=1
+      integrator_f=1
       
 !-----------------------------------------------------------------------
 ! Lanczos parameters
@@ -147,7 +152,9 @@
       lautospec=.false.
       autotol=1e-5_d
       autoord=0
-
+      autoprop=1
+      chebyord=0
+      
 !-----------------------------------------------------------------------
 ! Filter diagonalisation state calculation parameters
 !-----------------------------------------------------------------------
@@ -162,6 +169,8 @@
       pulse_vec=0.0d0
       freq=0.0d0
       strength=0.0d0
+      t0=0.0d0
+      phase=0.0d0
       proptol=1e-5_d
       ipulse=0
       ienvelope=0
