@@ -7,17 +7,6 @@
 ########################################################################
 
 #-----------------------------------------------------------------------
-# Check to see if the operating system is Darwin. If so, then some
-# things later on will have to be changed/adapted.
-#-----------------------------------------------------------------------
-chk=`echo $OSTYPE | grep darwin`
-if [ -z $chk ]; then
-    isdarwin='F'
-else
-    isdarwin='T'
-fi
-
-#-----------------------------------------------------------------------
 # Read the target name. If the target is not given, then perform a
 # clean install of all programs
 #-----------------------------------------------------------------------
@@ -119,11 +108,6 @@ sed -e '/^\#\*ADC\*A\*/,/^\#\*ADC\*B\*/d' tmpf$$ >| $file
 echo "#*ADC*A***********$star40$star20" >> $file
 echo '# Following lines written by install_ADC.  '"$(date)" >> $file
 echo 'export ADC_DIR='`pwd` >> $file
-if [ "$isdarwin" == 'T' ]; then
-    echo 'export DYLD_LIBRARY_PATH=$ADC_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}' >> $file
-else
-    echo 'export LD_LIBRARY_PATH=$ADC_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}' >> $file
-fi
 echo "#*ADC*B***********$star40$star20" >> $file
 
 echo
