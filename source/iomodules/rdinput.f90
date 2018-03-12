@@ -16,7 +16,6 @@
       integer            :: i,k,n,l
       character(len=120) :: atmp1,atmp2
       logical            :: iscvs,energyonly,ldiag,llanc,ldiffsection
-!      logical            :: lmatvec
 
 !-----------------------------------------------------------------------
 ! Set 'traps'

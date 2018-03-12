@@ -206,6 +206,7 @@
       return
       
     end subroutine get_subspaces_adc1
+
 !#######################################################################
 
     subroutine init_space_diag(time,kpq,ndim,ndims,noffd)
@@ -372,7 +373,6 @@
       return
 
     end subroutine davidson_fin_space_diag
-
       
 !#######################################################################
 

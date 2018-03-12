@@ -68,17 +68,12 @@ contains
 !-----------------------------------------------------------------------
 ! Diagonalisation in the initial space
 !-----------------------------------------------------------------------
-        if (lmatvec.and.(statenumber.gt.0)) then
-           call init_space_diag(time,kpq,ndim,ndims,noffd)
-        else if (statenumber.gt.0) then
-           call initial_space_diag(time,kpq,ndim,ndims,noffd)
-        endif
+    if (lmatvec.and.(statenumber.gt.0)) then
+       call init_space_diag(time,kpq,ndim,ndims,noffd)
+    else if (statenumber.gt.0) then
+       call initial_space_diag(time,kpq,ndim,ndims,noffd)
+    endif
 
-! FROM ADC_nrc
-!    if (statenumber.gt.0) &
-!         call initial_space_diag(time,kpq,ndim,ndims,noffd)
-! FROM ADC_nrc
-        
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the initial states
 !-----------------------------------------------------------------------
@@ -220,28 +215,6 @@ contains
         return
 
       end subroutine final_space_diag
-
-! FROM ADC_nrc
-!    implicit none
-!
-!    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-!    integer                                   :: ndim,ndimf,ndimsf
-!    integer*8                                 :: noffd,noffdf
-!    real(d), dimension(:), allocatable        :: travec,mtmf
-!    real(d), dimension(ndim)                  :: vec_init
-!    
-!    if (ldiagfinal) then
-!       call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-!            kpqf,travec,vec_init,mtmf,noffdf)
-!    else
-!       call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-!            kpqf,travec,vec_init,mtmf,noffdf)
-!    endif
-!    
-!    return
-!
-!  end subroutine final_space_diag
-! FROM ADC_nrc
 
 !#######################################################################
       
