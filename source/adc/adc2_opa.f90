@@ -68,11 +68,8 @@ contains
 !-----------------------------------------------------------------------
 ! Diagonalisation in the initial space
 !-----------------------------------------------------------------------
-    if (lmatvec.and.(statenumber.gt.0)) then
-       call init_space_diag(time,kpq,ndim,ndims,noffd)
-    else if (statenumber.gt.0) then
-       call initial_space_diag(time,kpq,ndim,ndims,noffd)
-    endif
+    if (statenumber.gt.0) call initial_space_diag(time,kpq,ndim,ndims,&
+         noffd)
 
 !-----------------------------------------------------------------------
 ! If requested, calculate the dipole moments for the initial states
@@ -201,10 +198,7 @@ contains
         real(d), dimension(ndim,davstates)        :: rvec
         real(d), dimension(:,:), allocatable      :: travec2
 
-        if (lmatvec.and.ldiagfinal) then
-           call davidson_fin_space_diag(ndim,ndimf,ndimsf,kpq,&
-                kpqf,travec,vec_init,mtmf,noffdf,rvec,travec2)
-        else if (ldiagfinal) then
+        if (ldiagfinal) then
            call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
                 kpqf,travec,vec_init,mtmf,noffdf)
         else

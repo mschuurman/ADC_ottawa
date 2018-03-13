@@ -1,6 +1,6 @@
 method = adc2-s, adc2-s
 
-initial_state = 0
+initial_state = 1
 istate_symm = 1
 
 dipole_component = z
