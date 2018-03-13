@@ -81,16 +81,16 @@ else
     make $target $args
 fi
 
-#-----------------------------------------------------------------------
-# Compile the documentation
-#-----------------------------------------------------------------------
-echo
-echo "Compiling the documentation..."
-
-cd doc
-pdflatex input >/dev/null
-rm *.aux *.log
-cd ..
+##-----------------------------------------------------------------------
+## Compile the documentation
+##-----------------------------------------------------------------------
+#echo
+#echo "Compiling the documentation..."
+#
+#cd doc
+#pdflatex input >/dev/null
+#rm *.aux *.log
+#cd ..
 
 #-----------------------------------------------------------------------
 # Set the ADC_DIR variable and update LD_LIBRARY_PATH s.t. we can
