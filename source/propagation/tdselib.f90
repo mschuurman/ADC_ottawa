@@ -193,7 +193,7 @@ contains
 !-----------------------------------------------------------------------
 ! Contributoion from the off-diagonal elements
 !-----------------------------------------------------------------------
-    tmpvec=czero
+    tmpvec=0.0d0
 
     !$omp parallel do &
     !$omp& private(i,k,tid) &
@@ -1177,37 +1177,191 @@ contains
   end subroutine matxvec_treal_laser_adc1
     
 !#######################################################################
-! matxvec_chebyshev: Calculates the Chebyshev vectors using the
-!                    two-term Chebyshev recursion relation.
+! chebyshev_recursion: Calculates the Chebyshev vectors using the
+!                      two-term Chebyshev recursion relation.
 !
-!                    Used in Chebyshev propagation and the calculation
-!                    of the Chebyshev order-domain autocorrelation
-!                    function.
+!                      Used in Chebyshev propagation and the calculation
+!                      of the Chebyshev order-domain autocorrelation
+!                      function.
 !
-!                    It is debatable whether this is the most suitable
-!                    module in which to have this routine, but putting
-!                    it here allows us to make use of the
-!                    load_hamiltonian, etc routines.
+!                      It is debatable whether this is the most suitable
+!                      module in which to have this routine, but putting
+!                      it here allows us to make use of the
+!                      load_hamiltonian, etc routines.
 !#######################################################################  
 
-  subroutine matxvec_chebyshev(matdim,noffdiag,bounds,qk,q1,q2)
+  subroutine chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
 
     use constants
+    
+    implicit none
+
+    integer, intent(in)               :: k,matdim
+    integer*8, intent(in)             :: noffdiag
+    real(d), dimension(2), intent(in) :: bounds
+    real(d), dimension(matdim)        :: qk,qkm1,qkm2
+
+!----------------------------------------------------------------------
+! 2 * H_norm * q_k-1 (k>2)
+! or  H_norm * q_k-1 (k=1)
+!----------------------------------------------------------------------
+    ! H_norm * q_k-1
+    call matxvec_chebyshev(matdim,noffdiag,bounds,qkm1,qk)
+
+    ! 2 * H_norm * q_k-1
+    if (k.gt.1) qk=2.0d0*qk
+       
+!----------------------------------------------------------------------
+! q_k = 2 * H_norm * q_k-1 - q_k-2 (k>2)
+!----------------------------------------------------------------------
+    if (k.gt.1) qk=qk-qkm2
+
+    return
+    
+  end subroutine chebyshev_recursion
+
+!#######################################################################
+! matxvec_chebyshev: Calculates v2 = H_norm * v1, where H_norm is the
+!                    Hamiltonian matrix scaled to have eigenvalues in
+!                    the closed interval [-1,1]
+!#######################################################################
+  
+  subroutine matxvec_chebyshev(matdim,noffdiag,bounds,v1,v2)
+    
+    use constants
+    use iomod
     
     implicit none
 
     integer, intent(in)               :: matdim
     integer*8, intent(in)             :: noffdiag
     real(d), dimension(2), intent(in) :: bounds
-    real(d), dimension(matdim)        :: qk,q1,q2
+    real(d), dimension(matdim)        :: v1,v2
 
-    print*,"FINISH WRITING THE MATXVEC_CHEBYSHEV ROUTINE!"
-    STOP
+    if (hincore) then
+       call matxvec_chebyshev_incore(matdim,noffdiag,bounds,v1,v2)
+    else
+       errmsg='WRITE THE OUT-OF-CORE MATXVEC_CHEBYSHEV CODE'
+       call error_control
+    endif
     
     return
     
   end subroutine matxvec_chebyshev
+
+!#######################################################################
+! matxvec_chebyshev_incore: In-core calculation of v2 = +H_norm * v1,
+!                           where H_norm is the Hamiltonian matrix
+!                           scaled to have eigenvalues in the closed
+!                           interval [-1,1]
+!#######################################################################
+
+  subroutine matxvec_chebyshev_incore(matdim,noffdiag,bounds,v1,v2)
     
+    use constants
+    use parameters
+    use iomod
+    use channels
+    use omp_lib
+    
+    implicit none
+
+    integer, intent(in)                    :: matdim
+    integer*8, intent(in)                  :: noffdiag
+    integer                                :: nthreads,i,k,tid
+    integer*8, allocatable                 :: irange(:,:)
+    integer*8                              :: npt
+    real(d), dimension(2), intent(in)      :: bounds
+    real(d), dimension(matdim), intent(in) :: v1
+    real(d), dimension(matdim)             :: v2
+    real(d), allocatable                   :: tmpvec(:,:)
+    real(d)                                :: DeltaE,Emin
+    
+!-----------------------------------------------------------------------
+! Number of threads
+!-----------------------------------------------------------------------  
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(irange(nthreads,2))
+    allocate(tmpvec(matdim,nthreads))
+
+!-----------------------------------------------------------------------
+! Partitioning of the off-diagonal elements: one chunk per thread
+!-----------------------------------------------------------------------
+    npt=int(floor(real(noffdiag)/real(nthreads)))
+    
+    do i=1,nthreads-1
+       irange(i,1)=(i-1)*npt+1
+       irange(i,2)=i*npt
+    enddo
+
+    irange(nthreads,1)=(nthreads-1)*npt+1
+    irange(nthreads,2)=noffdiag
+
+!-----------------------------------------------------------------------
+! Contribution from the on-diagonal elements to H*v1
+!-----------------------------------------------------------------------
+    do k=1,matdim
+       v2(k)=hon(k)*v1(k)
+    enddo
+
+!-----------------------------------------------------------------------
+! Contribution from the off-diagonal elements to H*v1
+!-----------------------------------------------------------------------
+    tmpvec=0.0d0
+
+    !$omp parallel do &
+    !$omp& private(i,k,tid) &
+    !$omp& shared(tmpvec,v1)
+    do i=1,nthreads
+       
+       tid=1+omp_get_thread_num()
+
+       do k=irange(tid,1),irange(tid,2)
+          tmpvec(iindx(k),tid)=tmpvec(iindx(k),tid)&
+               +hoff(k)*v1(jindx(k))
+          tmpvec(jindx(k),tid)=tmpvec(jindx(k),tid)&
+               +hoff(k)*v1(iindx(k))
+       enddo
+          
+    enddo
+    !$omp end parallel do
+
+    do i=1,nthreads
+       v2=v2+tmpvec(:,i)
+    enddo
+
+!-----------------------------------------------------------------------
+! DeltaE and Emin
+!-----------------------------------------------------------------------
+    DeltaE=bounds(2)-bounds(1)
+    Emin=bounds(1)
+    
+!-----------------------------------------------------------------------
+! (2/DeltaE)*H*v1
+!-----------------------------------------------------------------------
+    v2=(2.0d0/DeltaE)*v2
+
+!-----------------------------------------------------------------------
+! (2/DeltaE)*H*v1 - 2*[(0.5*DeltaE + E_min)/DeltaE]*v1
+!-----------------------------------------------------------------------
+    v2=v2-(2.0d0*(Emin/DeltaE)+1.0d0)*v1
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(irange)
+    deallocate(tmpvec)
+    
+    return
+
+  end subroutine matxvec_chebyshev_incore
+  
 !#######################################################################
   
 end module tdsemod

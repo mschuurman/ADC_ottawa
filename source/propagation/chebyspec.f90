@@ -20,16 +20,16 @@ contains
 
 !######################################################################
 
-  subroutine chebyshev_recursion(q0,ndimf,noffdf)
+  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf)
 
     use tdsemod
     use specbounds
     
     implicit none
 
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    real(d), dimension(ndimf), intent(in) :: q0
+    integer, intent(in)       :: ndimf
+    integer*8, intent(in)     :: noffdf
+    real(d), dimension(ndimf) :: q0
     
 !----------------------------------------------------------------------
 ! Initialisation
@@ -53,15 +53,25 @@ contains
 ! calculation
 !----------------------------------------------------------------------
     call spectral_bounds(bounds,'c','lanczos',ndimf,noffdf)
-
+    
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
 !----------------------------------------------------------------------
    call chebyshev_auto(q0,ndimf,noffdf)
 
+!----------------------------------------------------------------------
+! Write the order-domain autocorrelation function to file
+!----------------------------------------------------------------------
+   call write_chebyshev_auto
+
+!----------------------------------------------------------------------
+! Finalisation
+!----------------------------------------------------------------------
+   call chebyshev_finalise
+   
    return
     
- end subroutine chebyshev_recursion
+ end subroutine chebyshev_auto_order_domain
 
 !######################################################################
 
@@ -77,11 +87,17 @@ contains
 !----------------------------------------------------------------------
     matdim=ndimf
     noffdiag=noffdf
+
+!----------------------------------------------------------------------
+! Make sure that the order of the Chebyshev expansion of Delta(E-H)
+! is even
+!----------------------------------------------------------------------
+    if (mod(chebyord,2).ne.0) chebyord=chebyord-1
     
 !----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !----------------------------------------------------------------------
-    allocate(auto(0:chebyord))
+    allocate(auto(0:2*chebyord))
     auto=0.0d0
     
     return
@@ -165,12 +181,6 @@ contains
        hincore=.false.
     endif
 
-    print*,
-    print*,'hincore:',hincore
-    print*,
-    stop
-    
-    
     return
     
   end subroutine memory_managment
@@ -183,48 +193,107 @@ contains
     
     implicit none
 
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    integer                               :: k
-    real(d), dimension(ndimf), intent(in) :: q0
-    real(d)                               :: dummy
-    real(d), allocatable                  :: qk(:),q1(:),q2(:)
-
+    integer, intent(in)       :: ndimf
+    integer*8, intent(in)     :: noffdf
+    integer                   :: k
+    real(d), dimension(ndimf) :: q0
+    real(d), allocatable      :: qk(:),qkm1(:),qkm2(:)
+    real(d)                   :: N0
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
     allocate(qk(matdim))
     qk=0.0d0
 
-    allocate(q1(matdim))
-    q1=0.0d0
+    allocate(qkm1(matdim))
+    qkm1=0.0d0
 
-    allocate(q2(matdim))
-    q2=0.0d0
-    
+    allocate(qkm2(matdim))
+    qkm2=0.0d0
+
+!----------------------------------------------------------------------
+! C_0
+!----------------------------------------------------------------------
+    auto(0)=dot_product(q0,q0)
+
 !----------------------------------------------------------------------
 ! Calculate the Chebyshev order-domain autocorrelation function
 !----------------------------------------------------------------------
-    ! Loop over Chebyshev polynomials
+    ! Initialisation
+    qkm1=q0
+
+    ! Loop over Chebyshev polynomials of order k >= 1
     do k=1,chebyord
 
        ! Calculate the kth Chebyhev polynomial-vector product
-       !call matxvec_chebyshev(matdim,noffdiag,bounds,qk,q1,q2)
+       call chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
 
+       ! Calculate C_k
+       auto(k)=dot_product(q0,qk)
+
+       ! Calculate C_2k and C_2k-1
+       if (k.gt.chebyord/2) then
+          auto(2*k)=2.0d0*dot_product(qk,qk)-auto(0)
+          auto(2*k-1)=2.0d0*dot_product(qkm1,qk)-auto(1)
+       endif
+
+       ! Update qkm1 and qkm2
+       qkm2=qkm1       
+       qkm1=qk
+       qk=0.0d0
        
     enddo
-
+    
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(qk)
-    deallocate(q1)
-    deallocate(q2)
+    deallocate(qkm1)
+    deallocate(qkm2)
     
     return
     
   end subroutine chebyshev_auto
-    
+
 !######################################################################
-  
+
+  subroutine write_chebyshev_auto
+
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer :: unit,k
+    
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='chebyauto',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the file header
+!----------------------------------------------------------------------
+    write(unit,'(a)') '#    Order [k]    C_k'
+    
+!----------------------------------------------------------------------
+! Write the order-domain autocorrelation function to file
+!----------------------------------------------------------------------
+    do k=0,chebyord*2
+       write(unit,'(i6,11x,E21.14)') k,auto(k)
+    enddo
+    
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+    return
+    
+  end subroutine write_chebyshev_auto
+
+!######################################################################
+    
 end module chebyspec
