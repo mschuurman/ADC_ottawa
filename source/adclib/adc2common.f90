@@ -252,7 +252,8 @@ contains
     implicit none
 
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
-    integer                                   :: ndim,ndims,ndim1,ndim2,nbuf
+    integer                                   :: ndim,ndims,ndim1,ndim2,&
+                                                 nbuf
     integer*8                                 :: noffd
     real(d)                                   :: time
     character(len=120)                        :: msg

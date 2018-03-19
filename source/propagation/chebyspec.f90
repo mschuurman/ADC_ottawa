@@ -20,16 +20,16 @@ contains
 
 !######################################################################
 
-  subroutine chebyshev_recursion(q0,ndimf,noffdf)
+  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf)
 
     use tdsemod
     use specbounds
     
     implicit none
 
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    real(d), dimension(ndimf), intent(in) :: q0
+    integer, intent(in)       :: ndimf
+    integer*8, intent(in)     :: noffdf
+    real(d), dimension(ndimf) :: q0
     
 !----------------------------------------------------------------------
 ! Initialisation
@@ -53,7 +53,7 @@ contains
 ! calculation
 !----------------------------------------------------------------------
     call spectral_bounds(bounds,'c','lanczos',ndimf,noffdf)
-
+    
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
 !----------------------------------------------------------------------
@@ -61,7 +61,7 @@ contains
 
    return
     
- end subroutine chebyshev_recursion
+ end subroutine chebyshev_auto_order_domain
 
 !######################################################################
 
@@ -165,12 +165,6 @@ contains
        hincore=.false.
     endif
 
-    print*,
-    print*,'hincore:',hincore
-    print*,
-    stop
-    
-    
     return
     
   end subroutine memory_managment
@@ -183,12 +177,11 @@ contains
     
     implicit none
 
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    integer                               :: k
-    real(d), dimension(ndimf), intent(in) :: q0
-    real(d)                               :: dummy
-    real(d), allocatable                  :: qk(:),q1(:),q2(:)
+    integer, intent(in)       :: ndimf
+    integer*8, intent(in)     :: noffdf
+    integer                   :: k
+    real(d), dimension(ndimf) :: q0
+    real(d), allocatable      :: qk(:),qkm1(:),qkm2(:)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -196,21 +189,39 @@ contains
     allocate(qk(matdim))
     qk=0.0d0
 
-    allocate(q1(matdim))
-    q1=0.0d0
+    allocate(qkm1(matdim))
+    qkm1=0.0d0
 
-    allocate(q2(matdim))
-    q2=0.0d0
+    allocate(qkm2(matdim))
+    qkm2=0.0d0
+
+!----------------------------------------------------------------------
+! C_0
+!----------------------------------------------------------------------
+    auto(0)=dot_product(q0,q0)
+
+    print*,0,auto(0)
     
 !----------------------------------------------------------------------
 ! Calculate the Chebyshev order-domain autocorrelation function
 !----------------------------------------------------------------------
-    ! Loop over Chebyshev polynomials
+    ! Initialisation
+    qkm1=q0
+
+    ! Loop over Chebyshev polynomials of order k >= 1
     do k=1,chebyord
 
        ! Calculate the kth Chebyhev polynomial-vector product
-       !call matxvec_chebyshev(matdim,noffdiag,bounds,qk,q1,q2)
+       call chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
 
+       ! Calculate C_k
+       auto(k)=dot_product(q0,qk)
+
+       print*,k,auto(k)
+       
+       ! Update qkm1 and qkm2
+       qkm1=qk
+       qkm2=qkm1
        
     enddo
 
@@ -218,8 +229,8 @@ contains
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(qk)
-    deallocate(q1)
-    deallocate(q2)
+    deallocate(qkm1)
+    deallocate(qkm2)
     
     return
     
