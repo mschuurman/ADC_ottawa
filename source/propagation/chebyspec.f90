@@ -59,6 +59,16 @@ contains
 !----------------------------------------------------------------------
    call chebyshev_auto(q0,ndimf,noffdf)
 
+!----------------------------------------------------------------------
+! Write the order-domain autocorrelation function to file
+!----------------------------------------------------------------------
+   call write_chebyshev_auto
+
+!----------------------------------------------------------------------
+! Finalisation
+!----------------------------------------------------------------------
+   call chebyshev_finalise
+   
    return
     
  end subroutine chebyshev_auto_order_domain
@@ -77,11 +87,17 @@ contains
 !----------------------------------------------------------------------
     matdim=ndimf
     noffdiag=noffdf
+
+!----------------------------------------------------------------------
+! Make sure that the order of the Chebyshev expansion of Delta(E-H)
+! is even
+!----------------------------------------------------------------------
+    if (mod(chebyord,2).ne.0) chebyord=chebyord-1
     
 !----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !----------------------------------------------------------------------
-    allocate(auto(0:chebyord))
+    allocate(auto(0:2*chebyord))
     auto=0.0d0
     
     return
@@ -182,7 +198,8 @@ contains
     integer                   :: k
     real(d), dimension(ndimf) :: q0
     real(d), allocatable      :: qk(:),qkm1(:),qkm2(:)
-
+    real(d)                   :: N0
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
@@ -200,8 +217,6 @@ contains
 !----------------------------------------------------------------------
     auto(0)=dot_product(q0,q0)
 
-    print*,0,auto(0)
-    
 !----------------------------------------------------------------------
 ! Calculate the Chebyshev order-domain autocorrelation function
 !----------------------------------------------------------------------
@@ -217,14 +232,19 @@ contains
        ! Calculate C_k
        auto(k)=dot_product(q0,qk)
 
-       print*,k,auto(k)
-       
+       ! Calculate C_2k and C_2k-1
+       if (k.gt.chebyord/2) then
+          auto(2*k)=2.0d0*dot_product(qk,qk)-auto(0)
+          auto(2*k-1)=2.0d0*dot_product(qkm1,qk)-auto(1)
+       endif
+
        ! Update qkm1 and qkm2
+       qkm2=qkm1       
        qkm1=qk
-       qkm2=qkm1
+       qk=0.0d0
        
     enddo
-
+    
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -235,7 +255,45 @@ contains
     return
     
   end subroutine chebyshev_auto
-    
+
 !######################################################################
-  
+
+  subroutine write_chebyshev_auto
+
+    use constants
+    use iomod
+    
+    implicit none
+
+    integer :: unit,k
+    
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='chebyauto',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the file header
+!----------------------------------------------------------------------
+    write(unit,'(a)') '#    Order [k]    C_k'
+    
+!----------------------------------------------------------------------
+! Write the order-domain autocorrelation function to file
+!----------------------------------------------------------------------
+    do k=0,chebyord*2
+       write(unit,'(i6,11x,E21.14)') k,auto(k)
+    enddo
+    
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+    return
+    
+  end subroutine write_chebyshev_auto
+
+!######################################################################
+    
 end module chebyspec
