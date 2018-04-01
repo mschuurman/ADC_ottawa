@@ -1,7 +1,7 @@
 !#######################################################################
-! propagate_adc1: Routines to perform ADC(1) wavepacket propagations
-!                 including the interaction of the molecule with a
-!                 laser pulse
+! propagate_adc1: Routines to perform ADC(1) and CIS wavepacket
+!                 propagations including the interaction of the
+!                 molecule with a laser pulse
 !#######################################################################
 
 module propagate_adc1
@@ -59,6 +59,11 @@ contains
 !----------------------------------------------------------------------
     call initialise(ndimf)
 
+!----------------------------------------------------------------------
+! Set up the initial wavefunction vector
+!----------------------------------------------------------------------
+    call initwf
+    
 !----------------------------------------------------------------------
 ! Output some information about the calculation to be performed
 !----------------------------------------------------------------------
@@ -162,6 +167,82 @@ contains
     
   end subroutine initialise
 
+!#######################################################################
+
+    subroutine initwf
+
+    implicit none
+    
+!----------------------------------------------------------------------
+! Fill in the initial wavefunction vector
+!----------------------------------------------------------------------
+    if (statenumber.eq.0) then
+       ! Ground state: the MP2 ground state is included in the basis
+       ! as the ndimf'th + 1 IS basis function, i.e., the initial
+       ! wavefunction vector is given by (0,...,0,1)^T
+       psi=czero
+       psi(matdim)=cone
+    else
+       ! Excited state: read the initial wavefunction vector from
+       ! disk
+       call initwf_exci_initstate
+    endif
+       
+    return
+    
+  end subroutine initwf
+
+!#######################################################################
+
+  subroutine initwf_exci_initstate
+
+    implicit none
+    
+    integer              :: unit,itmp,i
+    real(d)              :: ftmp
+    real(d), allocatable :: vec(:)
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(vec(matdim-1))
+
+!-----------------------------------------------------------------------
+! Open the file containing the initial space eigenpairs
+!-----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='SCRATCH/initvecs',status='old',&
+         access='sequential',form='unformatted')
+
+!-----------------------------------------------------------------------
+! Read the initial state vector from disk
+!-----------------------------------------------------------------------
+    do i=1,statenumber
+       read(unit) itmp,ftmp,vec(1:matdim-1)
+    enddo
+
+!-----------------------------------------------------------------------
+! Set up the initial wavefunction vector
+!-----------------------------------------------------------------------
+    do i=1,matdim-1
+       psi(i)=cmplx(vec(i),0.0d0)
+    enddo
+    psi(matdim)=czero
+
+!-----------------------------------------------------------------------
+! Close files
+!-----------------------------------------------------------------------
+    close(unit)
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(vec)
+
+    return
+    
+  end subroutine initwf_exci_initstate
+  
 !#######################################################################
 
   subroutine wrinfo

@@ -2,6 +2,26 @@
 ! density_matrix: routines for the calculation of 1-electron reduced
 !                 density and transition density matrices
 !######################################################################
+! IMPORTANT: There is currently a small discrepency between the
+!            ground-to-excited state transition dipoles calculated
+!            using the transition density matrices vs. the f-vector.
+!            This probably implies that there is an error/typo
+!            somewhere in the ground-to-excited state transition
+!            density matrix code. Alternatively, there could well be
+!            an error/typo in the f-vector equations, which were
+!            adapted directly from Trofimov's PhD thesis.
+!
+!            The upshot is: (i)   We should NOT currently use the
+!                                 ground-to-excited state transition
+!                                 density matrices to calculate
+!                                 transition dipoles until we have got
+!                                 to the bottom of this.
+!                            (ii) It is basically fine to use these
+!                                 transition density matrices to
+!                                 calculate NTOs, as these are only
+!                                 used to eyeball the 1h1p character of
+!                                 a transition.
+!######################################################################
 
 module density_matrix
 

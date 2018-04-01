@@ -1,6 +1,6 @@
 !#######################################################################
-! TD-ADC(1) wavepacket propagation including the interaction with an
-! applied laser pulse
+! TD-ADC(1) and TD-CIS wavepacket propagation including the interaction
+! with an applied laser pulse
 !#######################################################################
 
 module adc1propmod
@@ -53,6 +53,12 @@ contains
 !-----------------------------------------------------------------------
     call set_dpl
 
+!-----------------------------------------------------------------------
+! If the initial state is an excited state, then diagonalise the
+! initial state Hamiltonian
+!-----------------------------------------------------------------------
+    if (statenumber.gt.0) call get_initial_state_adc1(kpq,ndim)
+    
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
@@ -481,6 +487,93 @@ contains
     
   end subroutine theta_isbas_adc1
 
+!#######################################################################
+
+  subroutine get_initial_state_adc1(kpq,ndim)
+
+    use constants
+    use parameters
+    use fspace
+    use get_moment
+    use misc
+    use iomod
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
+    integer                                 :: ndim,i,itmp,unit
+    real(d), dimension(:,:), allocatable    :: eigvec
+    real(d), dimension(:), allocatable      :: ener,mtm,tmvec,osc_str
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(eigvec(ndim,ndim))
+    allocate(ener(ndim))
+    allocate(mtm(ndim))
+    allocate(tmvec(ndim))
+    allocate(osc_str(ndim))
+    
+!-----------------------------------------------------------------------
+! Diagonalisation in the initial space
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') "Full diagonalisation of the ADC(1)/CIS &
+         Hamiltonian matrix..."
+    call get_fspace_tda_direct(ndim,kpq,eigvec,ener)
+
+!-----------------------------------------------------------------------
+! Transition dipole moments between the ground state and the ADC(1)/CIS
+! eigenstates
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a)') 'Calculating the transition dipole &
+         moments between the ground state and all excited states...'
+    if (lcis) then
+       call get_tm_cis(ndim,kpq(:,:),mtm(:))
+    else
+       call get_modifiedtm_tda(ndim,kpq(:,:),mtm(:))
+    endif
+       
+    do i=1,ndim
+       tmvec(i)=tm(ndim,eigvec(:,i),mtm(:))
+       osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2
+    enddo
+
+    write(ilog,'(/,70a)') ('*',i=1,70)
+    write(ilog,'(2x,a)') &
+         'Initial space ADC(1)/CIS excitation energies'
+    write(ilog,'(70a)') ('*',i=1,70)
+    
+    itmp=1+nBas**2*4*nOcc**2
+    call table2(ndim,statenumber,ener(1:statenumber),&
+         eigvec(:,1:statenumber),tmvec(1:statenumber),&
+         osc_str(1:statenumber),kpq,itmp,'i')
+
+!-----------------------------------------------------------------------
+! Write the eigenpairs to file
+!-----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='SCRATCH/initvecs',status='unknown',&
+         access='sequential',form='unformatted')
+
+    do i=1,ndim
+       write(unit) i,ener(i),eigvec(:,i)
+    enddo
+
+    close(unit)
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(eigvec)
+    deallocate(ener)
+    deallocate(mtm)
+    deallocate(tmvec)
+    deallocate(osc_str)
+
+    return
+    
+  end subroutine get_initial_state_adc1
+    
 !#######################################################################
   
 end module adc1propmod

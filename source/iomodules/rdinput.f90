@@ -473,7 +473,7 @@
 
       implicit none
 
-      character(len=120) :: msg
+      character(len=170) :: msg
       logical            :: ldiag,llanc,energyonly
 
 !-----------------------------------------------------------------------
@@ -840,6 +840,15 @@
             msg='The propagation sesction has not been given'
             goto 999
          endif
+
+         ! Currently, use of a projected CAP is limited to the case
+         ! where the initial state is the ground state
+         if (lprojcap.and.statenumber.gt.0) then
+            msg='The use of a projected CAP is only currently &
+                 supported when the initial state is the ground &
+                 state'
+            goto 999
+         endif
          
       endif
 
@@ -888,6 +897,32 @@
          if (tout.eq.0.0d0) then
             msg='The timestep has not been given'
             goto 999
+         endif
+
+         ! Make sure that the initial space and final space dimensions
+         ! are the same if an excited initial state has been requested
+         ! (note that the problem here is that the initial space
+         ! configurations are used in the code to calculate the initial
+         ! excited state, whilst the final space configurations are used
+         ! to do the wavepacket propagation)
+         if (statenumber.gt.0) then
+            if (lifrzcore.and..not.lffrzcore) then
+               msg='For TD-ADC calculations starting from an excited &
+                    state, both the initial and final state spaces &
+                    must have frozen or unfrozen cores'
+               goto 999
+            endif
+            if (lffrzcore.and..not.lifrzcore) then
+               msg='For TD-ADC calculations starting from an excited &
+                    state, both the initial and final state spaces &
+                    must have frozen or unfrozen cores'
+               goto 999
+            endif
+            if (lcvsfinal) then
+               msg='For TD-ADC calculations starting from an excited &
+                    state, the CVS approximation is not yet supported'
+               goto 999
+            endif
          endif
          
       endif

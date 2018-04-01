@@ -52,6 +52,13 @@ contains
     call set_dpl
 
 !-----------------------------------------------------------------------
+! If the initial state is an excited state, then diagonalise the
+! initial state Hamiltonian
+!-----------------------------------------------------------------------
+    if (statenumber.gt.0) &
+         call get_initial_state_adc2(kpq,ndim,ndims,noffd)
+    
+!-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
     call calc_hamiltonian(ndimf,kpqf,noffdf)
@@ -403,6 +410,53 @@ contains
     return
     
   end subroutine theta_isbas_adc2
+    
+!#######################################################################
+
+  subroutine get_initial_state_adc2(kpq,ndim,ndims,noffd)
+
+    use constants
+    use parameters
+    use guessvecs
+    use adc2common
+    use misc
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
+    integer                                   :: ndim,ndims
+    integer                                   :: i,itmp
+    integer*8                                 :: noffd
+    real(d)                                   :: time
+    real(d), dimension(:), allocatable        :: ener
+    real(d), dimension(:), allocatable        :: mtm,tmvec,&
+                                                 osc_str
+    real(d), dimension(:,:), allocatable      :: rvec
+    
+!-----------------------------------------------------------------
+! Diagonalise the initial space Hamiltonian and calculate the
+! transition dipoles with the ground state
+!-----------------------------------------------------------------
+    if (ladc1guess) call adc1_guessvecs
+    call initial_space_diag(time,kpq,ndim,ndims,noffd)
+    call initial_space_tdm(ener,rvec,ndim,mtm,tmvec,osc_str,kpq)
+    
+!-----------------------------------------------------------------
+! Output the initial space vectors
+!-----------------------------------------------------------------
+    write(ilog,'(/,70a)') ('*',i=1,70)
+    write(ilog,'(2x,a)') &
+         'Initial space ADC(2)-s excitation energies'
+    write(ilog,'(70a)') ('*',i=1,70)
+    itmp=1+nBas**2*4*nOcc**2
+    call table2(ndim,davstates,ener(1:davstates),&
+         rvec(:,1:davstates),tmvec(1:davstates),&
+         osc_str(1:davstates),kpq,itmp,'i')
+    write(ilog,'(/,70a,/)') ('*',i=1,70)
+
+    return
+    
+  end subroutine get_initial_state_adc2
     
 !#######################################################################
   
