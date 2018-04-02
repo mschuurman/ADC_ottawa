@@ -358,7 +358,7 @@ RIXSPLT_OBJ = constants.o \
 	rixsplt.o
 
 ########################################################################
-# Autocorrelation function-to-spectrum code
+# Wavepacket autocorrelation function-to-spectrum code
 ########################################################################
 AUTO2SPEC = source/include/constants.o \
 	source/include/channels.o \
@@ -371,6 +371,21 @@ AUTO2SPEC_OBJ = constants.o \
 	iomod.o \
 	parsemod.o \
 	auto2spec.o
+
+########################################################################
+# Chebyshev order-domain autocorrelation function-to-spectrum code
+########################################################################
+CHEBY2SPEC = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/cheby2spec/cheby2spec.o
+
+CHEBY2SPEC_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	cheby2spec.o
 
 ########################################################################
 # Filter diagonalisation code
@@ -414,6 +429,10 @@ rixsplt: $(RIXSPLT)
 
 auto2spec: $(AUTO2SPEC)
 	$(F90) $(F90OPTS) $(AUTO2SPEC_OBJ) $(LIBS) -o bin/auto2spec.x
+	rm -f *.o *~ *.mod
+
+cheby2spec: $(CHEBY2SPEC)
+	$(F90) $(F90OPTS) $(CHEBY2SPEC_OBJ) $(LIBS) -o bin/cheby2spec.x
 	rm -f *.o *~ *.mod
 
 fdiag: $(FDIAG)
