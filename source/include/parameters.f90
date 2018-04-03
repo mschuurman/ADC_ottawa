@@ -361,6 +361,9 @@ integer               :: nbuf_cap
 integer*8             :: nel_theta
 integer               :: nbuf_theta
 integer, dimension(2) :: nrad,nang
+integer               :: iprojcap
+integer, allocatable  :: projmask(:)
+real(d)               :: projlim
 real(d)               :: capstr
 real(d), dimension(3) :: boxpar
 real(d)               :: densthrsh

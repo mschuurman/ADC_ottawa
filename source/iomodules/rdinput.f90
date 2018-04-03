@@ -841,12 +841,12 @@
             goto 999
          endif
 
-         ! Currently, use of a projected CAP is limited to the case
-         ! where the initial state is the ground state
-         if (lprojcap.and.statenumber.gt.0) then
-            msg='The use of a projected CAP is only currently &
-                 supported when the initial state is the ground &
-                 state'
+         ! If the CAP is to projected out of the space spanned by a
+         ! set of excited states, make sure that a diag_section has
+         ! been given
+         if (iprojcap.eq.2.and..not.ldiag.and.method.ne.1) then
+            msg='For ADC(2) caclulations and projection=all, a &
+                 diag_section is required'
             goto 999
          endif
          
@@ -2069,7 +2069,28 @@
 
          else if (keyword(i).eq.'projection') then
             lprojcap=.true.
-
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'initial') then
+                  iprojcap=1
+               else if (keyword(i).eq.'all') then
+                  iprojcap=2
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) projlim
+                     if (keyword(i+1).eq.',') then
+                        i=i+2
+                        call convert_energy(keyword(i),projlim)
+                     endif
+                  endif
+               else
+                  errmsg='Unkown projection type: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               iprojcap=1
+            endif
+            
          else if (keyword(i).eq.'cap_order') then
             if (keyword(i+1).eq.'=') then
                i=i+2
@@ -2625,6 +2646,33 @@
       return
       
     end subroutine convert_angle
+
+!#######################################################################
+
+    subroutine convert_energy(unit,val)
+
+      use constants
+      use parameters
+      use iomod
+      
+      implicit none
+
+      real(d)          :: val
+      character(len=*) :: unit
+
+      if (unit.eq.'au') then
+         ! Do nothing, atomic units are the default
+      else if (unit.eq.'ev') then
+         val=val/eh2ev
+      else
+         ! Unrecognised unit
+         errmsg='Unrecognised unit: '//trim(unit)
+         call error_control
+      endif
+      
+      return
+      
+    end subroutine convert_energy
     
 !#######################################################################
 

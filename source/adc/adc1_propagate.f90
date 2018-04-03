@@ -1,6 +1,9 @@
 !#######################################################################
 ! TD-ADC(1) and TD-CIS wavepacket propagation including the interaction
 ! with an applied laser pulse
+!
+! Note that we peform the full diagonalisation of the ADC(1)/CIS
+! Hamiltonian in this module.
 !#######################################################################
 
 module adc1propmod
@@ -34,7 +37,7 @@ contains
     real(d)                               :: e0
     real(d), dimension(:,:), allocatable  :: cap_mo,theta_mo
     type(gam_structure)                   :: gam
-
+    
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
 !
@@ -57,8 +60,9 @@ contains
 ! If the initial state is an excited state, then diagonalise the
 ! initial state Hamiltonian
 !-----------------------------------------------------------------------
-    if (statenumber.gt.0) call get_initial_state_adc1(kpq,ndim)
-    
+    if (statenumber.gt.0.or.iprojcap.eq.2) &
+         call get_initial_state_adc1(kpq,ndim)
+
 !-----------------------------------------------------------------------
 ! Calculate the final space Hamiltonian matrix
 !-----------------------------------------------------------------------
@@ -69,6 +73,12 @@ contains
 !-----------------------------------------------------------------------
     if (lcap) call cap_mobas(gam,cap_mo)
 
+!-----------------------------------------------------------------------
+! If a projected CAP is being used, determine which states are to be
+! included in the projector
+!-----------------------------------------------------------------------
+    if (lprojcap) call get_proj_states(ndim)
+    
 !-----------------------------------------------------------------------
 ! If flux analysis is to be performed, then calculate the MO
 ! representation of the projector (Theta) onto the CAP region
@@ -111,6 +121,7 @@ contains
     if (allocated(theta_mo)) deallocate(theta_mo)
     if (allocated(theta0j)) deallocate(theta0j)
     if (allocated(thetaij)) deallocate(thetaij)
+    if (allocated(projmask)) deallocate(projmask)
     
     return
     
@@ -215,14 +226,15 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
 !
-! Note that if the projected CAP is being used and the initial state is
-! the ground state, then these matrix elements are zero
+! Note that if the ground state is included in the CAP projector, Q,
+! then these elements are zero
 !----------------------------------------------------------------------
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (.not.lprojcap.or.statenumber.gt.0) then
-
+    if (.not.lprojcap &
+         .or.(statenumber.gt.0.and.iprojcap.eq.1)) then
+       
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the vector &
             W_0J = < Psi_0 | W | Psi_J >'
@@ -544,9 +556,9 @@ contains
     write(ilog,'(70a)') ('*',i=1,70)
     
     itmp=1+nBas**2*4*nOcc**2
-    call table2(ndim,statenumber,ener(1:statenumber),&
-         eigvec(:,1:statenumber),tmvec(1:statenumber),&
-         osc_str(1:statenumber),kpq,itmp,'i')
+    call table2(ndim,statenumber+5,ener(1:statenumber+5),&
+         eigvec(:,1:statenumber+5),tmvec(1:statenumber+5),&
+         osc_str(1:statenumber+5),kpq,itmp,'i')
 
 !-----------------------------------------------------------------------
 ! Write the eigenpairs to file
@@ -569,10 +581,68 @@ contains
     deallocate(mtm)
     deallocate(tmvec)
     deallocate(osc_str)
-
+    
     return
     
   end subroutine get_initial_state_adc1
+
+!#######################################################################
+
+  subroutine get_proj_states(ndim)
+
+    use constants
+    use parameters
+    use iomod
+    
+    implicit none
+
+    integer              :: ndim,unit,itmp,i
+    real(d), allocatable :: ener(:)
+    real(d), allocatable :: vec(:)
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(projmask(ndim))
+    projmask=0
+    
+    allocate(vec(ndim))
+    vec=0.0d0
+
+    allocate(ener(ndim))
+    ener=0.0d0
+    
+!----------------------------------------------------------------------
+! Fill in the projmask array
+!----------------------------------------------------------------------
+    projmask=0
+
+    if (iprojcap.eq.2) then
+       call freeunit(unit)
+       open(unit,file='SCRATCH/initvecs',status='old',&
+            access='sequential',form='unformatted')
+       do i=1,ndim
+          read(unit) itmp,ener(i),vec
+          if (ener(i).le.projlim) then
+             projmask(i)=1
+          else
+             exit
+          endif
+       enddo
+       close(unit)
+    else if (iprojcap.eq.1.and.statenumber.gt.0) then
+       projmask(statenumber)=1
+    endif
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(vec)
+    deallocate(ener)
+    
+    return
+    
+  end subroutine get_proj_states
     
 !#######################################################################
   

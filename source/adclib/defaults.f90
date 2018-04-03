@@ -184,6 +184,8 @@
       capstr=0.0d0
       capord=-1
       lprojcap=.false.
+      iprojcap=0
+      projlim=1e+6_d
       nrad(1)=120
       nrad(2)=1200
       nang(1)=770
