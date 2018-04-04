@@ -52,10 +52,11 @@ contains
     call set_dpl
 
 !-----------------------------------------------------------------------
-! If the initial state is an excited state, then diagonalise the
-! initial state Hamiltonian
+! If the initial state is an excited state or if excited states are to
+! be included in a projected CAP, then diagonalise the initial state
+! Hamiltonian
 !-----------------------------------------------------------------------
-    if (statenumber.gt.0) &
+    if (statenumber.gt.0.or.iprojcap.eq.2) &
          call get_initial_state_adc2(kpq,ndim,ndims,noffd)
     
 !-----------------------------------------------------------------------
@@ -68,6 +69,12 @@ contains
 !-----------------------------------------------------------------------
     if (lcap) call cap_mobas(gam,cap_mo)
 
+!-----------------------------------------------------------------------
+! If a projected CAP is being used, determine which states are to be
+! included in the projector
+!-----------------------------------------------------------------------
+    if (lprojcap) call get_proj_states_adc2(ndim)
+    
 !-----------------------------------------------------------------------
 ! If flux analysis is to be performed, then calculate the MO
 ! representation of the projector (Theta) onto the CAP region
@@ -108,6 +115,7 @@ contains
     deallocate(dpl_all)
     if (allocated(theta_mo)) deallocate(theta_mo)
     if (allocated(theta0j)) deallocate(theta0j)
+    if (allocated(projmask)) deallocate(projmask)
     
     return
     
@@ -194,13 +202,14 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
 !
-! Note that if the projected CAP is being used and the initial state is
-! the ground state, then these matrix elements are zero
+! Note that if the ground state is included in the CAP projector, Q,
+! then these elements are zero
 !----------------------------------------------------------------------
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (.not.lprojcap.or.statenumber.gt.0) then
+    if (.not.lprojcap &
+         .or.(statenumber.gt.0.and.iprojcap.eq.1)) then
 
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the vector &
@@ -457,7 +466,65 @@ contains
     return
     
   end subroutine get_initial_state_adc2
+
+!#######################################################################
+
+    subroutine get_proj_states_adc2(ndim)
+
+    use constants
+    use parameters
+    use iomod
     
+    implicit none
+
+    integer              :: ndim,unit,itmp,i
+    real(d), allocatable :: ener(:)
+    real(d), allocatable :: vec(:)
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(projmask(davstates))
+    projmask=0
+    
+    allocate(vec(davstates))
+    vec=0.0d0
+
+    allocate(ener(davstates))
+    ener=0.0d0
+    
+!----------------------------------------------------------------------
+! Fill in the projmask array
+!----------------------------------------------------------------------
+    projmask=0
+
+    if (iprojcap.eq.2) then
+       call freeunit(unit)
+       open(unit,file=davname,status='old',access='sequential',&
+            form='unformatted')
+       do i=1,davstates
+          read(unit) itmp,ener(i),vec
+          if (ener(i).le.projlim) then
+             projmask(i)=1
+          else
+             exit
+          endif
+       enddo
+       close(unit)
+    else if (iprojcap.eq.1.and.statenumber.gt.0) then
+       projmask(statenumber)=1
+    endif
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(vec)
+    deallocate(ener)
+    
+    return
+    
+  end subroutine get_proj_states_adc2
+  
 !#######################################################################
   
 end module adc2propmod

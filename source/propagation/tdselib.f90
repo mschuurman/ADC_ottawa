@@ -570,18 +570,23 @@ contains
 
     use constants
     use parameters
+    use iomod
     
     implicit none
     
-    integer                               :: matdim,i,j
+    integer                               :: matdim,i,j,k,unit
     integer*8                             :: noffdiag
-    real(d)                               :: time
+    real(d)                               :: time,ener
     real(d), dimension(3)                 :: Et
+    real(d), allocatable                  :: rvec(:)
     complex(d), dimension(matdim)         :: v1,v2
     complex(d), dimension(:), allocatable :: opxv1
     character(len=70)                     :: filename
     character(len=1), dimension(3)        :: acomp
-
+    complex(d), allocatable               :: vtmp1(:)
+    complex(d), allocatable               :: vtmp2(:)
+    complex(d), allocatable               :: vtmp3(:)
+    
     acomp=(/ 'x','y','z' /)
     
 !----------------------------------------------------------------------
@@ -594,6 +599,21 @@ contains
 !----------------------------------------------------------------------
     allocate(opxv1(matdim))
     opxv1=czero
+
+    if (lcap) then
+       allocate(vtmp1(matdim))
+       allocate(vtmp2(matdim))
+       allocate(vtmp3(matdim))
+       vtmp1=czero
+       vtmp2=czero
+       vtmp3=czero
+    endif
+       
+    if ((lprojcap.and.statenumber.gt.0) &
+         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+       allocate(rvec(matdim))
+       rvec=0.0d0
+    endif
     
 !----------------------------------------------------------------------
 ! (1) Molecular Hamiltonian contribution: -i * H * v1
@@ -703,42 +723,108 @@ contains
 !----------------------------------------------------------------------
     if (lcap) then
 
+       ! Make a copy of the input vector to project against selected
+       ! bound states
+       vtmp1=v1
+
+       ! First projection against selected bound states
+       if ((lprojcap.and.statenumber.gt.0) &
+            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+          ! Open the ADC(2) vector file
+          call freeunit(unit)
+          open(unit,file=davname,status='old',access='sequential',&
+               form='unformatted')
+          ! Project the input vector onto the space orthogonal to
+          ! the selected states
+          do i=1,davstates
+             read(unit) k,ener,rvec(1:matdim-1)
+             if (ener.gt.projlim) exit
+             if (iprojcap.eq.1.and.i.gt.statenumber) exit
+             if (projmask(i).eq.0) cycle
+             vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
+                  -rvec(1:matdim-1) &
+                  *dot_product(rvec(1:matdim-1),v1(1:matdim-1))
+          enddo
+          ! Close the ADC(2) vector file
+          close(unit)
+       endif
+
+       ! Temporary vector 2: this will hold the contribution of the
+       ! CAP to the Hamiltonian matrix-vector product
+       vtmp2=czero
+       
        ! (a) IS-IS block
        !
        ! Calculate W*v1
        filename='SCRATCH/cap'
-       call opxvec_ext(matdim-1,v1(1:matdim-1),&
+       call opxvec_ext(matdim-1,vtmp1(1:matdim-1),&
             opxv1(1:matdim-1),filename,nbuf_cap)
        
        ! Contribution to v2=dt|Psi>
-       v2(1:matdim-1)=v2(1:matdim-1) &
+       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
             -opxv1(1:matdim-1) &
-            -w00*v1(1:matdim-1)
+            -w00*vtmp1(1:matdim-1)
        
        ! (b) Ground state-ground state element
        !
        ! Contribution to v2=dt|Psi>
-       if (.not.lprojcap.or.statenumber.gt.0) then
-          v2(matdim)=v2(matdim)-w00*v1(matdim)
+       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
+          vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
        endif
 
        ! (c) Ground state-IS block
        !
        ! Contribution to v2=dt|Psi>
-       if (.not.lprojcap.or.statenumber.gt.0) then
-          v2(matdim)=v2(matdim) &
-               -dot_product(w0j(1:matdim-1),v1(1:matdim-1))
-          v2(1:matdim-1)=v2(1:matdim-1) &
-               -w0j(1:matdim-1)*v1(matdim)
+       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
+          vtmp2(matdim)=vtmp2(matdim) &
+               -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
+          vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
+               -w0j(1:matdim-1)*vtmp1(matdim)
 
        endif
 
+       ! Second projection against selected bound states
+       if ((lprojcap.and.statenumber.gt.0) &
+            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+          ! Copy of vtmp2
+          vtmp3=vtmp2
+          ! Open the ADC(2) vector file
+          call freeunit(unit)
+          open(unit,file=davname,status='old',access='sequential',&
+               form='unformatted')
+          ! Project the input vector onto the space orthogonal to
+          ! the selected states
+          do i=1,davstates
+             read(unit) k,ener,rvec(1:matdim-1)
+             if (ener.gt.projlim) exit
+             if (iprojcap.eq.1.and.i.gt.statenumber) exit
+             if (projmask(i).eq.0) cycle
+             vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
+                  -rvec(1:matdim-1) &
+                  *dot_product(rvec(1:matdim-1),vtmp3(1:matdim-1))
+          enddo
+          ! Close the ADC(2) vector file
+          close(unit)
+       endif
+
+       ! Contribution of the CAP to the matrix vector product
+       v2=v2+vtmp2
+       
     endif
        
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(opxv1)
+
+    if (lcap) then
+       deallocate(vtmp1)
+       deallocate(vtmp2)
+       deallocate(vtmp3)
+    endif
+
+    if ((lprojcap.and.statenumber.gt.0) &
+         .or.(statenumber.eq.0.and.iprojcap.eq.2)) deallocate(rvec)
     
     return
     
@@ -1261,7 +1347,7 @@ contains
        deallocate(vtmp3)
     endif
 
-       if ((lprojcap.and.statenumber.gt.0) &
+    if ((lprojcap.and.statenumber.gt.0) &
          .or.(statenumber.eq.0.and.iprojcap.eq.2)) deallocate(rvec)
     
     return

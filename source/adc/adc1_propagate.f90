@@ -77,7 +77,7 @@ contains
 ! If a projected CAP is being used, determine which states are to be
 ! included in the projector
 !-----------------------------------------------------------------------
-    if (lprojcap) call get_proj_states(ndim)
+    if (lprojcap) call get_proj_states_adc1(ndim)
     
 !-----------------------------------------------------------------------
 ! If flux analysis is to be performed, then calculate the MO
@@ -588,7 +588,7 @@ contains
 
 !#######################################################################
 
-  subroutine get_proj_states(ndim)
+  subroutine get_proj_states_adc1(ndim)
 
     use constants
     use parameters
@@ -642,7 +642,7 @@ contains
     
     return
     
-  end subroutine get_proj_states
+  end subroutine get_proj_states_adc1
     
 !#######################################################################
   
