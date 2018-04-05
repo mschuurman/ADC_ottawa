@@ -225,32 +225,24 @@ contains
 
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
-!
-! Note that if the ground state is included in the CAP projector, Q,
-! then these elements are zero
 !----------------------------------------------------------------------
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (.not.lprojcap &
-         .or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       
-       write(ilog,'(/,72a)') ('-',k=1,72)
-       write(ilog,'(2x,a)') 'Calculating the vector &
-            W_0J = < Psi_0 | W | Psi_J >'
-       write(ilog,'(72a)') ('-',k=1,72)
-
-       if (lcis) then
-          ! CIS
-          call get_tm_cis(ndimf,kpqf,w0j)
-       else if (method.eq.4) then
-          ! ADC(1)-x
-          call get_modifiedtm_adc1ext(ndimf,kpqf,w0j,1)
-       else
-          ! ADC(1)
-          call get_modifiedtm_tda(ndimf,kpqf,w0j)
-       endif
-          
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the vector &
+         W_0J = < Psi_0 | W | Psi_J >'
+    write(ilog,'(72a)') ('-',k=1,72)
+    
+    if (lcis) then
+       ! CIS
+       call get_tm_cis(ndimf,kpqf,w0j)
+    else if (method.eq.4) then
+       ! ADC(1)-x
+       call get_modifiedtm_adc1ext(ndimf,kpqf,w0j,1)
+    else
+       ! ADC(1)
+       call get_modifiedtm_tda(ndimf,kpqf,w0j)
     endif
 
 !----------------------------------------------------------------------

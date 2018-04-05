@@ -15,8 +15,9 @@
       
       integer            :: i,k,n,l
       character(len=120) :: atmp1,atmp2
-      logical            :: iscvs,energyonly,ldiag,llanc,ldiffsection
-
+      logical            :: iscvs,energyonly,ldiag,llanc,ldiffsection,&
+                            llasersection
+           
 !-----------------------------------------------------------------------
 ! Set 'traps'
 !-----------------------------------------------------------------------
@@ -26,6 +27,7 @@
       iscvs=.false.
       ldiffsection=.false.
       lmatvec=.false.
+      llasersection=.false.
 
 !-----------------------------------------------------------------------
 ! Read input file
@@ -354,6 +356,13 @@
 
          else if (keyword(i).eq.'nto') then
             lnto=.true.
+
+         else if (keyword(i).eq.'laser_section') then
+            llasersection=.true.
+80          continue
+            call rdinp(iin)
+            if (keyword(1).ne.'end-laser_section') goto 80
+            i=inkw
             
          else
             ! Exit if the keyword is not recognised
@@ -445,6 +454,11 @@
 !-----------------------------------------------------------------------
       if (lpropagation) call rdpropagationinp
 
+!-----------------------------------------------------------------------
+! Read the laser section
+!-----------------------------------------------------------------------
+      if (llasersection) call rdlaserinp
+      
 !-----------------------------------------------------------------------
 ! Read the diffuse function section
 !-----------------------------------------------------------------------
@@ -2429,6 +2443,204 @@
       
     end subroutine rdpropagationinp
 
+!#######################################################################
+
+    subroutine rdlaserinp
+
+      use parameters
+      use parsemod
+      use iomod
+      use channels
+
+      implicit none
+
+      integer          :: i,n
+      real(d)          :: theta,phi
+      character(len=2) :: ai
+
+!-----------------------------------------------------------------------
+! Read to the laser section
+!-----------------------------------------------------------------------
+      rewind(iin)
+
+1     call rdinp(iin)
+      if (keyword(1).ne.'laser_section') goto 1
+
+!-----------------------------------------------------------------------
+! Read to the laser parameters
+!-----------------------------------------------------------------------
+5     call rdinp(iin)
+      
+      i=0
+      
+      if (keyword(1).ne.'end-laser_section') then
+
+10       continue
+         i=i+1
+
+         if (keyword(i).eq.'pulse_vec') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'polar') then
+                  ! Spherical polar specification
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) theta
+                  else
+                     errmsg='The polar angle was not given'
+                     call error_control
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) phi
+                  else
+                     errmsg='The azimuthal angle was not given'
+                     call error_control
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     call convert_angle(keyword(i),theta)
+                     call convert_angle(keyword(i),phi)
+                  endif
+                  pulse_vec(1)=sin(theta)*cos(phi)
+                  pulse_vec(2)=sin(theta)*sin(phi)
+                  pulse_vec(3)=cos(theta)
+               else
+                  ! Cartesian specification
+                  read(keyword(i),*) pulse_vec(1)
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) pulse_vec(2)
+                  else
+                     errmsg='Only one argument out of three was given &
+                          with the pulse_vec keyword'
+                  endif
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) pulse_vec(3)
+                  else
+                     errmsg='Only two arguments out of three was given &
+                          with the pulse_vec keyword'
+                  endif
+               endif
+               ! Normalisation of the vector
+               pulse_vec=pulse_vec/sqrt(dot_product(pulse_vec,pulse_vec))
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_freq') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) freq
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_strength') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) strength
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  call convert_intensity(keyword(i),strength)
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_t0') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) t0
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse_phase') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) phase
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'pulse'.or.keyword(i).eq.'carrier') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'cos') then
+                  ipulse=1
+               else if (keyword(i).eq.'sin') then
+                  ipulse=2
+               else
+                  errmsg='Unknown pulse type: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'envelope') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               ! Read the envelope type
+               if (keyword(i).eq.'cos2') then
+                  ienvelope=1
+                  nenvpar=2
+               else if (keyword(i).eq.'sin2-ramp') then
+                  ienvelope=2
+                  nenvpar=1
+               else if (keyword(i).eq.'box') then
+                  ienvelope=3
+                  nenvpar=2
+               else if (keyword(i).eq.'sin2') then
+                  ienvelope=4
+                  nenvpar=2
+               else
+                  errmsg='Unknown evelope type: '//trim(keyword(i))
+                  call error_control
+               endif
+               ! Read the envelope parameters
+               do n=1,nenvpar
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) envpar(n)
+                  else
+                     write(ai,'(i2)') nenvpar
+                     errmsg='Not enough evelope parameters were given: '&
+                          //trim(adjustl(ai))//' parameters expected.'
+                     call error_control
+                  endif
+               enddo
+            else
+               goto 100
+            endif
+            
+         else
+            ! Exit if the keyword is not recognised
+            errmsg='Unknown keyword: '//trim(keyword(i))
+            call error_control
+         endif
+
+         ! If there are more keywords to be read on the current line,
+         ! then read them, else read the next line
+         if (i.lt.inkw) then
+            goto 10
+         else
+            goto 5
+         endif
+         
+         ! Exit if a required argument has not been given with a keyword
+100      continue
+         errmsg='No argument given with the keyword '//trim(keyword(i))
+         call error_control
+         
+      endif
+      
+      return
+      
+    end subroutine rdlaserinp
+      
 !#######################################################################
 
     subroutine rddiffbaslist

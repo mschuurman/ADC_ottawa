@@ -66,8 +66,9 @@ contains
     vtmp1=psi
 
     ! First projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Open the ADC(1)/CIS vector file
        call freeunit(unit)
        open(unit,file='SCRATCH/initvecs',status='unknown',&
@@ -86,6 +87,10 @@ contains
        ! Close the ADC(1)/CIS vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) vtmp1(matdim)=czero
     
     ! (a) IS-IS block
     !
@@ -95,22 +100,19 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim)+theta00*vtmp1(matdim)
-    endif
-
+    oppsi(matdim)=oppsi(matdim)+theta00*vtmp1(matdim)
+    
     ! (c) Ground state-IS block
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim) &
-            +dot_product(theta0j(1:matdim-1),vtmp1(1:matdim-1))
-       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-            +theta0j(1:matdim-1)*vtmp1(matdim)
-    endif
+    oppsi(matdim)=oppsi(matdim) &
+         +dot_product(theta0j(1:matdim-1),vtmp1(1:matdim-1))
+    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+         +theta0j(1:matdim-1)*vtmp1(matdim)
 
     ! Second projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Copy of oppsi
        vtmp2=oppsi
        ! Open the ADC(1)/CIS vector file
@@ -131,6 +133,10 @@ contains
        ! Close the ADC(1)/CIS vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) oppsi(matdim)=czero
     
     val1=2.0d0*real(dot_product(dtpsi,oppsi))
 
@@ -152,8 +158,9 @@ contains
     vtmp1=psi
 
     ! First projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Open the ADC(1)/CIS vector file
        call freeunit(unit)
        open(unit,file='SCRATCH/initvecs',status='unknown',&
@@ -172,6 +179,10 @@ contains
        ! Close the ADC(1)/CIS vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) vtmp1(matdim)=czero
     
     ! (a) IS-IS block
     !
@@ -181,22 +192,19 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim)+w00*vtmp1(matdim)
-    endif
-
+    oppsi(matdim)=oppsi(matdim)+w00*vtmp1(matdim)
+    
     ! (c) Ground state-IS block
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim) &
-            +dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-            +w0j(1:matdim-1)*vtmp1(matdim)
-    endif
+    oppsi(matdim)=oppsi(matdim) &
+         +dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
+    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+         +w0j(1:matdim-1)*vtmp1(matdim)
 
     ! Second projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Copy of oppsi
        vtmp2=oppsi
        ! Open the ADC(1)/CIS vector file
@@ -217,6 +225,10 @@ contains
        ! Close the ADC(1)/CIS vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) oppsi(matdim)=czero
     
     val2=2.0d0*real(dot_product(psi,oppsi))
     
@@ -299,8 +311,9 @@ contains
     vtmp1=psi
 
     ! First projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Open the ADC(2) vector file
        call freeunit(unit)
        open(unit,file=davname,status='old',access='sequential',&
@@ -319,6 +332,10 @@ contains
        ! Close the ADC(2) vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) vtmp1(matdim)=czero
     
     ! (a) IS-IS block
     !
@@ -331,22 +348,19 @@ contains
 
     ! (b) Ground state-ground state element
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim)+theta00*vtmp1(matdim)
-    endif
-
+    oppsi(matdim)=oppsi(matdim)+theta00*vtmp1(matdim)
+    
     ! (c) Ground state-IS block
     !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim) &
-            +dot_product(theta0j(1:matdim-1),vtmp1(1:matdim-1))
-       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-            +theta0j(1:matdim-1)*vtmp1(matdim)
-    endif
+    oppsi(matdim)=oppsi(matdim) &
+         +dot_product(theta0j(1:matdim-1),vtmp1(1:matdim-1))
+    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+         +theta0j(1:matdim-1)*vtmp1(matdim)
 
     ! Second projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Copy of oppsi
        vtmp2=oppsi
        ! Open the ADC(2) vector file
@@ -367,6 +381,10 @@ contains
        ! Close the ADC(2) vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) oppsi(matdim)=czero
     
     val1=2.0d0*real(dot_product(dtpsi,oppsi))    
 
@@ -388,8 +406,9 @@ contains
     vtmp1=psi
 
     ! First projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Open the ADC(2) vector file
        call freeunit(unit)
        open(unit,file=davname,status='old',access='sequential',&
@@ -408,6 +427,10 @@ contains
        ! Close the ADC(2) vector file
        close(unit)
     endif
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) vtmp1(matdim)=czero
     
     ! (a) IS-IS block
     !
@@ -418,23 +441,18 @@ contains
     oppsi(1:matdim-1)=oppsi(1:matdim-1)+w00*oppsi(1:matdim-1)
 
     ! (b) Ground state-ground state element
-    !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim)+w00*vtmp1(matdim)
-    endif
+    oppsi(matdim)=oppsi(matdim)+w00*vtmp1(matdim)
 
     ! (c) Ground state-IS block
-    !
-    if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-       oppsi(matdim)=oppsi(matdim) &
-            +dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-       oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-            +w0j(1:matdim-1)*vtmp1(matdim)
-    endif
+    oppsi(matdim)=oppsi(matdim) &
+         +dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
+    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+         +w0j(1:matdim-1)*vtmp1(matdim)
 
     ! Second projection against selected bound states
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+    !
+    ! Excited state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
        ! Copy of oppsi
        vtmp2=oppsi
        ! Open the ADC(2) vector file
@@ -455,7 +473,11 @@ contains
        ! Close the ADC(2) vector file
        close(unit)
     endif
-
+    !
+    ! Ground state contribution to the projector
+    if ((iprojcap.eq.1.and.statenumber.eq.0) &
+         .or.iprojcap.eq.2) oppsi(matdim)=czero
+    
     val2=2.0d0*real(dot_product(psi,oppsi))
     
 !----------------------------------------------------------------------

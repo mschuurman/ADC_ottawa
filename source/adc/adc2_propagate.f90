@@ -201,24 +201,16 @@ contains
 
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
-!
-! Note that if the ground state is included in the CAP projector, Q,
-! then these elements are zero
 !----------------------------------------------------------------------
     allocate(w0j(ndimf))
     w0j=0.0d0
 
-    if (.not.lprojcap &
-         .or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-
-       write(ilog,'(/,72a)') ('-',k=1,72)
-       write(ilog,'(2x,a)') 'Calculating the vector &
-            W_0J = < Psi_0 | W | Psi_J >'
-       write(ilog,'(72a)') ('-',k=1,72)
-
-       call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
-
-    endif
+    write(ilog,'(/,72a)') ('-',k=1,72)
+    write(ilog,'(2x,a)') 'Calculating the vector &
+         W_0J = < Psi_0 | W | Psi_J >'
+    write(ilog,'(72a)') ('-',k=1,72)
+    
+    call get_modifiedtm_adc2(ndimf,kpqf(:,:),w0j,1)
 
 !----------------------------------------------------------------------
 ! Calculate the IS representation of the shifted CAP operator W-W_00
@@ -229,10 +221,6 @@ contains
     write(ilog,'(72a,/)') ('-',k=1,72)
     
     filename='SCRATCH/cap'
-    
-    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-    !     nbuf_cap,nel_cap,filename)
-
     call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_cap,nel_cap,&
          filename)
     

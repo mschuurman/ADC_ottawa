@@ -728,8 +728,9 @@ contains
        vtmp1=v1
 
        ! First projection against selected bound states
-       if ((lprojcap.and.statenumber.gt.0) &
-            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+       !
+       ! Excited state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
           ! Open the ADC(2) vector file
           call freeunit(unit)
           open(unit,file=davname,status='old',access='sequential',&
@@ -748,7 +749,11 @@ contains
           ! Close the ADC(2) vector file
           close(unit)
        endif
-
+       !
+       ! Ground state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.eq.0) &
+            .or.iprojcap.eq.2) vtmp1(matdim)=czero
+              
        ! Temporary vector 2: this will hold the contribution of the
        ! CAP to the Hamiltonian matrix-vector product
        vtmp2=czero
@@ -768,24 +773,20 @@ contains
        ! (b) Ground state-ground state element
        !
        ! Contribution to v2=dt|Psi>
-       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-          vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
-       endif
-
+       vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
+       
        ! (c) Ground state-IS block
        !
        ! Contribution to v2=dt|Psi>
-       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-          vtmp2(matdim)=vtmp2(matdim) &
-               -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-          vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-               -w0j(1:matdim-1)*vtmp1(matdim)
-
-       endif
-
+       vtmp2(matdim)=vtmp2(matdim) &
+            -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
+       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
+            -w0j(1:matdim-1)*vtmp1(matdim)
+          
        ! Second projection against selected bound states
-       if ((lprojcap.and.statenumber.gt.0) &
-            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+       !
+       ! Excited state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
           ! Copy of vtmp2
           vtmp3=vtmp2
           ! Open the ADC(2) vector file
@@ -806,7 +807,11 @@ contains
           ! Close the ADC(2) vector file
           close(unit)
        endif
-
+       !
+       ! Ground state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.eq.0) &
+            .or.iprojcap.eq.2) vtmp2(matdim)=czero
+       
        ! Contribution of the CAP to the matrix vector product
        v2=v2+vtmp2
        
@@ -1263,8 +1268,9 @@ contains
        vtmp1=v1
        
        ! First projection against selected bound states
-       if ((lprojcap.and.statenumber.gt.0) &
-            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+       !
+       ! Excited state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
           ! Open the ADC(1)/CIS vector file
           call freeunit(unit)
           open(unit,file='SCRATCH/initvecs',status='unknown',&
@@ -1283,7 +1289,11 @@ contains
           ! Close the ADC(1)/CIS vector file
           close(unit)
        endif
-
+       !
+       ! Ground state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.eq.0) &
+            .or.iprojcap.eq.2) vtmp1(matdim)=czero
+       
        ! Temporary vector 2: this will hold the contribution of the
        ! CAP to the Hamiltonian matrix-vector product
        vtmp2=czero
@@ -1296,22 +1306,19 @@ contains
        
        ! (b) Ground state-ground state element
        !
-       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-          vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
-       endif
-
+       vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
+       
        ! (c) Ground state-IS block
        !
-       if (.not.lprojcap.or.(statenumber.gt.0.and.iprojcap.eq.1)) then
-          vtmp2(matdim)=vtmp2(matdim) &
-               -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-          vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-               -w0j(1:matdim-1)*vtmp1(matdim)
-       endif
+       vtmp2(matdim)=vtmp2(matdim) &
+            -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
+       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
+            -w0j(1:matdim-1)*vtmp1(matdim)
 
        ! Second projection against selected bound states
-       if ((lprojcap.and.statenumber.gt.0) &
-            .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
+       !
+       ! Excited state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
           ! Copy of vtmp2
           vtmp3=vtmp2
           ! Open the ADC(1)/CIS vector file
@@ -1332,6 +1339,10 @@ contains
           ! Close the ADC(1)/CIS vector file
           close(unit)
        endif
+       !
+       ! Ground state contribution to the projector
+       if ((iprojcap.eq.1.and.statenumber.eq.0) &
+            .or.iprojcap.eq.2) vtmp2(matdim)=czero
 
        ! Contribution of the CAP to the matrix vector product
        v2=v2+vtmp2
