@@ -5,6 +5,7 @@ program adc
   use read_param
   use guessvecs
   use adc1specmod
+  use adc1enermod
   use adc2specmod
   use adc2enermod
   use adc2dysonmod
@@ -116,7 +117,7 @@ program adc
   elseif (tranmom2 .eq. 'z') then
      dpl(:,:)=z_dipole(:,:)
   endif
-
+  
 !-----------------------------------------------------------------------
 ! Perform the ADC calculation
 !-----------------------------------------------------------------------
@@ -165,6 +166,11 @@ program adc
      ! ADC(1) OPA spectrum calculation
      call adc1_spec()
 
+  else if (method.eq.-1) then
+
+     ! ADC(1)/CIS energy calculation
+     call adc1_ener()
+     
   else if (method.eq.2.or.method.eq.3) then
      
      ! ADC(2) OPA spectrum calculation

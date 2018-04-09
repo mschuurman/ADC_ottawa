@@ -18,7 +18,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use fspace
     use misc
     use guessvecs

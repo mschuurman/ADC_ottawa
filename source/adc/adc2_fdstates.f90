@@ -15,7 +15,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use fspace
     use misc
     use mp2
@@ -299,7 +299,7 @@ contains
     use constants
     use parameters
     use get_moment
-    use adc2common
+    use adc_common
     use get_matrix_dipole
     use guessvecs
     use misc

@@ -19,7 +19,7 @@ contains
         
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use fspace
     use misc
     use guessvecs
@@ -186,29 +186,29 @@ contains
     use constants
     use parameters
     use fspace
-    use adc2common
+    use adc_common
         
-        implicit none
+    implicit none
 
-        integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-        integer                                   :: ndim,ndimf,ndimsf
-        integer*8                                 :: noffd,noffdf
-        real(d), dimension(:), allocatable        :: travec,mtmf
-        real(d), dimension(ndim)                  :: vec_init
-        real(d), dimension(ndim,davstates)        :: rvec
-        real(d), dimension(:,:), allocatable      :: travec2
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
+    integer                                   :: ndim,ndimf,ndimsf
+    integer*8                                 :: noffd,noffdf
+    real(d), dimension(:), allocatable        :: travec,mtmf
+    real(d), dimension(ndim)                  :: vec_init
+    real(d), dimension(ndim,davstates)        :: rvec
+    real(d), dimension(:,:), allocatable      :: travec2
+    
+    if (ldiagfinal) then
+       call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
+            kpqf,travec,vec_init,mtmf,noffdf)
+    else
+       call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&
+            kpqf,travec,vec_init,mtmf,noffdf)
+    endif
+    
+    return
 
-        if (ldiagfinal) then
-           call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-                kpqf,travec,vec_init,mtmf,noffdf)
-        else
-           call lanczos_final_space_diag(ndim,ndimf,ndimsf,kpq,&
-                kpqf,travec,vec_init,mtmf,noffdf)
-        endif
-        
-        return
-
-      end subroutine final_space_diag
+  end subroutine final_space_diag
 
 !#######################################################################
       
@@ -821,7 +821,7 @@ contains
     use parameters
     use iomod, only: freeunit
     use misc, only: dsortindxa1,table2
-    use adc2common, only: readdavvc
+    use adc_common, only: readdavvc
         
     implicit none
     

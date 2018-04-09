@@ -15,7 +15,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use fspace
     use misc
     use guessvecs
@@ -212,7 +212,7 @@ contains
     use constants
     use parameters
     use fspace
-    use adc2common
+    use adc_common
     
     implicit none
 
@@ -252,7 +252,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use misc
     use get_matrix_dipole
     use get_moment
@@ -679,7 +679,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use misc
     use get_matrix_dipole
     use get_moment

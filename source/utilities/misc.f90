@@ -684,10 +684,17 @@ contains
 !----------------------------------------------------------------------
 ! Output the excited state information to the log and davstate files
 !----------------------------------------------------------------------    
-    ! MP2 energy
-    write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
-    write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',ehf+e_mp2
-
+    ! Ground state energy
+    if (abs(method).eq.1) then
+       write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state HF energy:',ehf
+       write(iout,'(/,2x,a,2x,F14.8)') 'Ground state HF energy:',ehf
+    else
+       write(ilog,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',&
+            ehf+e_mp2
+       write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',&
+            ehf+e_mp2
+    endif
+       
     ! ADC state information
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2

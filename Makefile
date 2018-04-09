@@ -136,7 +136,7 @@ EIGEN2= source/eigen/block_davidson.o \
         source/eigen/dmatvec_davidson.o \
         source/eigen/block_lanczos.o
 
-ADCLIB1= source/adclib/adc2common.o \
+ADCLIB1= source/adclib/adc_common.o \
 	source/adclib/nto.o 
 
 # FROM ADC_nrc
@@ -146,6 +146,7 @@ ADCLIB1= source/adclib/adc2common.o \
 # FROM ADC_nrc
 
 ADC_MAIN=source/adc/adc1_opa.o \
+	source/adc/adc1_ener.o \
 	source/adc/adc2_opa.o \
 	source/adc/adc2_ener.o \
 	source/adc/adc2_dyson.o \
@@ -241,7 +242,7 @@ ADC_OBJ=accuracy.o \
 	dyson_calc.o \
 	dyson_io.o \
 	target_matching.o \
-	adc2common.o \
+	adc_common.o \
 	nto.o \
 	guessvecs.o \
 	auto_cap_box.o \
@@ -254,6 +255,7 @@ ADC_OBJ=accuracy.o \
 	cap_mobas.o \
 	theta_mobas.o \
 	adc1_opa.o \
+	adc1_ener.o \
 	adc2_opa.o \
 	adc2_ener.o \
 	adc2_dyson.o \

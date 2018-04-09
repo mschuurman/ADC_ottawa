@@ -3,7 +3,7 @@
 ! calculations
 !#######################################################################
 
-module adc2common
+module adc_common
 
   implicit none
 
@@ -1053,5 +1053,5 @@ contains
     
 !#######################################################################
     
-end module adc2common
+end module adc_common
   

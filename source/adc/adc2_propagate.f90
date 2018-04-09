@@ -15,7 +15,7 @@ contains
 
     use constants
     use parameters
-    use adc2common
+    use adc_common
     use fspace
     use misc
     use guessvecs
@@ -415,7 +415,7 @@ contains
     use constants
     use parameters
     use guessvecs
-    use adc2common
+    use adc_common
     use misc
     
     implicit none

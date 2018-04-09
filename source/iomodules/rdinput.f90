@@ -554,7 +554,7 @@
 ! (1) We are ionizing from an excited state, or;
 ! (2) We are performing an energy-only calculation.
 !-----------------------------------------------------------------------
-      if (.not.lautospec) then
+      if (.not.lautospec.and.abs(method).ne.1) then
 
          if (.not.ldiag) then
             if (statenumber.gt.0.or.energyonly) then

@@ -1,12 +1,12 @@
-module adc1specmod
+module adc1enermod
 
   use channels
-    
+  
 contains
 
 !#######################################################################
 
-  subroutine adc1_spec()
+  subroutine adc1_ener
 
     use constants
     use parameters
@@ -15,33 +15,44 @@ contains
     use mp2
     use adc_common
     
-    implicit none        
-
-    integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-    integer                              :: i,ndim,ndims,ndimsf,&
-                                            nout,ndimf,ndimd,&
-                                            noutf,itmp
+    implicit none
+    
+    integer, dimension(:,:), allocatable :: kpq
+    integer                              :: ndim,ndimd
+    integer                              :: i,itmp
     real(d)                              :: time
     real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
-    real(d), dimension(:), allocatable   :: travec
-    real(d)                              :: e_init,e0,s0
-    real(d), dimension(:,:), allocatable :: rvec
-    real(d), dimension(:), allocatable   :: vec_init
-    real*8, dimension(:), allocatable    :: mtmf
+    real(d), dimension(:,:), allocatable :: arr
     
-    real(d), dimension(:,:), allocatable :: arr,arrd,arrf
-    real(d), dimension(:), allocatable   :: autvec,tmvecf,osc_strf,&
-                                            enerf
-
-!-----------------------------------------------------------------------
-! Calculate the MP2 ground state energy and D2 diagnostic (if requested)
-!-----------------------------------------------------------------------
-    call mp2_master(e0)
-
 !-----------------------------------------------------------------------
 ! Determine the 1h1p subspace
 !-----------------------------------------------------------------------
-    call get_subspaces_adc1(kpq,kpqf,kpqd,ndim,ndimf,ndimd,nout,noutf)
+    allocate(kpq(7,0:nBas**2*4*nOcc**2))
+    kpq(:,:)=-1
+
+    if (lcvs) then
+       if (lfakeip) then
+          ! CVS-IP-ADC(1)
+          call select_atom_is_cvs_fakeip(kpq(:,:))
+       else
+          ! CVS-ADC(1)
+          call select_atom_is_cvs(kpq(:,:))
+       endif
+    else if (lfakeip) then
+       ! IP-ADC(1)
+       call select_atom_is_fakeip(kpq(:,:))
+    else
+       ! ADC(1)
+       call select_atom_is(kpq(:,:))
+    endif
+
+!-----------------------------------------------------------------------
+! Output supspace dimensions
+!-----------------------------------------------------------------------
+    ndim=kpq(1,0)
+    
+    write(ilog,'(/)')
+    write(ilog,*) 'ADC(1) INITIAL Space dim',ndim
 
 !-----------------------------------------------------------------------
 ! Set the dipole matrix
@@ -56,8 +67,9 @@ contains
 
     write(ilog,'(/,2x,a)') "Full diagonalisation of the ADC(1) &
          Hamiltonian matrix..."
+    
     call get_fspace_tda_direct(ndim,kpq(:,:),arr,ener)
-        
+
 !-----------------------------------------------------------------------
 ! Transition dipole moments between the ground state and the 1h1p ISs
 !-----------------------------------------------------------------------
@@ -73,30 +85,31 @@ contains
        tmvec(i)=tm(ndim,arr(:,i),mtm(:))
        osc_str(i)=2.0d0/3.0d0*ener(i)*tmvec(i)**2
     enddo
-    
+
+    write(ilog,'(/,70a)') ('*',i=1,70)
+    if (lcis) then
+       write(ilog,'(2x,a)') &
+            'Initial space CIS excitation energies'
+    else
+       write(ilog,'(2x,a)') &
+            'Initial space ADC(1) excitation energies'
+    endif
+    write(ilog,'(70a)') ('*',i=1,70)
     itmp=1+nBas**2*4*nOcc**2
-    call table2(ndim,ndim,ener(:),arr(:,:),tmvec(:),&
-         osc_str(:),kpq,itmp,'i')
+    call table2(ndim,ndim,ener(:),arr(:,:),tmvec(:),osc_str(:),kpq,&
+         itmp,'i')
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(kpq)
+    deallocate(arr,mtm,tmvec,osc_str)
+    deallocate(ener)
     
-!-----------------------------------------------------------------------
-! Output transition energies and oscillator strentghs to file
-!-----------------------------------------------------------------------
-    call get_sigma(ndim,ener(:),osc_str(:))
-
-!-----------------------------------------------------------------------
-! For checking purposes, calculate S(0)
-!-----------------------------------------------------------------------
-    s0=0.0d0
-    do i=1,ndim
-       s0=s0+osc_str(i)
-    enddo
-
-    write(6,'(/,2x,a,2x,F10.7,/)') "S(0):",s0    
-
     return
-
-  end subroutine adc1_spec
-
-!#######################################################################
       
-end module adc1specmod
+  end subroutine adc1_ener
+      
+!#######################################################################
+  
+end module adc1enermod
