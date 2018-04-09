@@ -807,7 +807,7 @@ contains
     write(iout,'(3x,a)') 'j   k -> a  b        C_jkab'
     write(iout,'(2x,29a)') ('*',k=1,29)
 
-    do k=1,50
+    do k=1,min(50,ndim1)
        ilbl=indx(k)
        if (abs(coeff(ilbl)).ge.tol) then
           if (kpq(4,ilbl).eq.-1) then
