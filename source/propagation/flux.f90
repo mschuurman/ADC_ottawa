@@ -95,8 +95,7 @@ contains
     ! (a) IS-IS block
     !
     oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +matmul(thetaij,vtmp1(1:matdim-1)) &
-         +theta00*vtmp1(1:matdim-1)
+         +matmul(thetaij,vtmp1(1:matdim-1))
 
     ! (b) Ground state-ground state element
     !
@@ -187,8 +186,7 @@ contains
     ! (a) IS-IS block
     !
     oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +matmul(wij,vtmp1(1:matdim-1)) &
-         +w00*vtmp1(1:matdim-1)
+         +matmul(wij,vtmp1(1:matdim-1))
 
     ! (b) Ground state-ground state element
     !

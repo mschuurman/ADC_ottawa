@@ -102,7 +102,7 @@ contains
 ! the ground state + intermediate state basis
 !-----------------------------------------------------------------------
     if (lflux) call theta_isbas_adc1(theta_mo,kpqf,ndimf)
-    
+
 !-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------

@@ -1216,8 +1216,7 @@ contains
 
        ! Contribution to v2=dt|Psi>
        v2(1:matdim-1)=v2(1:matdim-1)&
-            + ci*Et(i)*matmul(dij(i,:,:),v1(1:matdim-1)) &
-            + ci*Et(i)*d00(i)*v1(1:matdim-1)
+            + ci*Et(i)*matmul(dij(i,:,:),v1(1:matdim-1))
 
     enddo
 
@@ -1301,8 +1300,7 @@ contains
        ! (a) IS-IS block
        !
        vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-            -matmul(wij,vtmp1(1:matdim-1)) &
-            -w00*vtmp1(1:matdim-1)
+            -matmul(wij,vtmp1(1:matdim-1))
        
        ! (b) Ground state-ground state element
        !
