@@ -170,6 +170,8 @@ module parameters
   logical                              :: lcis
   logical                              :: lmatvec
   logical                              :: lnto
+  logical                              :: llci
+  real(d)                              :: init_energy
 
 !!$************************************************
 !!$**********Physical Constants********************
