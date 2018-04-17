@@ -69,10 +69,12 @@
         implicit none
 
         integer, dimension(:,:), allocatable :: kpq
-        integer                              :: ndim,ndims,ivec,i,itmp
+        integer                              :: ndim,ndims,ivec,i,itmp,&
+                                                j,k
         integer*8                            :: noffd
-        real(d)                              :: einit,time
+        real(d)                              :: einit,time,tnorm,itemp
         real(d), dimension(:), allocatable   :: vec_init
+        real(d), dimension(:,:), allocatable :: vec_tot
         character(len=120)                   :: msg
         type(gam_structure)                  :: gam
 
@@ -157,17 +159,61 @@
 !-----------------------------------------------------------------------
 ! Load the initial state vector into memory
 !-----------------------------------------------------------------------
+        !call freeunit(ivec)
+        !open(unit=ivec,file=davname,status='unknown',&
+        !     access='sequential',form='unformatted')
+        !
+        !allocate(vec_init(ndim))
+
+        !do i=1,statenumber-1
+        !   read(ivec)
+        !enddo
+
+        !read(ivec) i,einit,vec_init
+
+        allocate(vec_init(ndim))
+        allocate(vec_tot(ndim,davstates))
+
         call freeunit(ivec)
         open(unit=ivec,file=davname,status='unknown',&
              access='sequential',form='unformatted')
-        
-        allocate(vec_init(ndim))
 
-        do i=1,statenumber-1
-           read(ivec)
+        do i=1,davstates
+           read(ivec) k,einit,vec_init
+           vec_tot(:,i) = vec_init(:)
         enddo
 
-        read(ivec) i,einit,vec_init
+        rewind ivec
+
+        if (llci.and.(ncount.eq.0)) then
+           vec_init = 0.d0
+           vec_init(1:ndim) = matmul(vec_tot(:,:), trunc_overlap(:))
+           tnorm = 0.d0
+           tnorm = tnorm + dot_product(vec_init(:),vec_init(:))
+           tnorm = 1.d0 / dsqrt(tnorm)
+           vec_init = vec_init * tnorm
+           einit = init_energy
+        else if (llci.and.(ncount.gt.1)) then
+           vec_init = 0.d0
+           do i = 1, ndim
+              itemp = 0.d0
+              do j = 1, ncount
+                 k = tstate(j)
+                 itemp = itemp + vec_tot(i,k) * trunc_overlap(j)
+              enddo
+              vec_init(i) = itemp
+           enddo
+           tnorm = 0.d0
+           tnorm = tnorm + dot_product(vec_init(:),vec_init(:))
+           tnorm = 1.d0 / dsqrt(tnorm)
+           vec_init = vec_init * tnorm
+           einit = init_energy
+        else
+           do i=1,statenumber-1
+              read(ivec)
+           enddo
+           read(ivec) i,einit,vec_init
+        endif
 
         close(ivec)
 
