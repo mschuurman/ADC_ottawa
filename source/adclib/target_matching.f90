@@ -35,14 +35,16 @@
     integer                                   :: maxnsd,nsd_targ,&
                                                  nbas_targ
     integer                                   :: nao_adc,nao_targ,&
-                                                 nel
-    integer, dimension(:), allocatable        :: nsd_adc
+                                                 nel,ncount
+    integer, dimension(:), allocatable        :: nsd_adc,tstate
     integer, dimension(:,:,:), allocatable    :: onv_adc
     integer, dimension(:,:), allocatable      :: onv_targ
     real(d), dimension(:,:), allocatable      :: c_adc
     real(d), dimension(:), allocatable        :: c_targ,s2_adc,&
-                                                 norm_adc,overlap
-    real(d)                                   :: s2_targ,norm_targ
+                                                 norm_adc,overlap,&
+                                                 trunc_overlap
+    real(d)                                   :: s2_targ,norm_targ,&
+                                                 norm
     real(d), dimension(:,:), allocatable      :: sao,smo,ao2mo_adc,&
                                                  ao2mo_targ,smk
 
@@ -134,7 +136,11 @@
 !-----------------------------------------------------------------------
 ! Select the initial state
 !-----------------------------------------------------------------------
-      call select_istate
+      if (llci) then
+        call select_istates
+      else
+        call select_istate
+      endif
 
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1196,6 +1202,78 @@
       return
 
     end subroutine select_istate
+
+!#######################################################################
+
+    subroutine select_istates
+
+      use channels
+      use constants
+      use parameters
+      use iomod
+
+      implicit none
+
+      integer :: i,count,id,max_state,ij
+
+!-----------------------------------------------------------------------
+! if: (1) There are no states ~ADC states |i> for which
+!         <Target|i> >= ovrthrsh, use a combination;
+!     (2) There are more than one ~ADC states |i> for which
+!         <Target|i> >= ovrthrsh, use all of those states.
+!
+! Else, set the initial state number and carry on.
+!-----------------------------------------------------------------------
+
+      count=0
+
+      do i=0,davstates
+         if (abs(overlap(i)).ge.ovrthrsh) then
+            count=count+1
+            id=i
+         endif
+      enddo
+
+      ncount = count
+
+      if (count.eq.1) then
+         statenumber=id
+         write(ilog,'(/,x,a,x,i2,x,a)') 'State',id,'selected'
+      else if (count.gt.1) then
+         allocate(trunc_overlap(ncount))
+         allocate(tstate(ncount))
+         ij = 0
+         do i=0,davstates
+            if (abs(overlap(i)).le.ovrthrsh) cycle
+               ij = ij + 1
+               trunc_overlap(ij) = overlap(i)
+               tstate(ij) = i
+         enddo
+         write(ilog,'(/,x,i2,x,a)') ncount,'States selected'
+         write(ilog,*) tstate
+         write(ilog,*) trunc_overlap
+         norm = 0.d0
+         do ij = 1, ncount
+            norm = norm + trunc_overlap(ij) ** 2.d0
+         enddo
+         norm = 1.d0 / dsqrt(norm)
+         trunc_overlap = trunc_overlap * norm
+         write(ilog,*) trunc_overlap
+      else
+         write(ilog,'(/,x,a)') 'Linear combination used'
+         ncount = 0
+         allocate(trunc_overlap(0:davstates))
+         norm = 0.d0
+         do ij = 0, davstates
+            norm = norm + overlap(ij) ** 2.d0
+         enddo
+         norm = 1.d0 / dsqrt(norm)
+         trunc_overlap = overlap * norm
+      endif
+
+      return
+
+    end subroutine select_istates
 
 !#######################################################################
 

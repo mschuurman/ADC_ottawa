@@ -192,6 +192,7 @@ contains
     if (allocated(travec)) deallocate(travec)
     if (allocated(dipmom)) deallocate(dipmom)
     if (allocated(dipmom_f)) deallocate(dipmom_f)
+    if (allocated(travec2)) deallocate(travec2)
     if (allocated(dpl_all)) deallocate(dpl_all)
     if (allocated(travec_ic)) deallocate(travec_ic)
     if (allocated(travec_iv)) deallocate(travec_iv)
