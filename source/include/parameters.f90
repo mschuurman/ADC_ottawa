@@ -308,13 +308,15 @@ real(d), dimension(:), allocatable     :: edavf
 logical                                :: ltpa
 
 !!$************************************************
-!!$**********Autospec Calculations*****************
+!!$**************TD-ADC Calculations**************
+!!$************************************************
 !!$************************************************
 real(d)                               :: tfinal,tout,&
                                          autotol
 integer                               :: autoord
 integer                               :: autoprop
 integer                               :: chebyord
+integer                               :: tdrep
 logical                               :: lautospec
 
 !!$************************************************
@@ -380,9 +382,12 @@ logical               :: lautobox
 logical               :: lflux
 
 !!$************************************************
-!!$***************ADC(1) Hamiltonian***************
+!!$***************ADC(1) Matrices***************
 !!$************************************************
 real(d), allocatable :: h1(:,:)
+real(d), allocatable :: d1(:,:,:)
+real(d), allocatable :: w1(:,:)
+real(d), allocatable :: theta1(:,:)
 
 !!$************************************************
 !!$**********Other Parameters**********************

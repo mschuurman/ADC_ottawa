@@ -51,105 +51,76 @@ contains
 !----------------------------------------------------------------------
 ! (I) 2 Re < d Psi/dt | Theta | Psi >
 !----------------------------------------------------------------------    
-! Three pieces: (a) IS representation of the projector, Theta_IJ.
-!               (b) Ground state projector matrix element, Theta_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, Theta_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
-!----------------------------------------------------------------------
     oppsi=czero
 
     ! Make a copy of the input vector to project against selected
     ! bound states
     vtmp1=psi
 
-    ! First projection against selected bound states
-    !
-    ! Excited state contribution to the projector
-    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-       ! Open the ADC(1)/CIS vector file
-       call freeunit(unit)
-       open(unit,file='SCRATCH/initvecs',status='unknown',&
-            access='sequential',form='unformatted')
-       ! Project the input vector onto the space orthogonal to
-       ! the selected states
-       do i=1,matdim-1
-          read(unit) k,ener,rvec(1:matdim-1)
-          if (ener.gt.projlim) exit
-          if (iprojcap.eq.1.and.i.gt.statenumber) exit
-          if (projmask(i).eq.0) cycle
-          vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
-               -rvec(1:matdim-1) &
-               *dot_product(rvec(1:matdim-1),psi(1:matdim-1))
-       enddo
-       ! Close the ADC(1)/CIS vector file
-       close(unit)
-    endif
-    !
-    ! Ground state contribution to the projector
-    if ((iprojcap.eq.1.and.statenumber.eq.0) &
-         .or.iprojcap.eq.2) vtmp1(matdim)=czero
-    
-    ! (a) IS-IS block
-    !
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +matmul(thetaij,vtmp1(1:matdim-1))
+    !! First projection against selected bound states
+    !!
+    !! Excited state contribution to the projector
+    !if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
+    !   ! Open the ADC(1)/CIS vector file
+    !   call freeunit(unit)
+    !   open(unit,file='SCRATCH/initvecs',status='unknown',&
+    !        access='sequential',form='unformatted')
+    !   ! Project the input vector onto the space orthogonal to
+    !   ! the selected states
+    !   do i=1,matdim-1
+    !      read(unit) k,ener,rvec(1:matdim-1)
+    !      if (ener.gt.projlim) exit
+    !      if (iprojcap.eq.1.and.i.gt.statenumber) exit
+    !      if (projmask(i).eq.0) cycle
+    !      vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
+    !           -rvec(1:matdim-1) &
+    !           *dot_product(rvec(1:matdim-1),psi(1:matdim-1))
+    !   enddo
+    !   ! Close the ADC(1)/CIS vector file
+    !   close(unit)
+    !endif
+    !!
+    !! Ground state contribution to the projector
+    !if ((iprojcap.eq.1.and.statenumber.eq.0) &
+    !     .or.iprojcap.eq.2) vtmp1(matdim)=czero
 
-    ! (b) Ground state-ground state element
-    !
-    oppsi(matdim)=oppsi(matdim)+theta00*vtmp1(matdim)
+    ! Matrix-vector multiplication
+    oppsi=oppsi+matmul(theta1,vtmp1)
     
-    ! (c) Ground state-IS block
-    !
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(theta0j(1:matdim-1),vtmp1(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +theta0j(1:matdim-1)*vtmp1(matdim)
-
-    ! Second projection against selected bound states
-    !
-    ! Excited state contribution to the projector
-    if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-       ! Copy of oppsi
-       vtmp2=oppsi
-       ! Open the ADC(1)/CIS vector file
-       call freeunit(unit)
-       open(unit,file='SCRATCH/initvecs',status='unknown',&
-            access='sequential',form='unformatted')
-       ! Project the input vector onto the space orthogonal to
-       ! the selected states
-       do i=1,matdim-1
-          read(unit) k,ener,rvec(1:matdim-1)
-          if (ener.gt.projlim) exit
-          if (iprojcap.eq.1.and.i.gt.statenumber) exit
-          if (projmask(i).eq.0) cycle
-          oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-               -rvec(1:matdim-1) &
-               *dot_product(rvec(1:matdim-1),vtmp2(1:matdim-1))
-       enddo
-       ! Close the ADC(1)/CIS vector file
-       close(unit)
-    endif
-    !
-    ! Ground state contribution to the projector
-    if ((iprojcap.eq.1.and.statenumber.eq.0) &
-         .or.iprojcap.eq.2) oppsi(matdim)=czero
+    !! Second projection against selected bound states
+    !!
+    !! Excited state contribution to the projector
+    !if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
+    !   ! Copy of oppsi
+    !   vtmp2=oppsi
+    !   ! Open the ADC(1)/CIS vector file
+    !   call freeunit(unit)
+    !   open(unit,file='SCRATCH/initvecs',status='unknown',&
+    !        access='sequential',form='unformatted')
+    !   ! Project the input vector onto the space orthogonal to
+    !   ! the selected states
+    !   do i=1,matdim-1
+    !      read(unit) k,ener,rvec(1:matdim-1)
+    !      if (ener.gt.projlim) exit
+    !      if (iprojcap.eq.1.and.i.gt.statenumber) exit
+    !      if (projmask(i).eq.0) cycle
+    !      oppsi(1:matdim-1)=oppsi(1:matdim-1) &
+    !           -rvec(1:matdim-1) &
+    !           *dot_product(rvec(1:matdim-1),vtmp2(1:matdim-1))
+    !   enddo
+    !   ! Close the ADC(1)/CIS vector file
+    !   close(unit)
+    !endif
+    !!
+    !! Ground state contribution to the projector
+    !if ((iprojcap.eq.1.and.statenumber.eq.0) &
+    !     .or.iprojcap.eq.2) oppsi(matdim)=czero
     
     val1=2.0d0*real(dot_product(dtpsi,oppsi))
 
 !----------------------------------------------------------------------
 ! (II) 2 < Psi | W | Psi >
 !----------------------------------------------------------------------    
-! Three pieces: (a) IS representation of the CAP operator, W_IJ.
-!               (b) Ground state CAP matrix element, W_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, W_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
-!----------------------------------------------------------------------
     oppsi=czero
 
     ! Make a copy of the input vector to project against selected
@@ -182,23 +153,10 @@ contains
     ! Ground state contribution to the projector
     if ((iprojcap.eq.1.and.statenumber.eq.0) &
          .or.iprojcap.eq.2) vtmp1(matdim)=czero
-    
-    ! (a) IS-IS block
-    !
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +matmul(wij,vtmp1(1:matdim-1))
 
-    ! (b) Ground state-ground state element
-    !
-    oppsi(matdim)=oppsi(matdim)+w00*vtmp1(matdim)
+    ! Matrix-vector multiplication
+    oppsi=oppsi+matmul(w1,vtmp1)
     
-    ! (c) Ground state-IS block
-    !
-    oppsi(matdim)=oppsi(matdim) &
-         +dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-    oppsi(1:matdim-1)=oppsi(1:matdim-1) &
-         +w0j(1:matdim-1)*vtmp1(matdim)
-
     ! Second projection against selected bound states
     !
     ! Excited state contribution to the projector
@@ -241,10 +199,8 @@ contains
     deallocate(oppsi)
     deallocate(vtmp1)
     deallocate(vtmp2)
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) &
-         deallocate(rvec)
-    
+    if (allocated(rvec)) deallocate(rvec)
+
     return
     
   end subroutine adc1_flux_cap
@@ -298,9 +254,6 @@ contains
 !               (b) Ground state projector matrix element, Theta_00.
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, Theta_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 
@@ -393,9 +346,6 @@ contains
 !               (b) Ground state CAP matrix element, W_00.
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, W_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     oppsi=czero
 
@@ -489,10 +439,8 @@ contains
     deallocate(oppsi)
     deallocate(vtmp1)
     deallocate(vtmp2)
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) &
-         deallocate(rvec)    
-    
+    if (allocated(rvec)) deallocate(rvec)
+
     return
     
   end subroutine adc2_flux_cap

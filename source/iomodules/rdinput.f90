@@ -938,6 +938,17 @@
                goto 999
             endif
          endif
+
+         ! Represenation of the wavefunction: using the Hamiltonian
+         ! eigenstate basis is only supported for TD-ADC(1) and TD-CIS
+         ! calculations
+         if (tdrep.eq.2) then
+            if (method.eq.2.or.method.eq.3) then
+               msg='The eigenstate representation cannot be used with &
+                    ADC(2)'
+               goto 999
+            endif
+         endif
          
       endif
 
@@ -2414,6 +2425,21 @@
                      call error_control
                   endif
                enddo
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'representation') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'isr') then
+                  tdrep=1
+               else if (keyword(i).eq.'eigenstate') then
+                  tdrep=2
+               else
+                  errmsg='Unknown representation: '//trim(keyword(i))
+                  call error_control
+               endif
             else
                goto 100
             endif

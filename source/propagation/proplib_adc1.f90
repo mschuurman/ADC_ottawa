@@ -1,7 +1,7 @@
 !#######################################################################
 ! propagate_adc1: Routines to perform ADC(1) and CIS wavepacket
 !                 propagations including the interaction of the
-!                 molecule with a laser pulse
+!                 molecule with a laser pulse.
 !#######################################################################
 
 module propagate_adc1
@@ -27,10 +27,9 @@ contains
 !                       consisting of the intermediate state basis plus
 !                       the HF ground state.
 !########################################################################
-! IMPORTANT:            For ease of implementation of the Hamiltonian
-!                       and dipole matrix-vector products, the HF ground
-!                       state is taken to be the last basis function in
-!                       the set.
+! IMPORTANT:            To be consistent with the TD-ADC(2) code, the
+!                       HF ground state is taken to be the last basis
+!                       function in the set.
 !#######################################################################
   
   subroutine propagate_laser_adc1(ndimf,kpqf)
@@ -154,15 +153,6 @@ contains
     allocate(psi(matdim))
     psi=czero
     
-!----------------------------------------------------------------------
-! Set the initial wavepacket
-!
-! For now, we will only support excitation/ionisation from the ground
-! state, corresponding to the vector (0,...,0,1)^T
-!----------------------------------------------------------------------
-    psi=czero
-    psi(matdim)=cone
-    
     return
     
   end subroutine initialise
@@ -183,9 +173,15 @@ contains
        psi=czero
        psi(matdim)=cone
     else
-       ! Excited state: read the initial wavefunction vector from
-       ! disk
-       call initwf_exci_initstate
+       ! Excited state
+       if (tdrep.eq.1) then
+          ! ISR basis: read the initial wavefunction vector from disk
+          call initwf_exci_initstate
+       else
+          ! Eigenstate basis
+          psi=czero
+          psi(statenumber)=cone
+       endif
     endif
        
     return
@@ -274,6 +270,16 @@ contains
 
     write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',proptol
 
+!----------------------------------------------------------------------
+! N-electron basis
+!----------------------------------------------------------------------
+    if (tdrep.eq.1) then
+       write(ilog,'(/,2x,a)') 'The ISR basis is used'
+    else if (tdrep.eq.2) then
+       write(ilog,'(/,2x,a,/)') &
+            'The field-free eigenstate basis is used'
+    endif
+    
     return
     
   end subroutine wrinfo
@@ -672,15 +678,19 @@ contains
     if (lflux) write(iflux,'(F10.4,5x,ES15.8)') t,flux
     
     ! Wavefunction analysis
-    call wrpsi(kpqf)
-    
+    if (tdrep.eq.1) then
+       call wrpsi_isr(kpqf)
+    else
+       call wrpsi_eigen
+    endif
+       
     return
     
   end subroutine wrstepinfo
 
 !#######################################################################
 
-    subroutine wrpsi(kpqf)
+    subroutine wrpsi_isr(kpqf)
 
     use misc, only: dsortindxa1,getspincase
     
@@ -718,7 +728,8 @@ contains
     write(ilog,'(2x,30a)') ('*',k=1,30)
 
     ! Ground state contribution
-    write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
+     if (abs(psi(matdim)).gt.coefftol) &
+          write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
 
     ! IS basis functions
     do k=1,50
@@ -747,8 +758,79 @@ contains
     
     return
     
-  end subroutine wrpsi
-  
+  end subroutine wrpsi_isr
+
+!#######################################################################
+
+  subroutine wrpsi_eigen
+
+    use misc, only: dsortindxa1,getspincase
+
+    implicit none
+
+    integer                            :: k,ilbl
+    integer, dimension(:), allocatable :: indx
+    real(d), dimension(:), allocatable :: abscoeff
+    real(d), parameter                 :: coefftol=0.01d0
+    character(len=3)                   :: as
+    character(len=5)                   :: aket
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(abscoeff(matdim))
+    allocate(indx(matdim))
+
+!-----------------------------------------------------------------------
+! Sort the coefficients by magnitude
+!-----------------------------------------------------------------------
+    abscoeff=abs(psi)
+    call dsortindxa1('D',matdim,abscoeff,indx)
+
+!-----------------------------------------------------------------------
+! Output the field-free eigenstates contributing significantly to the
+! wavepacket
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a,/)') 'Dominant States:'
+
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+    write(ilog,'(3x,a)') '|J>                 |C_J|'
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+
+    ! Ground state contribution
+    if (abs(psi(matdim)).gt.coefftol) &
+         write(ilog,'(3x,a,15x,F8.5)') '|HF>',abs(psi(matdim))
+
+    ! Excited state contributions
+    do k=1,50
+
+       ilbl=indx(k)
+
+       ! Skip the ground state
+       if (ilbl.eq.matdim) cycle
+
+       ! Skip if the coefficient is small
+       if (abs(psi(ilbl)).lt.coefftol) cycle
+
+       ! State and absolute coefficient value
+       write(as,'(i3)') ilbl
+       write(aket,'(a)') '|'//trim(adjustl(as))//'>'       
+       write(ilog,'(3x,a,14x,F8.5)') aket,abs(psi(ilbl))
+
+    enddo
+    
+    write(ilog,'(2x,30a,/)') ('*',k=1,30)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(abscoeff)
+    deallocate(indx)
+    
+    return
+    
+  end subroutine wrpsi_eigen
+    
 !#######################################################################
 
     subroutine finalise

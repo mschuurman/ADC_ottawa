@@ -37,14 +37,6 @@ contains
     real(d)                               :: e0
     real(d), dimension(:,:), allocatable  :: cap_mo,theta_mo
     type(gam_structure)                   :: gam
-    
-!-----------------------------------------------------------------------
-! Calculate the MP2 ground state energy and D2 diagnostic
-!
-! Do we really want to be doing this for an ADC(1) calculation? Note
-! that the MP1 ground state is simply the HF ground state.
-!-----------------------------------------------------------------------
-    call mp2_master(e0)
 
 !-----------------------------------------------------------------------
 ! Determine the 1h1p subspace
@@ -104,6 +96,17 @@ contains
     if (lflux) call theta_isbas_adc1(theta_mo,kpqf,ndimf)
 
 !-----------------------------------------------------------------------
+! Transformation of operator matrices to the field-free Hamiltonian
+! eigenstate basis
+!-----------------------------------------------------------------------
+    if (tdrep.eq.2) call transform_operators(ndimf)
+    
+!-----------------------------------------------------------------------
+! Projection of the CAP and Theta matrices
+!-----------------------------------------------------------------------
+    if (lprojcap) call cap_projection(ndimf)
+    
+!-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     call propagate_laser_adc1(ndimf,kpqf)
@@ -113,14 +116,11 @@ contains
 !-----------------------------------------------------------------------    
     deallocate(kpq,kpqf,kpqd)
     deallocate(h1)
+    if (allocated(d1)) deallocate(d1)
+    if (allocated(w1)) deallocate(w1)
+    if (allocated(theta1)) deallocate(theta1)
     if (allocated(cap_mo)) deallocate(cap_mo)
-    if (allocated(w0j)) deallocate(w0j)
-    if (allocated(wij)) deallocate(wij)
-    deallocate(d0j)
-    deallocate(dij)
     if (allocated(theta_mo)) deallocate(theta_mo)
-    if (allocated(theta0j)) deallocate(theta0j)
-    if (allocated(thetaij)) deallocate(thetaij)
     if (allocated(projmask)) deallocate(projmask)
     
     return
@@ -145,7 +145,7 @@ contains
 ! Allocate arrays
 !-----------------------------------------------------------------------
     ! ADC(1) Hamiltonian matrix
-    allocate(h1(ndimf,ndimf))
+    allocate(h1(ndimf+1,ndimf+1))
     h1=0.0d0
 
 !-----------------------------------------------------------------------
@@ -157,17 +157,20 @@ contains
        if (lcvsfinal) then
           write(ilog,'(/,2x,a)') 'Calculating the CVS-ADC(1) &
                Hamiltonian matrix'
-          call get_fspace_tda_direct_nodiag_cvs(ndimf,kpqf,h1)
+          call get_fspace_tda_direct_nodiag_cvs(ndimf,kpqf,&
+               h1(1:ndimf,1:ndimf))
        else
           write(ilog,'(/,2x,a)') 'Calculating the ADC(1) &
                Hamiltonian matrix'
-          call get_fspace_tda_direct_nodiag(ndimf,kpqf,h1)
+          call get_fspace_tda_direct_nodiag(ndimf,kpqf,&
+               h1(1:ndimf,1:ndimf))
        endif
     else if (method.eq.4) then
        ! ADC(1)-x
        ! (Note that the CVS-ADC(1) Hamiltonian can be
        ! calculated using the ADC(1) routines)
-       call get_fspace_adc1ext_direct_nodiag(ndimf,kpqf,h1)
+       call get_fspace_adc1ext_direct_nodiag(ndimf,kpqf,&
+            h1(1:ndimf,1:ndimf))
     endif
 
     return
@@ -195,6 +198,11 @@ contains
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(w1(ndimf+1,ndimf+1))
+    
+!----------------------------------------------------------------------
 ! Ground state density matrix.
 ! Note that the 1st-order correction is zero.
 !----------------------------------------------------------------------
@@ -208,15 +216,14 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the CAP matrix element W_00 = < Psi_0 | W | Psi_0 >
 !----------------------------------------------------------------------
-    w00=0.0d0
     do p=1,nbas
        do q=1,nbas
-          w00=w00+rho0(p,q)*cap_mo(p,q)
+          w1(ndimf+1,ndimf+1)=w1(ndimf+1,ndimf+1)+rho0(p,q)*cap_mo(p,q)
        enddo
     enddo
  
 !----------------------------------------------------------------------
-! In the following, we calculate CAP matrix elements using the shifted
+! In the following, we calculate CAP matrix elements using the
 ! dipole code (D-matrix and f-vector code) by simply temporarily
 ! copying the MO CAP matrix into the dpl array.
 !----------------------------------------------------------------------
@@ -226,47 +233,41 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the vector W_0J = < Psi_0 | W | Psi_J >
 !----------------------------------------------------------------------
-    allocate(w0j(ndimf))
-    w0j=0.0d0
-
-    write(ilog,'(/,72a)') ('-',k=1,72)
-    write(ilog,'(2x,a)') 'Calculating the vector &
-         W_0J = < Psi_0 | W | Psi_J >'
-    write(ilog,'(72a)') ('-',k=1,72)
-    
     if (lcis) then
        ! CIS
-       call get_tm_cis(ndimf,kpqf,w0j)
+       call get_tm_cis(ndimf,kpqf,w1(1:ndimf,ndimf+1))
     else if (method.eq.4) then
        ! ADC(1)-x
-       call get_modifiedtm_adc1ext(ndimf,kpqf,w0j,1)
+       call get_modifiedtm_adc1ext(ndimf,kpqf,w1(1:ndimf,ndimf+1),1)
     else
        ! ADC(1)
-       call get_modifiedtm_tda(ndimf,kpqf,w0j)
+       call get_modifiedtm_tda(ndimf,kpqf,w1(1:ndimf,ndimf+1))
     endif
 
+    ! Hermitian conjugate
+    w1(ndimf+1,1:ndimf)=w1(1:ndimf,ndimf+1)
+    
 !----------------------------------------------------------------------
-! Calculate the IS representation of the shifted CAP operator W-W_00
+! Calculate the IS representation of the CAP operator W
 !
 ! Note that we are here assuming that the ADC(1) D-matrix is small
 ! enough to fit into memory
 !----------------------------------------------------------------------
     write(ilog,'(/,72a)') ('-',k=1,72)
     write(ilog,'(2x,a)') 'Calculating the IS representation of the &
-         shifted CAP operator'
+         CAP operator'
     write(ilog,'(72a,/)') ('-',k=1,72)
-    
-    allocate(wij(ndimf,ndimf))
-    wij=0.0d0
 
     if (method.eq.4) then
        ! ADC(1)-x
-       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,wij)
+       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,&
+            w1(1:ndimf,1:ndimf))
     else
        ! ADC(1) and CIS
-       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,wij)
+       call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
+            w1(1:ndimf,1:ndimf))
     endif
-
+    
 !----------------------------------------------------------------------
 ! Reset the dpl array
 !----------------------------------------------------------------------
@@ -298,6 +299,12 @@ contains
     acomp=(/ 'x','y','z' /)
 
 !----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(d1(3,ndimf+1,ndimf+1))
+    d1=0.0d0
+    
+!----------------------------------------------------------------------
 ! Ground state density matrix.
 ! Note that the 1st-order correction is zero.
 !----------------------------------------------------------------------
@@ -312,19 +319,16 @@ contains
 ! Calculate the dipole matrix elements Dc_00 = < Psi_0 | Dc | Psi_0 >
 ! for c=x,y,z
 !----------------------------------------------------------------------
-    d00=0.0d0
     do p=1,nbas
        do q=1,nbas
-          d00(1:3)=d00(1:3)+rho0(p,q)*dpl_all(1:3,p,q)
+          d1(1:3,ndimf+1,ndimf+1)=d1(1:3,ndimf+1,ndimf+1)&
+               +rho0(p,q)*dpl_all(1:3,p,q)
        enddo
     enddo
-
+    
 !----------------------------------------------------------------------
 ! Calculate the vectors Dc_0J = < Psi_0 | D | Psi_J >, c=x,y,z
 !----------------------------------------------------------------------
-    allocate(d0j(3,ndimf))
-    d0j=0.0d0
-
     ! Loop over the x, y, and z components
     do c=1,3
 
@@ -340,48 +344,48 @@ contains
 
        if (lcis) then
           ! CIS
-          call get_tm_cis(ndimf,kpqf,d0j(c,:))
+          call get_tm_cis(ndimf,kpqf,d1(c,1:ndimf,ndimf+1))
        else if (method.eq.4) then
           ! ADC(1)-x
-          call get_modifiedtm_adc1ext(ndimf,kpqf,d0j(c,:),1)
+          call get_modifiedtm_adc1ext(ndimf,kpqf,d1(c,1:ndimf,ndimf+1),1)
        else
           ! ADC(1)
-          call get_modifiedtm_tda(ndimf,kpqf,d0j(c,:))
+          call get_modifiedtm_tda(ndimf,kpqf,d1(c,1:ndimf,ndimf+1))
        endif
-          
+
+       ! Hermitian conjugate
+       d1(c,ndimf+1,1:ndimf)=d1(c,1:ndimf,ndimf+1)
+       
     enddo
     
 !----------------------------------------------------------------------
-! Calculate the IS representations of the shifted dipole operators
-! Dc - Dc_0, c=x,y,z
+! Calculate the IS representations of the dipole operators Dc, c=x,y,z
 !----------------------------------------------------------------------
-    allocate(dij(3,ndimf,ndimf))
-    dij=0.0d0
-    
     ! Loop over the x, y, and z components
     do c=1,3
-
+    
        ! Skip if the current component is not required
        if (pulse_vec(c).eq.0.0d0) cycle
        
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the IS representation of &
-            the shifted dipole operator D'//acomp(c)
+            the dipole operator D'//acomp(c)
        write(ilog,'(72a)') ('-',k=1,72)
-
+    
        dpl(:,:)=dpl_all(c,:,:)
-
+    
        if (method.eq.4) then
           ! ADC(1)-x
-          call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,dij(c,:,:))
+          call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,&
+               d1(c,1:ndimf,1:ndimf))
        else
           ! ADC(1) and CIS
           call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
-               dij(c,:,:))
+               d1(c,1:ndimf,1:ndimf))
        endif
           
     enddo
-
+    
     return
     
   end subroutine dipole_isbas_adc1
@@ -407,6 +411,11 @@ contains
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(theta1(ndimf+1,ndimf+1))
+    
+!----------------------------------------------------------------------
 ! Ground state density matrix.
 ! Note that the 1st-order correction is zero.
 !----------------------------------------------------------------------
@@ -421,16 +430,16 @@ contains
 ! Calculate the ground state-ground state projector matrix element
 ! Theta_00 = < Psi_0 | Theta | Psi_0 >
 !----------------------------------------------------------------------
-    theta00=0.0d0
     do p=1,nbas
        do q=1,nbas
-          theta00=theta00+rho0(p,q)*theta_mo(p,q)
+          theta1(ndimf+1,ndimf+1)=theta1(ndimf+1,ndimf+1)&
+               +rho0(p,q)*theta_mo(p,q)
        enddo
     enddo
-
+    
 !----------------------------------------------------------------------
 ! In the following, we calculate projector matrix elements using the
-! shifted dipole code (D-matrix and f-vector code) by simply
+! dipole code (D-matrix and f-vector code) by simply
 ! temporarily copying the MO Theta matrix into the dpl array.
 !----------------------------------------------------------------------
     dpl_orig(1:nbas,1:nbas)=dpl(1:nbas,1:nbas)
@@ -439,9 +448,6 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the vector Theta_0J = < Psi_0 | Theta | Psi_J >
 !----------------------------------------------------------------------
-    allocate(theta0j(ndimf))
-    theta0j=0.0d0
-
     write(ilog,'(/,72a)') ('-',k=1,72)
     write(ilog,'(2x,a)') 'Calculating the vector &
          Theta_0J = < Psi_0 | Theta | Psi_J >'
@@ -449,37 +455,37 @@ contains
     
     if (lcis) then
        ! CIS
-       call get_tm_cis(ndimf,kpqf,theta0j)
+       call get_tm_cis(ndimf,kpqf,theta1(1:ndimf,ndimf+1))
     else if (method.eq.4) then
        ! ADC(1)-x
-       call get_modifiedtm_adc1ext(ndimf,kpqf,theta0j,1)
+       call get_modifiedtm_adc1ext(ndimf,kpqf,theta1(1:ndimf,ndimf+1),1)
     else
        ! ADC(1)
-       call get_modifiedtm_tda(ndimf,kpqf,theta0j)
+       call get_modifiedtm_tda(ndimf,kpqf,theta1(1:ndimf,ndimf+1))
     endif
 
+    ! Hermitian conjugate
+    theta1(ndimf+1,1:ndimf)=theta1(1:ndimf,ndimf+1)
+
 !----------------------------------------------------------------------
-! Calculate the IS representation of the shifted projection operator
-! Theta-Theta_00
+! Calculate the IS representation of the projection operator Theta
 !
 ! Note that we are here assuming that the ADC(1) D-matrix is small
 ! enough to fit into memory
 !----------------------------------------------------------------------
     write(ilog,'(/,72a)') ('-',k=1,72)
     write(ilog,'(2x,a)') 'Calculating the IS representation of the &
-         shifted CAP-projector (Theta)'
+         CAP-projector (Theta)'
     write(ilog,'(72a,/)') ('-',k=1,72)
     
-    allocate(thetaij(ndimf,ndimf))
-    thetaij=0.0d0
-
     if (method.eq.4) then
        ! ADC(1)-x
-       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,thetaij)
+       call get_adc1ext_dipole_omp(ndimf,ndimf,kpqf,kpqf,&
+            theta1(1:ndimf,1:ndimf))
     else
        ! ADC(1) and CIS
        call get_offdiag_tda_dipole_direct_ok(ndimf,ndimf,kpqf,kpqf,&
-            thetaij)
+            theta1(1:ndimf,1:ndimf))
     endif
 
 !----------------------------------------------------------------------
@@ -635,7 +641,137 @@ contains
     return
     
   end subroutine get_proj_states_adc1
+
+!#######################################################################
+
+  subroutine transform_operators(ndimf)
+
+    use constants
+    use parameters
+    use iomod
     
+    implicit none
+
+    integer                              :: ndimf,workdim,error,i,j
+    real(d), dimension(:,:), allocatable :: eigvec,tmp
+    real(d), dimension(:), allocatable   :: ener,work
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(eigvec(ndimf+1,ndimf+1))
+    eigvec=0.0d0
+
+    allocate(ener(ndimf+1))
+    ener=0.0d0
+
+    workdim=3*(ndimf+1)
+    allocate(work(workdim))
+    work=0.0d0
+
+    allocate(tmp(ndimf+1,ndimf+1))
+    tmp=0.0d0
+    
+!-----------------------------------------------------------------------
+! Diagonalise the field-free Hamiltonian matrix
+!-----------------------------------------------------------------------
+    ! Diagonalisation of the ADC(1)/CIS Hamiltonian matrix padded with
+    ! zeros corresponding to the H_J0 elements
+    eigvec(1:ndimf,1:ndimf)=h1
+    call dsyev('V','U',ndimf+1,eigvec,ndimf+1,ener,work,workdim,error)
+
+    ! Exit if the diagonalisation failed
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the ADC(1)/CIS Hamiltonian failed &
+            in subroutine transform_operators'
+    endif
+
+!-----------------------------------------------------------------------
+! To be consistent with the TD-ADC(2) code, move the ground state vector
+! to the last basis vector position
+!-----------------------------------------------------------------------
+    do i=1,ndimf+1
+       eigvec(:,i)=eigvec(:,i+1)
+    enddo
+    eigvec(:,ndimf+1)=0.0d0
+    eigvec(ndimf+1,ndimf+1)=1.0d0
+
+!-----------------------------------------------------------------------
+! Transform the operator matrices to the eigenstate representation
+!-----------------------------------------------------------------------
+    ! Field-free Hamiltonian
+    tmp=matmul(transpose(eigvec),matmul(h1,eigvec))
+    h1=tmp
+
+    ! Dipole operator
+    do i=1,3
+       if (pulse_vec(i).eq.0.0d0) cycle
+       tmp=matmul(transpose(eigvec),matmul(d1(i,:,:),eigvec))
+       d1(i,:,:)=tmp
+    enddo
+    
+    ! CAP
+    if (lcap) then
+       tmp=matmul(transpose(eigvec),matmul(w1,eigvec))
+       w1=tmp
+    endif
+
+    ! CAP projector
+    if (lflux) then
+       tmp=matmul(transpose(eigvec),matmul(theta1,eigvec))
+       theta1=tmp
+    endif
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(eigvec)
+    deallocate(ener)
+    deallocate(work)
+    deallocate(tmp)
+    
+    return
+    
+  end subroutine transform_operators
+  
 !#######################################################################
   
+  subroutine cap_projection(ndimf)
+
+    use constants
+    use parameters
+
+    implicit none
+
+    integer :: ndimf
+
+    print*,"WRITE THE REST OF THE CAP PROJECTION CODE!"
+    STOP
+    
+!!----------------------------------------------------------------------
+!! Ground state-indexed elements
+!!----------------------------------------------------------------------
+!    if ((iprojcap.eq.1.and.statenumber.eq.0.).or.iprojcap.eq.2) then
+!       w1(ndimf+1,ndimf+1)=0.0d0
+!       w1(1:ndimf+1,ndimf+1)=0.0d0
+!       w1(ndimf+1,1:ndimf+1)=0.0d0
+!       theta1(1:ndimf+1,ndimf+1)=0.0d0
+!       theta1(ndimf+1,1:ndimf+1)=0.0d0
+!       theta1(ndimf+1,ndimf+1)=0.0d0
+!    endif
+!
+!!----------------------------------------------------------------------
+!! Excited state-indexed elements
+!!----------------------------------------------------------------------
+!    if ((iprojcap.eq.1.and.statenumber.ne.0.).or.iprojcap.eq.2) then
+!       print*,"WRITE THE REST OF THE CAP PROJECTION CODE!"
+!       STOP
+!    endif
+    
+    return
+    
+  end subroutine cap_projection
+    
+!#######################################################################
+
 end module adc1propmod

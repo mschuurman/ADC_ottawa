@@ -1185,80 +1185,28 @@ contains
 
 !----------------------------------------------------------------------
 ! (1) Molecular Hamiltonian contribution: -i * H * v1
-!
-! Note that: (i)  < Psi0 | H | Psi_J > = 0 for all J (by definition
-!                 of the intermediate state basis).
-!
-!            (ii) < Psi0 | H | Psi0 > = 0 (as we are dealing with
-!                 ground state energy-shifted Hamiltonian)
-!
 !----------------------------------------------------------------------
-    v2(1:matdim-1)=v2(matdim-1)-ci*matmul(h1,v1(1:matdim-1))
-
+    v2=v2-ci*matmul(h1,v1)
+    
 !----------------------------------------------------------------------
 ! (2) Dipole-laser contribution: -i * -mu.E(t) * v1 = +i * mu.E(t) * v1
-!----------------------------------------------------------------------
-! Three pieces: (a) IS representation of the dipole operator, D_IJ.
-!               (b) Ground state dipole matrix element, D_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, D_0J.
 !----------------------------------------------------------------------
     ! External electric field
     Et=efield(time)
 
-    ! (a) IS-IS block
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
-       
-       ! Cycle if the current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(1:matdim-1)=v2(1:matdim-1)&
-            + ci*Et(i)*matmul(dij(i,:,:),v1(1:matdim-1))
-
-    enddo
-
-    ! (b) Ground state-ground state element
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
-       
-       ! Cycle if the  current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
-
-    enddo
-
-    ! (c) Ground state-IS block
-    !
     ! Loop over components of the dipole operator
     do i=1,3
 
        ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+&
-            ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1)+&
-            ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
-       
+       ! Matrix-vector product
+       v2=v2+ci*Et(i)*matmul(d1(i,:,:),v1)
+
     enddo
 
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1 = - W * v1
-!----------------------------------------------------------------------
-! Three pieces: (a) IS representation of the CAP operator, W_IJ.
-!               (b) Ground state CAP matrix element, W_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, W_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
 !----------------------------------------------------------------------
     if (lcap) then
 
@@ -1266,81 +1214,68 @@ contains
        ! bound states
        vtmp1=v1
        
-       ! First projection against selected bound states
-       !
-       ! Excited state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-          ! Open the ADC(1)/CIS vector file
-          call freeunit(unit)
-          open(unit,file='SCRATCH/initvecs',status='unknown',&
-               access='sequential',form='unformatted')
-          ! Project the input vector onto the space orthogonal to
-          ! the selected states
-          do i=1,matdim-1
-             read(unit) k,ener,rvec(1:matdim-1)
-             if (ener.gt.projlim) exit
-             if (iprojcap.eq.1.and.i.gt.statenumber) exit
-             if (projmask(i).eq.0) cycle
-             vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
-                  -rvec(1:matdim-1) &
-                  *dot_product(rvec(1:matdim-1),v1(1:matdim-1))
-          enddo
-          ! Close the ADC(1)/CIS vector file
-          close(unit)
-       endif
-       !
-       ! Ground state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.eq.0) &
-            .or.iprojcap.eq.2) vtmp1(matdim)=czero
+       !! First projection against selected bound states
+       !!
+       !! Excited state contribution to the projector
+       !if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
+       !   ! Open the ADC(1)/CIS vector file
+       !   call freeunit(unit)
+       !   open(unit,file='SCRATCH/initvecs',status='unknown',&
+       !        access='sequential',form='unformatted')
+       !   ! Project the input vector onto the space orthogonal to
+       !   ! the selected states
+       !   do i=1,matdim-1
+       !      read(unit) k,ener,rvec(1:matdim-1)
+       !      if (ener.gt.projlim) exit
+       !      if (iprojcap.eq.1.and.i.gt.statenumber) exit
+       !      if (projmask(i).eq.0) cycle
+       !      vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
+       !           -rvec(1:matdim-1) &
+       !           *dot_product(rvec(1:matdim-1),v1(1:matdim-1))
+       !   enddo
+       !   ! Close the ADC(1)/CIS vector file
+       !   close(unit)
+       !endif
+       !!
+       !! Ground state contribution to the projector
+       !if ((iprojcap.eq.1.and.statenumber.eq.0) &
+       !     .or.iprojcap.eq.2) vtmp1(matdim)=czero
        
        ! Temporary vector 2: this will hold the contribution of the
        ! CAP to the Hamiltonian matrix-vector product
        vtmp2=czero
        
-       ! (a) IS-IS block
-       !
-       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-            -matmul(wij,vtmp1(1:matdim-1))
+       ! Matrix-vector multiplication
+       vtmp2=vtmp2-matmul(w1,vtmp1)
        
-       ! (b) Ground state-ground state element
-       !
-       vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
-       
-       ! (c) Ground state-IS block
-       !
-       vtmp2(matdim)=vtmp2(matdim) &
-            -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-            -w0j(1:matdim-1)*vtmp1(matdim)
-
-       ! Second projection against selected bound states
-       !
-       ! Excited state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-          ! Copy of vtmp2
-          vtmp3=vtmp2
-          ! Open the ADC(1)/CIS vector file
-          call freeunit(unit)
-          open(unit,file='SCRATCH/initvecs',status='unknown',&
-               access='sequential',form='unformatted')
-          ! Project the input vector onto the space orthogonal to
-          ! the selected states
-          do i=1,matdim-1
-             read(unit) k,ener,rvec(1:matdim-1)
-             if (ener.gt.projlim) exit
-             if (iprojcap.eq.1.and.i.gt.statenumber) exit
-             if (projmask(i).eq.0) cycle
-             vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-                  -rvec(1:matdim-1) &
-                  *dot_product(rvec(1:matdim-1),vtmp3(1:matdim-1))
-          enddo
-          ! Close the ADC(1)/CIS vector file
-          close(unit)
-       endif
-       !
-       ! Ground state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.eq.0) &
-            .or.iprojcap.eq.2) vtmp2(matdim)=czero
+       !! Second projection against selected bound states
+       !!
+       !! Excited state contribution to the projector
+       !if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
+       !   ! Copy of vtmp2
+       !   vtmp3=vtmp2
+       !   ! Open the ADC(1)/CIS vector file
+       !   call freeunit(unit)
+       !   open(unit,file='SCRATCH/initvecs',status='unknown',&
+       !        access='sequential',form='unformatted')
+       !   ! Project the input vector onto the space orthogonal to
+       !   ! the selected states
+       !   do i=1,matdim-1
+       !      read(unit) k,ener,rvec(1:matdim-1)
+       !      if (ener.gt.projlim) exit
+       !      if (iprojcap.eq.1.and.i.gt.statenumber) exit
+       !      if (projmask(i).eq.0) cycle
+       !      vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
+       !           -rvec(1:matdim-1) &
+       !           *dot_product(rvec(1:matdim-1),vtmp3(1:matdim-1))
+       !   enddo
+       !   ! Close the ADC(1)/CIS vector file
+       !   close(unit)
+       !endif
+       !!
+       !! Ground state contribution to the projector
+       !if ((iprojcap.eq.1.and.statenumber.eq.0) &
+       !     .or.iprojcap.eq.2) vtmp2(matdim)=czero
 
        ! Contribution of the CAP to the matrix vector product
        v2=v2+vtmp2
