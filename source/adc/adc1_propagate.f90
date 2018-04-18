@@ -677,6 +677,7 @@ contains
 !-----------------------------------------------------------------------
     ! Diagonalisation of the ADC(1)/CIS Hamiltonian matrix padded with
     ! zeros corresponding to the H_J0 elements
+    eigvec=0.0d0
     eigvec(1:ndimf,1:ndimf)=h1
     call dsyev('V','U',ndimf+1,eigvec,ndimf+1,ener,work,workdim,error)
 
@@ -745,33 +746,192 @@ contains
 
     integer :: ndimf
 
-    print*,"WRITE THE REST OF THE CAP PROJECTION CODE!"
-    STOP
-    
-!!----------------------------------------------------------------------
-!! Ground state-indexed elements
-!!----------------------------------------------------------------------
-!    if ((iprojcap.eq.1.and.statenumber.eq.0.).or.iprojcap.eq.2) then
-!       w1(ndimf+1,ndimf+1)=0.0d0
-!       w1(1:ndimf+1,ndimf+1)=0.0d0
-!       w1(ndimf+1,1:ndimf+1)=0.0d0
-!       theta1(1:ndimf+1,ndimf+1)=0.0d0
-!       theta1(ndimf+1,1:ndimf+1)=0.0d0
-!       theta1(ndimf+1,ndimf+1)=0.0d0
-!    endif
-!
-!!----------------------------------------------------------------------
-!! Excited state-indexed elements
-!!----------------------------------------------------------------------
-!    if ((iprojcap.eq.1.and.statenumber.ne.0.).or.iprojcap.eq.2) then
-!       print*,"WRITE THE REST OF THE CAP PROJECTION CODE!"
-!       STOP
-!    endif
-    
+    if (tdrep.eq.1) then
+       call cap_projection_isr(ndimf)
+    else if (tdrep.eq.2) then
+       call cap_projection_eigen(ndimf)
+    endif
+
     return
     
   end subroutine cap_projection
+
+!#######################################################################
+
+  subroutine cap_projection_isr(ndimf)
+
+    use constants
+    use parameters
+    use iomod
     
+    implicit none
+
+    integer                              :: ndimf,workdim,error,i,j
+    real(d), dimension(:,:), allocatable :: eigvec,tmp
+    real(d), dimension(:), allocatable   :: ener,work
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(eigvec(ndimf+1,ndimf+1))
+    eigvec=0.0d0
+
+    allocate(ener(ndimf+1))
+    ener=0.0d0
+
+    workdim=3*(ndimf+1)
+    allocate(work(workdim))
+    work=0.0d0
+
+    allocate(tmp(ndimf+1,ndimf+1))
+    tmp=0.0d0
+    
+!----------------------------------------------------------------------
+! Diagonalise the field-free Hamiltonian matrix
+!----------------------------------------------------------------------
+    ! Diagonalisation of the ADC(1)/CIS Hamiltonian matrix padded with
+    ! zeros corresponding to the H_J0 elements
+    eigvec=0.0d0
+    eigvec(1:ndimf,1:ndimf)=h1
+    call dsyev('V','U',ndimf+1,eigvec,ndimf+1,ener,work,workdim,error)
+
+    ! Exit if the diagonalisation failed
+    if (error.ne.0) then
+       errmsg='Diagonalisation of the ADC(1)/CIS Hamiltonian failed &
+            in subroutine cap_projection_isr'
+    endif
+
+!-----------------------------------------------------------------------
+! Move the ground state vector to the last basis vector position
+!-----------------------------------------------------------------------
+    do i=1,ndimf+1
+       eigvec(:,i)=eigvec(:,i+1)
+       ener(i)=ener(i+1)
+    enddo
+    eigvec(:,ndimf+1)=0.0d0
+    eigvec(ndimf+1,ndimf+1)=1.0d0
+    ener(ndimf+1)=0.0d0
+    
+!-----------------------------------------------------------------------
+! Projection of the CAP matrix
+!-----------------------------------------------------------------------
+    ! Rotate the CAP matrix to the eigenvector representation
+    tmp=matmul(transpose(eigvec),matmul(w1,eigvec))
+
+    ! Projection
+    if (iprojcap.eq.1) then
+       ! Initial state projection
+       if (statenumber.eq.0) then
+          tmp(ndimf+1,:)=0.0d0
+          tmp(:,ndimf+1)=0.0d0
+       else
+          tmp(statenumber,:)=0.0d0
+          tmp(:,statenumber)=0.0d0
+       endif
+    else if (iprojcap.eq.2) then
+       ! Bound state projection
+       do i=1,ndimf+1
+          if (ener(i).le.projlim) then
+             tmp(i,:)=0.0d0
+             tmp(:,i)=0.0d0
+          endif
+       enddo
+    endif
+
+    ! Rotate the CAP matrix back to the ISR representation
+    w1=matmul(eigvec,matmul(tmp,transpose(eigvec)))
+
+!-----------------------------------------------------------------------
+! Projection of the CAP-projector matrix
+!-----------------------------------------------------------------------
+    ! Rotate the CAP-projector matrix to the eigenvector representation
+    tmp=matmul(transpose(eigvec),matmul(theta1,eigvec))
+
+    ! Projection
+    if (iprojcap.eq.1) then
+       ! Initial state projection
+       if (statenumber.eq.0) then
+          tmp(ndimf+1,:)=0.0d0
+          tmp(:,ndimf+1)=0.0d0
+       else
+          tmp(statenumber,:)=0.0d0
+          tmp(:,statenumber)=0.0d0
+       endif
+    else if (iprojcap.eq.2) then
+       ! Bound state projection
+       do i=1,ndimf+1
+          if (ener(i).le.projlim) then
+             tmp(i,:)=0.0d0
+             tmp(:,i)=0.0d0
+          endif
+       enddo
+    endif
+
+    ! Rotate the CAP-projector matrix back to the ISR representation
+    theta1=matmul(eigvec,matmul(tmp,transpose(eigvec)))
+ 
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    deallocate(eigvec)
+    deallocate(ener)
+    deallocate(work)
+    deallocate(tmp)
+    
+    return
+    
+  end subroutine cap_projection_isr
+
+!#######################################################################
+
+  subroutine cap_projection_eigen(ndimf)
+
+    use constants
+    use parameters
+    use iomod
+    
+    implicit none
+
+    integer              :: ndimf
+    integer              :: i
+    real(d), allocatable :: ener(:)
+    real(d), allocatable :: vec(:)
+
+!----------------------------------------------------------------------
+! Initial state projection
+!----------------------------------------------------------------------
+    if (iprojcap.eq.1) then
+       if (statenumber.eq.0) then
+          w1(ndimf+1,:)=0.0d0
+          w1(:,ndimf+1)=0.0d0
+          theta1(ndimf+1,:)=0.0d0
+          theta1(:,ndimf+1)=0.0d0
+       else
+          w1(statenumber,:)=0.0d0
+          w1(:,statenumber)=0.0d0
+          theta1(statenumber,:)=0.0d0
+          theta1(:,statenumber)=0.0d0
+       endif
+    endif
+
+!----------------------------------------------------------------------
+! Bound state projection
+!----------------------------------------------------------------------
+    if (iprojcap.eq.2) then
+       do i=1,ndimf+1
+          if (h1(i,i).le.projlim) then
+             w1(i,:)=0.0d0
+             w1(:,i)=0.0d0
+             theta1(i,:)=0.0d0
+             theta1(:,i)=0.0d0
+          endif
+       enddo
+    endif
+    
+    return
+    
+  end subroutine cap_projection_eigen
+  
 !#######################################################################
 
 end module adc1propmod
