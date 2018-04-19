@@ -699,7 +699,7 @@ contains
 ! To be consistent with the TD-ADC(2) code, move the ground state vector
 ! to the last basis vector position
 !-----------------------------------------------------------------------
-    do i=1,ndimf+1
+    do i=1,ndimf
        eigvec(:,i)=eigvec(:,i+1)
     enddo
     eigvec(:,ndimf+1)=0.0d0
@@ -812,7 +812,7 @@ contains
 !-----------------------------------------------------------------------
 ! Move the ground state vector to the last basis vector position
 !-----------------------------------------------------------------------
-    do i=1,ndimf+1
+    do i=1,ndimf
        eigvec(:,i)=eigvec(:,i+1)
        ener(i)=ener(i+1)
     enddo
