@@ -863,6 +863,13 @@
                  diag_section is required'
             goto 999
          endif
+
+         ! Diagonalisation of H-iW is only currently supported at
+         ! the ADC(1)/CIS level
+         if (lcapdiag.and.method.ne.1) then
+            msg='Diagonalisation of H-iW is not yet supported for &
+                 ADC(2) calculations'
+         endif
          
       endif
 
@@ -2198,6 +2205,9 @@
 
          else if (keyword(i).eq.'flux') then
             lflux=.true.
+
+         else if (keyword(i).eq.'cap_diag') then
+            lcapdiag=.true.
             
          else
             ! Exit if the keyword is not recognised

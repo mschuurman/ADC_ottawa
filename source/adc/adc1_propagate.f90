@@ -102,6 +102,14 @@ contains
     if (tdrep.eq.2) call transform_operators(ndimf)
     
 !-----------------------------------------------------------------------
+! Diagonalisation of the CAP-augmented Hamiltonian for analysis
+! purposes.
+!
+! Note that this needs to be done before any CAP projection takes place.
+!-----------------------------------------------------------------------
+    if (lcapdiag) call diag_hcap_adc1(ndimf)
+
+!-----------------------------------------------------------------------
 ! Projection of the CAP and Theta matrices
 !-----------------------------------------------------------------------
     if (lprojcap) call cap_projection(ndimf)
@@ -554,9 +562,9 @@ contains
     write(ilog,'(70a)') ('*',i=1,70)
     
     itmp=1+nBas**2*4*nOcc**2
-    call table2(ndim,statenumber+5,ener(1:statenumber+5),&
-         eigvec(:,1:statenumber+5),tmvec(1:statenumber+5),&
-         osc_str(1:statenumber+5),kpq,itmp,'i')
+    call table2(ndim,statenumber+15,ener(1:statenumber+15),&
+         eigvec(:,1:statenumber+15),tmvec(1:statenumber+15),&
+         osc_str(1:statenumber+15),kpq,itmp,'i')
 
 !-----------------------------------------------------------------------
 ! Write the eigenpairs to file
@@ -931,7 +939,91 @@ contains
     return
     
   end subroutine cap_projection_eigen
-  
+
+!#######################################################################
+
+  subroutine diag_hcap_adc1(ndimf)
+
+    use constants
+    use parameters
+    use iomod
+    use misc, only: dsortindxa1
+    
+    implicit none
+
+    integer                                 :: ndimf,lwork,info,i
+    integer, dimension(:), allocatable      :: indx
+    real(d), dimension(:), allocatable      :: rwork
+    complex(d), dimension(:,:), allocatable :: capham,vecr,vecl
+    complex(d), dimension(:), allocatable   :: lambda,work
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(capham(ndimf+1,ndimf+1))
+    capham=czero
+
+    allocate(lambda(ndimf+1))
+    lambda=czero
+
+    allocate(vecr(ndimf+1,ndimf+1))
+    vecr=czero
+
+    allocate(vecl(ndimf+1,ndimf+1))
+    vecl=czero
+
+    lwork=5*(ndimf+1)
+    allocate(work(lwork))
+    work=czero
+
+    allocate(rwork(2*(ndimf+1)))
+    rwork=0.0d0
+
+    allocate(indx(ndimf+1))
+    indx=0
+    
+!----------------------------------------------------------------------
+! Compute eigenvalues of H-iW
+!----------------------------------------------------------------------
+    capham=h1-ci*w1
+    call zgeev('V','V',ndimf+1,capham,ndimf+1,lambda,vecl,ndimf+1,&
+         vecr,ndimf+1,work,lwork,rwork,info)
+
+    if (info.ne.0) then
+       errmsg='Diagonalisation of H-iW failed in subroutine &
+            diag_hcap_adc1'
+       call error_control
+    endif
+
+!----------------------------------------------------------------------
+! Print the eigenvalues of H-iW for checking purposes
+!----------------------------------------------------------------------
+    call dsortindxa1('A',ndimf+1,abs(lambda),indx)
+
+    write(ilog,'(/,72a)') ('-',i=1,72)
+    write(ilog,'(2x,a)') 'Eigenvalues of H-iW (eV)'
+    write(ilog,'(72a)') ('-',i=1,72)
+    do i=1,min(statenumber+50,ndimf+1)
+       write(ilog,'(2x,i2,2x,F10.7,x,a,x,F11.8,a)') &
+            i,real(lambda(indx(i)))*27.2113845d0,&
+            '+',aimag(lambda(indx(i)))*27.2113845d0,'*i'
+    enddo
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(capham)
+    deallocate(lambda)
+    deallocate(vecr)
+    deallocate(vecl)
+    deallocate(work)
+    deallocate(rwork)
+    deallocate(indx)
+    
+    return
+    
+  end subroutine diag_hcap_adc1
+    
 !#######################################################################
 
 end module adc1propmod

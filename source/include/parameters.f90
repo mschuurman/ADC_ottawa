@@ -63,7 +63,6 @@ module parameters
 !!$char(36) davname,lancname  - the names of the davidson and lanczos vector files
 !!$char(1) tranmom  - dipole moment index 'x','y', or 'z' corresp. to the nirrep.
 !!$integer array(1:lmain) stvc_lbl  - Damit wirder der Lanc-Startblock festgelegt
-!!$integer info if 1 stops execution after printing the configuration tables
 !!$integer ninista gives the number of the fanostate among davidson eigenvectors
 
 !!$logical ladc1guess - greater than zero if the initial vectors for the Davidson diagonalisation 
@@ -133,7 +132,7 @@ module parameters
   character(36)                        :: lancname,davname,davname_f
   integer                              :: hinit,nirrep,nirrep2,method,&
                                           method_f,davstates,lancstates,&
-                                          numinista,norder,info,&
+                                          numinista,norder,&
                                           statenumber,denord,davstates_f
   integer, parameter                   :: nhcentre=40
   integer, dimension(0:nhcentre)       :: hcentre
@@ -380,6 +379,7 @@ logical               :: lcap
 logical               :: lprojcap
 logical               :: lautobox
 logical               :: lflux
+logical               :: lcapdiag
 
 !!$************************************************
 !!$***************ADC(1) Matrices***************

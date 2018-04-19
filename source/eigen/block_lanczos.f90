@@ -1711,7 +1711,7 @@ module block_lanczos
 
       implicit none
 
-      integer                                 :: j,m,n,i1,i2
+      integer                                 :: j,m,n,i1,i2,info
       real(d)                                 :: maxnorm
       real(d), dimension(blocksize,blocksize) :: overlap
       

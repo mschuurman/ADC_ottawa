@@ -195,6 +195,7 @@
       lautobox=.false.
       densthrsh=-1.0d0
       lflux=.false.
+      lcapdiag=.false.
       
 !-----------------------------------------------------------------------
 ! I/O channels
