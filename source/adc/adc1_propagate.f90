@@ -849,17 +849,17 @@ contains
        do i=1,ndimf+1
           if (ener(i).gt.projlim) cycle
           do j=1,ndimf+1
-             if (ener(j).le.projlim) tmp(i,j)=0.0d0
+             if (ener(j).gt.projlim) cycle
+             tmp(i,j)=0.0d0
           enddo
        enddo
     else if (iprojcap.eq.4) then
        ! Annihilation of bound-unbound and unbound-bound elements
        do i=1,ndimf+1
           do j=1,ndimf+1
-             if (ener(i).le.projlim.and.ener(j).gt.projlim) &
-                  tmp(i,j)=0.0d0
-             if (ener(j).le.projlim.and.ener(i).gt.projlim) &
-                  tmp(i,j)=0.0d0
+             if (ener(i).le.projlim.and.ener(j).le.projlim) cycle
+             if (ener(i).gt.projlim.and.ener(j).gt.projlim) cycle
+             tmp(i,j)=0.0d0
           enddo
        enddo
     endif
@@ -892,21 +892,21 @@ contains
           endif
        enddo
     else if (iprojcap.eq.3) then
-       ! Set all bound-bound elements to zero
+       ! Annihilation of bound-bound elements
        do i=1,ndimf+1
           if (ener(i).gt.projlim) cycle
           do j=1,ndimf+1
-             if (ener(j).le.projlim) tmp(i,j)=0.0d0
+             if (ener(j).gt.projlim) cycle
+             tmp(i,j)=0.0d0
           enddo
        enddo
-    else if (iprojcap.eq.3) then
-       ! Set all bound-unbound and unbound-bound elements to zero
+    else if (iprojcap.eq.4) then
+       ! Annihilation of bound-unbound and unbound-bound elements
        do i=1,ndimf+1
           do j=1,ndimf+1
-             if (ener(i).le.projlim.and.ener(j).gt.projlim) &
-                  tmp(i,j)=0.0d0
-             if (ener(i).gt.projlim.and.ener(j).le.projlim) &
-                  tmp(i,j)=0.0d0
+             if (ener(i).le.projlim.and.ener(j).le.projlim) cycle
+             if (ener(i).gt.projlim.and.ener(j).gt.projlim) cycle
+             tmp(i,j)=0.0d0
           enddo
        enddo
     endif
