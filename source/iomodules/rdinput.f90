@@ -864,6 +864,15 @@
             goto 999
          endif
 
+         ! Selected bound-unbound and bound-bound projection is
+         ! only available for TD-ADC(1) and TD-CIS calculations
+         if (iprojcap.eq.3.or.iprojcap.eq.4) then
+            if (method.ne.1) then
+               errmsg='Bound-unbound and bound-bound projection is &
+                    not available for TD-ADC(2) calculations'
+            endif
+         endif
+         
          ! Diagonalisation of H-iW is only currently supported at
          ! the ADC(1)/CIS level
          if (lcapdiag.and.method.ne.1) then
@@ -2107,20 +2116,28 @@
                   iprojcap=1
                else if (keyword(i).eq.'all') then
                   iprojcap=2
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) projlim
-                     if (keyword(i+1).eq.',') then
-                        i=i+2
-                        call convert_energy(keyword(i),projlim)
-                     endif
-                  endif
+               else if (keyword(i).eq.'all_bb') then
+                  iprojcap=3
+               else if (keyword(i).eq.'all_bu'.or.&
+                    keyword(i).eq.'all_ub') then
+                  iprojcap=4
                else
                   errmsg='Unkown projection type: '//trim(keyword(i))
                   call error_control
                endif
             else
                iprojcap=1
+            endif
+            ! Energy limit for states entering into the projector
+            if (iprojcap.eq.2.or.iprojcap.eq.3.or.iprojcap.eq.4) then
+               if (keyword(i+1).eq.',') then
+                  i=i+2
+                  read(keyword(i),*) projlim
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     call convert_energy(keyword(i),projlim)
+                  endif
+               endif
             endif
             
          else if (keyword(i).eq.'cap_order') then

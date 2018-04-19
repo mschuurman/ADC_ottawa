@@ -844,6 +844,24 @@ contains
              tmp(:,i)=0.0d0
           endif
        enddo
+    else if (iprojcap.eq.3) then
+       ! Annihilation of bound-bound elements
+       do i=1,ndimf+1
+          if (ener(i).gt.projlim) cycle
+          do j=1,ndimf+1
+             if (ener(j).le.projlim) tmp(i,j)=0.0d0
+          enddo
+       enddo
+    else if (iprojcap.eq.4) then
+       ! Annihilation of bound-unbound and unbound-bound elements
+       do i=1,ndimf+1
+          do j=1,ndimf+1
+             if (ener(i).le.projlim.and.ener(j).gt.projlim) &
+                  tmp(i,j)=0.0d0
+             if (ener(j).le.projlim.and.ener(i).gt.projlim) &
+                  tmp(i,j)=0.0d0
+          enddo
+       enddo
     endif
 
     ! Rotate the CAP matrix back to the ISR representation
@@ -873,6 +891,24 @@ contains
              tmp(:,i)=0.0d0
           endif
        enddo
+    else if (iprojcap.eq.3) then
+       ! Set all bound-bound elements to zero
+       do i=1,ndimf+1
+          if (ener(i).gt.projlim) cycle
+          do j=1,ndimf+1
+             if (ener(j).le.projlim) tmp(i,j)=0.0d0
+          enddo
+       enddo
+    else if (iprojcap.eq.3) then
+       ! Set all bound-unbound and unbound-bound elements to zero
+       do i=1,ndimf+1
+          do j=1,ndimf+1
+             if (ener(i).le.projlim.and.ener(j).gt.projlim) &
+                  tmp(i,j)=0.0d0
+             if (ener(i).gt.projlim.and.ener(j).le.projlim) &
+                  tmp(i,j)=0.0d0
+          enddo
+       enddo
     endif
 
     ! Rotate the CAP-projector matrix back to the ISR representation
@@ -901,7 +937,7 @@ contains
     implicit none
 
     integer              :: ndimf
-    integer              :: i
+    integer              :: i,j
     real(d), allocatable :: ener(:)
     real(d), allocatable :: vec(:)
 
@@ -935,7 +971,35 @@ contains
           endif
        enddo
     endif
-    
+
+!----------------------------------------------------------------------
+! Annihilation of bound-bound elements
+!----------------------------------------------------------------------
+    if (iprojcap.eq.3) then
+       do i=1,ndimf+1
+          if (h1(i,i).gt.projlim) cycle
+          do j=1,ndimf+1
+             if (h1(j,j).gt.projlim) cycle
+             w1(i,j)=0.0d0
+             theta1(i,j)=0.0d0
+          enddo
+       enddo
+    endif
+
+!----------------------------------------------------------------------
+! Annihilation of bound-unbound and unbound-bound elements
+!----------------------------------------------------------------------
+    if (iprojcap.eq.4) then
+       do i=1,ndimf+1
+          do j=1,ndimf+1
+             if (h1(i,i).le.projlim.and.h1(j,j).le.projlim) cycle
+             if (h1(i,i).gt.projlim.and.h1(j,j).gt.projlim) cycle
+             w1(i,j)=0.0d0
+             theta1(i,j)=0.0d0
+          enddo
+       enddo
+    endif
+       
     return
     
   end subroutine cap_projection_eigen
