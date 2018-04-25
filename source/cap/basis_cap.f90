@@ -25,6 +25,7 @@ module basis_cap
   public cap_type, cap_centre, cap_r0, cap_strength, cap_order, cap_lambda
   public cap_theta, cap_mpole, cap_efield, cap_diff_step
   public cap_kmin, cap_delta, cap_limit
+  public cap_aocoeff
   !
   !  Adjustable parameters
   !
@@ -501,6 +502,110 @@ contains
     !
   end subroutine cap_dump_effective
 
+!######################################################################
+!
+! Evaluation of the coefficients entering into the expansion of the
+! CAP potential in terms of the AO basis. Uses numerical integration
+! on a grid
+!
+!######################################################################
+  
+  subroutine cap_aocoeff(gam,grid_nrad,grid_nang,grid_outer_nrad,&
+       grid_outer_nang,coeff)
+    type(gam_structure), intent(inout) :: gam             ! Basis set and structure descriptor
+    integer(ik), intent(in)            :: grid_nrad       ! Basic number of radial points in atomic spheres; actual number of points 
+                                                          ! may depend on this value and atom types
+    integer(ik), intent(in)            :: grid_nang       ! Number of angular points; can be 110, 302, or 770 (ie Lebedev grids)
+    integer(ik), intent(in)            :: grid_outer_nrad ! Basic number of radial points in the outer sphere
+    integer(ik), intent(in)            :: grid_outer_nang ! Angular points in the outer sphere
+    complex(rk), intent(out)           :: coeff(:)        ! Expansion coefficients
+    !
+    type(mol_grid)        :: grid
+    !
+    call TimerStart('Evaluate CAPs')
+    !
+    !  Set up numerical integration grid and CAP parameters
+    !
+    call prepape_for_cap_integration(grid,gam,grid_nrad,grid_nang,grid_outer_nrad,grid_outer_nang)
+    ! Perform the numerical integration
+    call evaluate_caps_aocoeff(gam,grid,coeff)
+    call GridDestroy(grid)
+    call TimerStop('Evaluate CAPs')
+    !
+  end subroutine cap_aocoeff
+
+!######################################################################
+
+  subroutine evaluate_caps_aocoeff(gam,grid,coeff)
+
+    type(gam_structure), intent(inout) :: gam             ! Basis set and structure descriptor
+    type(mol_grid), intent(inout)      :: grid
+    complex(rk), intent(out)           :: coeff(:)        ! Expansion coefficients
+
+    !
+    integer(ik)           :: ib, ipt, npts
+    integer(ik)           :: iaol, iaor
+    integer(ik)           :: nbatch, nao
+    real(rk), pointer     :: xyzw(:,:)       ! Coordinates and weights of the grid points
+    real(rk), allocatable :: basval(:,:,:)   ! Values of the basis functions at the grid points
+    real(rk), allocatable :: cap(:)          ! Values of the imaginary part of the potential at grid points
+    real(rk), allocatable :: coeff_thread(:) ! Per-thread integration buffer
+    !
+    call GridPointsBatch(grid,'Batches count',count=nbatch)
+    nao = gam%nbasis
+    !$omp parallel default(none) &
+    !$omp& shared(nbatch,nao,grid,gam,coeff,cap_type) &
+    !$omp& private(ib,ipt,npts,iaol,iaor,xyzw,basval,cap,coeff_thread)
+    nullify(xyzw)
+    allocate (coeff_thread(nao))
+    coeff_thread = 0
+    !$omp do schedule(dynamic)
+    grid_batches: do ib=1,nbatch
+       !
+       !  Get grid points
+       !
+       call GridPointsBatch(grid,'Next batch',xyzw=xyzw)
+       npts = size(xyzw,dim=2)
+       if (allocated(basval)) then
+          if (size(basval,dim=3)/=npts) deallocate (basval,cap)
+       end if
+       if (.not.allocated(basval)) allocate(basval(1,nao,npts),cap(npts))
+       evaluate_basis_functions: do ipt=1,npts
+          call gamess_evaluate_functions(xyzw(1:3,ipt),basval(:,:,ipt),gam)
+       end do evaluate_basis_functions
+       ! Premultiply integrand by the point weight; saves us an operation later
+       evaluate_cap: do ipt=1,npts
+          select case (cap_type)
+          case default
+             stop 'basis_cap%evaluate_caps_multiplicative - unrecognized cap_type'
+          case ('manolopoulos')
+             cap(ipt) = manolopoulosVcap(xyzw(1:3,ipt)) * xyzw(4,ipt)
+          case ('monomial')
+             cap(ipt) = monomialVcap(xyzw(1:3,ipt)) * xyzw(4,ipt)
+          case ('atom monomial')
+             cap(ipt) = atomMonomialVcap(gam,xyzw(1:3,ipt)) * xyzw(4,ipt)
+          case ('sigmoidal')
+             cap(ipt) = sigmoidalVcap(gam,xyzw(1:3,ipt)) * xyzw(4,ipt)
+          end select
+       end do evaluate_cap
+       !
+       !  Accumulate the integrals
+       !
+       right_aos: do iaor=1,nao
+          coeff_thread(iaor) = coeff_thread(iaor) + sum(basval(1,iaor,:)*cap)
+       end do right_aos
+       !
+    end do grid_batches
+    !$omp end do nowait
+    if (associated(xyzw)  ) deallocate (xyzw)
+    if (allocated (basval)) deallocate (basval,cap)
+    !$omp critical
+    coeff = coeff + (0,1)*coeff_thread
+    !$omp end critical
+    deallocate (coeff_thread)
+    !$omp end parallel
+  end subroutine evaluate_caps_aocoeff
+    
 !######################################################################
 
 end module basis_cap

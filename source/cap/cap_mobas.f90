@@ -80,6 +80,10 @@ contains
 !----------------------------------------------------------------------
     call analyse_cap_support(gam,cap_mo)
 
+    ! TEST
+    !call analyse_cap_ao_expansion(gam)
+    ! TEST
+    
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
@@ -129,7 +133,7 @@ contains
 
     allocate(lmat(nao,nao))
     lmat=0.0d0
-    
+
 !----------------------------------------------------------------------
 ! Set the CAP type string used by the basis_cap module
 !----------------------------------------------------------------------
@@ -222,7 +226,7 @@ contains
     deallocate(cap_ao_cmplx)
     deallocate(smat)
     deallocate(lmat)
-    
+
     return
     
   end subroutine numerical_cap
@@ -318,12 +322,208 @@ contains
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(aovalues)
-    deallocate(movalues)    
+    deallocate(movalues)
     
     return
     
   end subroutine analyse_cap_support
     
 !######################################################################  
-  
+
+  subroutine analyse_cap_ao_expansion(gam)
+
+    use channels
+    use constants
+    use parameters
+    use iomod
+    use import_gamess
+    use electron_density, only: get_ao_values
+    use basis_cap
+    
+    implicit none
+
+    integer                  :: c,i,j,p,q,nao,unit
+    integer, parameter       :: npnts=101
+    real(dp), parameter      :: dr=0.25d0
+    real(dp), dimension(3)   :: r
+    real(dp), allocatable    :: aovalues(:)
+    real(dp), allocatable    :: movalues(:)
+    real(dp), allocatable    :: capval(:,:)
+    real(dp), allocatable    :: aocoe(:)
+    real(dp), allocatable    :: mocoe(:)
+    complex(dp), allocatable :: aocoe_cmplx(:)
+    type(gam_structure)      :: gam
+
+    integer                  :: n,natom
+    real(dp), parameter      :: ang2bohr=1.889725989d0
+    real(dp), parameter      :: dscale=3.5
+    real(dp)                 :: x,r1
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! No. atoms
+    natom=gam%natoms
+
+    ! No. AOs
+    nao=gam%nbasis
+
+    allocate(aocoe(nao))
+    aocoe=0.0d0
+
+    allocate(aocoe_cmplx(nao))
+    aocoe_cmplx=czero
+
+    allocate(mocoe(nbas))
+    mocoe=0.0d0
+    
+    allocate(aovalues(nao))
+    aovalues=0.0d0
+
+    allocate(movalues(nbas))
+    movalues=0.0d0
+
+    allocate(capval(npnts,3))
+    capval=0.0d0
+
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='mocapvals2.dat',form='formatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Set the CAP type string used by the basis_cap module
+!----------------------------------------------------------------------
+    if (icap.eq.1.or.icap.eq.2) then
+       ! Monomial CAP
+       cap_type='monomial'
+    else if (icap.eq.3) then
+       ! Atom-centred monomial CAP
+       cap_type='atom monomial'
+    else if (icap.eq.4) then
+       ! Moiseyev's non-local perfect CAP, single sphere
+       cap_type='moiseyev'
+    else if (icap.eq.5) then
+       ! Moiseyev's non-local perfect CAP, atom-centered spheres
+       cap_type='atom moiseyev'
+    else if (icap.eq.6) then
+       ! Cavity-like sigmoidal CAP
+       cap_type='sigmoidal'
+    endif
+
+!----------------------------------------------------------------------
+! CAP centre: for now we will take this as the geometric centre of
+! the molecule
+!----------------------------------------------------------------------
+    cap_centre=0.0d0
+    do n=1,natom
+       do i=1,3
+          cap_centre(i)=cap_centre(i) &
+               +gam%atoms(n)%xyz(i)*ang2bohr/natom
+       enddo
+    enddo
+
+!----------------------------------------------------------------------
+! CAP starting radius: if a CAP box has not been specified by the user, 
+! then we will take the start of the CAP to correspond to the greatest
+! distance in any direction to the furthest most atom plus its van der
+! Waals radius multiplied by dscale
+!----------------------------------------------------------------------
+    if (boxpar(1).eq.0.0d0) then
+       ! The user has not specified a cap box
+       cap_r0=-1.0d0
+       do n=1,natom
+          if (gam%atoms(n)%name.eq.'x') cycle
+          do i=1,3
+             x=gam%atoms(n)%xyz(i)*ang2bohr
+             r1=abs(x-cap_centre(i))+dscale*vdwr(n)
+             if (r1.gt.cap_r0) cap_r0=r1
+          enddo
+       enddo
+    else
+       ! User specified box: take the maximum starting distance
+       cap_r0=maxval(boxpar)
+    endif
+
+!----------------------------------------------------------------------
+! CAP strength
+!----------------------------------------------------------------------
+    cap_strength=capstr
+
+!----------------------------------------------------------------------
+! CAP order
+!----------------------------------------------------------------------
+    cap_order=capord
+    
+!----------------------------------------------------------------------
+! Calculate the expansion coefficients in the AO basis
+!----------------------------------------------------------------------
+    call cap_aocoeff(gam,nrad(1),nang(1),nrad(2),nang(2),aocoe_cmplx)
+
+    do i=1,nao
+       aocoe(i)=-aimag(aocoe_cmplx(i))
+    enddo
+
+!----------------------------------------------------------------------
+! Calculate the expansion coefficients in the MO basis
+!----------------------------------------------------------------------
+    mocoe(1:nbas)=matmul(transpose(ao2mo),aocoe)
+    
+!----------------------------------------------------------------------
+! Calculate and output the values of the MO representation of the
+! CAP at points along the x-, y-, and z-directions
+!----------------------------------------------------------------------
+    capval=0.0d0
+    
+    ! Loop over points
+    do i=1,npnts
+       
+       ! Loop over directions
+       do c=1,3
+          
+          ! Current coordinates
+          r=0.0d0
+          r(c)=(i-1)*dr
+          
+          ! Calculate the values of the AOs at the current point
+          call get_ao_values(gam,aovalues,r,nao)
+
+          ! Calculate the values of the MOs at the current point
+          movalues(1:nbas)=matmul(transpose(ao2mo),aovalues)
+
+          ! Calculate the value of the MO representation of the
+          ! CAP at the current point
+          do p=1,nbas
+             capval(i,c)=capval(i,c) &
+                  +mocoe(p)*movalues(p)
+          enddo
+
+       enddo
+
+       ! Output the CAP values
+       write(unit,'(F10.7,3(2x,ES15.8))') (i-1)*dr,(capval(i,j),j=1,3)
+       
+    enddo
+
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(aocoe)
+    deallocate(aocoe_cmplx)
+    deallocate(mocoe)
+    deallocate(aovalues)
+    deallocate(movalues)
+    
+    return
+    
+  end subroutine analyse_cap_ao_expansion
+    
+!######################################################################  
+    
 end module capmod

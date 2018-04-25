@@ -98,7 +98,7 @@ contains
 !----------------------------------------------------------------------
     call adc2_trdens_gs_occ_occ(trdens,ndimf,kpqf,rvec,nstates,&
          rhomp2)
-
+    
 !----------------------------------------------------------------------
 ! Calculation of the virtual-virtual block
 !----------------------------------------------------------------------
@@ -110,7 +110,7 @@ contains
 !----------------------------------------------------------------------
     call adc2_trdens_gs_virt_occ(trdens,ndimf,kpqf,rvec,nstates,&
          rhomp2)
-
+    
 !----------------------------------------------------------------------
 ! Calculation of the occupied-virtual block
 !----------------------------------------------------------------------
@@ -127,7 +127,7 @@ contains
     call times(tw2,tc2)
 
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
-
+    
     !! CHECK: transition dipoles
     !print*,
     !do i=1,nstates
@@ -666,21 +666,32 @@ contains
   
   subroutine adc2_trdens_gs_occ_virt(trdens,ndimf,kpqf,rvec,nstates)
 
+    use omp_lib
+    
     implicit none
 
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,a,b
+    integer                                   :: nthreads,tid
     real(d), dimension(nbas,nbas,nstates)     :: trdens
     real(d), dimension(ndimf,nstates)         :: rvec
     real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
+    real(d), allocatable                      :: tmp(:,:,:,:)
 
+!-----------------------------------------------------------------------
+! Number of threads
+!-----------------------------------------------------------------------  
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(tmp(nbas,nbas,nstates))
+    allocate(tmp(nbas,nbas,nstates,nthreads))
+    tmp=0.0d0
     
 !----------------------------------------------------------------------
 ! Second-order 1h1p contributions
@@ -690,19 +701,25 @@ contains
 
     tmp=0.0d0
 
+    !$omp parallel do private(a,i,cnt,j,b) shared(tmp,rvec)
     do a=nocc+1,nbas
        do i=1,nocc
           do cnt=nlim1,nlim2
              j=kpqf(3,cnt)
              b=kpqf(5,cnt)
-             tmp(i,a,:)=tmp(i,a,:)+mu(i,j,a,b)*rvec(cnt,:)
+             tid=1+omp_get_thread_num()
+             tmp(i,a,:,tid)=tmp(i,a,:,tid)+mu(i,j,a,b)*rvec(cnt,:)
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
-    trdens(1:nocc,nocc+1:nbas,:)=trdens(1:nocc,nocc+1:nbas,:) &
-         -sqrt(2.0d0)*tmp(1:nocc,nocc+1:nbas,:)
-    
+    ! Accumulate the contributions calculated by each thread
+    do tid=1,nthreads
+       trdens(1:nocc,nocc+1:nbas,:)=trdens(1:nocc,nocc+1:nbas,:) &
+            -sqrt(2.0d0)*tmp(1:nocc,nocc+1:nbas,:,tid)
+    enddo
+       
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
