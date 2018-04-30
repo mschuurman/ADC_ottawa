@@ -4,11 +4,11 @@ module cheby2specmod
 
   save
 
-  integer               :: order,epoints
-  real(d), dimension(2) :: bounds
-  real(d)               :: emin,emax
-  real(d), allocatable  :: auto(:)
-  real(d), parameter    :: eh2ev=27.2113845d0
+  integer                :: order,epoints
+  real(dp), dimension(2) :: bounds
+  real(dp)               :: emin,emax
+  real(dp), allocatable  :: auto(:)
+  real(dp), parameter    :: eh2ev=27.2113845d0
   
 end module cheby2specmod
 
@@ -194,8 +194,8 @@ contains
 
     implicit none
 
-    integer :: i,k
-    real(d) :: e,escaled,theta,spec
+    integer  :: i,k
+    real(dp) :: e,escaled,theta,spec
     
     ! Loop over energies
     do i=1,epoints
@@ -237,7 +237,7 @@ contains
     use constants
     use cheby2specmod
 
-    real(d) :: e,escale
+    real(dp) :: e,escale
 
     escale=e-(0.5d0*(bounds(2)-bounds(1))+bounds(1))
     escale=escale/(bounds(2)-bounds(1))

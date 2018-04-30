@@ -7,43 +7,43 @@ module filtermod
   save
 
   ! Energy window
-  integer                               :: nener
-  real(d), dimension(2)                 :: ebound
-  real(d)                               :: de
+  integer                                :: nener
+  real(dp), dimension(2)                 :: ebound
+  real(dp)                               :: de
   
   ! Window function
-  integer                               :: iwfunc
+  integer                                :: iwfunc
 
   ! Autocorrelation functions
-  integer                               :: ntauto,ntprop
-  real(d)                               :: t0,dt,proptime,&
-                                           autotime,tcutoff
-  complex(d), dimension(:), allocatable :: auto,auto1,auto2
+  integer                                :: ntauto,ntprop
+  real(dp)                               :: t0,dt,proptime,&
+                                            autotime,tcutoff
+  complex(dp), dimension(:), allocatable :: auto,auto1,auto2
 
   ! Hamiltonian and overlap matrices
-  integer                               :: nrbas
-  real(d), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas,&
-                                           h2fbas,h2rbas,&
-                                           transmat,normfac,&
-                                           rvec
-  real(d), dimension(:), allocatable    :: rener
-  real(d)                               :: ovrthrsh
+  integer                                :: nrbas
+  real(dp), dimension(:,:), allocatable  :: hfbas,hrbas,sfbas,&
+                                            h2fbas,h2rbas,&
+                                            transmat,normfac,&
+                                            rvec
+  real(dp), dimension(:), allocatable    :: rener
+  real(dp)                               :: ovrthrsh
   
   ! Intensities
-  real(d), dimension(:), allocatable    :: dvec,avec,intens
+  real(dp), dimension(:), allocatable    :: dvec,avec,intens
 
   ! Error estimates
-  real(d), dimension(:), allocatable    :: error
-  real(d)                               :: errthrsh
+  real(dp), dimension(:), allocatable    :: error
+  real(dp)                               :: errthrsh
   
   ! Unit conversion factors
-  real(d), parameter                    :: fs2au=41.3413745758d0
-  real(d), parameter                    :: au2fs=0.02418884254d0
-  real(d), parameter                    :: ev2eh=0.0367493d0
-  real(d), parameter                    :: eh2ev=27.2113845d0
+  real(dp), parameter                    :: fs2au=41.3413745758d0
+  real(dp), parameter                    :: au2fs=0.02418884254d0
+  real(dp), parameter                    :: ev2eh=0.0367493d0
+  real(dp), parameter                    :: eh2ev=27.2113845d0
 
   ! Output
-  integer                               :: idat
-  character(len=120)                    :: adat
+  integer                                :: idat
+  character(len=120)                     :: adat
   
 end module filtermod
