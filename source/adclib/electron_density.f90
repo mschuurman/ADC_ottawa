@@ -4,14 +4,11 @@
 
 module electron_density
 
+  use constants
+  use parameters
+  
   implicit none
 
-  private :: dp
-  
-  ! Annoyingly, the gamess_internal module contains a variable
-  ! named 'd', so we will use 'dp' here instead
-  integer, parameter  :: dp=selected_real_kind(8)
-  
 contains
 
 !######################################################################
@@ -21,7 +18,6 @@ contains
   
   function density_value(gam,rho,r) result(func)
 
-    use parameters
     use import_gamess
     
     implicit none
@@ -81,8 +77,7 @@ contains
 !######################################################################
   
   subroutine get_ao_values(gam,aovalues,r,dim)
-
-    use parameters
+    
     use import_gamess
     use gamess_internal
 

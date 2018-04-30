@@ -329,7 +329,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1,isym2,isym3,ic1,ic2,targetsym
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -548,7 +548,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1, isym2,ic
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -577,7 +577,7 @@ contains
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
                 if (ldyson.and.a.eq.ifakeorb) cycle
-                if(einit .le. 2._d*ei) then
+                if(einit .le. 2._dp*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -609,7 +609,7 @@ contains
                    call iscore(i,ic)
                    if (lifrzcore.and.ic.eq.1) cycle
 
-                   if(einit .le. 2._d*ei) then
+                   if(einit .le. 2._dp*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -731,7 +731,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1, isym2,ic
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -760,7 +760,7 @@ contains
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
                 if (a.ne.ifakeorb) cycle
-                if(einit .le. 2._d*ei) then
+                if(einit .le. 2._dp*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -791,7 +791,7 @@ contains
                    call iscore(i,ic)
                    if (lifrzcore.and.ic.eq.1) cycle
 
-                   if(einit .le. 2._d*ei) then
+                   if(einit .le. 2._dp*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -912,7 +912,7 @@ contains
     integer               :: cnti,cntf
     integer               :: isym1, isym2
     integer, dimension(7) :: col
-    real(d)               :: einit,ei,ej
+    real(dp)              :: einit,ei,ej
 
 !-----------------------------------------------------------------------
 ! Filling the kpq arrays in the order:
@@ -1040,7 +1040,7 @@ contains
     integer               :: cnti,cntf
     integer               :: isym1, isym2
     integer, dimension(7) :: col
-    real(d)               :: einit,ei,ej
+    real(dp)              :: einit,ei,ej
 
 !-----------------------------------------------------------------------
 ! Filling the kpq arrays in the order:
@@ -1164,7 +1164,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1,isym2,isym3,ic,targetsym
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -1195,7 +1195,7 @@ contains
 
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
-                if(einit .le. 2._d*ei) then
+                if(einit .le. 2._dp*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -1227,7 +1227,7 @@ contains
                       call iscore(i,ic)
                       if (lffrzcore.and.ic.eq.1) cycle
                       
-                      if(einit .le. 2._d*ei) then
+                      if(einit .le. 2._dp*ei) then
                          cnti=cnti+1
                          kpq(3,0)=kpq(3,0)+1
                          call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -1250,7 +1250,7 @@ contains
                       call iscore(i,ic)
                       if (lffrzcore.and.ic.eq.1) cycle
 
-                      if(einit .le. 2._d*ei) then
+                      if(einit .le. 2._dp*ei) then
                          cnti=cnti+1
                          kpq(3,0)=kpq(3,0)+1
                          call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -1405,7 +1405,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1,isym2,isym3
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -1431,7 +1431,7 @@ contains
              ei=abs(e(i))
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
-                if(einit .le. 2._d*ei) then
+                if(einit .le. 2._dp*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -1452,7 +1452,7 @@ contains
 !              ei=abs(e(i))
 !              do ap=nOcc+1,nBas
 !                 a=roccnum(ap)
-!                 if(einit .le. 2._d*ei) then
+!                 if(einit .le. 2._dp*ei) then
 !                    cnti=cnti+1
 !                    kpq(2,0)=kpq(2,0)+1
 !                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -1480,7 +1480,7 @@ contains
                 do ih=1,hcentre(0)
                    i=hcentre(ih)
                    ei=abs(e(i))
-                   if(einit .le. 2._d*ei) then
+                   if(einit .le. 2._dp*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -1499,7 +1499,7 @@ contains
                 do ih=1,hcentre(0)
                    i=hcentre(ih)
                    ei=abs(e(i))
-                   if(einit .le. 2._d*ei) then
+                   if(einit .le. 2._dp*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -1527,7 +1527,7 @@ contains
 !                 do ih=1,hneighb(0)
 !                    i=hneighb(ih)
 !                    ei=abs(e(i))
-!                    if(einit .le. 2._d*ei) then
+!                    if(einit .le. 2._dp*ei) then
 !                       cnti=cnti+1
 !                       kpq(3,0)=kpq(3,0)+1
 !                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -1805,8 +1805,8 @@ contains
   subroutine select_fstate_ryd(ndim,stsel,vec,nstate,nisri)
 
     integer, intent(in) :: ndim
-    real(d), intent(in) :: stsel
-    real(d), dimension(ndim),intent(in) :: vec 
+    real(dp), intent(in) :: stsel
+    real(dp), dimension(ndim),intent(in) :: vec 
     integer, intent(out) :: nstate
     integer, dimension(ndim),intent(out) :: nisri
 
@@ -1839,14 +1839,14 @@ contains
   subroutine select_fstate(ndim,stsel,vec,nstate,nisri)
 
     integer, intent(in) :: ndim
-    real(d), intent(in) :: stsel
-    real(d), dimension(ndim),intent(in) :: vec 
+    real(dp), intent(in) :: stsel
+    real(dp), dimension(ndim),intent(in) :: vec 
     integer,intent(out) :: nstate
     integer, dimension(ndim),intent(out) :: nisri
 
     integer :: i
     integer, dimension(ndim) :: indx
-    real(d), dimension(ndim) :: coeff
+    real(dp), dimension(ndim) :: coeff
     
     nstate=0
     
@@ -1950,7 +1950,7 @@ contains
     integer :: cnti,cntf
     integer :: isym1, isym2
     integer, dimension(7) :: col
-    real(d) :: einit,ei,ej
+    real(dp) :: einit,ei,ej
 
 100 FORMAT(/,3("*"),A50,3x,I4)
 101 FORMAT(/,("*"),3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,3x,A3,/)
@@ -1976,7 +1976,7 @@ contains
              ei=abs(e(i))
              do ap=nOcc+1,nBas
                 a=roccnum(ap)
-                if(einit .le. 2._d*ei) then
+                if(einit .le. 2._dp*ei) then
                    cnti=cnti+1
                    kpq(2,0)=kpq(2,0)+1
                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -1997,7 +1997,7 @@ contains
 !              ei=abs(e(i))
 !              do ap=nOcc+1,nBas
 !                 a=roccnum(ap)
-!                 if(einit .le. 2._d*ei) then
+!                 if(einit .le. 2._dp*ei) then
 !                    cnti=cnti+1
 !                    kpq(2,0)=kpq(2,0)+1
 !                    call fill_indices(col(:),2,1,a,a,i,i,1)
@@ -2023,7 +2023,7 @@ contains
                 do ih=1,hcentre(0)
                    i=hcentre(ih)
                    ei=abs(e(i))
-                   if(einit .le. 2._d*ei) then
+                   if(einit .le. 2._dp*ei) then
                       cnti=cnti+1
                       kpq(3,0)=kpq(3,0)+1
                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -2049,7 +2049,7 @@ contains
 !                 do ih=1,hneighb(0)
 !                    i=hneighb(ih)
 !                    ei=abs(e(i))
-!                    if(einit .le. 2._d*ei) then
+!                    if(einit .le. 2._dp*ei) then
 !                       cnti=cnti+1
 !                       kpq(3,0)=kpq(3,0)+1
 !                       call fill_indices(col(:),2,1,a,b,i,i,2)
@@ -2369,7 +2369,7 @@ contains
     integer               :: cnti,cntf
     integer               :: isym1, isym2
     integer, dimension(7) :: col
-    real(d)               :: einit,ei,ej
+    real(dp)              :: einit,ei,ej
 
 !-----------------------------------------------------------------------
 ! Filling the kpq arrays in the order:
@@ -2535,7 +2535,7 @@ contains
     integer               :: cnti,cntf
     integer               :: isym1, isym2,ic
     integer, dimension(7) :: col
-    real(d)               :: einit,ei,ej
+    real(dp)              :: einit,ei,ej
 
         einit=abs(e(hinit))
 

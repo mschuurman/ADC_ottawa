@@ -22,9 +22,9 @@ contains
 
       implicit none
 
-      integer                              :: iadc1,dim1,i
-      integer, dimension(:), allocatable   :: indx1
-      real(d), dimension(:,:), allocatable :: vec1
+      integer                               :: iadc1,dim1,i
+      integer, dimension(:), allocatable    :: indx1
+      real(dp), dimension(:,:), allocatable :: vec1
 
 !-----------------------------------------------------------------------
 ! Open the ADC(1) eigenvector file
@@ -75,8 +75,8 @@ contains
     
     character(30) :: name
 !    integer :: i,ktype,unt 
-    real(d), dimension(:), allocatable, intent(out) :: hxv_diag
-    real(d), dimension(:,:), allocatable            :: vmat
+    real(dp), dimension(:), allocatable, intent(out) :: hxv_diag
+    real(dp), dimension(:,:), allocatable            :: vmat
 
     allocate(hxv_diag(ndim1+ndim2))
     allocate(vmat(ndim1+ndim2,ndim1+ndim2))
@@ -143,20 +143,20 @@ contains
     
     character(30)                :: name
     integer                      :: i,j,k,dim_count,ndim1,unt
-    real(d)                      :: offdiag_ij1,offdiag_ij2,offdiag_ij3,&
+    real(dp)                     :: offdiag_ij1,offdiag_ij2,offdiag_ij3,&
                                     offdiag_ij4
-    real(d)                      :: offdiag1,offdiag2,offdiag3,offdiag4
+    real(dp)                     :: offdiag1,offdiag2,offdiag3,offdiag4
    
-    integer                              :: a,b,nzero !nocc
-    real(d), dimension(:,:), allocatable :: ca,cb,vmat
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero !nocc
+    real(dp), dimension(:,:), allocatable :: ca,cb,vmat
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
     integer                                       :: nthreads
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable, intent(out)    :: hxv_offdij
+    real(dp), dimension(:,:), allocatable, intent(out) :: hxv_offdij
 
-    real(d) :: small
+    real(dp) :: small
 
     integer :: c,cr,cm
 
@@ -407,17 +407,17 @@ contains
     
     character(30) :: name
 !    integer :: rec_count
-    integer :: i,j,k,nlim,dim_count,ndim1,unt
-    integer :: lim1i, lim2i, lim1j, lim2j
-    real(d) :: offdiag_ij1,offdiag_ij2,offdiag_ij3,offdiag_ij4,&
-               offdiag1,offdiag2,offdiag3,offdiag4
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt
+    integer  :: lim1i, lim2i, lim1j, lim2j
+    real(dp) :: offdiag_ij1,offdiag_ij2,offdiag_ij3,offdiag_ij4,&
+                offdiag1,offdiag2,offdiag3,offdiag4
     
 !    integer, dimension(:), allocatable :: oi,oj
-!    real(d), dimension(:), allocatable :: file_offdiag
+!    real(dp), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb,vmat
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb,vmat
+    real(dp)                              :: tw1,tw2,tc1,tc2
     
 !    integer                                       :: nthreads,tid
 !    integer, dimension(:), allocatable            :: hamunit    
@@ -427,11 +427,11 @@ contains
 !    integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp,hxv_offdij
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp,hxv_offdij
 !    character(len=120), dimension(:), allocatable :: hamfile
 
 !    integer :: buf_size2
-!    real(d) :: minc2
+!    real(dp) :: minc2
 
 !    integer, dimension(:), allocatable :: nsaved
 

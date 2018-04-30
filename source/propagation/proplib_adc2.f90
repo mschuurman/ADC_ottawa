@@ -15,12 +15,6 @@ module propagate_adc2
   
   save
 
-  private :: dp
-    
-  ! Annoyingly, the gamess_internal module contains a variable
-  ! named 'd', so we will use 'dp' here instead
-  integer, parameter :: dp=selected_real_kind(8)
-  
   integer                                :: matdim
   integer*8                              :: noffdiag
   integer                                :: iflux
@@ -420,8 +414,8 @@ contains
     integer                                   :: i
     real(dp)                                  :: norm,flux
     real(dp)                                  :: exnorm
-    real(dp), parameter                       :: tiny=1e-9_d
-    real(dp), parameter                       :: tinier=1e-10_d
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
     complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     character(len=14)                         :: ntostem
     character(len=10)                         :: at
@@ -553,7 +547,7 @@ contains
        if (lnto) then
           exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
                psi(1:matdim-1))))
-          if (exnorm.gt.1e-4_d) then
+          if (exnorm.gt.1e-4_dp) then
              write(at,'(F10.4)') time
              ntostem='nto_'//trim(adjustl(at))//'_'
              call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
@@ -600,8 +594,8 @@ contains
     integer                                   :: i
     real(dp)                                  :: norm,flux
     real(dp)                                  :: exnorm
-    real(dp), parameter                       :: tiny=1e-9_d
-    real(dp), parameter                       :: tinier=1e-10_d
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
     complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     character(len=14)                         :: ntostem
     character(len=10)                         :: at
@@ -734,7 +728,7 @@ contains
        if (lnto) then
           exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
                psi(1:matdim-1))))
-          if (exnorm.gt.1e-4_d) then
+          if (exnorm.gt.1e-4_dp) then
              write(at,'(F10.4)') time
              ntostem='nto_'//trim(adjustl(at))//'_'
              call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&

@@ -2263,7 +2263,7 @@
       implicit none
 
       integer          :: i,n
-      real(d)          :: theta,phi
+      real(dp)         :: theta,phi
       character(len=2) :: ai
       
 !-----------------------------------------------------------------------
@@ -2508,7 +2508,7 @@
       implicit none
 
       integer          :: i,n
-      real(d)          :: theta,phi
+      real(dp)         :: theta,phi
       character(len=2) :: ai
 
 !-----------------------------------------------------------------------
@@ -2840,14 +2840,14 @@
       
       implicit none
       
-      real(d)          :: val
+      real(dp)         :: val
       character(len=*) :: unit
 
       if (unit.eq.'au') then
          ! Do nothing, atomic units are the default         
       else if (unit.eq.'winvcm2') then
          ! W cm^-2 -> au
-         val=sqrt(val/3.5e+16_d)
+         val=sqrt(val/3.5e+16_dp)
       else
          ! Unrecognised unit
          errmsg='Unrecognised unit: '//trim(unit)
@@ -2867,7 +2867,7 @@
       
       implicit none
       
-      real(d)          :: val
+      real(dp)         :: val
       character(len=*) :: unit
 
       if (unit.eq.'au') then
@@ -2894,7 +2894,7 @@
       
       implicit none
 
-      real(d)          :: val
+      real(dp)         :: val
       character(len=*) :: unit
 
       if (unit.eq.'rad'.or.unit.eq.'radians') then
@@ -2922,7 +2922,7 @@
       
       implicit none
 
-      real(d)          :: val
+      real(dp)         :: val
       character(len=*) :: unit
 
       if (unit.eq.'au') then

@@ -29,8 +29,8 @@ contains
     integer                              :: i,ndim,ndims,ndimf,&
                                             ndimsf,nout,noutf,ndimd
     integer*8                            :: noffd,noffdf
-    real(d)                              :: e0,time
-    real(d), dimension(:), allocatable   :: fvec,dpsi
+    real(dp)                             :: e0,time
+    real(dp), dimension(:), allocatable  :: fvec,dpsi
     type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
@@ -311,10 +311,10 @@ contains
     integer                                   :: i
     integer                                   :: ndim,ndims,ndimf,itmp
     integer*8                                 :: noffd
-    real(d), dimension(:), allocatable        :: dpsi,ener,mtm,tmvec,&
+    real(dp), dimension(:), allocatable       :: dpsi,ener,mtm,tmvec,&
                                                  osc_str
-    real(d), dimension(:,:), allocatable      :: rvec
-    real(d)                                   :: time
+    real(dp), dimension(:,:), allocatable     :: rvec
+    real(dp)                                  :: time
     
 !-----------------------------------------------------------------------
 ! Allocate arrays

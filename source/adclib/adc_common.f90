@@ -220,7 +220,7 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
     integer                                   :: ndim,ndims
     integer*8                                 :: noffd
-    real(d)                                   :: time
+    real(dp)                                  :: time
     character(len=120)                        :: msg
 
     if (lmatvec) then
@@ -255,7 +255,7 @@ contains
     integer                                   :: ndim,ndims,ndim1,ndim2,&
                                                  nbuf
     integer*8                                 :: noffd
-    real(d)                                   :: time
+    real(dp)                                  :: time
     character(len=120)                        :: msg
 
 !-----------------------------------------------------------------------      
@@ -298,7 +298,7 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
     integer                                   :: ndim,ndims
     integer*8                                 :: noffd
-    real(d)                                   :: time
+    real(dp)                                  :: time
     character(len=120)                        :: msg
 
 !-----------------------------------------------------------------------
@@ -348,8 +348,8 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
     integer*8                                 :: noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
 
 !-----------------------------------------------------------------------
 ! Diagonalisation in the final space
@@ -524,11 +524,11 @@ contains
                                                  k,a,b,p,q,c
     integer*8                                 :: nel
     integer                                   :: nbuf
-    real(d), dimension(:,:), allocatable      :: rvec,dmvec
-    real(d), dimension(davstates_f)           :: ener
-    real(d)                                   :: dip0,dipnuc
-    real(d), parameter                        :: ang2bohr=1.889725989d0
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp), dimension(:,:), allocatable     :: rvec,dmvec
+    real(dp), dimension(davstates_f)          :: ener
+    real(dp)                                  :: dip0,dipnuc
+    real(dp), parameter                       :: ang2bohr=1.889725989d0
+    real(dp)                                  :: tw1,tw2,tc1,tc2
     character(len=60)                         :: filename
 
 !-----------------------------------------------------------------------
@@ -666,11 +666,11 @@ contains
                                                  k,a,b,p,q,c
     integer*8                                 :: nel
     integer                                   :: nbuf
-    real(d), dimension(:,:), allocatable      :: rvec,dmvec
-    real(d), dimension(davstates_f)           :: ener
-    real(d)                                   :: dip0,dipnuc
-    real(d), parameter                        :: ang2bohr=1.889725989d0
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp), dimension(:,:), allocatable     :: rvec,dmvec
+    real(dp), dimension(davstates_f)          :: ener
+    real(dp)                                  :: dip0,dipnuc
+    real(dp), parameter                       :: ang2bohr=1.889725989d0
+    real(dp)                                  :: tw1,tw2,tc1,tc2
     character(len=60)                         :: filename
       
 !-----------------------------------------------------------------------
@@ -799,17 +799,17 @@ contains
 
     implicit none
 
-    integer                              :: dim1,dim2,idpl,nbuf,&
-                                            nlim,k,n,buffsize,&
-                                            nthreads,tid
-    integer*8                            :: nel
-    integer, dimension(:), allocatable   :: indxi,indxj
-    real(d), dimension(dim1)             :: vec
-    real(d), dimension(dim2)             :: tvec
-    real(d), dimension(:), allocatable   :: buffer
-    real(d), dimension(:,:), allocatable :: tmpvec
-    character(len=60)                    :: filename
-    character(len=1)                     :: cntrdir
+    integer                               :: dim1,dim2,idpl,nbuf,&
+                                             nlim,k,n,buffsize,&
+                                             nthreads,tid
+    integer*8                             :: nel
+    integer, dimension(:), allocatable    :: indxi,indxj
+    real(dp), dimension(dim1)             :: vec
+    real(dp), dimension(dim2)             :: tvec
+    real(dp), dimension(:), allocatable   :: buffer
+    real(dp), dimension(:,:), allocatable :: tmpvec
+    character(len=60)                     :: filename
+    character(len=1)                      :: cntrdir
         
 !-----------------------------------------------------------------------
 ! Open the dipole matrix file
@@ -907,9 +907,9 @@ contains
 
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
     integer                                   :: ndim,i
-    real(d), dimension(:), allocatable        :: ener,mtm,tmvec,&
+    real(dp), dimension(:), allocatable       :: ener,mtm,tmvec,&
                                                  osc_str
-    real(d), dimension(:,:), allocatable      :: rvec
+    real(dp), dimension(:,:), allocatable     :: rvec
 
 !-----------------------------------------------------------------------
 ! Allocate arrays

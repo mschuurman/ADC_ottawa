@@ -13,13 +13,13 @@ module fdstates
 
   implicit none
 
-  integer                               :: matdim,fsunit
-  integer*8                             :: noffdiag,buffsize,reclength
-  real(d), dimension(:,:), allocatable  :: buffer
-  real(d), dimension(:,:), allocatable  :: eigvec
-  real(d), dimension(:), allocatable    :: eigval
-  complex(d), dimension(:), allocatable :: psi0
-  logical                               :: fsincore
+  integer                                :: matdim,fsunit
+  integer*8                              :: noffdiag,buffsize,reclength
+  real(dp), dimension(:,:), allocatable  :: buffer
+  real(dp), dimension(:,:), allocatable  :: eigvec
+  real(dp), dimension(:), allocatable    :: eigval
+  complex(dp), dimension(:), allocatable :: psi0
+  logical                                :: fsincore
   
 contains
 
@@ -31,11 +31,11 @@ contains
     
     implicit none
     
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    integer                               :: k
-    real(d), dimension(ndimf), intent(in) :: fvec
-    real(d)                               :: tw1,tw2,tc1,tc2
+    integer, intent(in)                    :: ndimf
+    integer*8, intent(in)                  :: noffdf
+    integer                                :: k
+    real(dp), dimension(ndimf), intent(in) :: fvec
+    real(dp)                               :: tw1,tw2,tc1,tc2
 
 !----------------------------------------------------------------------
 ! Start timing
@@ -171,7 +171,7 @@ contains
 
     integer*8 :: maxrecl,reqmem
     integer   :: nthreads
-    real(d)   :: memavail
+    real(dp)  :: memavail
 
 !----------------------------------------------------------------------
 ! Available memory
@@ -292,9 +292,9 @@ contains
 
     implicit none
 
-    integer                                :: i
-    real(d), dimension(matdim), intent(in) :: fvec
-    real(d)                                :: norm
+    integer                                 :: i
+    real(dp), dimension(matdim), intent(in) :: fvec
+    real(dp)                                :: norm
     
 !----------------------------------------------------------------------
 ! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
@@ -319,24 +319,24 @@ contains
     
     implicit none
 
-    integer*8, intent(in)                   :: noffdf
-    integer                                 :: i
-    real(d)                                 :: norm
-    real(d), parameter                      :: tiny=1e-9_d
-    complex(d), dimension(:), allocatable   :: psi,dtpsi
+    integer*8, intent(in)                  :: noffdf
+    integer                                :: i
+    real(dp)                               :: norm
+    real(dp), parameter                    :: tiny=1e-9_dp
+    complex(dp), dimension(:), allocatable :: psi,dtpsi
     
     ! SIL arrays and variables
-    integer                                 :: steps,trueorder,&
-                                               errorcode
-    real(d)                                 :: intperiod,stepsize,&
-                                               truestepsize,time,&
-                                               inttime
-    real(d), dimension(:,:), allocatable    :: eigenvector
-    real(d), dimension(:), allocatable      :: diagonal,eigenval
-    real(d), dimension(:), allocatable      :: offdiag
-    real(d), dimension(:), allocatable      :: offdg2    
-    complex(d), dimension(:,:), allocatable :: krylov
-    logical(kind=4)                         :: restart,relax,stdform
+    integer                                  :: steps,trueorder,&
+                                                errorcode
+    real(dp)                                 :: intperiod,stepsize,&
+                                                truestepsize,time,&
+                                                inttime
+    real(dp), dimension(:,:), allocatable    :: eigenvector
+    real(dp), dimension(:), allocatable      :: diagonal,eigenval
+    real(dp), dimension(:), allocatable      :: offdiag
+    real(dp), dimension(:), allocatable      :: offdg2    
+    complex(dp), dimension(:,:), allocatable :: krylov
+    logical(kind=4)                          :: restart,relax,stdform
     
 !----------------------------------------------------------------------
 ! sillib variables
@@ -466,9 +466,9 @@ contains
 
     implicit none
 
-    integer                       :: istep,j
-    real(d)                       :: dt,fac,gk,t,ej,de
-    complex(d), dimension(matdim) :: psi
+    integer                        :: istep,j
+    real(dp)                       :: dt,fac,gk,t,ej,de
+    complex(dp), dimension(matdim) :: psi
 
 !----------------------------------------------------------------------    
 ! We are performing the windowed Fourier transforms of the wavepacket
@@ -525,7 +525,7 @@ contains
 
     implicit none
 
-    real(d) :: t,gk
+    real(dp) :: t,gk
 
     gk=cos((pi*t)/(2.0d0*tfinal))
     gk=gk**iwfunc
@@ -540,8 +540,8 @@ contains
 
     implicit none
     
-    integer :: istep,k
-    real(d) :: t,norm
+    integer  :: istep,k
+    real(dp) :: t,norm
 
     write(ilog,'(70a)') ('+',k=1,70)
     write(ilog,'(a,x,F10.4)') 'Time:',t
@@ -559,9 +559,9 @@ contains
     
     implicit none
 
-    integer                            :: i,j,unit
-    real(d)                            :: norm
-    real(d), dimension(:), allocatable :: hpsi
+    integer                             :: i,j,unit
+    real(dp)                            :: norm
+    real(dp), dimension(:), allocatable :: hpsi
 
 !----------------------------------------------------------------------
 ! Calculation of the eigensates of interest

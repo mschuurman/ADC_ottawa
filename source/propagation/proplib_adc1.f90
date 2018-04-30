@@ -14,9 +14,9 @@ module propagate_adc1
 
   save
 
-  integer                               :: matdim
-  integer                               :: iflux
-  complex(d), dimension(:), allocatable :: psi
+  integer                                :: matdim
+  integer                                :: iflux
+  complex(dp), dimension(:), allocatable :: psi
   
 contains
 
@@ -41,7 +41,7 @@ contains
     integer, intent(in)                       :: ndimf
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp)                                  :: tw1,tw2,tc1,tc2
 
 !----------------------------------------------------------------------
 ! Start timing
@@ -194,9 +194,9 @@ contains
 
     implicit none
     
-    integer              :: unit,itmp,i
-    real(d)              :: ftmp
-    real(d), allocatable :: vec(:)
+    integer               :: unit,itmp,i
+    real(dp)              :: ftmp
+    real(dp), allocatable :: vec(:)
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -317,22 +317,22 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
     integer*8                                 :: dummy
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
+    real(dp)                                  :: norm,flux
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     
     ! SIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
+    real(dp)                                  :: intperiod,stepsize,&
                                                  truestepsize,time,&
                                                  inttime
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2    
-    complex(d), dimension(:,:), allocatable   :: krylov
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2    
+    complex(dp), dimension(:,:), allocatable  :: krylov
     logical(kind=4)                           :: restart,relax,stdform
     
 !----------------------------------------------------------------------
@@ -490,23 +490,23 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
     integer*8                                 :: dummy
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
+    real(dp)                                  :: norm,flux
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     
     ! CSIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
+    real(dp)                                  :: intperiod,stepsize,&
                                                  truestepsize,time,&
                                                  inttime,macheps
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2
-    complex(d), dimension(:,:), allocatable   :: krylov
-    complex(d), dimension(0:kdim,0:kdim)      :: hessenberg,eigvec,&
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2
+    complex(dp), dimension(:,:), allocatable  :: krylov
+    complex(dp), dimension(0:kdim,0:kdim)     :: hessenberg,eigvec,&
                                                  auxmat
     logical(kind=4)                           :: restart,relax,&
                                                  stdform,olderrcri
@@ -661,7 +661,7 @@ contains
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: t,norm,flux
+    real(dp)                                  :: t,norm,flux
 
     write(ilog,'(70a)') ('+',k=1,70)
 
@@ -700,8 +700,8 @@ contains
     integer, dimension(:), allocatable        :: indx
     integer                                   :: k,ilbl
     integer                                   :: kpqdim2
-    real(d), dimension(:), allocatable        :: abscoeff
-    real(d), parameter                        :: coefftol=0.01d0
+    real(dp), dimension(:), allocatable       :: abscoeff
+    real(dp), parameter                       :: coefftol=0.01d0
     character(len=2)                          :: spincase
 
     kpqdim2=nbas**2*4*nocc**2+1
@@ -768,12 +768,12 @@ contains
 
     implicit none
 
-    integer                            :: k,ilbl
-    integer, dimension(:), allocatable :: indx
-    real(d), dimension(:), allocatable :: abscoeff
-    real(d), parameter                 :: coefftol=0.01d0
-    character(len=3)                   :: as
-    character(len=5)                   :: aket
+    integer                             :: k,ilbl
+    integer, dimension(:), allocatable  :: indx
+    real(dp), dimension(:), allocatable :: abscoeff
+    real(dp), parameter                 :: coefftol=0.01d0
+    character(len=3)                    :: as
+    character(len=5)                    :: aket
     
 !-----------------------------------------------------------------------
 ! Allocate arrays

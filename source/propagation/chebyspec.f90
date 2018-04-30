@@ -11,10 +11,10 @@ module chebyspec
   
   implicit none
 
-  integer               :: matdim
-  integer*8             :: noffdiag
-  real(d), dimension(2) :: bounds
-  real(d), allocatable  :: auto(:)
+  integer                :: matdim
+  integer*8              :: noffdiag
+  real(dp), dimension(2) :: bounds
+  real(dp), allocatable  :: auto(:)
   
 contains
 
@@ -27,9 +27,9 @@ contains
     
     implicit none
 
-    integer, intent(in)       :: ndimf
-    integer*8, intent(in)     :: noffdf
-    real(d), dimension(ndimf) :: q0
+    integer, intent(in)        :: ndimf
+    integer*8, intent(in)      :: noffdf
+    real(dp), dimension(ndimf) :: q0
     
 !----------------------------------------------------------------------
 ! Initialisation
@@ -131,9 +131,9 @@ contains
     
     implicit none
 
-    integer*8 :: maxrecl,reqmem
-    integer   :: nthreads
-    real(d)   :: memavail
+    integer*8  :: maxrecl,reqmem
+    integer    :: nthreads
+    real(dp)   :: memavail
 
 !----------------------------------------------------------------------
 ! Available memory
@@ -193,12 +193,12 @@ contains
     
     implicit none
 
-    integer, intent(in)       :: ndimf
-    integer*8, intent(in)     :: noffdf
-    integer                   :: k
-    real(d), dimension(ndimf) :: q0
-    real(d), allocatable      :: qk(:),qkm1(:),qkm2(:)
-    real(d)                   :: N0
+    integer, intent(in)        :: ndimf
+    integer*8, intent(in)      :: noffdf
+    integer                    :: k
+    real(dp), dimension(ndimf) :: q0
+    real(dp), allocatable      :: qk(:),qkm1(:),qkm2(:)
+    real(dp)                   :: N0
     
 !----------------------------------------------------------------------
 ! Allocate arrays

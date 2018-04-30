@@ -12,7 +12,7 @@ contains
   subroutine wrtinterm(untnr,ndim,maxbl,diag)
 
     integer, intent(in) :: untnr,maxbl,ndim
-    real(d), dimension(ndim,ndim), intent(in) :: diag
+    real(dp), dimension(ndim,ndim), intent(in) :: diag
 
     integer :: j
 
@@ -24,7 +24,7 @@ contains
   subroutine wrtdg(untnr,ndim,maxbl,nbuf,type,diag)
   
     integer, intent(in) :: untnr,maxbl,ndim,nbuf,type
-    real(d), dimension(ndim), intent(in) :: diag
+    real(dp), dimension(ndim), intent(in) :: diag
 
     integer :: j
     
@@ -36,8 +36,8 @@ contains
   subroutine wrtoffdg(untnr,maxbl,buff,oi,oj,nrec)
     
     integer, intent(in) :: untnr,maxbl,nrec
-    integer, dimension(maxbl), intent(in) :: oi,oj
-    real(d), dimension(maxbl), intent(in) :: buff
+    integer, dimension(maxbl), intent(in)  :: oi,oj
+    real(dp), dimension(maxbl), intent(in) :: buff
 
     write(untnr) buff(:),oi(:),oj(:),nrec
     
@@ -49,8 +49,8 @@ contains
 
     integer, intent(in) :: ndim,nvecin,fnm
     integer, intent(out) :: nvecout
-    real(d), dimension(ndim,nvecin),intent(out) :: rvec
-    real(d), dimension(nvecin), intent(out) :: evec
+    real(dp), dimension(ndim,nvecin),intent(out) :: rvec
+    real(dp), dimension(nvecin), intent(out) :: evec
 
     integer :: i,nr,nfl,count
     character(20) :: fname
@@ -87,10 +87,10 @@ contains
     integer, intent(in) :: ndim,i1,i2
     integer, intent(inout) :: fnm
     integer, intent(out) :: nvecout
-    real(d), dimension(ndim,i2-i1+1),intent(out) :: rvec
+    real(dp), dimension(ndim,i2-i1+1),intent(out) :: rvec
 
-    real(d) :: en
-    integer :: i,nr,nfl,count
+    real(dp) :: en
+    integer  :: i,nr,nfl,count
     character(20) :: fname
 
     nfl=77
@@ -129,7 +129,7 @@ contains
 
     integer, intent(in) :: ndim,nvecin,fnm
     integer, intent(out) :: nvecout
-    real(d), dimension(nvecin), intent(out) :: evec
+    real(dp), dimension(nvecin), intent(out) :: evec
 
     integer :: i,nr,nfl,count
     character(20) :: fname
@@ -165,13 +165,13 @@ contains
     
     integer, intent(in) :: ndim
     character(4), intent(in) :: name
-    real(d), dimension(ndim), intent(in) :: vec
+    real(dp), dimension(ndim), intent(in) :: vec
 
     open(unit=99,file=name,status='UNKNOWN',access='SEQUENTIAL',&
          form='UNFORMATTED')
     write(99) 1,ndim
     write(99) 1
-    write(99) 1,0.0_d,vec(:)
+    write(99) 1,0.0_dp,vec(:)
     close(99)
     
   end subroutine write_vec
@@ -180,9 +180,9 @@ contains
 
       integer, intent(in) :: ndim
       character(4), intent(in) :: name
-      real(d), dimension(ndim), intent(out) :: vec
+      real(dp), dimension(ndim), intent(out) :: vec
       integer :: itmp,ndim1
-      real(d) :: tmp
+      real(dp) :: tmp
 
       open(unit=99,file=name,status='OLD',access='SEQUENTIAL',&
            form='UNFORMATTED')

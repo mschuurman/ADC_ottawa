@@ -13,13 +13,13 @@ contains
   
 !#######################################################################
 
-  real(d) function tm(ndim,evec,mtm)
+  real(dp) function tm(ndim,evec,mtm)
 
     implicit none
        
-    integer, intent(in)                  :: ndim
-    real(d), dimension(ndim), intent(in) :: evec,mtm       
-    real(d)                              :: ddot
+    integer, intent(in)                   :: ndim
+    real(dp), dimension(ndim), intent(in) :: evec,mtm       
+    real(dp)                              :: ddot
 
     external ddot
        
@@ -35,12 +35,12 @@ contains
 
     implicit none
     
-    integer                                   :: i
-    integer, intent(in)                       :: ndim
-    real(d), dimension(ndim)                  :: Y
-    real(d), dimension(ndim), intent(in)      :: autvec
-    real(d), dimension(ndim,ndim), intent(in) :: arr
-    real(d), dimension(ndim), intent(out)     :: travec
+    integer                                    :: i
+    integer, intent(in)                        :: ndim
+    real(dp), dimension(ndim)                  :: Y
+    real(dp), dimension(ndim), intent(in)      :: autvec
+    real(dp), dimension(ndim,ndim), intent(in) :: arr
+    real(dp), dimension(ndim), intent(out)     :: travec
        
     external dsymv
        
@@ -61,8 +61,8 @@ contains
     integer, intent(in)                                   :: ndim
     integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
     integer                                               :: i,ap,ih
-    real(d), dimension(ndim), intent(out)                 :: mtm 
-    real(d)                                               :: tw1,tw2,&
+    real(dp), dimension(ndim), intent(out)                :: mtm 
+    real(dp)                                              :: tw1,tw2,&
                                                              tc1,tc2
     
 !----------------------------------------------------------------------
@@ -109,8 +109,8 @@ contains
     integer, intent(in)                                   :: ndim
     integer, dimension(7,0:nBas**2*4*nOcc**2), intent(in) :: kpq
     integer                                               :: i,ap,ih
-    real(d), dimension(ndim), intent(out)                 :: mtm 
-    real(d)                                               :: tw1,tw2,&
+    real(dp), dimension(ndim), intent(out)                :: mtm 
+    real(dp)                                              :: tw1,tw2,&
                                                              tc1,tc2
 
 !----------------------------------------------------------------------

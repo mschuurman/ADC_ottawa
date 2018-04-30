@@ -21,8 +21,8 @@
         integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
         integer                              :: ndim,ndims,ndimsf,&
                                                 ndimf,ndimd
-        real(d)                              :: e0,einit,time
-        real(d), dimension(:), allocatable   :: vec_init
+        real(dp)                             :: e0,einit,time
+        real(dp), dimension(:), allocatable  :: vec_init
         type(gam_structure)                  :: gam
 
 !-----------------------------------------------------------------------
@@ -71,8 +71,8 @@
         integer, dimension(:,:), allocatable :: kpq
         integer                              :: ndim,ndims,ivec,i,itmp
         integer*8                            :: noffd
-        real(d)                              :: einit,time
-        real(d), dimension(:), allocatable   :: vec_init
+        real(dp)                             :: einit,time
+        real(dp), dimension(:), allocatable  :: vec_init
         character(len=120)                   :: msg
         type(gam_structure)                  :: gam
 
@@ -264,8 +264,8 @@
         integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
         integer                                   :: ndimf,ndimsf,i,&
                                                      iout,itmp
-        real(d), dimension(:,:), allocatable      :: eigvecf
-        real(d), dimension(:), allocatable        :: eigvalf
+        real(dp), dimension(:,:), allocatable     :: eigvecf
+        real(dp), dimension(:), allocatable       :: eigvalf
         character(len=120)                        :: msg
         character(len=36)                         :: filename
 
@@ -407,11 +407,11 @@
                                                      ndims,i,j,a,b,n,&
                                                      inorm,icoeff,ivec,&
                                                      itmp,nsta
-        real(d), dimension(ndim)                  :: vec_init
-        real(d), dimension(ndimf)                 :: eigvec
-        real(d), dimension(:,:), allocatable      :: rhogs2,rmat,smat
-        real(d), dimension(:), allocatable        :: dyscoeff
-        real(d)                                   :: einit,ei,eigval,&
+        real(dp), dimension(ndim)                 :: vec_init
+        real(dp), dimension(ndimf)                :: eigvec
+        real(dp), dimension(:,:), allocatable     :: rhogs2,rmat,smat
+        real(dp), dimension(:), allocatable       :: dyscoeff
+        real(dp)                                  :: einit,ei,eigval,&
                                                      norm,de
         character(len=36)                         :: vecfile
         logical                                   :: ldir

@@ -18,9 +18,9 @@ contains
     implicit none
     
     integer,intent(in) :: r,s,u,v
-    real(d)            :: val
+    real(dp)            :: val
     
-    val=real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+    val=real(moIntegrals%buffer_real(r,s,u,v),kind=dp)
 
     return
     
@@ -52,9 +52,9 @@ contains
 !    implicit none
 !    
 !    integer,intent(in) :: r,s,u,v
-!    real(d)            :: val
+!    real(dp)           :: val
 !    
-!    val = real(moIntegrals%buffer_real(r,s,u,v),kind=d)
+!    val = real(moIntegrals%buffer_real(r,s,u,v),kind=dp)
 !    
 !    return
 !    
@@ -70,7 +70,7 @@ contains
 !    
 !    integer,intent(in) :: r,s,u,v
 !    integer            :: r2
-!    real(d)            :: val
+!    real(dp)           :: val
 !    
 !    r2 = u
 !     if(moIntegrals%mo_l /= v .and. moIntegrals%mo_l /= u)then
@@ -78,7 +78,7 @@ contains
 !     else
 !       if(moIntegrals%mo_l == u) r2 = v
 !     endif
-!     val = real(moIntegrals%buffer_real(r,s,r2,1),kind=d)
+!     val = real(moIntegrals%buffer_real(r,s,r2,1),kind=dp)
 !
 !    return    
 !    

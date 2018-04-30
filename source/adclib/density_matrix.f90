@@ -50,13 +50,13 @@ contains
     integer                                   :: i
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), allocatable                      :: rhomp2(:,:)
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), allocatable                     :: rhomp2(:,:)
+    real(dp)                                  :: tw1,tw2,tc1,tc2
 
-    integer :: p,q
-    real(d) :: chk
+    integer  :: p,q
+    real(dp) :: chk
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -162,11 +162,11 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,k,a,b
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d)                                   :: delta_ijaa,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp)                                  :: delta_ijaa,&
                                                  delta_ijab,&
                                                  delta_ikaa,&
                                                  delta_ikab
@@ -330,11 +330,11 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,a,b,c
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d)                                   :: delta_iiab,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp)                                  :: delta_iiab,&
                                                  delta_iicb,&
                                                  delta_ijab,&
                                                  delta_ijcb
@@ -504,12 +504,12 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,k,a,b,c
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d), allocatable                      :: lambda(:,:,:)
-    real(d)                                   :: delta_abij,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp), allocatable                     :: lambda(:,:,:)
+    real(dp)                                  :: delta_abij,&
                                                  delta_ijac,&
                                                  delta_jkbc
 
@@ -675,10 +675,10 @@ contains
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,a,b
     integer                                   :: nthreads,tid
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:,:)
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:,:)
 
 !-----------------------------------------------------------------------
 ! Number of threads
@@ -739,11 +739,11 @@ contains
 
     implicit none
 
-    integer :: i,j,a,b
-    integer :: c,dd,k,l
-    real(d) :: mu
-    real(d) :: delta_ijab,delta_ikac,delta_jkbc,delta_jkac,&
-               delta_ikbc,delta_ijcd,delta_klab
+    integer  :: i,j,a,b
+    integer  :: c,dd,k,l
+    real(dp) :: mu
+    real(dp) :: delta_ijab,delta_ikac,delta_jkbc,delta_jkac,&
+                delta_ikbc,delta_ijcd,delta_klab
     
     mu=0.0d0
 

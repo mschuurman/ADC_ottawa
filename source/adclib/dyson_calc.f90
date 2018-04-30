@@ -15,7 +15,7 @@
 
     save
 
-    real(d), parameter :: invsqrt2=1.0d0/sqrt(2.0d0)
+    real(dp), parameter :: invsqrt2=1.0d0/sqrt(2.0d0)
 
   contains
 
@@ -32,11 +32,11 @@
       implicit none
 
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
-      integer                                   :: ndim,ndims,i,j,k,a,&
-                                                   b,c,n
-      real(d), dimension(nbas,nbas)             :: rhogs2,rmat,smat
-      real(d), dimension(ndim)                  :: vec_init
-      real(d)                                   :: delta_ijab,ftmp,&
+      integer                                   :: ndim,ndims,i,j,k,&
+                                                   a,b,c,n
+      real(dp), dimension(nbas,nbas)            :: rhogs2,rmat,smat
+      real(dp), dimension(ndim)                 :: vec_init
+      real(dp)                                  :: delta_ijab,ftmp,&
                                                    delta_ikab,&
                                                    delta_ijac,prei,&
                                                    pref
@@ -116,9 +116,9 @@
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
       integer                                   :: ndim,ndims,count,n,&
                                                    i,j,k,a,b
-      real(d), dimension(nbas,nbas)             :: smat
-      real(d), dimension(ndim)                  :: vec_init
-      real(d)                                   :: ftmp,delta
+      real(dp), dimension(nbas,nbas)            :: smat
+      real(dp), dimension(ndim)                 :: vec_init
+      real(dp)                                  :: ftmp,delta
 
 !-----------------------------------------------------------------------
 ! Initialise arrays
@@ -194,9 +194,9 @@
 
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
       integer                                   :: ndimf,ndimsf
-      real(d), dimension(nbas,nbas)             :: rhogs2
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndimf)                 :: vec
+      real(dp), dimension(nbas,nbas)            :: rhogs2
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndimf)                :: vec
 
 !-----------------------------------------------------------------------
 ! Coefficients for the occupied MOs
@@ -234,11 +234,11 @@
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
       integer                                   :: ndim,ndims,ndimf,&
                                                    ndimsf
-      real(d), dimension(nbas,nbas)             :: rhogs2,rmat,smat,&
+      real(dp), dimension(nbas,nbas)            :: rhogs2,rmat,smat,&
                                                    pmat,qmat
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndim)                  :: vec_init
-      real(d), dimension(ndimf)                 :: vec_final
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndim)                 :: vec_init
+      real(dp), dimension(ndimf)                :: vec_final
 
 !-----------------------------------------------------------------------
 ! Pre-calculation of the P-matrix
@@ -294,9 +294,9 @@
       integer                                   :: ndim,ndimf,ndims,&
                                                    ndimsf,m,n,a,b,&
                                                    count,i,j
-      real(d), dimension(nbas,nbas)             :: pmat
-      real(d), dimension(ndim)                  :: vec_init
-      real(d), dimension(ndimf)                 :: vec_final
+      real(dp), dimension(nbas,nbas)            :: pmat
+      real(dp), dimension(ndim)                 :: vec_init
+      real(dp), dimension(ndimf)                :: vec_final
 
 !-----------------------------------------------------------------------
 ! Initialisation of arrays
@@ -380,9 +380,9 @@
                                                    ndimsf,m,n,a,b,&
                                                    count,countf,i,j,&
                                                    alpha
-      real(d), dimension(nbas,nbas)             :: qmat
-      real(d), dimension(ndim)                  :: vec_init
-      real(d), dimension(ndimf)                 :: vec_final
+      real(dp), dimension(nbas,nbas)            :: qmat
+      real(dp), dimension(ndim)                 :: vec_init
+      real(dp), dimension(ndimf)                :: vec_final
       logical                                   :: lcontrib
 
 !-----------------------------------------------------------------------
@@ -530,11 +530,11 @@
       integer                                   :: ndimf,ndimsf,&
                                                    alpha,i,j,ilbl,&
                                                    jlbl,b,n,k,c
-      real(d), dimension(nbas,nbas)             :: rhogs2
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndimf)                 :: vec
-      real(d), dimension(:,:), allocatable      :: chi,zeta
-      real(d)                                   :: delta_ijab,ftmp
+      real(dp), dimension(nbas,nbas)            :: rhogs2
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndimf)                :: vec
+      real(dp), dimension(:,:), allocatable     :: chi,zeta
+      real(dp)                                  :: delta_ijab,ftmp
         
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -637,10 +637,10 @@
       integer                                   :: ndimf,ndimsf,&
                                                    alpha,b,i,ilbl,&
                                                    j,c,n
-      real(d), dimension(nbas,nbas)             :: rhogs2
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndimf)                 :: vec
-      real(d)                                   :: delta_ijbc,ftmp
+      real(dp), dimension(nbas,nbas)            :: rhogs2
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndimf)                :: vec
+      real(dp)                                  :: delta_ijbc,ftmp
       
 !-----------------------------------------------------------------------
 ! Index of the 'continuum' orbital
@@ -705,10 +705,10 @@
       integer                                   :: ndim,ndims,ndimf,&
                                                    ndimsf,alpha,n,m,&
                                                    i,j,a,b
-      real(d), dimension(nbas,nbas)             :: rhogs2,smat,pmat
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndimf)                 :: vec_init
-      real(d), dimension(ndimf)                 :: vec_final
+      real(dp), dimension(nbas,nbas)            :: rhogs2,smat,pmat
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndimf)                :: vec_init
+      real(dp), dimension(ndimf)                :: vec_final
 
 !-----------------------------------------------------------------------
 ! Index of the continuum orbital
@@ -781,19 +781,19 @@
                                                    ndimsf,alpha,n,m,&
                                                    i,j,k,l,a,b,c,&
                                                    clbl
-      real(d), dimension(nbas,nbas)             :: rhogs2,rmat,pmat,&
+      real(dp), dimension(nbas,nbas)            :: rhogs2,rmat,pmat,&
                                                    qmat,rmatf
-      real(d), dimension(nbas)                  :: dyscoeff
-      real(d), dimension(ndimf)                 :: vec_init
-      real(d), dimension(ndimf)                 :: vec_final
-      real(d)                                   :: ftmp,ftmp2,&
+      real(dp), dimension(nbas)                 :: dyscoeff
+      real(dp), dimension(ndimf)                :: vec_init
+      real(dp), dimension(ndimf)                :: vec_final
+      real(dp)                                  :: ftmp,ftmp2,&
                                                    delta_ijab,&
                                                    delta_klad,&
                                                    delta_klbc,&
                                                    delta_ikac,&
                                                    delta_ikbc
-      real(d), dimension(:,:,:), allocatable    :: tau1,tau2
-      real(d), dimension(:), allocatable        :: zeta
+      real(dp), dimension(:,:,:), allocatable   :: tau1,tau2
+      real(dp), dimension(:), allocatable       :: zeta
 
 !-----------------------------------------------------------------------
 ! R-matrix for the final state

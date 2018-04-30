@@ -17,9 +17,9 @@
 
       implicit none
 
-      integer                              :: ndim,i,iout
-      integer, dimension(:,:), allocatable :: kpq
-      real(d), dimension(:,:), allocatable :: eigvec
+      integer                               :: ndim,i,iout
+      integer, dimension(:,:), allocatable  :: kpq
+      real(dp), dimension(:,:), allocatable :: eigvec
 
       if (lcvs) then
          write(ilog,'(/,2x,a,/)') &
@@ -91,10 +91,10 @@
       use channels
 
       implicit none
-
-      integer                              :: ndim,i,iout
-      integer, dimension(:,:), allocatable :: kpqf
-      real(d), dimension(:,:), allocatable :: eigvec
+      
+      integer                               :: ndim,i,iout
+      integer, dimension(:,:), allocatable  :: kpqf
+      real(dp), dimension(:,:), allocatable :: eigvec
 
       if (lcvsfinal) then
          write(ilog,'(/,2x,a,/)') &
@@ -174,13 +174,13 @@
 
       implicit none
 
-      integer                              :: ndimf,ndimsf,i,k,iadc1,&
-                                              itmp,ndim2,k1,k2
-      integer, dimension(:), allocatable   :: indx1,indx2
-      real(d), dimension(ndimf)            :: travec
-      real(d), dimension(:,:), allocatable :: adc1vec
-      real(d), dimension(:), allocatable   :: tmpvec
-      real(d)                              :: ftmp,tol
+      integer                               :: ndimf,ndimsf,i,k,iadc1,&
+                                               itmp,ndim2,k1,k2
+      integer, dimension(:), allocatable    :: indx1,indx2
+      real(dp), dimension(ndimf)            :: travec
+      real(dp), dimension(:,:), allocatable :: adc1vec
+      real(dp), dimension(:), allocatable   :: tmpvec
+      real(dp)                              :: ftmp,tol
 
       lmain=0
 

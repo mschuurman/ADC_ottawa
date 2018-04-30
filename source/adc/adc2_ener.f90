@@ -22,13 +22,13 @@
 
       implicit none
     
-      integer, dimension(:,:), allocatable :: kpq
-      integer                              :: ndim,ndims,i,k,itmp,ista
-      integer*8                            :: noffd
-      real(d), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
-                                              osc_str
-      real(d), dimension(:,:), allocatable :: rvec,dmvec
-      real(d)                              :: e0
+      integer, dimension(:,:), allocatable  :: kpq
+      integer                               :: ndim,ndims,i,k,itmp,ista
+      integer*8                             :: noffd
+      real(dp), dimension(:), allocatable   :: ener,vec_init,mtm,tmvec,&
+                                               osc_str
+      real(dp), dimension(:,:), allocatable :: rvec,dmvec
+      real(dp)                              :: e0
 
 !-----------------------------------------------------------------------  
 ! Calculation of the MP2 correlation energy and D2 diagnostic

@@ -18,18 +18,18 @@ module parameters
 !!$x,y,z-dipole real*8 array(nBas,nBas) containing dipole moment matrix elements
 !!$hcore - real*8 array(nOcc,nOcc) containing the elements h_ij of the
 !!         core Hamiltonian in the MO basis
-  integer*4                            :: nelec,nIrr,nBas,nCen
-  integer                              :: nOcc,nVirt
-  real(d)                              :: Ehf
-  real(d)                              :: E_MP2
-  integer*4, dimension(:), allocatable :: orbSym
-  character*3,dimension(8)             :: labSym
-  real(d), dimension(:), allocatable   :: e,occNum
-  real(d), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
-  type(moint2e_cache)                  :: moIntegrals  ! Currently active MO integrals context
-  character*100                        :: moType ! Either 'incore' or 'disk'
-  integer                              :: imotype
-  real(d), dimension(:,:), allocatable :: hcore
+  integer*4                             :: nelec,nIrr,nBas,nCen
+  integer                               :: nOcc,nVirt
+  real(dp)                              :: Ehf
+  real(dp)                              :: E_MP2
+  integer*4, dimension(:), allocatable  :: orbSym
+  character*3,dimension(8)              :: labSym
+  real(dp), dimension(:), allocatable   :: e,occNum
+  real(dp), dimension(:,:), allocatable :: x_dipole,y_dipole,z_dipole,dpl
+  type(moint2e_cache)                   :: moIntegrals  ! Currently active MO integrals context
+  character*100                         :: moType ! Either 'incore' or 'disk'
+  integer                               :: imotype
+  real(dp), dimension(:,:), allocatable :: hcore
   
 !!$**************************************************
 !!$*********User provided variables******************
@@ -127,48 +127,48 @@ module parameters
 !!$real dipmom - dipole moments for the initial space states
 !!$real dipmom_f - dipole moments for the final space states
 
-  logical                              :: debug
-  character(1)                         :: tranmom,tranmom2
-  character(36)                        :: lancname,davname,davname_f
-  integer                              :: hinit,nirrep,nirrep2,method,&
-                                          method_f,davstates,lancstates,&
-                                          numinista,norder,&
-                                          statenumber,denord,davstates_f
-  integer, parameter                   :: nhcentre=40
-  integer, dimension(0:nhcentre)       :: hcentre
-  real(d)                              :: mspacewi,mspacewf
-  real(d), parameter                   :: minc=1e-12_d
-  real(d)                              :: dlim
-  integer, dimension(:), allocatable   :: roccnum
-  integer, dimension(8,8)              :: MT
-  integer, dimension(400)              :: stvc_lbl
-  integer, dimension(:), allocatable   :: stvc_mxc
-  integer                              :: ninista
-  logical                              :: ladc1guess,ladc1guess_f
-  logical                              :: lnoise,lnoise_f
-  logical                              :: lsubdiag,lsubdiag_f
-  real(d), dimension(:), allocatable   :: adc1en,adc1en_f
-  real(d)                              :: davtol,davtol_f
-  logical                              :: lcvs,lcvsfinal
-  integer, dimension(nhcentre)         :: icore,iexpfrz
-  integer                              :: ncore
-  logical                              :: lfakeip
-  integer                              :: ifakeorb
-  integer, dimension(:), allocatable   :: ifakeex
-  real(d)                              :: expfakeip
-  logical                              :: ld2
-  logical                              :: lscf
-  integer                              :: ivpqrs
-  real(d), dimension(:,:), allocatable :: density
-  logical                              :: ltdm_gs2i
-  logical                              :: lifrzcore,lffrzcore
-  logical                              :: ldiagfinal
-  real(d)                              :: maxmem
-  logical                              :: ldipole
-  real(d), dimension(:), allocatable   :: dipmom,dipmom_f
-  logical                              :: lcis
-  logical                              :: lmatvec
-  logical                              :: lnto
+  logical                               :: debug
+  character(1)                          :: tranmom,tranmom2
+  character(36)                         :: lancname,davname,davname_f
+  integer                               :: hinit,nirrep,nirrep2,method,&
+                                           method_f,davstates,lancstates,&
+                                           numinista,norder,&
+                                           statenumber,denord,davstates_f
+  integer, parameter                    :: nhcentre=40
+  integer, dimension(0:nhcentre)        :: hcentre
+  real(dp)                              :: mspacewi,mspacewf
+  real(dp), parameter                   :: minc=1e-12_dp
+  real(dp)                              :: dlim
+  integer, dimension(:), allocatable    :: roccnum
+  integer, dimension(8,8)               :: MT
+  integer, dimension(400)               :: stvc_lbl
+  integer, dimension(:), allocatable    :: stvc_mxc
+  integer                               :: ninista
+  logical                               :: ladc1guess,ladc1guess_f
+  logical                               :: lnoise,lnoise_f
+  logical                               :: lsubdiag,lsubdiag_f
+  real(dp), dimension(:), allocatable   :: adc1en,adc1en_f
+  real(dp)                              :: davtol,davtol_f
+  logical                               :: lcvs,lcvsfinal
+  integer, dimension(nhcentre)          :: icore,iexpfrz
+  integer                               :: ncore
+  logical                               :: lfakeip
+  integer                               :: ifakeorb
+  integer, dimension(:), allocatable    :: ifakeex
+  real(dp)                              :: expfakeip
+  logical                               :: ld2
+  logical                               :: lscf
+  integer                               :: ivpqrs
+  real(dp), dimension(:,:), allocatable :: density
+  logical                               :: ltdm_gs2i
+  logical                               :: lifrzcore,lffrzcore
+  logical                               :: ldiagfinal
+  real(dp)                              :: maxmem
+  logical                               :: ldipole
+  real(dp), dimension(:), allocatable   :: dipmom,dipmom_f
+  logical                               :: lcis
+  logical                               :: lmatvec
+  logical                               :: lnto
 
 !!$************************************************
 !!$**********Physical Constants********************
@@ -180,20 +180,20 @@ module parameters
 !!$ omega - photon energy, required by Stieltjes_phi, photoionisation routine.
 !!$ eh2ev - Hartree to eV conversion factor
 
-!  real(d), parameter :: abohr=5.2918e-9
-  real(d), parameter :: fsconstinv=137.0d0
-  real(d), parameter :: os2cs=4.0347443d0
-  real(d), parameter :: omega=3.0d0
-  real(d), parameter :: eh2ev=27.2113845d0
+!  real(dp), parameter :: abohr=5.2918e-9
+  real(dp), parameter :: fsconstinv=137.0d0
+  real(dp), parameter :: os2cs=4.0347443d0
+  real(dp), parameter :: omega=3.0d0
+  real(dp), parameter :: eh2ev=27.2113845d0
 
 !!$************************************************
 !!$**********Lanczos Parameters********************
 !!$************************************************  
-  integer :: ncycles,lmain,maxblock
-  integer :: lancguess
-  integer :: orthotype
-  real(d) :: tdtol
-  logical :: ldynblock
+  integer  :: ncycles,lmain,maxblock
+  integer  :: lancguess
+  integer  :: orthotype
+  real(dp) :: tdtol
+  logical  :: ldynblock
 
 !!$************************************************
 !!$**********Davidson Parameters*******************
@@ -201,16 +201,16 @@ module parameters
   integer     :: maxiter,dmain,maxiter_f,dmain_f,&
                  ndavcalls,eigentype,solver,solver_f,&
                  precon,precon_f,maxsubdim,maxsubdim_f
-  real(d)     :: davtarg
+  real(dp)    :: davtarg
   
   logical     :: lextdiag,ldfl,ldfl_f
 
 !!$************************************************
 !!$**********Relaxation Parameters*****************
 !!$************************************************
-  integer :: kdim,kdim_f,guessdim,guessdim_f
-  integer :: integrator,integrator_f
-  real(d) :: stepsize,stepsize_f,siltol,siltol_f
+  integer  :: kdim,kdim_f,guessdim,guessdim_f
+  integer  :: integrator,integrator_f
+  real(dp) :: stepsize,stepsize_f,siltol,siltol_f
 
 
   
@@ -256,10 +256,10 @@ integer                                     :: ncoo,difftype,contcent
 integer, dimension(5)                       :: ndiff
 integer, dimension(:), allocatable          :: naogms
 integer, dimension(:,:), allocatable        :: nprim,aotype,ilquant
-real(d), dimension(:,:,:), allocatable      :: aocoeff,aoexp
-real(d), dimension(:,:), allocatable        :: diffexp
-real(d)                                     :: diffratio
-real(d), dimension(5,100)                   :: difflist
+real(dp), dimension(:,:,:), allocatable     :: aocoeff,aoexp
+real(dp), dimension(:,:), allocatable       :: diffexp
+real(dp)                                    :: diffratio
+real(dp), dimension(5,100)                  :: difflist
 character(len=60)                           :: basname
 character(len=2), dimension(:), allocatable :: atlbl
 logical                                     :: lrungamess,ldiffcom
@@ -267,50 +267,50 @@ logical                                     :: lrungamess,ldiffcom
 !!$************************************************
 !!$**********Dyson orbital parameters**************
 !!$************************************************
-integer                              :: nbas_ao,ccent,cshell
-integer                              :: dysirrep,dysdiag
-integer, dimension(5)                :: dysout
-real(d)                              :: dyslim
-real(d), dimension(:,:), allocatable :: ao2mo
-real(d), dimension(10,10)            :: ftransmat
-character(len=1), dimension(0:3)     :: shlbl
-logical                              :: ldyson,lrmatom
+integer                               :: nbas_ao,ccent,cshell
+integer                               :: dysirrep,dysdiag
+integer, dimension(5)                 :: dysout
+real(dp)                              :: dyslim
+real(dp), dimension(:,:), allocatable :: ao2mo
+real(dp), dimension(10,10)            :: ftransmat
+character(len=1), dimension(0:3)      :: shlbl
+logical                               :: ldyson,lrmatom
 
 ! ezdyson input file parameters
-integer :: lmax,nelen,ngrdpnts
-real(d) :: zcore,eleni,elenf,grdi,grdf
+integer  :: lmax,nelen,ngrdpnts
+real(dp) :: zcore,eleni,elenf,grdi,grdf
 
 !!$************************************************
 !!$**********Target State Matching*****************
 !!$************************************************
-real(d)                          :: detthrsh,ovrthrsh
+real(dp)                         :: detthrsh,ovrthrsh
 character(len=120)               :: detfile,mofile
 logical                          :: ltarg
 
 !!$************************************************
 !!$**********RIXS Calculations*********************
 !!$************************************************
-real(d), dimension(:,:,:), allocatable :: dpl_all
-logical                                :: lrixs
+real(dp), dimension(:,:,:), allocatable :: dpl_all
+logical                                 :: lrixs
 
 !!$************************************************
 !!$**********TPA Calculations**********************
 !!$************************************************
-integer, dimension(2)                  :: tpblock
-real(d), dimension(3)                  :: tdmgsi
-real(d), dimension(:,:), allocatable   :: travec_ic,&
-                                          travec_iv,&
-                                          tdmgsf
-real(d), dimension(:,:,:), allocatable :: travec_fc,&
-                                          travec_fv
-real(d), dimension(:), allocatable     :: edavf
-logical                                :: ltpa
+integer, dimension(2)                   :: tpblock
+real(dp), dimension(3)                  :: tdmgsi
+real(dp), dimension(:,:), allocatable   :: travec_ic,&
+                                           travec_iv,&
+                                           tdmgsf
+real(dp), dimension(:,:,:), allocatable :: travec_fc,&
+                                           travec_fv
+real(dp), dimension(:), allocatable     :: edavf
+logical                                 :: ltpa
 
 !!$************************************************
 !!$**************TD-ADC Calculations**************
 !!$************************************************
 !!$************************************************
-real(d)                               :: tfinal,tout,&
+real(dp)                              :: tfinal,tout,&
                                          autotol
 integer                               :: autoord
 integer                               :: autoprop
@@ -325,8 +325,8 @@ logical                               :: lautospec
 integer                               :: nfbas,neig,&
                                          nsel,iwfunc
 integer, dimension(:), allocatable    :: isel
-real(d), dimension(:,:), allocatable  :: fbas2eig
-real(d), dimension(2)                 :: ebound
+real(dp), dimension(:,:), allocatable :: fbas2eig
+real(dp), dimension(2)                :: ebound
 character(len=60)                     :: fdiagdat,&
                                          fdiagsel
 logical                               :: lfdstates
@@ -334,68 +334,68 @@ logical                               :: lfdstates
 !!$************************************************
 !!$************External Electric Field*************
 !!$************************************************
-integer*8, dimension(3)      :: nel_dip
-integer, dimension(3)        :: nbuf_dip
-integer, parameter           :: mxenvpar=20
-integer                      :: nenvpar
-integer                      :: ipulse
-integer                      :: ienvelope
-real(d), dimension(3)        :: d00
-real(d), allocatable         :: d0j(:,:)
-real(d), allocatable         :: dij(:,:,:)
-real(d), dimension(3)        :: pulse_vec
-real(d)                      :: proptol
-real(d)                      :: freq
-real(d)                      :: strength
-real(d)                      :: t0
-real(d)                      :: phase
-real(d), dimension(mxenvpar) :: envpar
-logical                      :: lpropagation
+integer*8, dimension(3)       :: nel_dip
+integer, dimension(3)         :: nbuf_dip
+integer, parameter            :: mxenvpar=20
+integer                       :: nenvpar
+integer                       :: ipulse
+integer                       :: ienvelope
+real(dp), dimension(3)        :: d00
+real(dp), allocatable         :: d0j(:,:)
+real(dp), allocatable         :: dij(:,:,:)
+real(dp), dimension(3)        :: pulse_vec
+real(dp)                      :: proptol
+real(dp)                      :: freq
+real(dp)                      :: strength
+real(dp)                      :: t0
+real(dp)                      :: phase
+real(dp), dimension(mxenvpar) :: envpar
+logical                       :: lpropagation
 
 !!$************************************************
 !!$***************CAP Parameters*******************
 !!$************************************************
-integer               :: icap
-integer               :: capord
-integer*8             :: nel_cap
-integer               :: nbuf_cap
-integer*8             :: nel_theta
-integer               :: nbuf_theta
-integer, dimension(2) :: nrad,nang
-integer               :: iprojcap
-integer, allocatable  :: projmask(:)
-real(d)               :: projlim
-real(d)               :: capstr
-real(d), dimension(3) :: boxpar
-real(d)               :: densthrsh
-real(d)               :: w00
-real(d), allocatable  :: w0j(:)
-real(d), allocatable  :: wij(:,:)
-real(d)               :: theta00
-real(d), allocatable  :: theta0j(:)
-real(d), allocatable  :: thetaij(:,:)
-real(d), allocatable  :: vdwr(:)
-logical               :: lcap
-logical               :: lprojcap
-logical               :: lautobox
-logical               :: lflux
-logical               :: lcapdiag
+integer                :: icap
+integer                :: capord
+integer*8              :: nel_cap
+integer                :: nbuf_cap
+integer*8              :: nel_theta
+integer                :: nbuf_theta
+integer, dimension(2)  :: nrad,nang
+integer                :: iprojcap
+integer, allocatable   :: projmask(:)
+real(dp)               :: projlim
+real(dp)               :: capstr
+real(dp), dimension(3) :: boxpar
+real(dp)               :: densthrsh
+real(dp)               :: w00
+real(dp), allocatable  :: w0j(:)
+real(dp), allocatable  :: wij(:,:)
+real(dp)               :: theta00
+real(dp), allocatable  :: theta0j(:)
+real(dp), allocatable  :: thetaij(:,:)
+real(dp), allocatable  :: vdwr(:)
+logical                :: lcap
+logical                :: lprojcap
+logical                :: lautobox
+logical                :: lflux
+logical                :: lcapdiag
 
 !!$************************************************
 !!$***************ADC(1) Matrices***************
 !!$************************************************
-real(d), allocatable :: h1(:,:)
-real(d), allocatable :: d1(:,:,:)
-real(d), allocatable :: w1(:,:)
-real(d), allocatable :: theta1(:,:)
+real(dp), allocatable :: h1(:,:)
+real(dp), allocatable :: d1(:,:,:)
+real(dp), allocatable :: w1(:,:)
+real(dp), allocatable :: theta1(:,:)
 
 !!$************************************************
 !!$**********Other Parameters**********************
 !!$************************************************
 integer                                     :: natm
-integer(d), dimension(:), allocatable       :: nrec_omp
-real(d), dimension(:), allocatable          :: xcoo
-real(d), dimension(:,:,:,:), allocatable    :: fvpqrs
+integer(dp), dimension(:), allocatable      :: nrec_omp
+real(dp), dimension(:), allocatable         :: xcoo
+real(dp), dimension(:,:,:,:), allocatable   :: fvpqrs
 character(len=2), dimension(:), allocatable :: aatm
 character(len=3)                            :: pntgroup
 

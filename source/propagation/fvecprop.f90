@@ -14,11 +14,11 @@ module fvecprop
   
   implicit none
 
-  integer                               :: matdim,iout0,iout1,iout2
-  integer*8                             :: noffdiag
-  real(d), parameter                    :: au2fs=1.0d0/41.34137333656d0
-  real(d)                               :: norm0
-  complex(d), dimension(:), allocatable :: psi0
+  integer                                :: matdim,iout0,iout1,iout2
+  integer*8                              :: noffdiag
+  real(dp), parameter                    :: au2fs=1.0d0/41.34137333656d0
+  real(dp)                               :: norm0
+  complex(dp), dimension(:), allocatable :: psi0
 
 contains
 
@@ -30,11 +30,11 @@ contains
     
     implicit none
 
-    integer, intent(in)                   :: ndimf
-    integer*8, intent(in)                 :: noffdf
-    integer                               :: k
-    real(d), dimension(ndimf), intent(in) :: fvec
-    real(d)                               :: tw1,tw2,tc1,tc2
+    integer, intent(in)                    :: ndimf
+    integer*8, intent(in)                  :: noffdf
+    integer                                :: k
+    real(dp), dimension(ndimf), intent(in) :: fvec
+    real(dp)                               :: tw1,tw2,tc1,tc2
     
 !----------------------------------------------------------------------
 ! Start timing
@@ -195,7 +195,7 @@ contains
 
     integer*8 :: maxrecl,reqmem
     integer   :: nthreads
-    real(d)   :: memavail
+    real(dp)  :: memavail
 
 !----------------------------------------------------------------------
 ! Available memory
@@ -339,8 +339,8 @@ contains
 
     implicit none
 
-    integer                                :: i
-    real(d), dimension(matdim), intent(in) :: fvec
+    integer                                 :: i
+    real(dp), dimension(matdim), intent(in) :: fvec
     
 !----------------------------------------------------------------------
 ! The initial wavepacket is taken as D|Psi_0>/||D|Psi_0>||
@@ -369,25 +369,25 @@ contains
     
     implicit none
 
-    integer                                 :: i
-    real(d)                                 :: norm
-    real(d), parameter                      :: tiny=1e-9_d
-    complex(d), dimension(:), allocatable   :: psi,dtpsi
-    complex(d), dimension(:), allocatable   :: hpsi,h2psi
-    complex(d)                              :: auto0,auto1,auto2
+    integer                                :: i
+    real(dp)                               :: norm
+    real(dp), parameter                    :: tiny=1e-9_dp
+    complex(dp), dimension(:), allocatable :: psi,dtpsi
+    complex(dp), dimension(:), allocatable :: hpsi,h2psi
+    complex(dp)                            :: auto0,auto1,auto2
     
     ! SIL arrays and variables
-    integer                                 :: steps,trueorder,&
-                                               errorcode
-    real(d)                                 :: intperiod,stepsize,&
-                                               truestepsize,time,&
-                                               inttime
-    real(d), dimension(:,:), allocatable    :: eigenvector
-    real(d), dimension(:), allocatable      :: diagonal,eigenval
-    real(d), dimension(:), allocatable      :: offdiag
-    real(d), dimension(:), allocatable      :: offdg2    
-    complex(d), dimension(:,:), allocatable :: krylov
-    logical(kind=4)                         :: restart,relax,stdform
+    integer                                  :: steps,trueorder,&
+                                                errorcode
+    real(dp)                                 :: intperiod,stepsize,&
+                                                truestepsize,time,&
+                                                inttime
+    real(dp), dimension(:,:), allocatable    :: eigenvector
+    real(dp), dimension(:), allocatable      :: diagonal,eigenval
+    real(dp), dimension(:), allocatable      :: offdiag
+    real(dp), dimension(:), allocatable      :: offdg2    
+    complex(dp), dimension(:,:), allocatable :: krylov
+    logical(kind=4)                          :: restart,relax,stdform
     
 !----------------------------------------------------------------------
 ! sillib variables
@@ -569,8 +569,8 @@ contains
 
     implicit none
 
-    integer :: k
-    real(d) :: t,norm
+    integer  :: k
+    real(dp) :: t,norm
 
     write(ilog,'(70a)') ('+',k=1,70)
     write(ilog,'(a,x,F10.4)') 'Time:',t
@@ -586,9 +586,9 @@ contains
 
     implicit none
 
-    integer    :: iout
-    real(d)    :: t
-    complex(d) :: auto
+    integer     :: iout
+    real(dp)    :: t
+    complex(dp) :: auto
 
     write(iout,'(F15.8,4x,3(2x,E21.14))') &
          t*au2fs,real(auto),aimag(auto),abs(auto)

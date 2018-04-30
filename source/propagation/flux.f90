@@ -22,11 +22,11 @@ contains
     
     implicit none
 
-    integer                               :: matdim
-    integer                               :: unit,i,k
-    real(d)                               :: flux,val1,val2,ener
-    complex(d), dimension(matdim)         :: psi,dtpsi
-    complex(d), dimension(:), allocatable :: oppsi
+    integer                                :: matdim
+    integer                                :: unit,i,k
+    real(dp)                               :: flux,val1,val2,ener
+    complex(dp), dimension(matdim)         :: psi,dtpsi
+    complex(dp), dimension(:), allocatable :: oppsi
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -75,15 +75,15 @@ contains
     
     implicit none
 
-    integer                               :: matdim
-    integer                               :: i,k,unit
-    real(d)                               :: flux,val1,val2,ener
-    real(d), allocatable                  :: rvec(:)
-    complex(d), dimension(matdim)         :: psi,dtpsi
-    complex(d), dimension(:), allocatable :: oppsi
-    complex(d), allocatable               :: vtmp1(:)
-    complex(d), allocatable               :: vtmp2(:)
-    character(len=70)                     :: filename
+    integer                                :: matdim
+    integer                                :: i,k,unit
+    real(dp)                               :: flux,val1,val2,ener
+    real(dp), allocatable                  :: rvec(:)
+    complex(dp), dimension(matdim)         :: psi,dtpsi
+    complex(dp), dimension(:), allocatable :: oppsi
+    complex(dp), allocatable               :: vtmp1(:)
+    complex(dp), allocatable               :: vtmp2(:)
+    character(len=70)                      :: filename
     
 !----------------------------------------------------------------------
 ! Allocate arrays

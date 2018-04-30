@@ -12,12 +12,6 @@ module nto
   implicit none
 
   save
-
-  private :: dp
-    
-  ! Annoyingly, the gamess_internal module contains a variable
-  ! named 'd', so we will use 'dp' here instead
-  integer, parameter :: dp=selected_real_kind(8)
   
 contains
 

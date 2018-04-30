@@ -18,7 +18,7 @@ contains
     
     integer, intent(in) :: ndim 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim), intent(out) :: ar_diag
+    real(dp), dimension(ndim), intent(out) :: ar_diag
     
     integer :: i
     integer :: inda,indb,indj,indk,spin
@@ -39,7 +39,7 @@ contains
     
     integer, intent(in) :: ndim 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim), intent(out) :: ar_diag
+    real(dp), dimension(ndim), intent(out) :: ar_diag
     
     integer :: i
     integer :: inda,indb,indj,indk,spin
@@ -62,7 +62,7 @@ contains
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag 
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag 
     
     integer :: i,j
     integer :: inda,indb,indj,indk,spin
@@ -87,7 +87,7 @@ contains
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag 
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag 
     
     integer :: i,j
     integer :: inda,indb,indj,indk,spin
@@ -115,7 +115,7 @@ contains
     character(30) :: name
     integer :: i,ktype,unt
     integer :: inda,indb,indj,indk,spin
-    real(d), dimension(ndim) :: ar_diag
+    real(dp), dimension(ndim) :: ar_diag
     
     ktype=1
     name="SCRATCH/hmlt.dia"//chr
@@ -147,13 +147,13 @@ contains
     character(1), intent(in) :: chr
     
     character(30) :: name
-    integer :: i,j,nlim,rec_count,count,unt
-    integer :: inda,indb,indj,indk,spin
-    integer :: indapr,indbpr,indjpr,indkpr,spinpr
-    real(d) :: ar_offdiag_ij, ar_offdiag_ji
+    integer  :: i,j,nlim,rec_count,count,unt
+    integer  :: inda,indb,indj,indk,spin
+    integer  :: indapr,indbpr,indjpr,indkpr,spinpr
+    real(dp) :: ar_offdiag_ij, ar_offdiag_ji
 
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -237,7 +237,7 @@ contains
   
     integer, intent(in) :: ndim1,ndim2
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1+ndim2), intent(out) :: ar_diag
+    real(dp), dimension(ndim1+ndim2), intent(out) :: ar_diag
     
     integer :: inda,indb,indj,indk,spin
     integer :: i
@@ -274,7 +274,7 @@ contains
     
     character(30) :: name
     integer :: i,ktype,unt 
-    real(d), dimension(:), allocatable:: ar_diag
+    real(dp), dimension(:), allocatable :: ar_diag
 
     allocate(ar_diag(ndim1+ndim2))
 
@@ -316,7 +316,7 @@ contains
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag
     
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
@@ -324,10 +324,10 @@ contains
     integer :: i,j,dim_count,ndim1
     
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiag
+    integer, dimension(buf_size)  :: oi,oj
+    real(dp), dimension(buf_size) :: file_offdiag
     
-    ar_offdiag(:,:)=0._d
+    ar_offdiag(:,:)=0._dp
     
 !!$ Full diagonalization. 
 
@@ -438,14 +438,14 @@ contains
     
     character(30)                :: name
     integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
-    real(d)                      :: ar_offdiag_ij
+    real(dp)                     :: ar_offdiag_ij
 
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
    
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -634,11 +634,11 @@ contains
     
     character(30)                :: name,file
     integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
-    real(d)                      :: ar_offdiag_ij
+    real(dp)                     :: ar_offdiag_ij
 
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
 
 !-----------------------------------------------------------------------
@@ -720,14 +720,14 @@ contains
     
     character(30)                :: name
     integer                      :: i,j,k,nlim,rec_count,dim_count,ndim1,unt
-    real(d)                      :: arr_offdiag_ij
+    real(dp)                     :: arr_offdiag_ij
 
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
    
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -737,11 +737,11 @@ contains
     integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
     character(len=120), dimension(:), allocatable :: hamfile
 
-    integer :: buf_size2
-    real(d) :: minc2
+    integer  :: buf_size2
+    real(dp) :: minc2
 
     integer, dimension(:), allocatable :: nsaved
 
@@ -1199,11 +1199,11 @@ contains
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
     character(30) :: name
-    integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
-    real(d) :: ar_offdiag_ij
+    integer  :: i,j,nlim,rec_count,dim_count,ndim1,unt
+    real(dp) :: ar_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -1337,17 +1337,17 @@ contains
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
     character(30) :: name
-    integer :: rec_count
-    integer :: i,j,k,nlim,dim_count,ndim1,unt
-    integer :: lim1i, lim2i, lim1j, lim2j
-    real(d) :: arr_offdiag_ij
+    integer  :: rec_count
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt
+    integer  :: lim1i, lim2i, lim1j, lim2j
+    real(dp) :: arr_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
     
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -1357,11 +1357,11 @@ contains
     integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
     character(len=120), dimension(:), allocatable :: hamfile
 
-    integer :: buf_size2
-    real(d) :: minc2
+    integer  :: buf_size2
+    real(dp) :: minc2
 
     integer, dimension(:), allocatable :: nsaved
 
@@ -1731,14 +1731,14 @@ contains
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: amatr
+    real(dp), dimension(ndim,ndim), intent(out) :: amatr
 
-    integer :: inda,indb,indj,indk,spin
-    integer :: indapr,indbpr,indjpr,indkpr,spinpr 
-    integer :: i,j
-    real(d) :: ar_diag,ar_offd
+    integer  :: inda,indb,indj,indk,spin
+    integer  :: indapr,indbpr,indjpr,indkpr,spinpr 
+    integer  :: i,j
+    real(dp) :: ar_diag,ar_offd
 
-    amatr=0._d
+    amatr=0._dp
     
 !!$ Filling the ph-ph block: diagonal part
 
@@ -1778,7 +1778,7 @@ contains
 
     integer, intent(in) :: i1,i2,ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,i2-i1+1), intent(out) :: bmx
+    real(dp), dimension(ndim,i2-i1+1), intent(out) :: bmx
     
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
@@ -1840,7 +1840,7 @@ contains
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim), intent(out) :: ar_diag
+    real(dp), dimension(ndim), intent(out) :: ar_diag
     
     integer :: inda,indb,indj,indk,spin
     integer :: i,nlim
@@ -1860,10 +1860,10 @@ contains
   
     integer, intent(in) :: ndim1,ndim2
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1+ndim2), intent(out) :: ar_diag
+    real(dp), dimension(ndim1+ndim2), intent(out) :: ar_diag
     
-    integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indj,indk,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,lim1,lim2
     
@@ -1966,12 +1966,12 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in) :: chr
    
-    integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indj,indk,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     character(30) :: name
     integer :: i,ktype,dim_count,lim1,lim2,unt,a,b,c,d1
-    real(d), dimension(ndim1+ndim2) :: ar_diag
+    real(dp), dimension(ndim1+ndim2) :: ar_diag
      
     ktype=1
     name="SCRATCH/hmlt.dia"//chr 
@@ -2083,7 +2083,7 @@ contains
 
   integer, intent(in) :: ndim
   integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-  real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag
+  real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag
   
   integer :: inda,indb,indj,indk,spin
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
@@ -2091,7 +2091,7 @@ contains
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i, lim2i, lim1j, lim2j
 
-  ar_offdiag(:,:)=0._d 
+  ar_offdiag(:,:)=0._dp 
 
 !!$ Full diagonalization. Filling the lower half of the matrix
 
@@ -2444,17 +2444,17 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
   
   character(30) :: name
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1,unt
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: arr_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1,unt
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: arr_offdiag_ij
   
-  integer, dimension(:), allocatable :: oi,oj
-  real(d), dimension(:), allocatable :: file_offdiag
+  integer, dimension(:), allocatable  :: oi,oj
+  real(dp), dimension(:), allocatable :: file_offdiag
 
-  integer                              :: a,b,nzero
-  real(d), dimension(:,:), allocatable :: ca,cb
-  real(d)                              :: tw1,tw2,tc1,tc2
+  integer                               :: a,b,nzero
+  real(dp), dimension(:,:), allocatable :: ca,cb
+  real(dp)                              :: tw1,tw2,tc1,tc2
 
 
   allocate(oi(buf_size))
@@ -2906,16 +2906,16 @@ subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
   
   character(30) :: name
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1,unt
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: arr_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1,unt
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: arr_offdiag_ij
   
-  integer, dimension(:), allocatable :: oi,oj
-  real(d), dimension(:), allocatable :: file_offdiag
+  integer, dimension(:), allocatable  :: oi,oj
+  real(dp), dimension(:), allocatable :: file_offdiag
 
-  integer                              :: a,b,nzero
-  real(d), dimension(:,:), allocatable :: ca,cb
+  integer                               :: a,b,nzero
+  real(dp), dimension(:,:), allocatable :: ca,cb
  
   allocate(oi(buf_size))
   allocate(oj(buf_size))
@@ -3325,12 +3325,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
 
   subroutine adc2ext_0_0(meth,a,j,a1,j1,matel)
         
-    integer, intent(in) :: meth,a,j,a1,j1
-    real(d), intent(out) :: matel
+    integer, intent(in)   :: meth,a,j,a1,j1
+    real(dp), intent(out) :: matel
 
-    real(d) :: ea,ej
+    real(dp) :: ea,ej
 
-    matel=0._d
+    matel=0._dp
 
     if((a .eq. a1) .and. (j .eq. j1)) then
        ea=e(a)
@@ -3356,12 +3356,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
   subroutine adc2ext_1_1(meth,a,j,a1,j1,ea,ej,matel)
     
     integer, intent(in):: meth,a,j,a1,j1
-    real(d), intent(in):: ea,ej
-    real(d), intent(out) :: matel
+    real(dp), intent(in):: ea,ej
+    real(dp), intent(out) :: matel
     
     logical :: diag
     
-    matel=0._d
+    matel=0._dp
     diag=(a .eq. a1) .and. (j .eq. j1)
     
     if(diag) then
@@ -3377,12 +3377,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
   subroutine adc2ext_2_2(meth,a,b,j,a1,b1,j1,ea,eb,ej,matel)
     
     integer, intent(in):: meth,a,b,j,a1,b1,j1
-    real(d), intent(in):: ea,eb,ej
-    real(d), intent(out) :: matel
+    real(dp), intent(in):: ea,eb,ej
+    real(dp), intent(out) :: matel
     
     logical :: diag
     
-    matel=0._d
+    matel=0._dp
     diag=(a .eq. a1) .and. (b .eq. b1) .and. (j .eq. j1)
     
     if(diag) then
@@ -3399,12 +3399,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
   subroutine adc2ext_3_3(meth,a,j,k,a1,j1,k1,ea,ej,ek,matel)
     
     integer, intent(in):: meth,a,j,k,a1,j1,k1
-    real(d), intent(in):: ea,ej,ek
-    real(d), intent(out) :: matel
+    real(dp), intent(in):: ea,ej,ek
+    real(dp), intent(out) :: matel
     
     logical :: diag
     
-    matel=0._d
+    matel=0._dp
     diag=(a .eq. a1) .and. (j .eq. j1) .and. (k .eq. k1)
     
     if(diag) then
@@ -3421,12 +3421,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
   subroutine adc2ext_4i_4i(meth,a,b,j,k,a1,b1,j1,k1,ea,eb,ej,ek,matel)
     
     integer, intent(in):: meth,a,b,j,k,a1,b1,j1,k1
-    real(d), intent(in):: ea,eb,ej,ek
-    real(d), intent(out) :: matel
+    real(dp), intent(in):: ea,eb,ej,ek
+    real(dp), intent(out) :: matel
     
     logical :: diag
     
-    matel=0._d
+    matel=0._dp
     diag=(a .eq. a1) .and. (b .eq. b1) .and. (j .eq. j1) .and. (k .eq. k1)
     
     if(diag) then
@@ -3443,12 +3443,12 @@ end subroutine get_offdiag_adc2ext_save_cvs
   subroutine adc2ext_4ii_4ii(meth,a,b,j,k,a1,b1,j1,k1,ea,eb,ej,ek,matel)
     
     integer, intent(in):: meth,a,b,j,k,a1,b1,j1,k1
-    real(d), intent(in):: ea,eb,ej,ek
-    real(d), intent(out) :: matel
+    real(dp), intent(in):: ea,eb,ej,ek
+    real(dp), intent(out) :: matel
     
     logical :: diag
     
-    matel=0._d
+    matel=0._dp
     diag=(a .eq. a1) .and. (b .eq. b1) .and. (j .eq. j1) .and. (k .eq. k1)
     
     if(diag) then
@@ -3477,11 +3477,11 @@ end subroutine get_offdiag_adc2ext_save_cvs
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
     character(30) :: name
-    integer :: i,j,nlim,rec_count,dim_count,ndim1,unt
-    real(d) :: ar_offdiag_ij
+    integer  :: i,j,nlim,rec_count,dim_count,ndim1,unt
+    real(dp) :: ar_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -3641,7 +3641,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
     character(30) :: name
     integer :: i,ktype,unt 
-    real(d), dimension(:), allocatable:: ar_diag
+    real(dp), dimension(:), allocatable:: ar_diag
 
     allocate(ar_diag(ndim1+ndim2))
 
@@ -3684,7 +3684,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
   
     integer, intent(in) :: ndim1,ndim2
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1+ndim2), intent(out) :: ar_diag
+    real(dp), dimension(ndim1+ndim2), intent(out) :: ar_diag
     INTEGER, dimension(ndim1+ndim2), intent(in) :: indx
     
 
@@ -3717,7 +3717,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag
     INTEGER, dimension(ndim), intent(in) :: indx
     
     integer :: inda,indb,indj,indk,spin
@@ -3725,14 +3725,14 @@ end subroutine get_offdiag_adc2ext_save_cvs
     
     integer :: i,j,dim_count,ndim1
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
     allocate(file_offdiag(buf_size))
 
-    ar_offdiag(:,:)=0._d
+    ar_offdiag(:,:)=0._dp
     
 !!$ Full diagonalization. 
 
@@ -3833,7 +3833,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
 
   integer, intent(in) :: ndim
   integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-  real(d), dimension(ndim,ndim), intent(out) :: ar_offdiag
+  real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiag
   INTEGER, DIMENSION(ndim), INTENT(IN) :: indx  
   
   integer :: inda,indb,indj,indk,spin
@@ -3842,7 +3842,7 @@ end subroutine get_offdiag_adc2ext_save_cvs
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i, lim2i, lim1j, lim2j
 
-  ar_offdiag(:,:)=0._d 
+  ar_offdiag(:,:)=0._dp 
 
 !!$ Full diagonalization. Filling the lower half of the matrix
 
@@ -4211,13 +4211,13 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
   
   character(30) :: name
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1,unt
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: arr_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1,unt
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: arr_offdiag_ij
   
-  integer, dimension(:), allocatable :: oi,oj
-  real(d), dimension(:), allocatable :: file_offdiag
+  integer, dimension(:), allocatable  :: oi,oj
+  real(dp), dimension(:), allocatable :: file_offdiag
 
   allocate(oi(buf_size))
   allocate(oj(buf_size))
@@ -4630,12 +4630,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
   
     integer, intent(in) :: ndim1,ndim2
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1+ndim2), intent(out) :: ar_diag
+    real(dp), dimension(ndim1+ndim2), intent(out) :: ar_diag
     INTEGER, DIMENSION(ndim1+ndim2), INTENT(IN) :: indx    
 
 
     integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,lim1,lim2
     
@@ -4740,11 +4740,11 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     INTEGER, DIMENSION(ndim1+ndim2), INTENT(IN) :: indx    
    
     integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    real(dp) ::ea,eb,ej,ek,temp
     
     character(30) :: name
     integer :: i,ktype,dim_count,lim1,lim2,unt,a,b,c,d1
-    real(d), dimension(ndim1+ndim2) :: ar_diag
+    real(dp), dimension(ndim1+ndim2) :: ar_diag
      
     ktype=1
     name="SCRATCH/hmlt.dia"//chr 
@@ -4860,7 +4860,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     
     integer :: i,ktype
     integer :: inda,indb,indj,indk,spin
-    real(d), dimension( ndim ) :: ar_diag
+    real(dp), dimension( ndim ) :: ar_diag
     
     ar_diag(:) = 0.d0    
 
@@ -4895,10 +4895,10 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: i,j,nlim,rec_count
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr
-    real(d) :: ar_offdiag_ij, ar_offdiag_ji
+    real(dp) :: ar_offdiag_ij, ar_offdiag_ji
 
     integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    real(dp), dimension(:), allocatable :: file_offdiag
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -4981,7 +4981,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     
     integer :: i,ktype
     integer :: inda,indb,indj,indk,spin
-    real(d), dimension( ndim + 1 ) :: ar_diag
+    real(dp), dimension( ndim + 1 ) :: ar_diag
     
     ar_diag(:) = 0.d0    
 
@@ -5013,13 +5013,13 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, intent(in) :: UNIT_HAM    
 
-    integer :: i,j,nlim,rec_count
-    integer :: inda,indb,indj,indk,spin
-    integer :: indapr,indbpr,indjpr,indkpr,spinpr
-    real(d) :: ar_offdiag_ij, ar_offdiag_ji
+    integer  :: i,j,nlim,rec_count
+    integer  :: inda,indb,indj,indk,spin
+    integer  :: indapr,indbpr,indjpr,indkpr,spinpr
+    real(dp) :: ar_offdiag_ij, ar_offdiag_ji
 
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -5118,11 +5118,11 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
-    integer :: i,j,nlim,rec_count,dim_count,ndim1
-    real(d) :: ar_offdiag_ij
+    integer  :: i,j,nlim,rec_count,dim_count,ndim1
+    real(dp) :: ar_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
 
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -5317,11 +5317,11 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
-    integer :: i,j,nlim,rec_count,dim_count,ndim1
-    real(d) :: ar_offdiag_ij
+    integer  :: i,j,nlim,rec_count,dim_count,ndim1
+    real(dp) :: ar_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
     allocate(oi(buf_size))
     allocate(oj(buf_size))
@@ -5522,7 +5522,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: inda,indb,indj,indk,spin
     
     integer :: i,ktype
-    real(d), dimension(:), allocatable:: ar_diag
+    real(dp), dimension(:), allocatable:: ar_diag
 
     allocate(ar_diag( ndim1 + ndim2 ))
 
@@ -5573,7 +5573,7 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer :: inda,indb,indj,indk,spin
     
     integer :: i,ktype
-    real(d), dimension(:), allocatable:: ar_diag
+    real(dp), dimension(:), allocatable:: ar_diag
 
     allocate(ar_diag( ndim1 + ndim2 + 1 ))
 
@@ -5622,12 +5622,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     INTEGER, intent(in) :: UNIT_HAM
    
-    integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indj,indk,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,ktype,dim_count,lim1,lim2,a,b,c,d1
 
-    real(d), dimension( ndim1 + ndim2 ) :: ar_diag
+    real(dp), dimension( ndim1 + ndim2 ) :: ar_diag
      
     
 !!$ Filling the ph-ph block
@@ -5739,12 +5739,12 @@ subroutine get_offdiag_adc2ext_save_MIO(ndim,kpq,nbuf,count,indx,chr)
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     INTEGER, intent(in) :: UNIT_HAM
    
-    integer :: inda,indb,indj,indk,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indj,indk,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,ktype,dim_count,lim1,lim2,a,b,c,d1
 
-    real(d), dimension( ndim1 + ndim2 + 1 ) :: ar_diag
+    real(dp), dimension( ndim1 + ndim2 + 1 ) :: ar_diag
      
     
     ar_diag(:) = 0.d0
@@ -5863,13 +5863,13 @@ subroutine get_offdiag_adc2ext_save_OK(ndim,kpq,nbuf,count, UNIT_HAM )
   integer :: inda,indb,indj,indk,spin
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
   
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: arr_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: arr_offdiag_ij
   
-  integer, dimension(:), allocatable :: oi,oj
-  real(d), dimension(:), allocatable :: file_offdiag
+  integer, dimension(:), allocatable  :: oi,oj
+  real(dp), dimension(:), allocatable :: file_offdiag
 
   allocate(oi(buf_size))
   allocate(oj(buf_size))
@@ -6318,13 +6318,13 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
   integer :: inda,indb,indj,indk,spin
   integer :: indapr,indbpr,indjpr,indkpr,spinpr 
   
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: arr_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: arr_offdiag_ij
   
-  integer, dimension(:), allocatable :: oi,oj
-  real(d), dimension(:), allocatable :: file_offdiag
+  integer, dimension(:), allocatable  :: oi,oj
+  real(dp), dimension(:), allocatable :: file_offdiag
 
   allocate(oi(buf_size))
   allocate(oj(buf_size))
@@ -6795,17 +6795,17 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
     character(30) :: name
-    integer :: rec_count
-    integer :: i,j,k,nlim,dim_count,ndim1,unt
-    integer :: lim1i, lim2i, lim1j, lim2j
-    real(d) :: arr_offdiag_ij
+    integer  :: rec_count
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt
+    integer  :: lim1i, lim2i, lim1j, lim2j
+    real(dp) :: arr_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
     
     integer                                       :: nthreads,tid
@@ -6816,11 +6816,11 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
     character(len=120), dimension(:), allocatable :: hamfile
 
-    integer :: buf_size2
-    real(d) :: minc2
+    integer  :: buf_size2
+    real(dp) :: minc2
 
     integer, dimension(:), allocatable :: nsaved
 
@@ -7816,17 +7816,17 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
     character(30) :: name
-    integer :: rec_count
-    integer :: i,j,k,nlim,dim_count,ndim1,unt
-    integer :: lim1i, lim2i, lim1j, lim2j
-    real(d) :: arr_offdiag_ij
+    integer  :: rec_count
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt
+    integer  :: lim1i, lim2i, lim1j, lim2j
+    real(dp) :: arr_offdiag_ij
     
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: a,b,nzero
-    real(d), dimension(:,:), allocatable :: ca,cb
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: a,b,nzero
+    real(dp), dimension(:,:), allocatable :: ca,cb
+    real(dp)                              :: tw1,tw2,tc1,tc2
     
     integer                                       :: nthreads,tid
     integer, dimension(:), allocatable            :: hamunit    
@@ -7836,11 +7836,11 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer, dimension(:), allocatable            :: nlim_omp
     integer*8                                     :: nonzero
     integer                                       :: n,nprev,itmp
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
     character(len=120), dimension(:), allocatable :: hamfile
 
-    integer :: buf_size2
-    real(d) :: minc2
+    integer  :: buf_size2
+    real(dp) :: minc2
 
     integer, dimension(:), allocatable :: nsaved
 
@@ -8425,14 +8425,14 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    integer, intent(in)                  :: ndim
-    integer                              :: inda,indb,indj,indk,spin
-    integer                              :: indapr,indbpr,indjpr,&
-                                            indkpr,spinpr
-    integer                              :: i,j
-    integer                              :: nthreads,tid,ndim1
-    real(d), dimension(ndim,ndim)        :: arr
-    real(d), dimension(:,:), allocatable :: ca,cb
+    integer, intent(in)                   :: ndim
+    integer                               :: inda,indb,indj,indk,spin
+    integer                               :: indapr,indbpr,indjpr,&
+                                             indkpr,spinpr
+    integer                               :: i,j
+    integer                               :: nthreads,tid,ndim1
+    real(dp), dimension(ndim,ndim)        :: arr
+    real(dp), dimension(:,:), allocatable :: ca,cb
 
 !-----------------------------------------------------------------------
 ! Determine the no. threads
@@ -8518,14 +8518,14 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    integer, intent(in)                  :: ndim
-    integer                              :: inda,indb,indj,indk,spin
-    integer                              :: indapr,indbpr,indjpr,&
-                                            indkpr,spinpr
-    integer                              :: i,j
-    integer                              :: nthreads,tid,ndim1
-    real(d), dimension(ndim)             :: arr
-    real(d), dimension(:,:), allocatable :: ca,cb
+    integer, intent(in)                   :: ndim
+    integer                               :: inda,indb,indj,indk,spin
+    integer                               :: indapr,indbpr,indjpr,&
+                                             indkpr,spinpr
+    integer                               :: i,j
+    integer                               :: nthreads,tid,ndim1
+    real(dp), dimension(ndim)             :: arr
+    real(dp), dimension(:,:), allocatable :: ca,cb
     
 !-----------------------------------------------------------------------
 ! Determine the no. threads

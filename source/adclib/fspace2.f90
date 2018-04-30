@@ -19,16 +19,16 @@ contains
 
   subroutine get_tranmom_3(ndim,negvc,name,travec,nstate,fen,tmvec,ndims)
     
-    integer, intent(in)                    :: ndim,negvc,ndims
-    integer, intent(out)                   :: nstate
-    real(d), dimension(ndim), intent(in)   :: travec 
-    real(d), dimension(negvc), intent(out) :: fen,tmvec
-    character(36), intent(in)              :: name
+    integer, intent(in)                     :: ndim,negvc,ndims
+    integer, intent(out)                    :: nstate
+    real(dp), dimension(ndim), intent(in)   :: travec 
+    real(dp), dimension(negvc), intent(out) :: fen,tmvec
+    character(36), intent(in)               :: name
 
-    integer                                :: i,j,num
-    real(d)                                :: enr,cntr
-    real(d), dimension(:), allocatable     :: vec 
-    logical                                :: log1
+    integer                                 :: i,j,num
+    real(dp)                                :: enr,cntr
+    real(dp), dimension(:), allocatable     :: vec 
+    logical                                 :: log1
 
     inquire(file=name,exist=log1)
     

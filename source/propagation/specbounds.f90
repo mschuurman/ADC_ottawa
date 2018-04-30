@@ -25,11 +25,11 @@ contains
 
     implicit none
 
-    integer, intent(in)   :: dim
-    integer*8, intent(in) :: noff
-    real(d), dimension(2) :: bounds
-    character(len=1)      :: flag
-    character(len=*)      :: estimation
+    integer, intent(in)    :: dim
+    integer*8, intent(in)  :: noff
+    real(dp), dimension(2) :: bounds
+    character(len=1)       :: flag
+    character(len=*)       :: estimation
 
     if (estimation.eq.'lanczos') then
        call spectral_bounds_lanczos(bounds,flag,dim,noff)
@@ -52,13 +52,13 @@ contains
     
     implicit none
 
-    integer, intent(in)                :: dim
-    integer*8, intent(in)              :: noff
-    integer                            :: i,ilanc,n
-    real(d), dimension(2)              :: bounds
-    real(d), dimension(:), allocatable :: vec
-    real(d)                            :: ener
-    character(len=1)                   :: flag
+    integer, intent(in)                 :: dim
+    integer*8, intent(in)               :: noff
+    integer                             :: i,ilanc,n
+    real(dp), dimension(2)              :: bounds
+    real(dp), dimension(:), allocatable :: vec
+    real(dp)                            :: ener
+    character(len=1)                    :: flag
     
 !----------------------------------------------------------------------
 ! Set the block Lanczos parameters

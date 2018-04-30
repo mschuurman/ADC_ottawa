@@ -13,22 +13,22 @@
 
     save
 
-    integer                              :: maxbl,nrec,nblock,nconv,&
-                                            nstates,krydim,niter,&
-                                            subdim,algorithm
-    integer, dimension(:), allocatable   :: indxi,indxj,sildim
-    real(d), dimension(:), allocatable   :: hii,hij,ener,res,currtime
-    real(d), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
-    real(d)                              :: step,eps,toler
-    character(len=36)                    :: vecfile 
-    character(len=60)                    :: fileon,fileoff
-    logical, dimension(:), allocatable   :: lconv
-    logical                              :: lrdadc1,lrandom,lsub
+    integer                               :: maxbl,nrec,nblock,nconv,&
+                                             nstates,krydim,niter,&
+                                             subdim,algorithm
+    integer, dimension(:), allocatable    :: indxi,indxj,sildim
+    real(dp), dimension(:), allocatable   :: hii,hij,ener,res,currtime
+    real(dp), dimension(:,:), allocatable :: vec_old,vec_new,hxvec
+    real(dp)                              :: step,eps,toler
+    character(len=36)                     :: vecfile 
+    character(len=60)                     :: fileon,fileoff
+    logical, dimension(:), allocatable    :: lconv
+    logical                               :: lrdadc1,lrandom,lsub
 
     ! XSIL arrays
-    integer                              :: maxvec,maxdim,nlin
-    real(d), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
-                                            vec_conv,alphamat,betamat
+    integer                               :: maxvec,maxdim,nlin
+    real(dp), dimension(:,:), allocatable :: subhmat,subsmat,lancvec,&
+                                             vec_conv,alphamat,betamat
   contains
 
 !#######################################################################
@@ -42,7 +42,7 @@
       integer, intent(in)      :: matdim
       integer*8, intent(in)    :: noffd
       integer                  :: k
-      real(d)                  :: tw1,tw2,tc1,tc2
+      real(dp)                 :: tw1,tw2,tc1,tc2
       character(len=120)       :: atmp
       
 !-----------------------------------------------------------------------
@@ -140,11 +140,11 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer*8, intent(in)              :: noffd
-      integer                            :: s,n,i,ncurr
-      real(d), dimension(:), allocatable :: vec0,vecprop
-      real(d)                            :: energy,residual
+      integer, intent(in)                 :: matdim
+      integer*8, intent(in)               :: noffd
+      integer                             :: s,n,i,ncurr
+      real(dp), dimension(:), allocatable :: vec0,vecprop
+      real(dp)                            :: energy,residual
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -319,20 +319,20 @@
       
       implicit none
 
-      integer, intent(in)     :: matdim
-      integer*8, intent(in)   :: noffd
-      integer                 :: s,i,j
-      real(d)                 :: energy,residual
-      complex(d), allocatable :: psi(:),dtpsi(:)
+      integer, intent(in)      :: matdim
+      integer*8, intent(in)    :: noffd
+      integer                  :: s,i,j
+      real(dp)                 :: energy,residual
+      complex(dp), allocatable :: psi(:),dtpsi(:)
 
       ! BS variables
-      integer                 :: smallsteps,errorcode,intorder
-      real(d)                 :: inttime,stepsize,intperiod,time,&
-                                 truestepsize,nextstep,stepguess,&
-                                 tfinal
-      real(d), parameter      :: tiny=1e-9_d
-      complex(d), allocatable :: auxpsi(:,:)
-      logical                 :: relaxation
+      integer                  :: smallsteps,errorcode,intorder
+      real(dp)                 :: inttime,stepsize,intperiod,time,&
+                                  truestepsize,nextstep,stepguess,&
+                                  tfinal
+      real(dp), parameter      :: tiny=1e-9_dp
+      complex(dp), allocatable :: auxpsi(:,:)
+      logical                  :: relaxation
       
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
@@ -506,12 +506,12 @@
       integer, intent(in)   :: matdim
       integer*8, intent(in) :: noffd
       integer               :: s,i,j
-      real(d)               :: energy,residual
-      real(d), allocatable  :: psi(:),dtpsi(:)
+      real(dp)              :: energy,residual
+      real(dp), allocatable :: psi(:),dtpsi(:)
 
       ! RKF45 variables
       integer               :: errorcode
-      real(d)               :: time,tout
+      real(dp)              :: time,tout
       
 !-----------------------------------------------------------------------
 ! Output some information about the relaxation calculation
@@ -725,7 +725,7 @@
 
       integer, intent(in)   :: matdim
       integer*8, intent(in) :: noffd
-      real(d)               :: mem
+      real(dp)              :: mem
 
       mem=0.0d0
 
@@ -832,9 +832,9 @@
 
       implicit none
 
-      integer                              :: iadc1,dim1,i
-      integer, dimension(:), allocatable   :: indx1
-      real(d), dimension(:,:), allocatable :: vec1
+      integer                               :: iadc1,dim1,i
+      integer, dimension(:), allocatable    :: indx1
+      real(dp), dimension(:,:), allocatable :: vec1
 
 !-----------------------------------------------------------------------
 ! Open the ADC(1) eigenvector file
@@ -951,7 +951,7 @@
 
       integer, intent(in) :: matdim      
       integer             :: n,k,i,j
-      real(d)             :: ftmp,dp
+      real(dp)            :: ftmp,dprod
 
       ! Generate a set of random vectors
       do n=1,nblock
@@ -966,21 +966,21 @@
       ! Orthogonalisation
       do i=1,nblock
          do j=1,i-1
-            dp=dot_product(vec_old(:,i),vec_old(:,j))
-            vec_old(:,i)=vec_old(:,i)-dp*vec_old(:,j)
+            dprod=dot_product(vec_old(:,i),vec_old(:,j))
+            vec_old(:,i)=vec_old(:,i)-dprod*vec_old(:,j)
          enddo
       enddo
       do i=1,nblock
          do j=1,i-1
-            dp=dot_product(vec_old(:,i),vec_old(:,j))
-            vec_old(:,i)=vec_old(:,i)-dp*vec_old(:,j)
+            dprod=dot_product(vec_old(:,i),vec_old(:,j))
+            vec_old(:,i)=vec_old(:,i)-dprod*vec_old(:,j)
          enddo
       enddo
 
       ! Normalisation
       do i=1,nblock
-         dp=dot_product(vec_old(:,i),vec_old(:,i))
-         vec_old(:,i)=vec_old(:,i)/sqrt(dp)
+         dprod=dot_product(vec_old(:,i),vec_old(:,i))
+         vec_old(:,i)=vec_old(:,i)/sqrt(dprod)
       enddo
       
       return
@@ -996,15 +996,15 @@
       
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer, dimension(:), allocatable   :: full2sub,sub2full,&
-                                              indxhii
-      integer                              :: i,j,k,i1,j1,e2,error,&
-                                              iham,nlim,l
-      real(d), dimension(:,:), allocatable :: hsub
-      real(d), dimension(:), allocatable   :: subeig,work
-      character(len=70)                    :: filename
+      integer, intent(in)                   :: matdim
+      integer*8, intent(in)                 :: noffd
+      integer, dimension(:), allocatable    :: full2sub,sub2full,&
+                                               indxhii
+      integer                               :: i,j,k,i1,j1,e2,error,&
+                                               iham,nlim,l
+      real(dp), dimension(:,:), allocatable :: hsub
+      real(dp), dimension(:), allocatable   :: subeig,work
+      character(len=70)                     :: filename
 
 !-----------------------------------------------------------------------
 ! Output where we are at
@@ -1045,7 +1045,7 @@
 ! and if it is, increase subdim accordingly
 !-----------------------------------------------------------------------
 5     continue
-      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_dp) then
          subdim=subdim+1
          goto 5
       endif
@@ -1164,9 +1164,9 @@
 
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer                              :: n
-      real(d), dimension(:,:), allocatable :: tmp
+      integer, intent(in)                   :: matdim
+      integer                               :: n
+      real(dp), dimension(:,:), allocatable :: tmp
 
 !-----------------------------------------------------------------------
 ! Reorder the lancvec, subhmat, subsmat, alphamat and betamat arrays
@@ -1210,12 +1210,12 @@
       
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer                              :: ista,istep,i,j,i1,j1,k1
-      real(d)                              :: dp,norm
-      real(d), dimension(matdim)           :: vec0
-      real(d), dimension(:), allocatable   :: r,q,v,alpha,beta
+      integer, intent(in)                 :: matdim
+      integer*8, intent(in)               :: noffd
+      integer                             :: ista,istep,i,j,i1,j1,k1
+      real(dp)                            :: dprod,norm
+      real(dp), dimension(matdim)         :: vec0
+      real(dp), dimension(:), allocatable :: r,q,v,alpha,beta
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1238,11 +1238,11 @@
       lancvec(:,k1)=vec0(:)
 
       do i=1,ista-1
-         dp=dot_product(vec_conv(:,i),lancvec(:,k1))
-         lancvec(:,k1)=lancvec(:,k1)-dp*vec_conv(:,i)
+         dprod=dot_product(vec_conv(:,i),lancvec(:,k1))
+         lancvec(:,k1)=lancvec(:,k1)-dprod*vec_conv(:,i)
       enddo
-      dp=dot_product(lancvec(:,k1),lancvec(:,k1))
-      lancvec(:,k1)=lancvec(:,k1)/sqrt(dp)
+      dprod=dot_product(lancvec(:,k1),lancvec(:,k1))
+      lancvec(:,k1)=lancvec(:,k1)/sqrt(dprod)
 
       q=lancvec(:,k1)
 
@@ -1386,15 +1386,15 @@
 
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer                              :: istep,nvec,nnull,&
-                                              error,i,j,k,m,i1,j1
-      real(d), dimension(matdim)           :: vecprop
-      real(d), dimension(:,:), allocatable :: transmat,hmat1,eigvec,&
-                                              umat,funcmat
-      real(d), dimension(:), allocatable   :: eigval,work,coeff0,coeff,&
-                                              coeff1
-      real(d)                              :: dtau,norm
+      integer, intent(in)                   :: matdim
+      integer                               :: istep,nvec,nnull,&
+                                               error,i,j,k,m,i1,j1
+      real(dp), dimension(matdim)           :: vecprop
+      real(dp), dimension(:,:), allocatable :: transmat,hmat1,eigvec,&
+                                               umat,funcmat
+      real(dp), dimension(:), allocatable   :: eigval,work,coeff0,coeff,&
+                                               coeff1
+      real(dp)                              :: dtau,norm
 
 !----------------------------------------------------------------------
 ! Perform Lowdin's canonical orthogonalisation of the subspace basis
@@ -1497,13 +1497,13 @@
 
       implicit none
 
-      integer                              :: nvec,nnull,istep,&
-                                              error,i,j,k,l,lwork
-      real(d), dimension(:,:), allocatable :: smat,hmat,eigvec,&
-                                              smat1,hmat1,transmat,&
-                                              invtransmat
-      real(d), dimension(:), allocatable   :: eigval,work,coeff0
-      real(d), parameter                   :: eps=1e-6_d
+      integer                               :: nvec,nnull,istep,&
+                                               error,i,j,k,l,lwork
+      real(dp), dimension(:,:), allocatable :: smat,hmat,eigvec,&
+                                               smat1,hmat1,transmat,&
+                                               invtransmat
+      real(dp), dimension(:), allocatable   :: eigval,work,coeff0
+      real(dp), parameter                   :: eps=1e-6_dp
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -1613,11 +1613,11 @@
       
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer*8, intent(in)              :: noffd
-      real(d), dimension(matdim)         :: vecprop
-      real(d), dimension(:), allocatable :: hpsi,resvec
-      real(d)                            :: energy,residual
+      integer, intent(in)                 :: matdim
+      integer*8, intent(in)               :: noffd
+      real(dp), dimension(matdim)         :: vecprop
+      real(dp), dimension(:), allocatable :: hpsi,resvec
+      real(dp)                            :: energy,residual
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1688,8 +1688,8 @@
 
       implicit none
 
-      integer :: n
-      real(d) :: energy,residual
+      integer  :: n
+      real(dp) :: energy,residual
       
       select case(algorithm)
          

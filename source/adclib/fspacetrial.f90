@@ -24,14 +24,14 @@ contains
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    real(d), dimension(ndim), intent(out) :: travec
-    real(d), dimension(ndim,ndim), intent(inout) :: arrd
-    real(d), dimension(ndim), intent(in) :: autvec
+    real(dp), dimension(ndim), intent(out) :: travec
+    real(dp), dimension(ndim,ndim), intent(inout) :: arrd
+    real(dp), dimension(ndim), intent(in) :: autvec
    
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: ar_diagd,temp
-    real(d), dimension(:,:), allocatable :: ar_offdiagd
+    real(dp), dimension(:), allocatable :: ar_diagd,temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiagd
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
@@ -70,11 +70,11 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: ndim1,ndim2,&
                                                            nbuf,i,j,k
-    real(d), dimension(ndim), intent(out)               :: travec
-    real(d), dimension(ndim,ndim), intent(inout)        :: arrd
-    real(d), dimension(ndim), intent(in)                :: autvec
-    real(d), dimension(:), allocatable                  :: ar_diagd,temp
-    real(d), dimension(:,:), allocatable                :: ar_offdiagd
+    real(dp), dimension(ndim), intent(out)              :: travec
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arrd
+    real(dp), dimension(ndim), intent(in)               :: autvec
+    real(dp), dimension(:), allocatable                 :: ar_diagd,temp
+    real(dp), dimension(:,:), allocatable               :: ar_offdiagd
     
     ndim1=kpq(1,0)
     
@@ -113,14 +113,14 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
 
 
-    real(d), dimension(ndimf), intent(out) :: travec
-    real(d), dimension(ndimf,ndim), intent(inout) :: arrd
-    real(d), dimension(ndim), intent(in) :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
+    real(dp), dimension(ndimf,ndim), intent(inout) :: arrd
+    real(dp), dimension(ndim), intent(in) :: autvec
    
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: temp
-    real(d), dimension(:,:), allocatable :: ar_offdiagd
+    real(dp), dimension(:), allocatable :: temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiagd
     
     ndim1=kpq(1,0)
     
@@ -160,14 +160,14 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
 
 
-    real(d), dimension(ndimf), intent(out) :: travec
-    real(d), dimension(ndimf,ndim), intent(inout) :: arrd
-    real(d), dimension(ndim), intent(in) :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
+    real(dp), dimension(ndimf,ndim), intent(inout) :: arrd
+    real(dp), dimension(ndim), intent(in) :: autvec
    
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: temp
-    real(d), dimension(:,:), allocatable :: ar_offdiagd
+    real(dp), dimension(:), allocatable :: temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiagd
     
     ndim1=kpq(1,0)
     
@@ -211,14 +211,14 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
 
 
-    real(d), dimension(ndimf), intent(out) :: travec
-    real(d), dimension(ndimf,ndim), intent(inout) :: arrd
-    real(d), dimension(ndim), intent(in) :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
+    real(dp), dimension(ndimf,ndim), intent(inout) :: arrd
+    real(dp), dimension(ndim), intent(in) :: autvec
    
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: ar_diagd,temp
-    real(d), dimension(:,:), allocatable :: ar_offdiagd
+    real(dp), dimension(:), allocatable :: ar_diagd,temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiagd
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
@@ -332,13 +332,13 @@ contains
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim), intent(out) :: evector
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
 
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: ar_diag,temp
-    real(d), dimension(:,:), allocatable :: ar_offdiag
+    real(dp), dimension(:), allocatable :: ar_diag,temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiag
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
@@ -480,13 +480,13 @@ contains
     integer :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim), intent(out) :: evector
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
 
     integer :: ndim1, ndim2, nbuf,i
     
-    real(d), dimension(:), allocatable :: ar_diag
-    real(d), dimension(:,:), allocatable :: ar_offdiag
+    real(dp), dimension(:), allocatable :: ar_diag
+    real(dp), dimension(:,:), allocatable :: ar_offdiag
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
@@ -627,10 +627,10 @@ contains
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: nbuf,i
-    real(d), dimension(ndim), intent(out)               :: evector
-    real(d), dimension(ndim,ndim), intent(inout)        :: arr
-    real(d), dimension(:), allocatable                  :: ar_diag
-    real(d), dimension(:,:), allocatable                :: ar_offdiag
+    real(dp), dimension(ndim), intent(out)              :: evector
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arr
+    real(dp), dimension(:), allocatable                 :: ar_diag
+    real(dp), dimension(:,:), allocatable               :: ar_offdiag
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -673,9 +673,9 @@ contains
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: nbuf,i
-    real(d), dimension(ndim,ndim), intent(inout)        :: arr
-    real(d), dimension(:), allocatable                  :: ar_diag
-    real(d), dimension(:,:), allocatable                :: ar_offdiag
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arr
+    real(dp), dimension(:), allocatable                 :: ar_diag
+    real(dp), dimension(:,:), allocatable               :: ar_offdiag
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -713,10 +713,10 @@ contains
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: nbuf,i
-    real(d), dimension(ndim), intent(out)               :: evector
-    real(d), dimension(ndim,ndim), intent(inout)        :: arr
-    real(d), dimension(:), allocatable                  :: ar_diag
-    real(d), dimension(:,:), allocatable                :: ar_offdiag
+    real(dp), dimension(ndim), intent(out)              :: evector
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arr
+    real(dp), dimension(:), allocatable                 :: ar_diag
+    real(dp), dimension(:,:), allocatable               :: ar_offdiag
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -757,9 +757,9 @@ contains
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: nbuf,i
-    real(d), dimension(ndim,ndim), intent(inout)        :: arr
-    real(d), dimension(:), allocatable                  :: ar_diag
-    real(d), dimension(:,:), allocatable                :: ar_offdiag
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arr
+    real(dp), dimension(:), allocatable                 :: ar_diag
+    real(dp), dimension(:,:), allocatable               :: ar_offdiag
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -810,9 +810,9 @@ contains
     integer, intent(in)                                 :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                                             :: nbuf,i
-    real(d), dimension(ndim,ndim), intent(inout)        :: arr
-    real(d), dimension(:), allocatable                  :: ar_diag
-    real(d), dimension(:,:), allocatable                :: ar_offdiag
+    real(dp), dimension(ndim,ndim), intent(inout)       :: arr
+    real(dp), dimension(:), allocatable                 :: ar_diag
+    real(dp), dimension(:,:), allocatable               :: ar_offdiag
 
 !------------------------------------------------------------------
 ! Allocate arrays
@@ -854,15 +854,15 @@ contains
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(3), intent(in) :: chflag1
     character(1), intent(in) :: chflag2
-    real(d), dimension(ndim,ndim), intent(out) :: fspace
-    real(d), dimension(ndim), intent(out) :: fen
+    real(dp), dimension(ndim,ndim), intent(out) :: fspace
+    real(dp), dimension(ndim), intent(out) :: fen
     
     integer :: nryd,ifail
     integer, dimension(nBas) :: ncnfi_ryd
     
     integer, dimension(:), allocatable :: nisri
-    real(d), dimension(:,:), allocatable :: arr
-    real(d), dimension(:), allocatable :: evec,temp
+    real(dp), dimension(:,:), allocatable :: arr
+    real(dp), dimension(:), allocatable :: evec,temp
     
     integer :: i,lim
 !!$    integer*8 :: nstatel
@@ -882,13 +882,13 @@ contains
     if (chflag2 .eq. 'i') then
        call get_ncnfi_ryd(kpq(:,:),ncnfi_ryd(:),nryd)
        lim=nryd
-       temp(:)=0._d
+       temp(:)=0._dp
        do i=1,lim
           temp(:)=temp(:)+arr(ncnfi_ryd(i),:)**2
        end do
     elseif (chflag2 .eq. 'f') then
        lim=kpq(1,0)
-       temp(:)=0._d
+       temp(:)=0._dp
        do i=1,lim
           temp(:)=temp(:)+arr(i,:)**2
        end do
@@ -929,15 +929,15 @@ contains
     integer, intent(in) :: ndim,negvc
     integer, intent(out):: nstate
     integer, dimension(7,0:nBas**2*nOcc**2),intent(in) :: kpq 
-    real(d), dimension(negvc), intent(out) :: fen
-    real(d), dimension(ndim,negvc), intent(out) :: fspace
+    real(dp), dimension(negvc), intent(out) :: fen
+    real(dp), dimension(ndim,negvc), intent(out) :: fspace
     character(36), intent(in) :: name
     character(1), intent(in) :: chflag
 
     integer, dimension(nBas) :: ncnfi_ryd
     integer, dimension(:), allocatable :: nisri,isv,indx
-    real(d), dimension(:), allocatable :: ener,temp,ener_ryd
-    real(d), dimension(:,:), allocatable :: arr
+    real(dp), dimension(:), allocatable :: ener,temp,ener_ryd
+    real(dp), dimension(:,:), allocatable :: arr
 
     integer :: i,vectype,vecdim,nvec,nryd,lim
 
@@ -957,13 +957,13 @@ contains
     if (chflag .eq. 'i') then
        call get_ncnfi_ryd(kpq(:,:),ncnfi_ryd(:),nryd)
        lim=nryd
-       temp(:)=0._d       
+       temp(:)=0._dp       
        do i=1,lim
           temp(:)=temp(:)+arr(ncnfi_ryd(i),:)**2
        end do
     elseif (chflag .eq. 'f') then
        lim=kpq(1,0)
-       temp(:)=0._d
+       temp(:)=0._dp
        do i=1,lim
           temp(:)=temp(:)+arr(i,:)**2
        end do
@@ -1014,13 +1014,13 @@ contains
     integer, intent(in) :: ndim,negvc
     integer, intent(out):: nstate
     integer, dimension(7,0:nBas**2*nOcc**2),intent(in) :: kpq 
-    real(d), dimension(negvc), intent(out) :: fen
-    real(d), dimension(ndim,negvc), intent(out) :: fspace
+    real(dp), dimension(negvc), intent(out) :: fen
+    real(dp), dimension(ndim,negvc), intent(out) :: fspace
 
     integer, dimension(nBas) :: ncnfi_ryd
     integer, dimension(:), allocatable :: nisri,isv,indx
-    real(d), dimension(:), allocatable :: ener,temp,ener_ryd
-    real(d), dimension(:,:), allocatable :: arr
+    real(dp), dimension(:), allocatable :: ener,temp,ener_ryd
+    real(dp), dimension(:,:), allocatable :: arr
 
     integer :: i,vectype,vecdim,nvec,nryd,lim
 
@@ -1031,7 +1031,7 @@ contains
 
     call get_ncnfi_ryd(kpq(:,:),ncnfi_ryd(:),nryd)
     lim=nryd
-    temp(:)=0._d       
+    temp(:)=0._dp       
     do i=1,lim
        temp(:)=temp(:)+arr(ncnfi_ryd(i),:)**2
     end do
@@ -1077,14 +1077,14 @@ contains
     
     integer, intent(in)                    :: ndim,negvc,ndims
     integer, intent(out)                   :: nstate
-    real(d), dimension(ndim), intent(in)   :: mtm 
-    real(d), dimension(negvc), intent(out) :: fen,tmvec
+    real(dp), dimension(ndim), intent(in)   :: mtm 
+    real(dp), dimension(negvc), intent(out) :: fen,tmvec
     
     character(36), intent(in)              :: name
 
     integer                                :: i,j,num,k
-    real(d)                                :: enr,cntr
-    real(d), dimension(:), allocatable     :: vec 
+    real(dp)                                :: enr,cntr
+    real(dp), dimension(:), allocatable     :: vec 
     logical                                :: log1
 
     INQUIRE(file=name,exist=log1)
@@ -1164,16 +1164,16 @@ contains
   subroutine get_sigma(ndim,ener,sigmavec)
 
     integer, intent(in)                  :: ndim
-    real(d), dimension(ndim), intent(in) :: ener
-    real(d), dimension(ndim), intent(in) :: sigmavec
+    real(dp), dimension(ndim), intent(in) :: ener
+    real(dp), dimension(ndim), intent(in) :: sigmavec
     
     integer                              :: i,ncount,iout
-    real(d)                              :: oslimit
-    real(d), dimension(:), allocatable   :: sgmvc_short,ener_short
+    real(dp)                              :: oslimit
+    real(dp), dimension(:), allocatable   :: sgmvc_short,ener_short
     
     allocate(sgmvc_short(ndim),ener_short(ndim))
 
-    oslimit=1e-8_d
+    oslimit=1e-8_dp
     ncount=0
 
 ! sgmvc_short: array of oscillator strengths (in Mb) that are greater than oslimit
@@ -1208,11 +1208,11 @@ contains
   subroutine get_sums(ndim,ener,fosc)
     
     integer, intent(in) :: ndim
-    real(d), dimension(ndim), intent(in) :: ener, fosc
+    real(dp), dimension(ndim), intent(in) :: ener, fosc
     
-    real(d), dimension(0:50):: sums
+    real(dp), dimension(0:50):: sums
     integer :: i,j,k
-    real(d) :: elev,flev,ratio
+    real(dp) :: elev,flev,ratio
 
     character(len=8) :: atmp
 
@@ -1255,7 +1255,7 @@ contains
   subroutine fill_stvc(ndim,vctr)
     
     integer, intent(in) :: ndim
-    real(d),dimension(ndim), intent(in) :: vctr
+    real(dp),dimension(ndim), intent(in) :: vctr
     
     integer :: i,cnt
     integer, dimension(:), allocatable :: indarr
@@ -1274,11 +1274,11 @@ contains
  subroutine test_ortho(ndim,nstate,arr)
 
     integer, intent(in) :: ndim,nstate
-    real(d), dimension(nstate,ndim), intent(in) :: arr
-    real(d), dimension(:,:), allocatable :: mat
-    real(d), dimension(:), allocatable :: tempvec1,tempvec2,evec
+    real(dp), dimension(nstate,ndim), intent(in) :: arr
+    real(dp), dimension(:,:), allocatable :: mat
+    real(dp), dimension(:), allocatable :: tempvec1,tempvec2,evec
     integer :: i,j
-    real(d) :: entri
+    real(dp) :: entri
 
     write(ilog,*) 'Starting Ortho Test'
 
@@ -1318,7 +1318,7 @@ contains
  subroutine show_vecs(ndim,nstate,arr)
 ! ndim=Anzahl Vecs, nstate=Länge Vecs, arr=Vecs
     integer, intent(in) :: ndim,nstate
-    real(d), dimension(nstate,ndim), intent(in) :: arr
+    real(dp), dimension(nstate,ndim), intent(in) :: arr
     integer :: i,j
 
     write(ilog,*) 'Starting Show_Vecs'
@@ -1336,14 +1336,14 @@ contains
     integer :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim), intent(out) :: evector
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
     INTEGER, DIMENSION(ndim), intent(in) :: indx  
 
     integer :: ndim1, ndim2, nbuf,i
     
-    real(d), dimension(:), allocatable :: ar_diag
-    real(d), dimension(:,:), allocatable :: ar_offdiag
+    real(dp), dimension(:), allocatable :: ar_diag
+    real(dp), dimension(:,:), allocatable :: ar_offdiag
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)
@@ -1373,14 +1373,14 @@ contains
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    real(d), dimension(ndim), intent(out) :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim), intent(out) :: evector
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
     INTEGER, DIMENSION(ndim), intent(in) :: indx  
 
     integer :: ndim1,ndim2,nbuf,i,j,k
     
-    real(d), dimension(:), allocatable :: ar_diag,temp
-    real(d), dimension(:,:), allocatable :: ar_offdiag
+    real(dp), dimension(:), allocatable :: ar_diag,temp
+    real(dp), dimension(:,:), allocatable :: ar_offdiag
     
     ndim1=kpq(1,0)
     ndim2=ndim-kpq(1,0)

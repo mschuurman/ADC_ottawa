@@ -34,8 +34,8 @@ contains
     integer                               :: i,ndim,ndims,ndimsf,&
                                              nout,ndimf,ndimd,noutf
     integer*8                             :: noffd,noffdf
-    real(d)                               :: e0
-    real(d), dimension(:,:), allocatable  :: cap_mo,theta_mo
+    real(dp)                              :: e0
+    real(dp), dimension(:,:), allocatable :: cap_mo,theta_mo
     type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
@@ -200,9 +200,9 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf
     integer                                   :: i,p,q,k
-    real(d), dimension(nbas,nbas)             :: cap_mo
-    real(d), dimension(nbas,nbas)             :: rho0
-    real(d), dimension(nbas,nbas)             :: dpl_orig
+    real(dp), dimension(nbas,nbas)            :: cap_mo
+    real(dp), dimension(nbas,nbas)            :: rho0
+    real(dp), dimension(nbas,nbas)            :: dpl_orig
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
@@ -301,7 +301,7 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf
     integer                                   :: i,p,q,k,c
-    real(d), dimension(nbas,nbas)             :: rho0
+    real(dp), dimension(nbas,nbas)            :: rho0
     character(len=60)                         :: filename
     character(len=1), dimension(3)            :: acomp
 
@@ -414,9 +414,9 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf
     integer                                   :: i,p,q,k
-    real(d), dimension(nbas,nbas)             :: theta_mo
-    real(d), dimension(nbas,nbas)             :: rho0
-    real(d), dimension(nbas,nbas)             :: dpl_orig
+    real(dp), dimension(nbas,nbas)            :: theta_mo
+    real(dp), dimension(nbas,nbas)            :: rho0
+    real(dp), dimension(nbas,nbas)            :: dpl_orig
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
@@ -522,8 +522,8 @@ contains
 
     integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
     integer                                 :: ndim,i,itmp,unit
-    real(d), dimension(:,:), allocatable    :: eigvec
-    real(d), dimension(:), allocatable      :: ener,mtm,tmvec,osc_str
+    real(dp), dimension(:,:), allocatable   :: eigvec
+    real(dp), dimension(:), allocatable     :: ener,mtm,tmvec,osc_str
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -604,9 +604,9 @@ contains
     
     implicit none
 
-    integer              :: ndim,unit,itmp,i
-    real(d), allocatable :: ener(:)
-    real(d), allocatable :: vec(:)
+    integer               :: ndim,unit,itmp,i
+    real(dp), allocatable :: ener(:)
+    real(dp), allocatable :: vec(:)
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -662,9 +662,9 @@ contains
     
     implicit none
 
-    integer                              :: ndimf,workdim,error,i,j
-    real(d), dimension(:,:), allocatable :: eigvec,tmp
-    real(d), dimension(:), allocatable   :: ener,work
+    integer                               :: ndimf,workdim,error,i,j
+    real(dp), dimension(:,:), allocatable :: eigvec,tmp
+    real(dp), dimension(:), allocatable   :: ener,work
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -776,9 +776,9 @@ contains
     
     implicit none
 
-    integer                              :: ndimf,workdim,error,i,j
-    real(d), dimension(:,:), allocatable :: eigvec,tmp
-    real(d), dimension(:), allocatable   :: ener,work
+    integer                               :: ndimf,workdim,error,i,j
+    real(dp), dimension(:,:), allocatable :: eigvec,tmp
+    real(dp), dimension(:), allocatable   :: ener,work
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -938,10 +938,10 @@ contains
     
     implicit none
 
-    integer              :: ndimf
-    integer              :: i,j
-    real(d), allocatable :: ener(:)
-    real(d), allocatable :: vec(:)
+    integer               :: ndimf
+    integer               :: i,j
+    real(dp), allocatable :: ener(:)
+    real(dp), allocatable :: vec(:)
 
 !----------------------------------------------------------------------
 ! Initial state projection
@@ -1017,11 +1017,11 @@ contains
     
     implicit none
 
-    integer                                 :: ndimf,lwork,info,i
-    integer, dimension(:), allocatable      :: indx
-    real(d), dimension(:), allocatable      :: rwork
-    complex(d), dimension(:,:), allocatable :: capham,vecr,vecl
-    complex(d), dimension(:), allocatable   :: lambda,work
+    integer                                  :: ndimf,lwork,info,i
+    integer, dimension(:), allocatable       :: indx
+    real(dp), dimension(:), allocatable      :: rwork
+    complex(dp), dimension(:,:), allocatable :: capham,vecr,vecl
+    complex(dp), dimension(:), allocatable   :: lambda,work
     
 !----------------------------------------------------------------------
 ! Allocate arrays
