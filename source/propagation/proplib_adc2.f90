@@ -403,7 +403,7 @@ contains
 
     use tdsemod
     use sillib
-    
+
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf

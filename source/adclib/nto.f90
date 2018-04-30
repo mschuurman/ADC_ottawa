@@ -25,7 +25,7 @@ contains
 ! adc2_nto: gateway subroutine for the calculation of ADC(2) NTOs
 !######################################################################
   
-  subroutine adc2_nto(gam,ndimf,kpqf,vecfile,nstates)
+  subroutine adc2_nto(gam,ndimf,kpqf,vecfile,nstates,stem)
 
     use gamess_internal
     
@@ -34,7 +34,7 @@ contains
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: i
-    character(len=*)                          :: vecfile
+    character(len=*)                          :: vecfile,stem
     type(gam_structure)                       :: gam
     
 !----------------------------------------------------------------------
@@ -48,7 +48,7 @@ contains
 ! Calculate the NTOs
 !----------------------------------------------------------------------
     if (statenumber.eq.0) then
-       call adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates)
+       call adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates,stem)
     else
        errmsg='WRITE THE EXCITED STATE-TO-EXCITED STATE NTO CODE!'
        call error_control
@@ -63,7 +63,7 @@ contains
 !              ground state
 !######################################################################
   
-  subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates)
+  subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates,stem)
 
     use gamess_internal
     use adc_common, only: readdavvc
@@ -89,7 +89,7 @@ contains
     real(dp), allocatable                     :: val(:)
     real(dp), allocatable                     :: occ(:)
     real(dp), parameter                       :: thrsh=0.01d0
-    character(len=*)                          :: vecfile
+    character(len=*)                          :: vecfile,stem
     character(len=70)                         :: filename
     character(len=3)                          :: ai
     type(gam_structure)                       :: gam
@@ -208,7 +208,7 @@ contains
        
        ! Write the molden file
        write(ai,'(i3)') i
-       filename='nto_0_'//trim(adjustl(ai))//'.molden'
+       filename=trim(stem)//'_0_'//trim(adjustl(ai))//'.molden'
        call write_molden(gam,filename,nao,2*npair,&
             orb(1:nao,1:2*npair),val(1:2*npair),occ(1:2*npair))
 
@@ -269,6 +269,32 @@ contains
     return
     
   end subroutine rdvecs
+    
+!######################################################################
+! tdadc2_nto_gs: calculation of ground-to-excited state NTOs using the
+!                non-ground state portion of the complex wavefunction
+!                from a TD-ADC(2) calculation
+!######################################################################
+  
+  subroutine tdadc2_nto(gam,wf,ndimf,kpqf,vecfile,stem)
+
+    use gamess_internal
+    
+    implicit none
+
+    integer                                   :: ndimf
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: i
+    complex(dp), dimension(ndimf)             :: wf
+    character(len=*)                          :: vecfile,stem
+    type(gam_structure)                       :: gam
+
+    print*,"HERE"
+    stop
+    
+    return
+    
+  end subroutine tdadc2_nto
     
 !######################################################################
   

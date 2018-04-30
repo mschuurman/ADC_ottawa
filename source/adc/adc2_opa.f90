@@ -154,7 +154,7 @@ contains
 ! If requested, calculate and output NTOs
 !-----------------------------------------------------------------------
     if (ldiagfinal.and.lnto) call adc2_nto(gam,ndimf,kpqf,davname_f,&
-         davstates_f)
+         davstates_f,'nto')
         
 !-----------------------------------------------------------------------
 ! Deallocate arrays

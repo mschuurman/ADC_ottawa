@@ -86,7 +86,8 @@ contains
 !-----------------------------------------------------------------------
 ! If requested, calculate and output NTOs
 !-----------------------------------------------------------------------
-    if (lnto) call adc2_nto(gam,ndimf,kpqf,'SCRATCH/fdstates',nsel)
+    if (lnto) call adc2_nto(gam,ndimf,kpqf,'SCRATCH/fdstates',nsel,&
+         'nto')
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
