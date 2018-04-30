@@ -846,7 +846,6 @@
       ! Term 3
       !
       ! (i) Intermediate terms
-      nvirt=nbas-nocc
       allocate(tau1(nvirt,nocc,nocc))
       allocate(tau2(nvirt,nocc,nocc))
       tau1=0.0d0

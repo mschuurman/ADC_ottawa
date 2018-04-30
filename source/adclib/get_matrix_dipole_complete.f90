@@ -47,7 +47,7 @@
       real(d)                                :: ar_offdiag_ij
       character(10)                          :: name
 
-      integer                                :: nvirt,itmp,itmp1,dim
+      integer                                :: itmp,itmp1,dim
       real(d)                                :: func
       real(d)                                :: tw1,tw2,tc1,tc2
 
@@ -73,7 +73,6 @@
 ! Initialise things
 !-----------------------------------------------------------------------
       call times(tw1,tc1)
-      nvirt=nbas-nocc
       travec(:)=0.0d0      
 
 !-----------------------------------------------------------------------
@@ -2278,13 +2277,11 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
-    integer                                             :: nvirt
     real(d), dimension(ndim), intent(in)                :: autvec
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
@@ -2302,12 +2299,12 @@
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
+    call dmatrix_precalc_4indx(autvec,ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
+    call dmatrix_precalc_2indx(autvec,ndim,kpq,kpqf)
 
     return
 
@@ -2315,7 +2312,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_2indx(autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2323,7 +2320,7 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+    integer                                :: ndim,a,apr,i,j,itmp,&
                                               itmp1,inda,indb,indk,indl,&
                                               spin,indapr,indbpr,indkpr,&
                                               indlpr,spinpr,b,b1,itmp2,k,&
@@ -2487,7 +2484,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_4indx(autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2495,7 +2492,7 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                  :: nvirt,ndim,a,apr,k,&
+    integer                                  :: ndim,a,apr,k,&
                                                 kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
     real(d), dimension(ndim), intent(in)     :: autvec
@@ -2660,12 +2657,10 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
-    integer                                             :: nvirt
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
@@ -2683,12 +2678,12 @@
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+    call dmatrix_precalc_4indx_noscreen(ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+    call dmatrix_precalc_2indx_noscreen(ndim,kpq,kpqf)
 
     return
 
@@ -2696,7 +2691,7 @@
 
 !#######################################################################
 
-    subroutine dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+    subroutine dmatrix_precalc_2indx_noscreen(ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2704,7 +2699,7 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+    integer                                :: ndim,a,apr,i,j,itmp,&
                                               itmp1,inda,indb,indk,indl,&
                                               spin,indapr,indbpr,indkpr,&
                                               indlpr,spinpr,b,b1,itmp2,k,&
@@ -2865,7 +2860,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_4indx_noscreen(ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2873,7 +2868,7 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                  :: nvirt,ndim,a,apr,k,&
+    integer                                  :: ndim,a,apr,k,&
                                                 kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
     real(d)                                  :: tw1,tw2,tc1,tc2
@@ -11267,7 +11262,7 @@ ar_offdiag_ij = 0.
 
     ! NEW
     integer                      :: idpl
-    integer                      :: nvirt,itmp,itmp1,dim
+    integer                      :: itmp,itmp1,dim
     real(d)                      :: func
     real(d)                      :: tw1,tw2,tc1,tc2
 
@@ -11282,8 +11277,6 @@ ar_offdiag_ij = 0.
     oi(:)=0
     oj(:)=0
     file_offdiag(:)=0.d0
-
-    nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
 ! Open the dipole matrix file
@@ -12441,7 +12434,7 @@ ar_offdiag_ij = 0.
     character(len=60)                  :: filename
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
+    integer                                       :: itmp,itmp1,dim
     integer                                       :: tid
     integer, dimension(:), allocatable            :: dplunit    
     integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
@@ -12496,7 +12489,6 @@ ar_offdiag_ij = 0.
     oi_omp=0
     oj_omp=0
     file_offdiag_omp=0.0d0
-    nvirt=nbas-nocc
     
 !-----------------------------------------------------------------------
 ! Open the working dipole files
@@ -14574,7 +14566,7 @@ ar_offdiag_ij = 0.
     character(len=60)                  :: filename
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
+    integer                                       :: itmp,itmp1,dim
     integer                                       :: tid
     integer, dimension(:), allocatable            :: dplunit    
     integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
@@ -14630,7 +14622,6 @@ ar_offdiag_ij = 0.
     oi_omp=0
     oj_omp=0
     file_offdiag_omp=0.0d0
-    nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
 ! Open the working dipole files
@@ -16002,10 +15993,8 @@ ar_offdiag_ij = 0.
     real(d)                                             :: tw1,tw2,tc1,tc2
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
+    integer                                       :: itmp,itmp1,dim
     real(d)                                       :: func
-    
-    nvirt=nbas-nocc
     
 !----------------------------------------------------------------------
 ! Begin timing

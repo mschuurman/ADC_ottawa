@@ -334,7 +334,7 @@ contains
     real(d), dimension(:), allocatable        :: offdg2    
     complex(d), dimension(:,:), allocatable   :: krylov
     logical(kind=4)                           :: restart,relax,stdform
-
+    
 !----------------------------------------------------------------------
 ! sillib variables
 !----------------------------------------------------------------------

@@ -66,7 +66,6 @@ contains
   subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates,stem)
 
     use gamess_internal
-    use adc_common, only: readdavvc
     use density_matrix
     use moldenmod
     
@@ -94,8 +93,6 @@ contains
     character(len=3)                          :: ai
     type(gam_structure)                       :: gam
 
-    nvirt=nbas-nocc
-    
 !----------------------------------------------------------------------
 ! Note that we are here assuming that nocc < nvirt, which should
 ! almost always hold true
@@ -271,26 +268,198 @@ contains
   end subroutine rdvecs
     
 !######################################################################
-! tdadc2_nto_gs: calculation of ground-to-excited state NTOs using the
-!                non-ground state portion of the complex wavefunction
-!                from a TD-ADC(2) calculation
+! tdadc2_nto_gs: calculation of the complex, time-dependent
+!                ground-to-excited state NTOs using the non-ground
+!                state portion of the wavefunction from a TD-ADC(2)
+!                calculation
 !######################################################################
   
-  subroutine tdadc2_nto(gam,wf,ndimf,kpqf,vecfile,stem)
-
+  subroutine tdadc2_nto(gam,wf,ndimf,kpqf,stem)
+    
     use gamess_internal
+    use density_matrix
+    use moldenmod
     
     implicit none
 
     integer                                   :: ndimf
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-    integer                                   :: i
+    integer                                   :: nao,npair,i,j
+    integer                                   :: lwork,ierr
+    real(dp), allocatable                     :: trdens_real(:,:)
+    real(dp), allocatable                     :: trdens_imag(:,:)
+    real(dp), allocatable                     :: sigma(:)
+    real(dp), allocatable                     :: rwork(:)
+    real(dp), allocatable                     :: val(:)
+    real(dp), allocatable                     :: occ(:)
+    real(dp), parameter                       :: thrsh=0.01d0
+    complex(dp), allocatable                  :: trdens(:,:)
     complex(dp), dimension(ndimf)             :: wf
-    character(len=*)                          :: vecfile,stem
+    complex(dp), allocatable                  :: wf1(:)
+    complex(dp), allocatable                  :: tmp(:,:)
+    complex(dp), allocatable                  :: VT(:,:)
+    complex(dp), allocatable                  :: U(:,:)
+    complex(dp), allocatable                  :: work(:)
+    complex(dp), allocatable                  :: hole(:,:)
+    complex(dp), allocatable                  :: particle(:,:)
+    complex(dp), allocatable                  :: orb(:,:)
+    character(len=*)                          :: stem
+    character(len=70)                         :: filename
     type(gam_structure)                       :: gam
 
-    print*,"HERE"
-    stop
+!----------------------------------------------------------------------
+! Note that we are here assuming that nocc < nvirt, which should
+! almost always hold true
+!----------------------------------------------------------------------
+    if (nocc.gt.nvirt) then
+       errmsg='Error in calculating the NTOs: nocc > nvirt'
+       call error_control
+    endif
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(trdens_real(nbas,nbas))
+    trdens_real=0.0d0
+
+    allocate(trdens_imag(nbas,nbas))
+    trdens_imag=0.0d0
+
+    allocate(trdens(nbas,nbas))
+    trdens=czero
+    
+    allocate(wf1(ndimf))
+    wf1=czero
+
+    allocate(tmp(nocc,nvirt))
+    tmp=czero
+
+    allocate(sigma(nocc))
+    sigma=0.0d0
+
+    allocate(U(nocc,nocc))
+    U=czero
+    
+    allocate(VT(nvirt,nvirt))
+    VT=czero
+
+    lwork=4*nocc+2*nvirt
+    allocate(work(lwork))
+    work=czero
+
+    allocate(rwork(5*nocc))
+    rwork=0.0d0
+
+    nao=gam%nbasis
+    allocate(hole(nao,nocc))
+    allocate(particle(nao,nvirt))
+    hole=czero
+    particle=czero
+
+    allocate(orb(nao,nbas))
+    orb=czero
+
+    allocate(val(nbas))
+    val=0.0d0
+
+    allocate(occ(nbas))
+    occ=0.0d0
+    
+    
+!----------------------------------------------------------------------
+! Normalise the wavefunction vector
+!----------------------------------------------------------------------
+    wf1=wf/sqrt(dot_product(wf,wf))
+    
+!----------------------------------------------------------------------
+! Calculate the real part of the ground state-to-excited state
+! transition density matrix
+!----------------------------------------------------------------------
+    call adc2_trden_gs(trdens_real,ndimf,kpqf,real(wf1),1)
+
+!----------------------------------------------------------------------
+! Calculate the imaginary part of the ground state-to-excited state
+! transition density matrix
+!----------------------------------------------------------------------
+    call adc2_trden_gs(trdens_imag,ndimf,kpqf,aimag(wf1),1)
+
+!----------------------------------------------------------------------
+! Total, complex ground state-to-excited state transition density
+! matrix
+!----------------------------------------------------------------------
+    trdens=trdens_real+ci*trdens_imag
+
+!----------------------------------------------------------------------
+! SVD of the occupied-virtual block of the ground state-to-excited
+! state transition density matrix
+!----------------------------------------------------------------------
+    tmp=transpose(trdens(nocc+1:nbas,1:nocc))
+
+    call zgesvd('A','A',nocc,nvirt,tmp,nocc,sigma,U,nocc,VT,nvirt,&
+         work,lwork,rwork,ierr)
+
+    if (ierr.ne.0) then
+       errmsg='SVD of the transition density matrix failed in &
+            subroutine tdadc2_nto'
+       call error_control
+    endif
+
+!----------------------------------------------------------------------
+! Calculate and output the complex time-dependent NTOs
+!----------------------------------------------------------------------
+    ! Hole NTOs in terms of the AOs
+    hole=transpose(matmul(transpose(U(:,:)),&
+         transpose(ao2mo(1:nao,1:nocc))))
+
+    ! Particle NTOs in terms of the AOs
+    particle=transpose(matmul(VT(:,:),&
+         transpose(ao2mo(1:nao,nocc+1:nbas))))
+
+    ! No. NTO pairs
+    npair=0
+    do j=1,nocc
+       if (sigma(j)**2.ge.thrsh) npair=npair+1
+    enddo
+    
+    ! Dominant NTOs and singular values
+    orb=czero
+    val=0.0d0
+    occ=0.0d0
+    do j=1,npair
+       orb(:,npair-j+1)=hole(:,j)
+       orb(:,npair+j)=particle(:,j)
+       val(npair-j+1)=-0.5d0*sigma(j)**2
+       val(npair+j)=0.5d0*sigma(j)**2
+    enddo
+    occ(1:npair)=1.0d0
+
+    ! Write the molden files: one for the real parts of the NTOs and
+    ! one for the imaginary parts
+    filename=trim(stem)//'real.molden'
+    call write_molden(gam,filename,nao,2*npair,&
+         real(orb(1:nao,1:2*npair)),val(1:2*npair),occ(1:2*npair))
+    filename=trim(stem)//'imag.molden'
+    call write_molden(gam,filename,nao,2*npair,&
+         aimag(orb(1:nao,1:2*npair)),val(1:2*npair),occ(1:2*npair))
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(trdens_real)
+    deallocate(trdens_imag)
+    deallocate(trdens)
+    deallocate(wf1)
+    deallocate(tmp)
+    deallocate(sigma)
+    deallocate(U)
+    deallocate(VT)
+    deallocate(work)
+    deallocate(rwork)
+    deallocate(hole)
+    deallocate(particle)
+    deallocate(orb)
+    deallocate(val)
+    deallocate(occ)
     
     return
     

@@ -443,7 +443,7 @@ contains
     integer, dimension(:), allocatable :: oi,oj
     real(d), dimension(:), allocatable :: file_offdiag
    
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -456,7 +456,6 @@ contains
 !-----------------------------------------------------------------------
     call times(tw1,tc1)
 
-    nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
 
     ! CA_ph_ph
@@ -637,7 +636,7 @@ contains
     integer                      :: i,j,nlim,rec_count,dim_count,ndim1,unt
     real(d)                      :: ar_offdiag_ij
 
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -654,8 +653,6 @@ contains
     write(ilog,*) "Writing intermediate terms of ADC matrix in file ", name
     OPEN(UNIT=unt,FILE=name,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',&
          FORM='UNFORMATTED')
-
-    nvirt=nbas-nocc
 
     rec_count=nvirt*nvirt
     dim_count=nocc*nocc
@@ -728,7 +725,7 @@ contains
     integer, dimension(:), allocatable :: oi,oj
     real(d), dimension(:), allocatable :: file_offdiag
    
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -802,7 +799,6 @@ contains
 !-----------------------------------------------------------------------
     call times(tw1,tc1)
 
-    nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
 
     !$omp parallel do private(i,j) shared(ca)
@@ -1349,7 +1345,7 @@ contains
     integer, dimension(:), allocatable :: oi,oj
     real(d), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
     
@@ -1421,7 +1417,6 @@ contains
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   !$omp parallel do private(i,j) shared(ca)
@@ -2457,7 +2452,7 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
   integer, dimension(:), allocatable :: oi,oj
   real(d), dimension(:), allocatable :: file_offdiag
 
-  integer                              :: nvirt,a,b,nzero
+  integer                              :: a,b,nzero
   real(d), dimension(:,:), allocatable :: ca,cb
   real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -2471,7 +2466,6 @@ subroutine get_offdiag_adc2ext_save(ndim,kpq,nbuf,count,chr)
 !-----------------------------------------------------------------------
   call times(tw1,tc1)
   
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   ! CA_ph_ph
@@ -2920,7 +2914,7 @@ subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
   integer, dimension(:), allocatable :: oi,oj
   real(d), dimension(:), allocatable :: file_offdiag
 
-  integer                              :: nvirt,a,b,nzero
+  integer                              :: a,b,nzero
   real(d), dimension(:,:), allocatable :: ca,cb
  
   allocate(oi(buf_size))
@@ -2930,7 +2924,6 @@ subroutine get_offdiag_adc2ext_save_cvs(ndim,kpq,nbuf,count,chr)
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   ! CA_ph_ph
@@ -6810,7 +6803,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer, dimension(:), allocatable :: oi,oj
     real(d), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -6883,7 +6876,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   !$omp parallel do private(i,j) shared(ca)
@@ -7832,7 +7824,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer, dimension(:), allocatable :: oi,oj
     real(d), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb
     real(d)                              :: tw1,tw2,tc1,tc2
     
@@ -7904,7 +7896,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   !$omp parallel do private(i,j) shared(ca)
@@ -8439,8 +8430,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer                              :: indapr,indbpr,indjpr,&
                                             indkpr,spinpr
     integer                              :: i,j
-    integer                              :: nthreads,tid,nvirt,&
-                                            ndim1
+    integer                              :: nthreads,tid,ndim1
     real(d), dimension(ndim,ndim)        :: arr
     real(d), dimension(:,:), allocatable :: ca,cb
 
@@ -8456,7 +8446,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
     
 !-----------------------------------------------------------------------
@@ -8534,8 +8523,7 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
     integer                              :: indapr,indbpr,indjpr,&
                                             indkpr,spinpr
     integer                              :: i,j
-    integer                              :: nthreads,tid,nvirt,&
-                                            ndim1
+    integer                              :: nthreads,tid,ndim1
     real(d), dimension(ndim)             :: arr
     real(d), dimension(:,:), allocatable :: ca,cb
     
@@ -8551,7 +8539,6 @@ subroutine get_offdiag_adc2ext_save_GS(ndim,kpq,nbuf,count, UNIT_HAM )
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
     
 !-----------------------------------------------------------------------

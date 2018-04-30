@@ -147,7 +147,7 @@ contains
                                     offdiag_ij4
     real(d)                      :: offdiag1,offdiag2,offdiag3,offdiag4
    
-    integer                              :: nvirt,a,b,nzero !nocc
+    integer                              :: a,b,nzero !nocc
     real(d), dimension(:,:), allocatable :: ca,cb,vmat
     real(d)                              :: tw1,tw2,tc1,tc2
 
@@ -187,7 +187,6 @@ contains
 !-----------------------------------------------------------------------
     call times(tw1,tc1)
 
-    nvirt=nbas-nocc
     allocate(ca(nvirt,nvirt),cb(nocc,nocc))
 
     !$omp parallel do private(i,j) shared(ca)
@@ -416,7 +415,7 @@ contains
 !    integer, dimension(:), allocatable :: oi,oj
 !    real(d), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: nvirt,a,b,nzero
+    integer                              :: a,b,nzero
     real(d), dimension(:,:), allocatable :: ca,cb,vmat
     real(d)                              :: tw1,tw2,tc1,tc2
     
@@ -464,7 +463,6 @@ contains
 !-----------------------------------------------------------------------
 ! Precompute the results of calls to CA_ph_ph and CB_ph_ph
 !-----------------------------------------------------------------------
-  nvirt=nbas-nocc
   allocate(ca(nvirt,nvirt),cb(nocc,nocc))
   
   !$omp parallel do private(i,j) shared(ca)

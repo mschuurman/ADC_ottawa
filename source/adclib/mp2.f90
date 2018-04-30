@@ -177,7 +177,6 @@ contains
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(toto(nocc,nocc))
     allocate(tvtv(nvirt,nvirt))
 

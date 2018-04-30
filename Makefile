@@ -81,11 +81,6 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-# FROM ADC_nrc
-#EIGEN=  source/eigen/block_davidson.o \
-#	source/eigen/block_lanczos.o
-# FROM ADC_nrc
-
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
 	source/propagation/csillib.o \
@@ -129,21 +124,14 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/density_matrix.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
-	source/adclib/target_matching.o
-#	source/adclib/nto.o
+	source/adclib/target_matching.o \
+	source/adclib/nto.o
 
-EIGEN2= source/eigen/block_davidson.o \
-        source/eigen/dmatvec_davidson.o \
+EIGEN= source/eigen/block_davidson.o \
+	source/eigen/dmatvec_davidson.o \
         source/eigen/block_lanczos.o
 
-ADCLIB1= source/adclib/adc_common.o \
-	source/adclib/nto.o 
-
-# FROM ADC_nrc
-#	source/adclib/target_matching.o \
-#	source/adclib/adc2common.o \
-#	source/adclib/nto.o 
-# FROM ADC_nrc
+ADCCOMMON= source/adclib/adc_common.o
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc1_ener.o \
@@ -163,9 +151,9 @@ ADC =   $(INCLUDE) \
 	$(UTILITIES) \
 	$(QCLIB) \
 	$(ADCLIB) \
-	$(EIGEN2) \
+	$(EIGEN) \
 	$(PROPAGATION) \
-	$(ADCLIB1) \
+	$(ADCCOMMON) \
 	$(CAP) \
 	$(ADC_MAIN)
 

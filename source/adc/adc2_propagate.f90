@@ -103,7 +103,7 @@ contains
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_laser_adc2(ndimf,noffdf,kpqf)
+    call propagate_laser_adc2(gam,ndimf,noffdf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays

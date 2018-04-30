@@ -161,7 +161,7 @@ contains
     integer                                               :: nlim1,nlim2
     
     integer                              :: a1,c1,c,l1,l,i,&
-         itmp,itmp1,nvirt
+                                            itmp,itmp1
     real*8                               :: tw1,tw2,tc1,tc2,ftmp
     real*8, dimension(:,:), allocatable  :: tau
     
@@ -176,7 +176,6 @@ contains
 !-----------------------------------------------------------------------
     nlim1=1
     nlim2=kpq(1,0)
-    nvirt=nbas-nocc
     
     ! F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph (note that
     ! the calculation of these terms is still very slow)
@@ -455,7 +454,7 @@ contains
     integer                                               :: nlim1,nlim2
     
     integer                              :: a1,c1,c,l1,l,i,&
-         itmp,itmp1,nvirt
+                                            itmp,itmp1
     real*8                               :: tw1,tw2,tc1,tc2,ftmp
     real*8, dimension(:,:), allocatable  :: tau
     
@@ -470,7 +469,6 @@ contains
 !-----------------------------------------------------------------------
     nlim1=1
     nlim2=kpq(1,0)
-    nvirt=nbas-nocc
     
     ! F25_ph, F26_ph, F27_ph, F28_ph, F29_ph, F210_ph (note that
     ! the calculation of these terms is still very slow)
