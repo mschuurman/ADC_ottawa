@@ -75,6 +75,7 @@ contains
   subroutine adc2_nto_gs(gam,ndimf,kpqf,vecfile,nstates,stem)
 
     use gamess_internal
+    use mp2
     use density_matrix
     use moldenmod
     
@@ -82,7 +83,7 @@ contains
     
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
-    integer                                   :: i,j,aa,npair
+    integer                                   :: i,j,npair
     integer                                   :: nao,lwork,ierr
     real(dp), allocatable                     :: rvec(:,:)
     real(dp), allocatable                     :: trdens(:,:,:)
@@ -158,7 +159,19 @@ contains
 ! Read the ADC(2) vectors from file
 !----------------------------------------------------------------------
     call rdvecs(vecfile,rvec,ndimf,nstates)
-
+    
+!----------------------------------------------------------------------
+! Calculate the MP2 correction to the ground state density matrix
+!----------------------------------------------------------------------
+    ! MP2 ground state density matrix
+    call rho_mp2(rhomp2)
+    
+    ! Subtraction of the zeroth-order contribution to obtain the
+    ! MP2 correction
+    do i=1,nocc
+       rhomp2(i,i)=rhomp2(i,i)-2.0d0
+    enddo
+    
 !----------------------------------------------------------------------
 ! Calculate the occupied-virtural block of the ADC(2)
 ! ground-to-excited state transition density matrices
