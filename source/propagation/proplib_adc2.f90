@@ -37,6 +37,7 @@ contains
   subroutine propagate_laser_adc2(gam,ndimf,noffdf,kpqf)
 
     use tdsemod
+    use nto
     
     implicit none
 
@@ -83,6 +84,12 @@ contains
 !----------------------------------------------------------------------
     if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
          'SCRATCH/hmlt.offc',ndimf,noffdf)
+
+!----------------------------------------------------------------------
+! Precalculation of intermediate terms entering into the equations
+! for the time-dependent NTOs
+!----------------------------------------------------------------------
+    if (lnto) call tdadc2_nto_init
     
 !----------------------------------------------------------------------
 ! Peform the wavepacket propagation
@@ -888,6 +895,7 @@ contains
   subroutine finalise
 
     use tdsemod
+    use nto
     
     implicit none
 
@@ -896,6 +904,7 @@ contains
 !----------------------------------------------------------------------
     deallocate(psi)
     if (hincore) call deallocate_hamiltonian
+    if (lnto) call tdadc2_nto_finalise
     
     return
     

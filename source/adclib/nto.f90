@@ -8,10 +8,13 @@ module nto
   use parameters
   use iomod
   use channels
+  use timingmod
   
   implicit none
 
   save
+
+  real(dp), allocatable :: rhomp2(:,:)
   
 contains
 
@@ -28,6 +31,7 @@ contains
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: i
+    real(dp)                                  :: tw1,tw2,tc1,tc2
     character(len=*)                          :: vecfile,stem
     type(gam_structure)                       :: gam
     
@@ -37,6 +41,11 @@ contains
     write(ilog,'(/,70a)') ('-',i=1,70)
     write (ilog,'(2x,a)') 'Calculating natural transition orbitals'
     write(ilog,'(70a,/)') ('-',i=1,70)
+
+!----------------------------------------------------------------------
+! Start timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
     
 !----------------------------------------------------------------------
 ! Calculate the NTOs
@@ -48,6 +57,12 @@ contains
        call error_control
     endif
 
+!----------------------------------------------------------------------
+! Finish timing and output the time taken
+!----------------------------------------------------------------------
+    call times(tw2,tc2)
+    write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
+    
     return
     
   end subroutine adc2_nto
@@ -99,6 +114,9 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
+    allocate(rhomp2(nbas,nbas))
+    rhomp2=0.0d0
+
     allocate(rvec(ndimf,nstates))
     rvec=0.0d0
 
@@ -140,13 +158,14 @@ contains
 ! Read the ADC(2) vectors from file
 !----------------------------------------------------------------------
     call rdvecs(vecfile,rvec,ndimf,nstates)
-    
-!----------------------------------------------------------------------
-! Calculate the ADC(2) ground state-to-excited state transition
-! density matrices
-!----------------------------------------------------------------------
-    call adc2_trden_gs(trdens,ndimf,kpqf,rvec,nstates)
 
+!----------------------------------------------------------------------
+! Calculate the occupied-virtural block of the ADC(2)
+! ground-to-excited state transition density matrices
+!----------------------------------------------------------------------
+    trdens=0.0d0
+    call adc2_trdens_gs_virt_occ(trdens,ndimf,kpqf,rvec,nstates,rhomp2)
+    
 !----------------------------------------------------------------------
 ! Calculate the SVDs of the occupied-virtual blocks of the ADC(2)
 ! ground state-to-excited state transition density matrices
@@ -208,6 +227,7 @@ contains
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
+    deallocate(rhomp2)
     deallocate(rvec)
     deallocate(trdens)
     deallocate(tmp)
@@ -260,12 +280,69 @@ contains
     return
     
   end subroutine rdvecs
-    
+
 !######################################################################
-! tdadc2_nto_gs: calculation of the complex, time-dependent
-!                ground-to-excited state NTOs using the non-ground
-!                state portion of the wavefunction from a TD-ADC(2)
-!                calculation
+! tdadc2_nto_init: Precalculation of intermediate terms entering into
+!                  the time-dependent ADC(2) NTOs 
+!######################################################################
+
+  subroutine tdadc2_nto_init
+
+    use mp2
+    
+    implicit none
+
+    integer :: i
+    
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write (ilog,'(2x,a)') 'Calculating intermediates in the TD-NTO &
+         expressions'
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(rhomp2(nbas,nbas))
+    rhomp2=0.0d0
+    
+!----------------------------------------------------------------------
+! Precalculate the intermediates
+!----------------------------------------------------------------------
+    ! MP2 ground state density matrix
+    call rho_mp2(rhomp2)
+    
+    ! Subtraction of the zeroth-order contribution to obtain the
+    ! MP2 correction
+    do i=1,nocc
+       rhomp2(i,i)=rhomp2(i,i)-2.0d0
+    enddo
+
+    return
+    
+  end subroutine tdadc2_nto_init
+
+!######################################################################
+! tdadc2_nto_finalise: Deallocation of intermediate term arrays used
+!                      in the calculation of time-depdendent ADC(2) 
+!                      NTOs
+!######################################################################
+
+  subroutine tdadc2_nto_finalise
+
+    implicit none
+
+!----------------------------------------------------------------------
+! Deallocate arrays    
+!----------------------------------------------------------------------
+    deallocate(rhomp2)
+    
+    return
+    
+  end subroutine tdadc2_nto_finalise
+
+!######################################################################
+! tdadc2_nto: Calculation of the complex, time-dependent ADC(2) NTOs
 !######################################################################
   
   subroutine tdadc2_nto(gam,wf,ndimf,kpqf,stem)
@@ -300,7 +377,7 @@ contains
     character(len=*)                          :: stem
     character(len=70)                         :: filename
     type(gam_structure)                       :: gam
-
+    
 !----------------------------------------------------------------------
 ! Note that we are here assuming that nocc < nvirt, which should
 ! almost always hold true
@@ -359,36 +436,37 @@ contains
     allocate(occ(nbas))
     occ=0.0d0
     
-    
 !----------------------------------------------------------------------
 ! Normalise the wavefunction vector
 !----------------------------------------------------------------------
     wf1=wf/sqrt(dot_product(wf,wf))
     
 !----------------------------------------------------------------------
-! Calculate the real part of the ground state-to-excited state
-! transition density matrix
+! Calculate the real part of the occupied-virtural block of the
+! ADC(2) ground-to-excited state transition density matrix
 !----------------------------------------------------------------------
-    call adc2_trden_gs(trdens_real,ndimf,kpqf,real(wf1),1)
+    call adc2_trdens_gs_virt_occ(trdens_real,ndimf,kpqf,real(wf1),1,&
+         rhomp2)
 
 !----------------------------------------------------------------------
-! Calculate the imaginary part of the ground state-to-excited state
-! transition density matrix
+! Calculate the imaginary part of the occupied-virtural block of the
+! ADC(2) ground-to-excited state transition density matrix
 !----------------------------------------------------------------------
-    call adc2_trden_gs(trdens_imag,ndimf,kpqf,aimag(wf1),1)
-
+    call adc2_trdens_gs_virt_occ(trdens_imag,ndimf,kpqf,aimag(wf1),1,&
+         rhomp2)
+    
 !----------------------------------------------------------------------
 ! Total, complex ground state-to-excited state transition density
 ! matrix
 !----------------------------------------------------------------------
     trdens=trdens_real+ci*trdens_imag
-
+    
 !----------------------------------------------------------------------
 ! SVD of the occupied-virtual block of the ground state-to-excited
 ! state transition density matrix
 !----------------------------------------------------------------------
     tmp=transpose(trdens(nocc+1:nbas,1:nocc))
-
+    
     call zgesvd('A','A',nocc,nvirt,tmp,nocc,sigma,U,nocc,VT,nvirt,&
          work,lwork,rwork,ierr)
 

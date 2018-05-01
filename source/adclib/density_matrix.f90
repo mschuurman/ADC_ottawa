@@ -125,7 +125,6 @@ contains
 ! Finish timing and output the time taken
 !----------------------------------------------------------------------
     call times(tw2,tc2)
-
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
     
     !! CHECK: transition dipoles
