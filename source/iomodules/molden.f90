@@ -12,19 +12,22 @@ contains
   subroutine write_molden(gam,filename,nao,norb,orb,ener,occ)
 
     use iomod
-    use parameters
+    use constants
     use gamess_internal
     
     implicit none
 
-    integer                       :: norb,nao
-    integer                       :: imolden
-    integer                       :: i,j,k,pk,p1,p2,np,iang,iorb,count
-    real(dp), dimension(nao,norb) :: orb,orb1
-    real(dp), dimension(norb)     :: ener,occ
-    real(dp)                      :: alpha,coeff
-    character(len=*)              :: filename
-    type(gam_structure)           :: gam
+    integer                          :: norb,nao
+    integer                          :: imolden
+    integer                          :: i,j,k,pk,p1,p2,np,iang,iorb,&
+                                        count
+    real(dp), dimension(nao,norb)    :: orb,orb1
+    real(dp), dimension(norb)        :: ener,occ
+    real(dp)                         :: alpha,coeff
+    real(dp), dimension(10,10)       :: ftransmat
+    character(len=*)                 :: filename
+    character(len=1), dimension(0:3) :: shlbl
+    type(gam_structure)              :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels

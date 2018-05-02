@@ -394,6 +394,43 @@ FDIAG_OBJ = constants.o \
 	filtermod.o \
 	fdiag.o
 
+########################################################################
+# TD-NTO analysis code
+########################################################################
+NTOANA = $(MULTI) \
+	source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/iomodules/molden.o \
+	source/analysis/ntoana/ntoana.o
+
+NTOANA_OBJ = accuracy.o \
+	printing.o \
+	timer.o \
+	lapack.o \
+	dgefa.o \
+	dgedi.o \
+	math.o \
+	matrix_tools.o \
+	os_integral_operators.o \
+	gamess_internal.o \
+	import_gamess.o \
+	integral_tools.o \
+	integrals_mo2e.o \
+        diis.o \
+        sort_tools.o \
+        block_diag.o \
+        biorthogonal_tools.o \
+        scf_tools.o \
+        fock_tools.o \
+	constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	molden.o \
+	ntoana.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -427,6 +464,10 @@ cheby2spec: $(CHEBY2SPEC)
 
 fdiag: $(FDIAG)
 	$(F90) $(F90OPTS) $(FDIAG_OBJ) $(LIBS) -o bin/fdiag.x
+	rm -f *.o *~ *.mod
+
+ntoana: $(NTOANA)
+	$(F90) $(F90OPTS) $(NTOANA_OBJ) $(LIBS) -o bin/ntoana.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

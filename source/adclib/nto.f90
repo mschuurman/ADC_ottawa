@@ -14,6 +14,7 @@ module nto
 
   save
 
+  integer               :: into
   real(dp), allocatable :: rhomp2(:,:)
   
 contains
@@ -295,17 +296,21 @@ contains
   end subroutine rdvecs
 
 !######################################################################
-! tdadc2_nto_init: Precalculation of intermediate terms entering into
-!                  the time-dependent ADC(2) NTOs 
+! tdadc2_nto_init: Initialisation of a time-dependent ADC(2) NTO
+!                  calculation:
+!                  (i) Precalculation of intermediate terms entering
+!                      into the time-dependent ADC(2) NTOs.
+!                  (ii) Opening of the TD-NTO output file.
 !######################################################################
 
-  subroutine tdadc2_nto_init
+  subroutine tdadc2_nto_init(nao,step)
 
     use mp2
     
     implicit none
 
-    integer :: i
+    integer  :: nao,i
+    real(dp) :: step
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -331,14 +336,25 @@ contains
        rhomp2(i,i)=rhomp2(i,i)-2.0d0
     enddo
 
+!----------------------------------------------------------------------
+! Open the TD-NTO output file
+!----------------------------------------------------------------------
+    call freeunit(into)
+    open(into,file='td-nto.dat',form='unformatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write some basis and timestep information to the TD-NTO output file
+!----------------------------------------------------------------------
+    write(into) step
+    write(into) nao,nocc,nvirt
+    
     return
     
   end subroutine tdadc2_nto_init
 
 !######################################################################
-! tdadc2_nto_finalise: Deallocation of intermediate term arrays used
-!                      in the calculation of time-depdendent ADC(2) 
-!                      NTOs
+! tdadc2_nto_finalise: Finalisation of a time-dependent ADC(2) NTO
+!                      calculation
 !######################################################################
 
   subroutine tdadc2_nto_finalise
@@ -349,6 +365,11 @@ contains
 ! Deallocate arrays    
 !----------------------------------------------------------------------
     deallocate(rhomp2)
+
+!----------------------------------------------------------------------
+! Close the TD-NTO output file
+!----------------------------------------------------------------------
+    close(into)
     
     return
     
@@ -358,7 +379,7 @@ contains
 ! tdadc2_nto: Calculation of the complex, time-dependent ADC(2) NTOs
 !######################################################################
   
-  subroutine tdadc2_nto(gam,wf,ndimf,kpqf,stem)
+  subroutine tdadc2_nto(gam,wf,ndimf,kpqf,time)
     
     use gamess_internal
     use density_matrix
@@ -370,25 +391,25 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: nao,npair,i,j
     integer                                   :: lwork,ierr
+    real(dp)                                  :: time
     real(dp), allocatable                     :: trdens_real(:,:)
     real(dp), allocatable                     :: trdens_imag(:,:)
     real(dp), allocatable                     :: sigma(:)
     real(dp), allocatable                     :: rwork(:)
     real(dp), allocatable                     :: val(:)
     real(dp), allocatable                     :: occ(:)
-    real(dp), parameter                       :: thrsh=0.01d0
+    real(dp), parameter                       :: thrsh=0.001d0
     complex(dp), allocatable                  :: trdens(:,:)
     complex(dp), dimension(ndimf)             :: wf
     complex(dp), allocatable                  :: wf1(:)
     complex(dp), allocatable                  :: tmp(:,:)
     complex(dp), allocatable                  :: VT(:,:)
     complex(dp), allocatable                  :: U(:,:)
+    complex(dp), allocatable                  :: V(:,:)
     complex(dp), allocatable                  :: work(:)
     complex(dp), allocatable                  :: hole(:,:)
     complex(dp), allocatable                  :: particle(:,:)
     complex(dp), allocatable                  :: orb(:,:)
-    character(len=*)                          :: stem
-    character(len=70)                         :: filename
     type(gam_structure)                       :: gam
     
 !----------------------------------------------------------------------
@@ -427,6 +448,9 @@ contains
     allocate(VT(nvirt,nvirt))
     VT=czero
 
+    allocate(V(nvirt,nvirt))
+    V=czero
+    
     lwork=4*nocc+2*nvirt
     allocate(work(lwork))
     work=czero
@@ -495,9 +519,12 @@ contains
     ! Hole NTOs in terms of the AOs
     hole=transpose(matmul(transpose(U(:,:)),&
          transpose(ao2mo(1:nao,1:nocc))))
-
+    
     ! Particle NTOs in terms of the AOs
-    particle=transpose(matmul(VT(:,:),&
+    !particle=transpose(matmul(VT(:,:),&
+    !     transpose(ao2mo(1:nao,nocc+1:nbas))))
+    V=conjg(transpose(VT))
+    particle=transpose(matmul(transpose(V(:,:)),&
          transpose(ao2mo(1:nao,nocc+1:nbas))))
 
     ! No. NTO pairs
@@ -518,15 +545,13 @@ contains
     enddo
     occ(1:npair)=1.0d0
 
-    ! Write the molden files: one for the real parts of the NTOs and
-    ! one for the imaginary parts
-    filename=trim(stem)//'real.molden'
-    call write_molden(gam,filename,nao,2*npair,&
-         real(orb(1:nao,1:2*npair)),val(1:2*npair),occ(1:2*npair))
-    filename=trim(stem)//'imag.molden'
-    call write_molden(gam,filename,nao,2*npair,&
-         aimag(orb(1:nao,1:2*npair)),val(1:2*npair),occ(1:2*npair))
-    
+    ! Write the dominant NTOs to file
+    write(into) time
+    write(into) npair
+    do j=1,npair
+       write(into) hole(:,j),particle(:,j),sigma(j)
+    enddo
+       
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------

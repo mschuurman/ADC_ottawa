@@ -89,7 +89,7 @@ contains
 ! Precalculation of intermediate terms entering into the equations
 ! for the time-dependent NTOs
 !----------------------------------------------------------------------
-    if (lnto) call tdadc2_nto_init
+    if (lnto) call tdadc2_nto_init(gam%nbasis,tout)
     
 !----------------------------------------------------------------------
 ! Peform the wavepacket propagation
@@ -424,8 +424,6 @@ contains
     real(dp), parameter                       :: tiny=1e-9_dp
     real(dp), parameter                       :: tinier=1e-10_dp
     complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
-    character(len=14)                         :: ntostem
-    character(len=10)                         :: at
     type(gam_structure)                       :: gam
 
     ! SIL arrays and variables
@@ -550,16 +548,13 @@ contains
           
        endif
 
-       ! NTO analysis
+       ! TD-NTO analysis
        if (lnto) then
           exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
                psi(1:matdim-1))))
-          if (exnorm.gt.1e-4_dp) then
-             write(at,'(F10.4)') time
-             ntostem='nto_'//trim(adjustl(at))//'_'
-             call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
-                  trim(ntostem))
-          endif
+          if (exnorm.gt.1e-4_dp) &
+               call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
+               i*intperiod)
        endif
 
     enddo
@@ -604,8 +599,6 @@ contains
     real(dp), parameter                       :: tiny=1e-9_dp
     real(dp), parameter                       :: tinier=1e-10_dp
     complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
-    character(len=14)                         :: ntostem
-    character(len=10)                         :: at
     type(gam_structure)                       :: gam
 
     ! CSIL arrays and variables
@@ -731,16 +724,13 @@ contains
           
        endif
 
-       ! NTO analysis
+       ! TD-NTO analysis
        if (lnto) then
           exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
                psi(1:matdim-1))))
-          if (exnorm.gt.1e-4_dp) then
-             write(at,'(F10.4)') time
-             ntostem='nto_'//trim(adjustl(at))//'_'
-             call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
-                  trim(ntostem))
-          endif
+          if (exnorm.gt.1e-4_dp) &
+               call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
+               i*intperiod)
        endif
        
     enddo

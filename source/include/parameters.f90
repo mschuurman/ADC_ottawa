@@ -272,8 +272,6 @@ integer                               :: dysirrep,dysdiag
 integer, dimension(5)                 :: dysout
 real(dp)                              :: dyslim
 real(dp), dimension(:,:), allocatable :: ao2mo
-real(dp), dimension(10,10)            :: ftransmat
-character(len=1), dimension(0:3)      :: shlbl
 logical                               :: ldyson,lrmatom
 
 ! ezdyson input file parameters
