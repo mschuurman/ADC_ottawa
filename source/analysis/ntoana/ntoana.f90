@@ -573,7 +573,7 @@ contains
                 hdens=hdens+real(conjg(holevals(j))*holevals(j))&
                      *sigma(j)**2
              enddo
-
+             
              ! Write the particle and hole densities to file
              count=count+1
              lim1=13*(count-1)+1
@@ -581,15 +581,23 @@ contains
              write(pbuffer(lim1:lim2),'(F10.7,3x)') pdens
              write(hbuffer(lim1:lim2),'(F10.7,3x)') hdens
              if (count.eq.6) then
-                count=0
                 write(ipart,'(a)') pbuffer
                 write(ihole,'(a)') hbuffer
+                count=0
+                pbuffer=''
+                hbuffer=''
              endif
                 
           enddo
        enddo
     enddo
 
+    ! If the buffers are not empty, write them to file
+    if (count.eq.0) then
+       write(ipart,'(a)') pbuffer
+       write(ihole,'(a)') hbuffer
+    endif
+    
 !-----------------------------------------------------------------------
 ! Close the output files
 !-----------------------------------------------------------------------
