@@ -139,7 +139,7 @@ contains
              r(i)=gcent(i)+(k-1)*dx*(-1)**dir
              
              ! Initial state density at the current coordinate
-             dens=density_value(gam,rho,r)
+             dens=density_value(gam,rho,r,nbas)
              
              ! Exit the loop if the density has dropped below
              ! threshold

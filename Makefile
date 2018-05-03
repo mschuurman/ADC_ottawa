@@ -402,6 +402,7 @@ NTOANA = $(MULTI) \
 	source/include/channels.o \
 	source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
+	source/adclib/electron_density.o \
 	source/iomodules/molden.o \
 	source/analysis/ntoana/ntoana.o
 
@@ -428,6 +429,7 @@ NTOANA_OBJ = accuracy.o \
 	channels.o \
 	iomod.o \
 	parsemod.o \
+	electron_density.o \
 	molden.o \
 	ntoana.o
 

@@ -5,8 +5,7 @@
 module electron_density
 
   use constants
-  use parameters
-  
+    
   implicit none
 
 contains
@@ -16,12 +15,13 @@ contains
 !                given position r for a given density matrix rho
 !######################################################################
   
-  function density_value(gam,rho,r) result(func)
+  function density_value(gam,rho,r,nbas) result(func)
 
     use import_gamess
     
     implicit none
 
+    integer, intent(in)            :: nbas
     integer                        :: naos,p,q
     real(dp), dimension(nbas,nbas) :: rho
     real(dp), dimension(3)         :: r
@@ -41,7 +41,7 @@ contains
 
     allocate(movalues(nbas))
     movalues=0.0d0
-    
+
 !----------------------------------------------------------------------
 ! Calculate the values of the AOs at the point r
 !----------------------------------------------------------------------
@@ -50,7 +50,8 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the values of the MOs at the point r
 !----------------------------------------------------------------------
-    movalues(1:nbas)=matmul(transpose(ao2mo),aovalues)
+    movalues(1:nbas)=matmul(transpose(gam%vectors(1:naos,1:nbas)),&
+         aovalues(1:naos))
 
 !----------------------------------------------------------------------
 ! Calculate the value of the electron density
