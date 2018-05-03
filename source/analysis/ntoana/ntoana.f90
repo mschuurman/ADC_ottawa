@@ -187,7 +187,7 @@ contains
     
     implicit none
 
-    integer           :: i
+    integer           :: i,j
     character(len=20) :: string1,string2
     
 !----------------------------------------------------------------------
@@ -206,7 +206,7 @@ contains
     renorm=.false.    
 
     ! Cube file: no. voxels along each of the x-, y-, and z-directions
-    nvox=100
+    nvox=50
 
     ! Cube file: axis vectors
     axvec=0.0d0
@@ -261,6 +261,15 @@ contains
 
        ! Output normalised real and imaginary parts of the TD-NTOs
        renorm=.true.
+
+    else if (string1.eq.'-nvox') then
+
+       ! No. voxels in each direction in the plotting of TD-PHDs
+       do j=1,3
+          i=i+1
+          call getarg(i,string2)
+          read(string2,*) nvox(j)
+       enddo
        
     else
 
