@@ -270,6 +270,15 @@ contains
           call getarg(i,string2)
           read(string2,*) nvox(j)
        enddo
+
+    else if (string1.eq.'-voxdim') then
+
+       ! Voxel dimensions
+       do j=1,3
+          i=i+1
+          call getarg(i,string2)
+          read(string2,*) axvec(j,j)
+       enddo
        
     else
 
@@ -515,9 +524,9 @@ contains
 
     ! No. atoms and the origin of the volumetric data
     shift=-axvec(1,1)*nvox(1)/2.0d0
-    write(ipart,'(i3,5x,3(2x,F10.7))') gam%natoms,(shift,j=1,3)
-    write(ihole,'(i3,5x,3(2x,F10.7))') gam%natoms,(shift,j=1,3)
-    
+    write(ipart,'(i3,5x,3(2x,F12.7))') gam%natoms,(shift,j=1,3)
+    write(ihole,'(i3,5x,3(2x,F12.7))') gam%natoms,(shift,j=1,3)
+
     ! No. voxels along each of the x-, y-, and z-directions along
     ! with the axis vectors that define the lengths of the sides of
     ! voxels
