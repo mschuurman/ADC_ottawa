@@ -496,7 +496,7 @@ contains
     real(dp), dimension(3) :: r
     character(len=70)      :: filename
     character(len=10)      :: at
-    character(len=78)      :: pbuffer,hbuffer
+    character(len=77)      :: pbuffer,hbuffer
     
 !-----------------------------------------------------------------------
 ! Open the output files
@@ -517,32 +517,32 @@ contains
 ! Write the file headers
 !-----------------------------------------------------------------------
     ! Comment lines
-    write(ipart,'(a)') 'Particle density'
-    write(ipart,'(a,x,F10.4)') 'Time:',t
-    write(ihole,'(a)') 'Hole density'
-    write(ihole,'(a,x,F10.4)') 'Time:',t
+    write(ipart,'(x,a)') 'Particle density'
+    write(ipart,'(x,a,x,F10.4)') 'Time:',t
+    write(ihole,'(x,a)') 'Hole density'
+    write(ihole,'(x,a,x,F10.4)') 'Time:',t
 
     ! No. atoms and the origin of the volumetric data
     shift=-axvec(1,1)*nvox(1)/2.0d0
-    write(ipart,'(i3,5x,3(2x,F12.7))') gam%natoms,(shift,j=1,3)
-    write(ihole,'(i3,5x,3(2x,F12.7))') gam%natoms,(shift,j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') gam%natoms,(shift,j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') gam%natoms,(shift,j=1,3)
 
     ! No. voxels along each of the x-, y-, and z-directions along
     ! with the axis vectors that define the lengths of the sides of
     ! voxels
-    write(ipart,'(i3,5x,3(2x,F10.7))') nvox(1), (axvec(1,j),j=1,3)
-    write(ipart,'(i3,5x,3(2x,F10.7))') nvox(2), (axvec(2,j),j=1,3)
-    write(ipart,'(i3,5x,3(2x,F10.7))') nvox(3), (axvec(3,j),j=1,3)
-    write(ihole,'(i3,5x,3(2x,F10.7))') nvox(1), (axvec(1,j),j=1,3)
-    write(ihole,'(i3,5x,3(2x,F10.7))') nvox(2), (axvec(2,j),j=1,3)
-    write(ihole,'(i3,5x,3(2x,F10.7))') nvox(3), (axvec(3,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(1), (axvec(1,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(2), (axvec(2,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(3), (axvec(3,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(1), (axvec(1,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(2), (axvec(2,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(3), (axvec(3,j),j=1,3)
     
     ! Atomic numbers and charges, and Cartesian coordinates (in Bohr)
     do i=1,gam%natoms
-       write(ipart,'(i3,2x,i3,3(2x,F10.7))') int(gam%atoms(i)%znuc),&
-            int(gam%atoms(i)%znuc),(gam%atoms(i)%xyz(j)/abohr,j=1,3)
-       write(ihole,'(i3,2x,i3,3(2x,F10.7))') int(gam%atoms(i)%znuc),&
-            int(gam%atoms(i)%znuc),(gam%atoms(i)%xyz(j)/abohr,j=1,3)
+       write(ipart,'(2x,i3,4(F12.6))') int(gam%atoms(i)%znuc),&
+            gam%atoms(i)%znuc,(gam%atoms(i)%xyz(j)/abohr,j=1,3)
+       write(ihole,'(2x,i3,4(F12.6))') int(gam%atoms(i)%znuc),&
+            gam%atoms(i)%znuc,(gam%atoms(i)%xyz(j)/abohr,j=1,3)
     enddo
 
 !-----------------------------------------------------------------------
@@ -587,11 +587,12 @@ contains
              count=count+1
              lim1=13*(count-1)+1
              lim2=13*count
-             write(pbuffer(lim1:lim2),'(F10.7,3x)') pdens
-             write(hbuffer(lim1:lim2),'(F10.7,3x)') hdens
+             write(pbuffer(lim1:lim2),'(ES12.5)') pdens
+             write(hbuffer(lim1:lim2),'(ES12.5)') hdens
+
              if (count.eq.6) then
-                write(ipart,'(a)') pbuffer
-                write(ihole,'(a)') hbuffer
+                write(ipart,'(x,a)') pbuffer
+                write(ihole,'(x,a)') hbuffer
                 count=0
                 pbuffer=''
                 hbuffer=''
@@ -602,9 +603,9 @@ contains
     enddo
 
     ! If the buffers are not empty, write them to file
-    if (count.eq.0) then
-       write(ipart,'(a)') pbuffer
-       write(ihole,'(a)') hbuffer
+    if (count.ne.0) then
+       write(ipart,'(x,a)') pbuffer
+       write(ihole,'(x,a)') hbuffer
     endif
     
 !-----------------------------------------------------------------------
