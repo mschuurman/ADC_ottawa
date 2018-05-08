@@ -490,13 +490,22 @@ contains
     implicit none
 
     integer, intent(in)    :: npair
-    integer                :: ipart,ihole,i,j,ix,iy,iz,count,lim1,lim2
+    integer                :: ipart,ihole,i,j,ix,iy,iz,indx
     real(dp), intent(in)   :: t
-    real(dp)               :: pdens,hdens,shift
+    real(dp)               :: shift
     real(dp), dimension(3) :: r
+    real(dp), allocatable  :: pdens(:),hdens(:)
     character(len=70)      :: filename
     character(len=10)      :: at
-    character(len=77)      :: pbuffer,hbuffer
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(pdens(nvox(1)*nvox(2)*nvox(3)))
+    pdens=0.0d0
+
+    allocate(hdens(nvox(1)*nvox(2)*nvox(3)))
+    hdens=0.0d0
     
 !-----------------------------------------------------------------------
 ! Open the output files
@@ -546,12 +555,11 @@ contains
     enddo
 
 !-----------------------------------------------------------------------
-! Write the volumetric data
+! Calculate the particle and hole values at the grid points
 !-----------------------------------------------------------------------
-    pbuffer=''
-    hbuffer=''
-    count=0
-    
+    !$omp parallel do &
+    !$omp& private(ix,iy,iz,r,indx,aovals,partvals,holevals,j)&
+    !$omp& shared(axvec,nvox,gam,nao,npair,sigma)
     ! Loop over voxels
     do ix=1,nvox(1)
        r(1)=(-0.5d0*(nvox(1)-1)+(ix-1))*axvec(1,1)*abohr
@@ -559,6 +567,9 @@ contains
           r(2)=(-0.5d0*(nvox(2)-1)+(iy-1))*axvec(2,2)*abohr
           do iz=1,nvox(3)
              r(3)=(-0.5d0*(nvox(3)-1)+(iz-1))*axvec(3,3)*abohr
+
+             ! Current voxel index
+             indx=(ix-1)*nvox(2)*nvox(3)+(iy-1)*nvox(3)+iz
 
              ! AO values at the centre of the current voxel
              call get_ao_values(gam,aovals,r,nao)
@@ -570,49 +581,39 @@ contains
              holevals=matmul(transpose(hole),aovals)
 
              ! Particle density at the centre of the current voxel
-             pdens=0.0d0
              do j=1,npair
-                pdens=pdens+real(conjg(partvals(j))*partvals(j))&
-                     *sigma(j)**2
+                pdens(indx)=pdens(indx)&
+                     +real(conjg(partvals(j))*partvals(j))*sigma(j)**2
              enddo
 
              ! Hole density at the centre of the current voxel
-             hdens=0.0d0
              do j=1,npair
-                hdens=hdens+real(conjg(holevals(j))*holevals(j))&
-                     *sigma(j)**2
+                hdens(indx)=hdens(indx)&
+                     +real(conjg(holevals(j))*holevals(j))*sigma(j)**2
              enddo
              
-             ! Write the particle and hole densities to file
-             count=count+1
-             lim1=13*(count-1)+1
-             lim2=13*count
-             write(pbuffer(lim1:lim2),'(ES12.5)') pdens
-             write(hbuffer(lim1:lim2),'(ES12.5)') hdens
-
-             if (count.eq.6) then
-                write(ipart,'(x,a)') pbuffer
-                write(ihole,'(x,a)') hbuffer
-                count=0
-                pbuffer=''
-                hbuffer=''
-             endif
-                
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
-    ! If the buffers are not empty, write them to file
-    if (count.ne.0) then
-       write(ipart,'(x,a)') pbuffer
-       write(ihole,'(x,a)') hbuffer
-    endif
+!-----------------------------------------------------------------------
+! Write the particle and hole densities to the cube files
+!-----------------------------------------------------------------------
+    write(ipart,'(6(1x,ES12.5))') pdens
+    write(ihole,'(6(1x,ES12.5))') hdens
     
 !-----------------------------------------------------------------------
 ! Close the output files
 !-----------------------------------------------------------------------
     close(ipart)
     close(ihole)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(pdens)
+    deallocate(hdens)
     
     return
     
