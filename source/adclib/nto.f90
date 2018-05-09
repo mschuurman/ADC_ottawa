@@ -396,8 +396,6 @@ contains
     real(dp), allocatable                     :: trdens_imag(:,:)
     real(dp), allocatable                     :: sigma(:)
     real(dp), allocatable                     :: rwork(:)
-    real(dp), allocatable                     :: val(:)
-    real(dp), allocatable                     :: occ(:)
     real(dp), parameter                       :: thrsh=0.001d0
     complex(dp), allocatable                  :: trdens(:,:)
     complex(dp), dimension(ndimf)             :: wf
@@ -409,7 +407,6 @@ contains
     complex(dp), allocatable                  :: work(:)
     complex(dp), allocatable                  :: hole(:,:)
     complex(dp), allocatable                  :: particle(:,:)
-    complex(dp), allocatable                  :: orb(:,:)
     type(gam_structure)                       :: gam
     
 !----------------------------------------------------------------------
@@ -464,15 +461,6 @@ contains
     hole=czero
     particle=czero
 
-    allocate(orb(nao,nbas))
-    orb=czero
-
-    allocate(val(nbas))
-    val=0.0d0
-
-    allocate(occ(nbas))
-    occ=0.0d0
-    
 !----------------------------------------------------------------------
 ! Normalise the wavefunction vector
 !----------------------------------------------------------------------
@@ -521,8 +509,6 @@ contains
          transpose(ao2mo(1:nao,1:nocc))))
     
     ! Particle NTOs in terms of the AOs
-    !particle=transpose(matmul(VT(:,:),&
-    !     transpose(ao2mo(1:nao,nocc+1:nbas))))
     V=conjg(transpose(VT))
     particle=transpose(matmul(transpose(V(:,:)),&
          transpose(ao2mo(1:nao,nocc+1:nbas))))
@@ -532,18 +518,6 @@ contains
     do j=1,nocc
        if (sigma(j)**2.ge.thrsh) npair=npair+1
     enddo
-    
-    ! Dominant NTOs and singular values
-    orb=czero
-    val=0.0d0
-    occ=0.0d0
-    do j=1,npair
-       orb(:,npair-j+1)=hole(:,j)
-       orb(:,npair+j)=particle(:,j)
-       val(npair-j+1)=-0.5d0*sigma(j)**2
-       val(npair+j)=0.5d0*sigma(j)**2
-    enddo
-    occ(1:npair)=1.0d0
 
     ! Write the dominant NTOs to file
     write(into) time
@@ -567,9 +541,6 @@ contains
     deallocate(rwork)
     deallocate(hole)
     deallocate(particle)
-    deallocate(orb)
-    deallocate(val)
-    deallocate(occ)
     
     return
     

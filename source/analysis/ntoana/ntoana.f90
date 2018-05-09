@@ -33,7 +33,7 @@ module global
   logical                       :: pltall
   logical                       :: renorm
   type(gam_structure)           :: gam
-    
+  
 end module global
 
 !######################################################################
@@ -249,9 +249,9 @@ contains
        
     else if (string1.eq.'-nto') then
 
-       ! Extraction of TD-NTOs
+       ! Extraction of TD-NTOs: real and imaginary parts
        task=1
-
+       
     else if (string1.eq.'-phd') then
 
        ! Extraction of TD-PHDs
@@ -351,7 +351,7 @@ contains
 
     ! Write the plotting file for the current timestep
     if (task.eq.1) then
-       ! TD-NTOs
+       ! TD-NTOs: real and imaginary parts written to separate files
        call wrnto_1time(t,npair)
     else if (task.eq.2) then
        ! TD-PHDs
@@ -392,7 +392,7 @@ contains
        read(iin) hole(:,i),particle(:,i),sigma(i)
     enddo
     if (t.ne.tplt) goto 10
-    
+
 !-----------------------------------------------------------------------
 ! Output the TD-NTOs or TD-PHDs
 !-----------------------------------------------------------------------
@@ -492,7 +492,7 @@ contains
     integer, intent(in)    :: npair
     integer                :: ipart,ihole,i,j,ix,iy,iz,indx
     real(dp), intent(in)   :: t
-    real(dp)               :: shift
+    real(dp), dimension(3) :: shift
     real(dp), dimension(3) :: r
     real(dp), allocatable  :: pdens(:),hdens(:)
     character(len=70)      :: filename
@@ -532,19 +532,21 @@ contains
     write(ihole,'(x,a,x,F10.4)') 'Time:',t
 
     ! No. atoms and the origin of the volumetric data
-    shift=-axvec(1,1)*nvox(1)/2.0d0
-    write(ipart,'(2x,i3,3(F12.6))') gam%natoms,(shift,j=1,3)
-    write(ihole,'(2x,i3,3(F12.6))') gam%natoms,(shift,j=1,3)
+    do j=1,3
+       shift(j)=-axvec(j,j)*nvox(j)/2.0d0
+    enddo
+    write(ipart,'(2x,i3,3(F12.6))') gam%natoms,(shift(j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') gam%natoms,(shift(j),j=1,3)
 
     ! No. voxels along each of the x-, y-, and z-directions along
     ! with the axis vectors that define the lengths of the sides of
     ! voxels
-    write(ipart,'(2x,i3,3(F12.6))') nvox(1), (axvec(1,j),j=1,3)
-    write(ipart,'(2x,i3,3(F12.6))') nvox(2), (axvec(2,j),j=1,3)
-    write(ipart,'(2x,i3,3(F12.6))') nvox(3), (axvec(3,j),j=1,3)
-    write(ihole,'(2x,i3,3(F12.6))') nvox(1), (axvec(1,j),j=1,3)
-    write(ihole,'(2x,i3,3(F12.6))') nvox(2), (axvec(2,j),j=1,3)
-    write(ihole,'(2x,i3,3(F12.6))') nvox(3), (axvec(3,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(1),(axvec(1,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(2),(axvec(2,j),j=1,3)
+    write(ipart,'(2x,i3,3(F12.6))') nvox(3),(axvec(3,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(1),(axvec(1,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(2),(axvec(2,j),j=1,3)
+    write(ihole,'(2x,i3,3(F12.6))') nvox(3),(axvec(3,j),j=1,3)
     
     ! Atomic numbers and charges, and Cartesian coordinates (in Bohr)
     do i=1,gam%natoms
@@ -559,7 +561,7 @@ contains
 !-----------------------------------------------------------------------
     !$omp parallel do &
     !$omp& private(ix,iy,iz,r,indx,aovals,partvals,holevals,j)&
-    !$omp& shared(axvec,nvox,gam,nao,npair,sigma)
+    !$omp& shared(axvec,nvox,gam,nao,npair,sigma,particle,hole)
     ! Loop over voxels
     do ix=1,nvox(1)
        r(1)=(-0.5d0*(nvox(1)-1)+(ix-1))*axvec(1,1)*abohr
@@ -591,7 +593,7 @@ contains
                 hdens(indx)=hdens(indx)&
                      +real(conjg(holevals(j))*holevals(j))*sigma(j)**2
              enddo
-             
+
           enddo
        enddo
     enddo
@@ -618,7 +620,7 @@ contains
     return
     
   end subroutine wrphd_1time
-    
+
 !######################################################################
   
 end program ntoana
