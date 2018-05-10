@@ -564,12 +564,14 @@ contains
     !$omp& shared(axvec,nvox,gam,nao,npair,sigma,particle,hole)
     ! Loop over voxels
     do ix=1,nvox(1)
-       r(1)=(-0.5d0*(nvox(1)-1)+(ix-1))*axvec(1,1)*abohr
        do iy=1,nvox(2)
-          r(2)=(-0.5d0*(nvox(2)-1)+(iy-1))*axvec(2,2)*abohr
           do iz=1,nvox(3)
-             r(3)=(-0.5d0*(nvox(3)-1)+(iz-1))*axvec(3,3)*abohr
-
+             
+             ! Current coordinate
+             r(1)=shift(1)+(Ix-1)*axvec(1,1)+(Iy-1)*axvec(1,2)+(Iz-1)*axvec(1,3)
+             r(2)=shift(2)+(Ix-1)*axvec(2,1)+(Iy-1)*axvec(2,2)+(Iz-1)*axvec(2,3)
+             r(3)=shift(3)+(Ix-1)*axvec(3,1)+(Iy-1)*axvec(3,2)+(Iz-1)*axvec(3,3)
+             
              ! Current voxel index
              indx=(ix-1)*nvox(2)*nvox(3)+(iy-1)*nvox(3)+iz
 
