@@ -1017,7 +1017,7 @@ contains
     
     implicit none
 
-    integer                                  :: ndimf,lwork,info,i
+    integer                                  :: ndimf,lwork,ierr,i
     integer, dimension(:), allocatable       :: indx
     real(dp), dimension(:), allocatable      :: rwork
     complex(dp), dimension(:,:), allocatable :: capham,vecr,vecl
@@ -1053,9 +1053,9 @@ contains
 !----------------------------------------------------------------------
     capham=h1-ci*w1
     call zgeev('V','V',ndimf+1,capham,ndimf+1,lambda,vecl,ndimf+1,&
-         vecr,ndimf+1,work,lwork,rwork,info)
+         vecr,ndimf+1,work,lwork,rwork,ierr)
 
-    if (info.ne.0) then
+    if (ierr.ne.0) then
        errmsg='Diagonalisation of H-iW failed in subroutine &
             diag_hcap_adc1'
        call error_control

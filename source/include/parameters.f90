@@ -126,49 +126,50 @@ module parameters
 !!
 !!$real dipmom - dipole moments for the initial space states
 !!$real dipmom_f - dipole moments for the final space states
-
-  logical                               :: debug
-  character(1)                          :: tranmom,tranmom2
-  character(36)                         :: lancname,davname,davname_f
-  integer                               :: hinit,nirrep,nirrep2,method,&
-                                           method_f,davstates,lancstates,&
-                                           numinista,norder,&
-                                           statenumber,denord,davstates_f
-  integer, parameter                    :: nhcentre=40
-  integer, dimension(0:nhcentre)        :: hcentre
-  real(dp)                              :: mspacewi,mspacewf
-  real(dp), parameter                   :: minc=1e-12_dp
-  real(dp)                              :: dlim
-  integer, dimension(:), allocatable    :: roccnum
-  integer, dimension(8,8)               :: MT
-  integer, dimension(400)               :: stvc_lbl
-  integer, dimension(:), allocatable    :: stvc_mxc
-  integer                               :: ninista
-  logical                               :: ladc1guess,ladc1guess_f
-  logical                               :: lnoise,lnoise_f
-  logical                               :: lsubdiag,lsubdiag_f
-  real(dp), dimension(:), allocatable   :: adc1en,adc1en_f
-  real(dp)                              :: davtol,davtol_f
-  logical                               :: lcvs,lcvsfinal
-  integer, dimension(nhcentre)          :: icore,iexpfrz
-  integer                               :: ncore
-  logical                               :: lfakeip
-  integer                               :: ifakeorb
-  integer, dimension(:), allocatable    :: ifakeex
-  real(dp)                              :: expfakeip
-  logical                               :: ld2
-  logical                               :: lscf
-  integer                               :: ivpqrs
+  logical                              :: debug
+  character(1)                         :: tranmom,tranmom2
+  character(36)                        :: lancname,davname,davname_f
+  integer                              :: hinit,nirrep,nirrep2,method,&
+                                          method_f,davstates,lancstates,&
+                                          numinista,norder,info,&
+                                          statenumber,denord,davstates_f
+  integer, parameter                   :: nhcentre=40
+  integer, dimension(0:nhcentre)       :: hcentre
+  real(dp)                             :: mspacewi,mspacewf
+  real(dp), parameter                  :: minc=1e-12_dp
+  real(dp)                             :: dlim
+  integer, dimension(:), allocatable   :: roccnum
+  integer, dimension(8,8)              :: MT
+  integer, dimension(400)              :: stvc_lbl
+  integer, dimension(:), allocatable   :: stvc_mxc
+  integer                              :: ninista
+  logical                              :: ladc1guess,ladc1guess_f
+  logical                              :: lnoise,lnoise_f
+  logical                              :: lsubdiag,lsubdiag_f
+  real(dp), dimension(:), allocatable  :: adc1en,adc1en_f
+  real(dp)                             :: davtol,davtol_f
+  logical                              :: lcvs,lcvsfinal
+  integer, dimension(nhcentre)         :: icore,iexpfrz
+  integer                              :: ncore
+  logical                              :: lfakeip
+  integer                              :: ifakeorb
+  integer, dimension(:), allocatable   :: ifakeex
+  real(dp)                             :: expfakeip
+  logical                              :: ld2
+  logical                              :: lscf
+  integer                              :: ivpqrs
   real(dp), dimension(:,:), allocatable :: density
-  logical                               :: ltdm_gs2i
-  logical                               :: lifrzcore,lffrzcore
-  logical                               :: ldiagfinal
-  real(dp)                              :: maxmem
-  logical                               :: ldipole
-  real(dp), dimension(:), allocatable   :: dipmom,dipmom_f
-  logical                               :: lcis
-  logical                               :: lmatvec
-  logical                               :: lnto
+  logical                              :: ltdm_gs2i
+  logical                              :: lifrzcore,lffrzcore
+  logical                              :: ldiagfinal
+  real(dp)                             :: maxmem
+  logical                              :: ldipole
+  real(dp), dimension(:), allocatable  :: dipmom,dipmom_f
+  logical                              :: lcis
+  logical                              :: lmatvec
+  logical                              :: lnto
+  logical                              :: llci
+  real(dp)                             :: init_energy
 
 !!$************************************************
 !!$**********Physical Constants********************

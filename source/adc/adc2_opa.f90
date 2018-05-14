@@ -32,9 +32,9 @@ contains
     integer, dimension(:,:), allocatable  :: kpq,kpqd,kpqf
     integer                               :: i,ndim,ndims,ndimsf,&
                                              nout,ndimf,ndimd,&
-                                             noutf,itmp
+                                             noutf,itmp,j
     integer*8                             :: noffd,noffdf
-    real(dp)                              :: time
+    real(dp)                              :: time,itemp,tnorm
     real(dp), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
     real(dp), dimension(:), allocatable   :: travec
     real(dp)                              :: e_init,e0
@@ -113,12 +113,39 @@ contains
 !-----------------------------------------------------------------------
     allocate(vec_init(ndim))
     
-    if (statenumber.gt.0) then
+    if (llci.and.(ncount.eq.0)) then
+       vec_init(1:ndim) = matmul(rvec(:,:), trunc_overlap(:))
+       tnorm = 0.d0
+       tnorm = tnorm + dot_product(vec_init(:),vec_init(:))
+       tnorm = 1.d0 / dsqrt(tnorm)
+       vec_init = vec_init * tnorm
+       e_init = init_energy
+    else if (llci.and.(ncount.gt.1)) then
+       do i = 1, ndim
+          itemp = 0.d0
+          do j = 1, ncount
+             itemp = itemp + rvec(i,tstate(j)) * trunc_overlap(j)
+          enddo
+          vec_init(i) = itemp
+       enddo
+       tnorm = 0.d0
+       tnorm = tnorm + dot_product(vec_init(:),vec_init(:))
+       tnorm = 1.d0 / dsqrt(tnorm)
+       vec_init = vec_init * tnorm
+       e_init = init_energy
+    else if (statenumber.gt.0) then
        vec_init(:)=rvec(:,statenumber)
        e_init=ener(statenumber)
     else
        e_init=0.0d0
     endif
+
+    !if (statenumber.gt.0) then
+    !   vec_init(:)=rvec(:,statenumber)
+    !   e_init=ener(statenumber)
+    !else
+    !   e_init=0.0d0
+    !endif
 
 !-----------------------------------------------------------------------
 ! Calculation of the final space states
@@ -196,7 +223,6 @@ contains
     real(dp), dimension(:), allocatable       :: travec,mtmf
     real(dp), dimension(ndim)                 :: vec_init
     real(dp), dimension(ndim,davstates)       :: rvec
-    real(dp), dimension(:,:), allocatable     :: travec2
     
     if (ldiagfinal) then
        call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&

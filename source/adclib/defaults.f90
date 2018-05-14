@@ -247,6 +247,8 @@
       mofile=''
       detthrsh=-1.0d0
       ovrthrsh=-1.0d0
+      llci=.false.
+      init_energy=0.0d0
 
       return
 

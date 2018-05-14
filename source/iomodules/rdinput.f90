@@ -28,6 +28,7 @@
       ldiffsection=.false.
       lmatvec=.false.
       llasersection=.false.
+      llci=.false.
 
 !-----------------------------------------------------------------------
 ! Read input file
@@ -139,6 +140,17 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),'(a)') motype
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'lci') then
+            llci=.true.
+
+         else if (keyword(i).eq.'init_energy') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),'(a)') init_energy
             else
                goto 100
             endif
