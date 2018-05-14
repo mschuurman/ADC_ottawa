@@ -1,0 +1,34 @@
+method=adc2
+
+initial_state = 0
+istate_symm = 1
+
+dipole_component = x
+dipole_symm = 1
+
+frozen_core=initial,final
+
+scf_iter=100
+
+mem=900
+
+nto
+
+propagation_section
+ tfinal=100.0
+ tout=0.1
+ krydim=7
+ tol=1e-8
+end-propagation_section
+
+laser_section
+ pulse_freq=0.255             # Central frequency
+ pulse_strength=5e+12,winvcm2 # Peak intensity
+ pulse_vec=1.0,0.0,0.0        # Direction
+ carrier=sin                  # Pulse type
+ pulse_t0=4.1                 # t0
+ pulse_phase=0.0d0            # phase
+ envelope=sin2,0.0,4.1        # Pulse envelope
+end-laser_section
+
+end-input

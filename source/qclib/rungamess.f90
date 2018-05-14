@@ -354,11 +354,11 @@
 
       implicit none
 
-      integer                           :: i,j,ilbl,count,currlquant
-      integer, dimension(maxao)         :: tmpprim,tmplquant
-      real(d)                           :: dist,mindist
-      real(d), dimension(3)             :: xcom
-      real(d), dimension(maxao,maxprim) :: tmpcoeff,tmpexp
+      integer                            :: i,j,ilbl,count,currlquant
+      integer, dimension(maxao)          :: tmpprim,tmplquant
+      real(dp)                           :: dist,mindist
+      real(dp), dimension(3)             :: xcom
+      real(dp), dimension(maxao,maxprim) :: tmpcoeff,tmpexp
  
 !-----------------------------------------------------------------------
 ! Determine whether any atoms are close (<0.15 Angstrom) to the centre

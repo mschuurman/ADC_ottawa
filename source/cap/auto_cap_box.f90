@@ -4,15 +4,11 @@
 !######################################################################
 
 module autocapbox
+
+  use constants
   
   implicit none
 
-  private :: dp
-  
-  ! Annoyingly, the gamess_internal module contains a variable
-  ! named 'd', so we will use 'dp' here instead
-  integer, parameter    :: dp=selected_real_kind(8)
-  
   ! Initial state density matrix
   real(dp), allocatable :: rho(:,:)
   
@@ -143,7 +139,7 @@ contains
              r(i)=gcent(i)+(k-1)*dx*(-1)**dir
              
              ! Initial state density at the current coordinate
-             dens=density_value(gam,rho,r)
+             dens=density_value(gam,rho,r,nbas)
              
              ! Exit the loop if the density has dropped below
              ! threshold

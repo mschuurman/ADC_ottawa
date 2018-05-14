@@ -30,7 +30,7 @@ program adc
   
   integer                  :: i
   integer, dimension(2)    :: shp
-  real(d)                  :: tw1,tw2,tc1,tc2
+  real(dp)                 :: tw1,tw2,tc1,tc2
   character(len=72)        :: gam_chkpt,gam_log,moldenfile
   type(gam_structure)      :: gamess_info
 

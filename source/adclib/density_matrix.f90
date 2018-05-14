@@ -50,13 +50,13 @@ contains
     integer                                   :: i
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), allocatable                      :: rhomp2(:,:)
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), allocatable                     :: rhomp2(:,:)
+    real(dp)                                  :: tw1,tw2,tc1,tc2
 
-    integer :: p,q
-    real(d) :: chk
+    integer  :: p,q
+    real(dp) :: chk
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -98,7 +98,7 @@ contains
 !----------------------------------------------------------------------
     call adc2_trdens_gs_occ_occ(trdens,ndimf,kpqf,rvec,nstates,&
          rhomp2)
-
+    
 !----------------------------------------------------------------------
 ! Calculation of the virtual-virtual block
 !----------------------------------------------------------------------
@@ -110,7 +110,7 @@ contains
 !----------------------------------------------------------------------
     call adc2_trdens_gs_virt_occ(trdens,ndimf,kpqf,rvec,nstates,&
          rhomp2)
-
+    
 !----------------------------------------------------------------------
 ! Calculation of the occupied-virtual block
 !----------------------------------------------------------------------
@@ -125,9 +125,8 @@ contains
 ! Finish timing and output the time taken
 !----------------------------------------------------------------------
     call times(tw2,tc2)
-
     write(ilog,'(2x,a,2x,F7.2,1x,a1)') 'Time taken:',tw2-tw1,'s'
-
+    
     !! CHECK: transition dipoles
     !print*,
     !do i=1,nstates
@@ -162,11 +161,11 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,k,a,b
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d)                                   :: delta_ijaa,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp)                                  :: delta_ijaa,&
                                                  delta_ijab,&
                                                  delta_ikaa,&
                                                  delta_ikab
@@ -330,11 +329,11 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,a,b,c
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d)                                   :: delta_iiab,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp)                                  :: delta_iiab,&
                                                  delta_iicb,&
                                                  delta_ijab,&
                                                  delta_ijcb
@@ -504,12 +503,12 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,k,a,b,c
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
-    real(d), allocatable                      :: lambda(:,:,:)
-    real(d)                                   :: delta_abij,&
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:)
+    real(dp), allocatable                     :: lambda(:,:,:)
+    real(dp)                                  :: delta_abij,&
                                                  delta_ijac,&
                                                  delta_jkbc
 
@@ -666,21 +665,32 @@ contains
   
   subroutine adc2_trdens_gs_occ_virt(trdens,ndimf,kpqf,rvec,nstates)
 
+    use omp_lib
+    
     implicit none
 
     integer                                   :: ndimf,nstates
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: cnt,nlim1,nlim2
     integer                                   :: i,j,a,b
-    real(d), dimension(nbas,nbas,nstates)     :: trdens
-    real(d), dimension(ndimf,nstates)         :: rvec
-    real(d), dimension(nbas,nbas)             :: rhomp2
-    real(d), allocatable                      :: tmp(:,:,:)
+    integer                                   :: nthreads,tid
+    real(dp), dimension(nbas,nbas,nstates)    :: trdens
+    real(dp), dimension(ndimf,nstates)        :: rvec
+    real(dp), dimension(nbas,nbas)            :: rhomp2
+    real(dp), allocatable                     :: tmp(:,:,:,:)
 
+!-----------------------------------------------------------------------
+! Number of threads
+!-----------------------------------------------------------------------  
+    !$omp parallel
+    nthreads=omp_get_num_threads()
+    !$omp end parallel
+    
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(tmp(nbas,nbas,nstates))
+    allocate(tmp(nbas,nbas,nstates,nthreads))
+    tmp=0.0d0
     
 !----------------------------------------------------------------------
 ! Second-order 1h1p contributions
@@ -690,19 +700,25 @@ contains
 
     tmp=0.0d0
 
+    !$omp parallel do private(a,i,cnt,j,b) shared(tmp,rvec)
     do a=nocc+1,nbas
        do i=1,nocc
           do cnt=nlim1,nlim2
              j=kpqf(3,cnt)
              b=kpqf(5,cnt)
-             tmp(i,a,:)=tmp(i,a,:)+mu(i,j,a,b)*rvec(cnt,:)
+             tid=1+omp_get_thread_num()
+             tmp(i,a,:,tid)=tmp(i,a,:,tid)+mu(i,j,a,b)*rvec(cnt,:)
           enddo
        enddo
     enddo
+    !$omp end parallel do
 
-    trdens(1:nocc,nocc+1:nbas,:)=trdens(1:nocc,nocc+1:nbas,:) &
-         -sqrt(2.0d0)*tmp(1:nocc,nocc+1:nbas,:)
-    
+    ! Accumulate the contributions calculated by each thread
+    do tid=1,nthreads
+       trdens(1:nocc,nocc+1:nbas,:)=trdens(1:nocc,nocc+1:nbas,:) &
+            -sqrt(2.0d0)*tmp(1:nocc,nocc+1:nbas,:,tid)
+    enddo
+       
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -722,11 +738,11 @@ contains
 
     implicit none
 
-    integer :: i,j,a,b
-    integer :: c,dd,k,l
-    real(d) :: mu
-    real(d) :: delta_ijab,delta_ikac,delta_jkbc,delta_jkac,&
-               delta_ikbc,delta_ijcd,delta_klab
+    integer  :: i,j,a,b
+    integer  :: c,dd,k,l
+    real(dp) :: mu
+    real(dp) :: delta_ijab,delta_ikac,delta_jkbc,delta_jkac,&
+                delta_ikbc,delta_ijcd,delta_klab
     
     mu=0.0d0
 

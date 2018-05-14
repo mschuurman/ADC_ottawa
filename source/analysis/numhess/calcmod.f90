@@ -6,13 +6,13 @@
 
     save
     
-    integer                                :: nzero,nmodes
-    integer, dimension(:), allocatable     :: iimag
-    real(d), dimension(:), allocatable     :: ener,mass,freq0
-    real(d), dimension(:,:), allocatable   :: grad,gradq0,q0,hess_gs
-    real(d), dimension(:,:,:), allocatable :: hess,hessq0
-    real(d), parameter                     :: eh2ev=27.2113845d0
-    real(d), parameter                     :: b2a=0.529177249d0
+    integer                                 :: nzero,nmodes
+    integer, dimension(:), allocatable      :: iimag
+    real(dp), dimension(:), allocatable     :: ener,mass,freq0
+    real(dp), dimension(:,:), allocatable   :: grad,gradq0,q0,hess_gs
+    real(dp), dimension(:,:,:), allocatable :: hess,hessq0
+    real(dp), parameter                     :: eh2ev=27.2113845d0
+    real(dp), parameter                     :: b2a=0.529177249d0
 
   contains
 
@@ -317,10 +317,10 @@
 
       implicit none
 
-      integer               :: itype,i,k,nneg,npos,nindx,pindx
-      integer, dimension(2) :: xindx,ilbl
-      real(d)               :: diff
-      real(d), parameter    :: tol=1e-6_d
+      integer                :: itype,i,k,nneg,npos,nindx,pindx
+      integer, dimension(2)  :: xindx,ilbl
+      real(dp)               :: diff
+      real(dp), parameter    :: tol=1e-6_dp
 
 !-----------------------------------------------------------------------
 ! Set the displacement type:
@@ -533,8 +533,8 @@
 
       implicit none
 
-      integer :: n,i,j
-      real(d) :: diff
+      integer  :: n,i,j
+      real(dp) :: diff
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -664,13 +664,13 @@
 
       implicit none
 
-      integer                       :: i,j,k,l,info
-      integer, dimension(6)         :: ipiv
-      real(d), dimension(6,ncoo)    :: vec
-      real(d), dimension(6,6)       :: smat,invsmat
-      real(d), dimension(ncoo,6)    :: bmat
-      real(d), dimension(ncoo,ncoo) :: rmat,pmat,tmpmat
-      real(d), dimension(6)         :: work
+      integer                        :: i,j,k,l,info
+      integer, dimension(6)          :: ipiv
+      real(dp), dimension(6,ncoo)    :: vec
+      real(dp), dimension(6,6)       :: smat,invsmat
+      real(dp), dimension(ncoo,6)    :: bmat
+      real(dp), dimension(ncoo,ncoo) :: rmat,pmat,tmpmat
+      real(dp), dimension(6)         :: work
 
 !------------------------------------------------------------------
 ! Initialise arrays
@@ -798,13 +798,13 @@
       
       implicit none
       
-      integer                       :: i,j,k,error,e2
-      integer, dimension(ncoo)      :: indx
-      real(d), dimension(ncoo,ncoo) :: tmp
-      real(d), dimension(ncoo)      :: lambda
-      real(d), dimension(3*ncoo)    :: work
-      real(d), parameter            :: tol=1e-5_d
-      real(d)                       :: norm,ftmp
+      integer                        :: i,j,k,error,e2
+      integer, dimension(ncoo)       :: indx
+      real(dp), dimension(ncoo,ncoo) :: tmp
+      real(dp), dimension(ncoo)      :: lambda
+      real(dp), dimension(3*ncoo)    :: work
+      real(dp), parameter            :: tol=1e-5_dp
+      real(dp)                       :: norm,ftmp
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -909,11 +909,11 @@
 
       character(1), intent(in) :: order
       integer, intent(in) :: ndim
-      real(d), dimension(ndim), intent(in) :: arrin
+      real(dp), dimension(ndim), intent(in)   :: arrin
       integer, dimension(ndim), intent(inout) :: indx
     
-      integer :: i,l,ir,indxt,j
-      real(d) :: q
+      integer  :: i,l,ir,indxt,j
+      real(dp) :: q
 
 !!$ The subroutine is taken from the NR p233, employs heapsort.
 
@@ -1013,8 +1013,8 @@
 
       implicit none
 
-      integer                       :: i,j
-      real(d), dimension(ncoo,ncoo) :: tmpmat
+      integer                        :: i,j
+      real(dp), dimension(ncoo,ncoo) :: tmpmat
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1085,10 +1085,10 @@
 
       implicit none
 
-      integer                       :: unit,i,j,k
-      real(d)                       :: ftmp
-      real(d), dimension(ncoo,ncoo) :: qu
-      character(len=60)             :: atmp
+      integer                        :: unit,i,j,k
+      real(dp)                       :: ftmp
+      real(dp), dimension(ncoo,ncoo) :: qu
+      character(len=60)              :: atmp
 
 !-----------------------------------------------------------------------
 ! Open the xyz file

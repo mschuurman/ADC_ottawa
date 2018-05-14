@@ -145,7 +145,7 @@ contains
     implicit none
     
     integer             :: natom,i
-    real(d), parameter  :: ang2bohr=1.889725989d0
+    real(dp), parameter :: ang2bohr=1.889725989d0
     character(len=20)   :: name
     type(gam_structure) :: gam
     
@@ -347,16 +347,16 @@ contains
   subroutine diagonalise(nsout,ndim,arr)
     
     integer, intent(in) :: ndim,nsout
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
 
     integer :: info,lwork,i,j
-    real(d), dimension(ndim) :: w
-    real(d), dimension(:), allocatable :: work
+    real(dp), dimension(ndim) :: w
+    real(dp), dimension(:), allocatable :: work
     
-    integer, dimension(ndim) :: indx
-    real(d), dimension(ndim) :: coeff
+    integer, dimension(ndim)  :: indx
+    real(dp), dimension(ndim) :: coeff
     
-    real(d) :: dnrm2, nrm
+    real(dp) :: dnrm2, nrm
     
     external dsyev 
 
@@ -391,15 +391,15 @@ contains
 
     implicit none
 
-    integer, intent(in)                          :: ndim
-    integer                                      :: info,lwork,i,j
-    integer, dimension(ndim)                     :: indx
-    integer*8                                    :: lworkl,ndiml
-    real(d), dimension(ndim), intent(inout)      :: evector
-    real(d), dimension(ndim,ndim), intent(inout) :: arr
-    real(d), dimension(ndim)                     :: w
-    real(d), dimension(:), allocatable           :: work
-    real(d), dimension(ndim)                     :: coeff
+    integer, intent(in)                           :: ndim
+    integer                                       :: info,lwork,i,j
+    integer, dimension(ndim)                      :: indx
+    integer*8                                     :: lworkl,ndiml
+    real(dp), dimension(ndim), intent(inout)      :: evector
+    real(dp), dimension(ndim,ndim), intent(inout) :: arr
+    real(dp), dimension(ndim)                     :: w
+    real(dp), dimension(:), allocatable           :: work
+    real(dp), dimension(ndim)                     :: coeff
 
     external dsyev
 
@@ -472,14 +472,14 @@ contains
 
 !#######################################################################
 
-  real(d) function dsp(ndim,vec1,vec2)
+  real(dp) function dsp(ndim,vec1,vec2)
     
     integer, intent(in) :: ndim
-    real(d), dimension(ndim), intent(in) :: vec1,vec2
+    real(dp), dimension(ndim), intent(in) :: vec1,vec2
     
     integer :: i
     
-    dsp=0._d
+    dsp=0._dp
     
     do i=1, ndim
        dsp=dsp+vec1(i)*vec2(i)
@@ -496,11 +496,11 @@ contains
 
     character(1), intent(in) :: order
     integer, intent(in) :: ndim
-    real(d), dimension(ndim), intent(in) :: arrin
+    real(dp), dimension(ndim), intent(in)   :: arrin
     integer, dimension(ndim), intent(inout) :: indx
     
     integer :: i,l,ir,indxt,j
-    real(d) :: q
+    real(dp) :: q
 !!$ The subroutine is taken from the NR p233, employs heapsort.
 
     if (ndim.eq.1) return
@@ -597,7 +597,7 @@ contains
     character(1), intent(in) :: order
     integer, intent(in) :: ndim
     integer, dimension(ndim), intent(out) :: indarr
-    real(d), dimension(ndim), intent(in) :: arr
+    real(dp), dimension(ndim), intent(in) :: arr
     
     integer :: i, ifail
     integer, dimension(ndim) :: irank
@@ -618,10 +618,10 @@ contains
   subroutine table1(ndim1,ndim2,en,vspace)
     
     integer, intent(in) :: ndim1,ndim2
-    real(d), dimension(ndim2), intent(in) :: en
-    real(d), dimension(ndim1,ndim2), intent(in) :: vspace
+    real(dp), dimension(ndim2), intent(in) :: en
+    real(dp), dimension(ndim1,ndim2), intent(in) :: vspace
 
-    real(d), dimension(:), allocatable :: coeff
+    real(dp), dimension(:), allocatable :: coeff
     integer, dimension(:), allocatable :: indx
     integer :: i,j
 
@@ -652,16 +652,16 @@ contains
 
     implicit none
     
-    integer, intent(in)                         :: ndim1,ndim2
-    integer, dimension(:), allocatable          :: indx
-    integer                                     :: i,j,k
-    integer                                     :: kpqdim2,iout
-    integer, dimension(7,0:kpqdim2-1)           :: kpq
-    real(d), dimension(ndim2), intent(in)       :: en,tmvec,osc_str
-    real(d), dimension(ndim1,ndim2), intent(in) :: vspace
-    real(d), dimension(:), allocatable          :: coeff
-    character(len=1)                            :: flag
-    character(len=70)                           :: filename
+    integer, intent(in)                          :: ndim1,ndim2
+    integer, dimension(:), allocatable           :: indx
+    integer                                      :: i,j,k
+    integer                                      :: kpqdim2,iout
+    integer, dimension(7,0:kpqdim2-1)            :: kpq
+    real(dp), dimension(ndim2), intent(in)       :: en,tmvec,osc_str
+    real(dp), dimension(ndim1,ndim2), intent(in) :: vspace
+    real(dp), dimension(:), allocatable          :: coeff
+    character(len=1)                             :: flag
+    character(len=70)                            :: filename
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -732,9 +732,9 @@ contains
     integer                           :: i,k,ndim1,kpqdim2,ilbl,iout
     integer, dimension(ndim1)         :: indx
     integer, dimension(7,0:kpqdim2-1) :: kpq
-    real(d), dimension(ndim1)         :: coeff
-    real(d)                           :: en,tmvec,osc_str
-    real(d), parameter                :: tol=0.05d0
+    real(dp), dimension(ndim1)        :: coeff
+    real(dp)                          :: en,tmvec,osc_str
+    real(dp), parameter               :: tol=0.05d0
     character(len=120)                :: fmat
     character(len=2)                  :: spincase
     character(len=1)                  :: flag
@@ -882,16 +882,16 @@ contains
 
     implicit none
 
-    integer                            :: ndim,kpqdim2,ieig,nstates,&
-                                          i,k,itmp,ilbl
-    integer, dimension(7,0:kpqdim2-1)  :: kpq
-    integer, dimension(:), allocatable :: indx
-    real(d)                            :: ener
-    real(d), dimension(:), allocatable :: coeff,coeffsq
-    real(d), parameter                 :: tol=0.05d0
-    character(len=36)                  :: filename
-    character(len=120)                 :: fmat
-    character(len=2)                   :: spincase
+    integer                             :: ndim,kpqdim2,ieig,nstates,&
+                                           i,k,itmp,ilbl
+    integer, dimension(7,0:kpqdim2-1)   :: kpq
+    integer, dimension(:), allocatable  :: indx
+    real(dp)                            :: ener
+    real(dp), dimension(:), allocatable :: coeff,coeffsq
+    real(dp), parameter                 :: tol=0.05d0
+    character(len=36)                   :: filename
+    character(len=120)                  :: fmat
+    character(len=2)                    :: spincase
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -993,16 +993,16 @@ contains
 
     implicit none
 
-    integer                            :: ndim,kpqdim2,ieig,nstates,&
-                                          i,k,itmp,ilbl,iout
-    integer, dimension(7,0:kpqdim2-1)  :: kpq
-    integer, dimension(:), allocatable :: indx
-    real(d)                            :: ener
-    real(d), dimension(:), allocatable :: coeff,coeffsq
-    real(d), parameter                 :: tol=0.05d0
-    character(len=36)                  :: filename
-    character(len=120)                 :: fmat
-    character(len=2)                   :: spincase
+    integer                             :: ndim,kpqdim2,ieig,nstates,&
+                                           i,k,itmp,ilbl,iout
+    integer, dimension(7,0:kpqdim2-1)   :: kpq
+    integer, dimension(:), allocatable  :: indx
+    real(dp)                            :: ener
+    real(dp), dimension(:), allocatable :: coeff,coeffsq
+    real(dp), parameter                 :: tol=0.05d0
+    character(len=36)                   :: filename
+    character(len=120)                  :: fmat
+    character(len=2)                    :: spincase
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1109,13 +1109,13 @@ contains
 
     integer, intent(in) :: ndim
 
-    real(d), dimension(ndim,ndim), intent(in) :: A
-    real(d), dimension(ndim), intent(in) :: vec
-    real(d), dimension(ndim), intent(inout) :: fin
+    real(dp), dimension(ndim,ndim), intent(in) :: A
+    real(dp), dimension(ndim), intent(in)      :: vec
+    real(dp), dimension(ndim), intent(inout)   :: fin
 
-    integer :: LDA
-    real(d) :: alpha    
-    real(d) :: beta
+    integer  :: LDA
+    real(dp) :: alpha    
+    real(dp) :: beta
 
 
     external dsymv
@@ -1124,8 +1124,8 @@ contains
 
     LDA=max(1,ndim)
 
-    alpha=1._d
-    beta=0._d
+    alpha=1._dp
+    beta=0._dp
 
 
     call dsymv("L",ndim,alpha,A,LDA,vec,1,beta,fin,1)
@@ -1140,13 +1140,13 @@ contains
     integer, intent(in) :: ndimiA
     integer, intent(in) :: ndimjA
 
-    real(d), dimension(ndimiA,ndimjA), intent(in) :: A
-    real(d), dimension(ndimjA), intent(in) :: vec
-    real(d), dimension(ndimiA), intent(inout) :: fin
+    real(dp), dimension(ndimiA,ndimjA), intent(in) :: A
+    real(dp), dimension(ndimjA), intent(in) :: vec
+    real(dp), dimension(ndimiA), intent(inout) :: fin
 
     integer :: LDA
-    real(d) :: alpha    
-    real(d) :: beta
+    real(dp) :: alpha    
+    real(dp) :: beta
 
 
     external dgemv
@@ -1155,8 +1155,8 @@ contains
 
     LDA=max(1,ndimiA)
 
-    alpha=1._d
-    beta=0._d
+    alpha=1._dp
+    beta=0._dp
 
 
     call dgemv("N",ndimiA,ndimjA,alpha,A,LDA,vec,1,beta,fin,1)

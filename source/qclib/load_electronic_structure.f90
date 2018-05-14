@@ -17,7 +17,7 @@
   use constants
   integer,intent(in)            :: nbasis,naos
   integer*4,intent(out)         :: nelec,ncen,nirr
-  real(d),intent(inout)         :: eorb(nbasis)
+  real(dp),intent(inout)        :: eorb(nbasis)
   integer*4,intent(out)         :: orbsym(nbasis)
   character*3,intent(out)       :: symlab(8)
 
@@ -27,8 +27,8 @@
   integer                       :: ios
   integer                       :: orbfnd
   integer                       :: gamess=11
-  real(d)                       :: two = 2.
-  real(d)                       :: orbener(5)
+  real(dp)                      :: two = 2.
+  real(dp)                      :: orbener(5)
   character(len=144)            :: line,scr
   character(len=3)              :: pntgroup
 
@@ -174,7 +174,7 @@
   integer(ik)                                                 :: factable
   real(xrk)                                                   :: xyz(3), d_cf, q, ov, eps, refval, e1, e2
   real(xrk)                                                   :: nuc_repulsion
-!  real(d)                                                     :: vpqrs
+!  real(dp)                                                    :: vpqrs
   complex(xrk)                                                :: cz = (0._xrk,0._xrk),testnum
 
   ! make a call to MathLogFactorial before we get into the parallel parts, since

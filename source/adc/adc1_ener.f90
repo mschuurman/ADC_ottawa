@@ -17,12 +17,12 @@ contains
     
     implicit none
     
-    integer, dimension(:,:), allocatable :: kpq
-    integer                              :: ndim,ndimd
-    integer                              :: i,itmp
-    real(d)                              :: time
-    real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
-    real(d), dimension(:,:), allocatable :: arr
+    integer, dimension(:,:), allocatable  :: kpq
+    integer                               :: ndim,ndimd
+    integer                               :: i,itmp
+    real(dp)                              :: time
+    real(dp), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
+    real(dp), dimension(:,:), allocatable :: arr
     
 !-----------------------------------------------------------------------
 ! Determine the 1h1p subspace

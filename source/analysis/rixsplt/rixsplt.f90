@@ -366,8 +366,8 @@
 
       implicit none
 
-      integer :: alpha,beta,f
-      real(d) :: term1,term2
+      integer  :: alpha,beta,f
+      real(dp) :: term1,term2
       
 !-----------------------------------------------------------------------
 ! Calculation of the zeta tensor defined in Equation 13 of
@@ -423,12 +423,12 @@
 
       implicit none
 
-      integer                                 :: i,j,f,unit,alpha,beta
-      real(d)                                 :: einc,eemit,lineshape,&
-                                                 func,gamma
-      real(d), parameter                      :: eh2ev=27.2113845d0
-      complex*16                              :: denom
-      complex*16, dimension(:,:), allocatable :: tmp
+      integer                                  :: i,j,f,unit,alpha,beta
+      real(dp)                                 :: einc,eemit,lineshape,&
+                                                  func,gamma
+      real(dp), parameter                      :: eh2ev=27.2113845d0
+      complex(dp)                              :: denom
+      complex(dp), dimension(:,:), allocatable :: tmp
       
 !-----------------------------------------------------------------------
 ! Open the RIXS spectrum file
@@ -535,7 +535,7 @@
 
       implicit none
 
-      real(d) :: ei,ef,einc,eemit,func,numer,denom
+      real(dp) :: ei,ef,einc,eemit,func,numer,denom
       
       numer=gammaf/(2.0d0*pi)
 

@@ -8,18 +8,18 @@ module block_lanczos
 
     save
 
-    integer*8                              :: nvec,nwr,buffsize,&
-                                              matdim,blocksize,&
-                                              reclength
-    integer                                :: nro
-    integer, dimension(:), allocatable     :: lk,uk
-    real(d), dimension(:,:), allocatable   :: buffer,qmat1,qmat2,umat,&
-                                              rmat,amat,bmat,tmat,&
-                                              tmpmat,omkj
-    real(d), dimension(:,:,:), allocatable :: amat_all,bmat_all
-    real(d), dimension(:), allocatable     :: anorm,bnorm
-    real(d)                                :: epmach,eps,orthlim,eta
-    character(len=1)                       :: hflag
+    integer*8                               :: nvec,nwr,buffsize,&
+                                               matdim,blocksize,&
+                                               reclength
+    integer                                 :: nro
+    integer, dimension(:), allocatable      :: lk,uk
+    real(dp), dimension(:,:), allocatable   :: buffer,qmat1,qmat2,umat,&
+                                               rmat,amat,bmat,tmat,&
+                                               tmpmat,omkj
+    real(dp), dimension(:,:,:), allocatable :: amat_all,bmat_all
+    real(dp), dimension(:), allocatable     :: anorm,bnorm
+    real(dp)                                :: epmach,eps,orthlim,eta
+    character(len=1)                        :: hflag
 
   contains
     
@@ -218,8 +218,8 @@ module block_lanczos
       
       implicit none
 
-      integer                              :: iadc1,idim,i,j,k
-      real(d), dimension(:,:), allocatable :: adc1vec
+      integer                               :: iadc1,idim,i,j,k
+      real(dp), dimension(:,:), allocatable :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Read the ADC(1) eigenvectors from file
@@ -259,8 +259,8 @@ module block_lanczos
 
       implicit none
 
-      integer :: i,k
-      real(d) :: fac
+      integer  :: i,k
+      real(dp) :: fac
 
 !-----------------------------------------------------------------------
 ! Copy the linear combinations of the 1h1p and 2h2p ISs into the qmat2
@@ -290,9 +290,9 @@ module block_lanczos
       
       implicit none
 
-      integer                              :: iadc1,idim,i,j,k
-      real(d)                              :: fac
-      real(d), dimension(:,:), allocatable :: adc1vec
+      integer                               :: iadc1,idim,i,j,k
+      real(dp)                              :: fac
+      real(dp), dimension(:,:), allocatable :: adc1vec
 
 !-----------------------------------------------------------------------
 ! Read the ADC(1) eigenvectors from file
@@ -397,8 +397,8 @@ module block_lanczos
 
       implicit none
 
-      integer :: i,j
-      real(d) :: dp
+      integer  :: i,j
+      real(dp) :: dprod
 
 !-----------------------------------------------------------------------
 ! Random vectors
@@ -415,15 +415,15 @@ module block_lanczos
 !-----------------------------------------------------------------------
       do i=1,blocksize
          do j=1,i-1
-            dp=dot_product(qmat2(:,i),qmat2(:,j))
-            qmat2(:,i)=qmat2(:,i)-dp*qmat2(:,j)
+            dprod=dot_product(qmat2(:,i),qmat2(:,j))
+            qmat2(:,i)=qmat2(:,i)-dprod*qmat2(:,j)
          enddo
          qmat2(:,i)=qmat2(:,i)/sqrt(dot_product(qmat2(:,i),qmat2(:,i)))
       enddo
       do i=1,blocksize
          do j=1,i-1
-            dp=dot_product(qmat2(:,i),qmat2(:,j))
-            qmat2(:,i)=qmat2(:,i)-dp*qmat2(:,j)
+            dprod=dot_product(qmat2(:,i),qmat2(:,j))
+            qmat2(:,i)=qmat2(:,i)-dprod*qmat2(:,j)
          enddo
          qmat2(:,i)=qmat2(:,i)/sqrt(dot_product(qmat2(:,i),qmat2(:,i)))
       enddo
@@ -441,15 +441,15 @@ module block_lanczos
       
       implicit none
 
-      integer, dimension(:), allocatable   :: full2sub,sub2full,&
-                                              indxhii,indxi,indxj
-      integer                              :: i,j,k,i1,j1,e2,error,&
-                                              iham,nlim,l,subdim,&
-                                              maxbl,nrec,dim
-      real(d), dimension(:), allocatable   :: hii,hij
-      real(d), dimension(:,:), allocatable :: hsub
-      real(d), dimension(:), allocatable   :: subeig,work
-      character(len=70)                    :: filename
+      integer, dimension(:), allocatable    :: full2sub,sub2full,&
+                                               indxhii,indxi,indxj
+      integer                               :: i,j,k,i1,j1,e2,error,&
+                                               iham,nlim,l,subdim,&
+                                               maxbl,nrec,dim
+      real(dp), dimension(:), allocatable   :: hii,hij
+      real(dp), dimension(:,:), allocatable :: hsub
+      real(dp), dimension(:), allocatable   :: subeig,work
+      character(len=70)                     :: filename
 
 !**********************************************************************
 ! Important: We are here assuming that blocksize is an even number.
@@ -497,7 +497,7 @@ module block_lanczos
 ! and if it is, increase subdim accordingly
 !-----------------------------------------------------------------------
 5     continue
-      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_dp) then
          subdim=subdim+1
          goto 5
       endif
@@ -624,7 +624,7 @@ module block_lanczos
 ! and if it is, increase subdim accordingly
 !-----------------------------------------------------------------------
 6     continue
-      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_dp) then
          subdim=subdim+1
          goto 6
       endif
@@ -743,7 +743,7 @@ module block_lanczos
       
       implicit none
 
-      real(d) :: epsilon,ftmp
+      real(dp) :: epsilon,ftmp
 
       ! Estimation of the machine epsilon
       epsilon=1.0d0
@@ -772,10 +772,10 @@ module block_lanczos
                                               nprev,lanunit2,reclength2
       integer                              :: info
       integer, dimension(:), allocatable   :: indxi,indxj
-      real(d), dimension(:), allocatable   :: hii,hij
-      real(d), dimension(blocksize)        :: tau
-      real(d), dimension(blocksize)        :: work
-      real(d)                              :: t1,t2,mem
+      real(dp), dimension(:), allocatable  :: hii,hij
+      real(dp), dimension(blocksize)       :: tau
+      real(dp), dimension(blocksize)       :: work
+      real(dp)                             :: t1,t2,mem
       logical                              :: lincore,lro,l2nd
 
       write(ilog,'(/,70a)') ('*',i=1,70)
@@ -1078,14 +1078,14 @@ module block_lanczos
 
       implicit none
 
-      integer*8, intent(in)              :: noff
-      integer, dimension(:), allocatable :: indxi,indxj
-      real(d), dimension(:), allocatable :: hii,hij
+      integer*8, intent(in)               :: noff
+      integer, dimension(:), allocatable  :: indxi,indxj
+      real(dp), dimension(:), allocatable :: hii,hij
 
-      integer                            :: unit,maxbl,nrec,count,k,&
-                                            nlim
-      integer, dimension(:), allocatable :: itmp1,itmp2
-      real(d), dimension(:), allocatable :: ftmp
+      integer                             :: unit,maxbl,nrec,count,k,&
+                                             nlim
+      integer, dimension(:), allocatable  :: itmp1,itmp2
+      real(dp), dimension(:), allocatable :: ftmp
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1141,11 +1141,11 @@ module block_lanczos
 
       implicit none
       
-      integer*8, intent(in)      :: noff
-      integer                    :: m,n,k
-      integer, dimension(noff)   :: indxi,indxj
-      real(d), dimension(matdim) :: hii
-      real(d), dimension(noff)   :: hij
+      integer*8, intent(in)       :: noff
+      integer                     :: m,n,k
+      integer, dimension(noff)    :: indxi,indxj
+      real(dp), dimension(matdim) :: hii
+      real(dp), dimension(noff)   :: hij
 
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
@@ -1181,10 +1181,11 @@ module block_lanczos
 
       implicit none
 
-      integer                            :: unit
-      integer                            :: maxbl,nrec,nlim,i,j,k,l,m,n
-      integer, dimension(:), allocatable :: indxi,indxj
-      real(d), dimension(:), allocatable :: hii,hij
+      integer                             :: unit
+      integer                             :: maxbl,nrec,nlim,i,j,k,l,&
+                                             m,n
+      integer, dimension(:), allocatable  :: indxi,indxj
+      real(dp), dimension(:), allocatable :: hii,hij
 
 !-----------------------------------------------------------------------
 ! Contribution from the on-diagonal elements of the Hamiltonian matrix
@@ -1245,9 +1246,9 @@ module block_lanczos
 
       implicit none
 
-      integer                       :: k,n
-      real(d), dimension(blocksize) :: dpvec
-      real(d)                       :: dp,ddot
+      integer                        :: k,n
+      real(dp), dimension(blocksize) :: dpvec
+      real(dp)                       :: dprod,ddot
       
       external ddot
 
@@ -1275,8 +1276,8 @@ module block_lanczos
 ! Normalise Q_j+1
 !-----------------------------------------------------------------------
       do k=1,blocksize
-         dp=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1)
-         qmat2(:,k)=qmat2(:,k)/dsqrt(dp)
+         dprod=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1)
+         qmat2(:,k)=qmat2(:,k)/dsqrt(dprod)
       enddo
 
       return
@@ -1289,9 +1290,9 @@ module block_lanczos
 
       implicit none
 
-      integer :: j,i,k,lanunit2
-      real(d) :: maxom
-      logical :: lro
+      integer  :: j,i,k,lanunit2
+      real(dp) :: maxom
+      logical  :: lro
 
 !-----------------------------------------------------------------------
 ! Update the omega recurrence
@@ -1345,13 +1346,13 @@ module block_lanczos
 
       implicit none
 
-      integer                                 :: j,k
-      real(d)                                 :: invssvb
+      integer                                  :: j,k
+      real(dp)                                 :: invssvb
 
-      integer                                 :: info
-      real(d), dimension(blocksize,blocksize) :: u,vt
-      real(d), dimension(blocksize)           :: sigma
-      real(d), dimension(5*blocksize)         :: work
+      integer                                  :: info
+      real(dp), dimension(blocksize,blocksize) :: u,vt
+      real(dp), dimension(blocksize)           :: sigma
+      real(dp), dimension(5*blocksize)         :: work
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -1458,10 +1459,10 @@ module block_lanczos
 
       implicit none
 
-      integer                              :: lanunit2,j,k,m,n
-      real(d), dimension(matdim,blocksize) :: lmat
-      real(d), dimension(blocksize)        :: dpvec1,dpvec2
-      real(d)                              :: dp,ddot
+      integer                               :: lanunit2,j,k,m,n
+      real(dp), dimension(matdim,blocksize) :: lmat
+      real(dp), dimension(blocksize)        :: dpvec1,dpvec2
+      real(dp)                              :: dprod,ddot
 
       external ddot
 
@@ -1504,8 +1505,8 @@ module block_lanczos
 ! Normalise Q_j
 !-----------------------------------------------------------------------      
       do k=1,blocksize
-         dp=ddot(matdim,qmat1(:,k),1,qmat1(:,k),1) 
-         qmat1(:,k)=qmat1(:,k)/dsqrt(dp)
+         dprod=ddot(matdim,qmat1(:,k),1,qmat1(:,k),1) 
+         qmat1(:,k)=qmat1(:,k)/dsqrt(dprod)
       enddo
 
 !-----------------------------------------------------------------------
@@ -1600,10 +1601,10 @@ module block_lanczos
       
       implicit none
 
-      integer                              :: j,lanunit2,i,k,m,n,nblock
-      real(d), dimension(matdim,blocksize) :: lmat
-      real(d), dimension(blocksize)        :: dpvec
-      real(d)                              :: dp,ddot
+      integer                               :: j,lanunit2,i,k,m,n,nblock
+      real(dp), dimension(matdim,blocksize) :: lmat
+      real(dp), dimension(blocksize)        :: dpvec
+      real(dp)                              :: dprod,ddot
 
       external ddot
 
@@ -1650,8 +1651,8 @@ module block_lanczos
 ! Normalise Q_j+1
 !-----------------------------------------------------------------------      
       do k=1,blocksize
-         dp=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1) 
-         qmat2(:,k)=qmat2(:,k)/dsqrt(dp)
+         dprod=ddot(matdim,qmat2(:,k),1,qmat2(:,k),1) 
+         qmat2(:,k)=qmat2(:,k)/dsqrt(dprod)
       enddo
 
       return
@@ -1711,13 +1712,13 @@ module block_lanczos
 
       implicit none
 
-      integer                                 :: j,m,n,i1,i2
-      real(d)                                 :: maxnorm
-      real(d), dimension(blocksize,blocksize) :: overlap
+      integer                                  :: j,m,n,i1,i2,info
+      real(dp)                                 :: maxnorm
+      real(dp), dimension(blocksize,blocksize) :: overlap
       
-      real(d), dimension(blocksize,blocksize) :: u,vt
-      real(d), dimension(blocksize)           :: sigma
-      real(d), dimension(5*blocksize)         :: work
+      real(dp), dimension(blocksize,blocksize) :: u,vt
+      real(dp), dimension(blocksize)           :: sigma
+      real(dp), dimension(5*blocksize)         :: work
 
       ! For the CS2 STO-3G test case, we never fill the buffer, so
       ! all Lanczos vectors from blocks 1,...,j will be in the buffer 
@@ -1756,10 +1757,10 @@ module block_lanczos
 
       implicit none
 
-      integer                              :: lanunit,i
-      real(d), dimension(:,:), allocatable :: eigvec
-      real(d), dimension(:), allocatable   :: eigval
-      real(d)                              :: t1,t2,mem
+      integer                               :: lanunit,i
+      real(dp), dimension(:,:), allocatable :: eigvec
+      real(dp), dimension(:), allocatable   :: eigval
+      real(dp)                              :: t1,t2,mem
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -1821,14 +1822,14 @@ module block_lanczos
 
       implicit none
       
-      integer                              :: i,j,iupper
-      real(d), dimension(nvec,nvec)        :: matrix
+      integer                               :: i,j,iupper
+      real(dp), dimension(nvec,nvec)        :: matrix
 
-      integer                              :: kd,ldab,error
-      real(d), dimension(blocksize+1,nvec) :: ab
-      real(d), dimension(nvec)             :: eigval
-      real(d), dimension(nvec,nvec)        :: eigvec
-      real(d), dimension(3*nvec-2)         :: work
+      integer                               :: kd,ldab,error
+      real(dp), dimension(blocksize+1,nvec) :: ab
+      real(dp), dimension(nvec)             :: eigval
+      real(dp), dimension(nvec,nvec)        :: eigvec
+      real(dp), dimension(3*nvec-2)         :: work
 
 !-----------------------------------------------------------------------
 ! Set dimensions required to be passed to dsbev
@@ -1873,14 +1874,14 @@ module block_lanczos
 
       implicit none
 
-      integer                              :: lanunit,ritzunit,&
-                                              blocksize,i,j,nblocks,&
-                                              k,tmpunit,k1,k2,l1,l2,&
-                                              nk,nl
-      real(d), dimension(nvec,nvec)        :: eigvec
-      real(d), dimension(nvec)             :: eigval
-      real(d), dimension(:,:), allocatable :: rvec,lvec,tmpmat
-      real(d), dimension(:,:), allocatable :: dpmat
+      integer                               :: lanunit,ritzunit,&
+                                               blocksize,i,j,nblocks,&
+                                               k,tmpunit,k1,k2,l1,l2,&
+                                               nk,nl
+      real(dp), dimension(nvec,nvec)        :: eigvec
+      real(dp), dimension(nvec)             :: eigval
+      real(dp), dimension(:,:), allocatable :: rvec,lvec,tmpmat
+      real(dp), dimension(:,:), allocatable :: dpmat
 
 !-----------------------------------------------------------------------
 ! Open files
@@ -2052,11 +2053,11 @@ module block_lanczos
 
       implicit none
 
-      integer                              :: lanunit,ritzunit,i,k1,&
-                                              k2,nk
-      real(d), dimension(nvec,nvec)        :: eigvec,dpmat
-      real(d), dimension(nvec)             :: eigval
-      real(d), dimension(:,:), allocatable :: lvec,rvec
+      integer                               :: lanunit,ritzunit,i,k1,&
+                                               k2,nk
+      real(dp), dimension(nvec,nvec)        :: eigvec,dpmat
+      real(dp), dimension(nvec)             :: eigval
+      real(dp), dimension(:,:), allocatable :: lvec,rvec
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -2135,12 +2136,12 @@ module block_lanczos
 
       implicit none
 
-      integer*8                            :: unit,dim,i,j,k,count,&
-                                              reclength2
-      real(d), dimension(matdim,dim)       :: lvec
-      real(d), dimension(matdim,blocksize) :: tmpvec
-      real(d)                              :: dp,tmp
-      real(d), parameter                   :: tol=1e-8_d
+      integer*8                             :: unit,dim,i,j,k,count,&
+                                               reclength2
+      real(dp), dimension(matdim,dim)       :: lvec
+      real(dp), dimension(matdim,blocksize) :: tmpvec
+      real(dp)                              :: dprod,tmp
+      real(dp), parameter                   :: tol=1e-8_dp
 
       lvec=0.0d0
 
@@ -2160,8 +2161,8 @@ module block_lanczos
          
       do i=1,dim-1
          do j=i+1,dim
-            dp=dot_product(lvec(:,i),lvec(:,j))
-            if (abs(dp).gt.tol) print*,i,j,dp
+            dprod=dot_product(lvec(:,i),lvec(:,j))
+            if (abs(dprod).gt.tol) print*,i,j,dprod
          enddo
       enddo
 

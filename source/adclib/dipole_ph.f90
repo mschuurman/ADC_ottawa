@@ -21,13 +21,13 @@ contains
 !!$*******************************************************************************
 !!$*******************************************************************************
 
-  real(d) function F0_ph(a,k)
+  real(dp) function F0_ph(a,k)
         
     integer, intent(in) :: a,k
-    integer :: b,l,b1,l1,sym1
-    real(d) :: e_abkl
+    integer  :: b,l,b1,l1,sym1
+    real(dp) :: e_abkl
 
-    F0_ph=0._d
+    F0_ph=0._dp
 
     do b1= nOcc+1,nBas
        b=roccnum(b1)
@@ -36,7 +36,7 @@ contains
           sym1=MT(orbSym(b),orbSym(l))
           if (sym1 .eq. CHECK_dip) then
              e_abkl=e(a)+e(b)-e(k)-e(l)
-             F0_ph=F0_ph+dpl(b,l)/e_abkl*(2._d*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))
+             F0_ph=F0_ph+dpl(b,l)/e_abkl*(2._dp*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))
           end if
        end do
     end do
@@ -47,13 +47,13 @@ contains
 
 !!$------------------------------------------------------------------
   
-  real(d) function FA_ph(a,k)
+  real(dp) function FA_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
-    real(d) :: e_lmba,e_lmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
+    real(dp) :: e_lmba,e_lmbc
     
-    FA_ph=0._d
+    FA_ph=0._dp
     
     do c1= nOcc+1,nBas
        c=roccnum(c1)
@@ -67,9 +67,9 @@ contains
                 sym1=MT(orbSym(a),orbSym(b))
                 
                 if (sym1 .eq. 1) then
-                   e_lmba=2._d*e(l)-e(b)-e(a)
-                   e_lmbc=2._d*e(l)-e(b)-e(c)
-                   FA_ph=FA_ph-0.5_d*dpl(c,k)/e_lmba/e_lmbc*vpqrs(a,l,b,l)*vpqrs(l,c,l,b)
+                   e_lmba=2._dp*e(l)-e(b)-e(a)
+                   e_lmbc=2._dp*e(l)-e(b)-e(c)
+                   FA_ph=FA_ph-0.5_dp*dpl(c,k)/e_lmba/e_lmbc*vpqrs(a,l,b,l)*vpqrs(l,c,l,b)
                 end if
                 
                 do m1= l1+1,nOcc
@@ -82,9 +82,9 @@ contains
                       e_lmba=e(l)+e(m)-e(b)-e(a)
                       e_lmbc=e(l)+e(m)-e(b)-e(c)
                       
-                      FA_ph=FA_ph-0.5_d*dpl(c,k)/e_lmba/e_lmbc*(&
-                           vpqrs(a,l,b,m)*(2._d*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
-                           vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
+                      FA_ph=FA_ph-0.5_dp*dpl(c,k)/e_lmba/e_lmbc*(&
+                           vpqrs(a,l,b,m)*(2._dp*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
+                           vpqrs(a,m,b,l)*(2._dp*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
                    end if
                    
                 end do
@@ -98,13 +98,13 @@ contains
   end function FA_ph
 !!$------------------------------------------------------------------
   
-  real(d) function FB_ph(a,k)
+  real(dp) function FB_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
-    real(d) :: e_klbc,e_lmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
+    real(dp) :: e_klbc,e_lmbc
     
-    FB_ph=0._d
+    FB_ph=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -119,7 +119,7 @@ contains
                 if (sym1 .eq. 1) then
                    e_klbc=e(k)+e(l)-e(b)-e(b)
                    e_lmbc=e(l)+e(m)-e(b)-e(b)                   
-                   FB_ph=FB_ph-0.5_d*dpl(a,m)/e_klbc/e_lmbc*vpqrs(b,k,b,l)*vpqrs(m,b,l,b)
+                   FB_ph=FB_ph-0.5_dp*dpl(a,m)/e_klbc/e_lmbc*vpqrs(b,k,b,l)*vpqrs(m,b,l,b)
                 end if
 
                 do c1= b1+1,nBas
@@ -129,9 +129,9 @@ contains
                    if (MT(sym1,sym2) .eq. 1) then
                       e_klbc=e(k)+e(l)-e(b)-e(c)
                       e_lmbc=e(l)+e(m)-e(b)-e(c)                      
-                      FB_ph=FB_ph-0.5_d*dpl(a,m)/e_klbc/e_lmbc*(&
-                           vpqrs(b,k,c,l)*(2._d*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
-                           vpqrs(b,l,c,k)*(2._d*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
+                      FB_ph=FB_ph-0.5_dp*dpl(a,m)/e_klbc/e_lmbc*(&
+                           vpqrs(b,k,c,l)*(2._dp*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
+                           vpqrs(b,l,c,k)*(2._dp*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
                       
                    end if
                    
@@ -144,13 +144,13 @@ contains
   end function FB_ph
 !!$------------------------------------------------------------------ 
 
-  real(d) function FC_ph(a,k)
+  real(dp) function FC_ph(a,k)
 
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym,sym1
-    real(d) :: e_klab,e_mlcb
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym,sym1
+    real(dp) :: e_klab,e_mlcb
     
-    FC_ph=0._d
+    FC_ph=0._dp
 
     do c1= nOcc+1,nBas
        c=roccnum(c1)
@@ -170,9 +170,9 @@ contains
                       e_klab=e(k)+e(l)-e(a)-e(b)
                       e_mlcb=e(m)+e(l)-e(c)-e(b)
                       
-                      FC_ph=FC_ph+0.5_d*dpl(c,m)/e_klab/e_mlcb*(&
-                           2._d*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))*(&
-                           2._d*vpqrs(m,c,l,b)-vpqrs(m,b,l,c))
+                      FC_ph=FC_ph+0.5_dp*dpl(c,m)/e_klab/e_mlcb*(&
+                           2._dp*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))*(&
+                           2._dp*vpqrs(m,c,l,b)-vpqrs(m,b,l,c))
 
                    end if
                    
@@ -186,13 +186,13 @@ contains
 
 !!$------------------------------------------------------------------
 
-  real(d) function F21_ph(a,k)
+  real(dp) function F21_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
-    real(d) :: e_ma,e_lmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
+    real(dp) :: e_ma,e_lmbc
 
-    F21_ph=0._d
+    F21_ph=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -220,8 +220,8 @@ contains
                    if (MT(sym1,sym2) .eq. 1) then
                       e_lmbc=e(l)+e(m)-e(b)-e(c)
                       F21_ph= F21_ph-dpl(m,k)/e_ma/e_lmbc*(&
-                           vpqrs(b,l,c,m)*(2._d*vpqrs(l,b,a,c)-vpqrs(l,c,a,b))+&
-                           vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,a,b)-vpqrs(l,b,a,c)))
+                           vpqrs(b,l,c,m)*(2._dp*vpqrs(l,b,a,c)-vpqrs(l,c,a,b))+&
+                           vpqrs(b,m,c,l)*(2._dp*vpqrs(l,c,a,b)-vpqrs(l,b,a,c)))
                    end if
            
                 end do
@@ -236,13 +236,13 @@ contains
 !!$--------------------------------------
 !!$--------------------------------------
 
-  real(d) function F22_ph(a,k)
+  real(dp) function F22_ph(a,k)
 
     integer, intent(in) :: a,k
-    integer :: b1,b,l1,l,m1,m,n1,n,sym,sym1,sym2
-    real(d) :: e_na,e_lmba
+    integer  :: b1,b,l1,l,m1,m,n1,n,sym,sym1,sym2
+    real(dp) :: e_na,e_lmba
 
-    F22_ph=0._d
+    F22_ph=0._dp
 
     do n1= 1,nOcc
        n=roccnum(n1)
@@ -270,8 +270,8 @@ contains
                    if (MT(sym1,sym2) .eq. 1) then
                       e_lmba=e(l)+e(m)-e(b)-e(a)
                       F22_ph=F22_ph+dpl(n,k)/e_na/e_lmba*(&
-                           vpqrs(l,b,m,n)*(2._d*vpqrs(b,l,a,m)-vpqrs(b,m,a,l))+&
-                           vpqrs(l,n,m,b)*(2._d*vpqrs(b,m,a,l)-vpqrs(b,l,a,m)))
+                           vpqrs(l,b,m,n)*(2._dp*vpqrs(b,l,a,m)-vpqrs(b,m,a,l))+&
+                           vpqrs(l,n,m,b)*(2._dp*vpqrs(b,m,a,l)-vpqrs(b,l,a,m)))
                    end if
                    
                 end do
@@ -285,13 +285,13 @@ contains
 
 !!$-----------------------------------------
 
-  real(d) function F23_ph(a,k)
+  real(dp) function F23_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
-    real(d) :: e_kb,e_lmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym,sym1,sym2
+    real(dp) :: e_kb,e_lmbc
 
-    F23_ph=0._d
+    F23_ph=0._dp
 
     do b1= nOcc+1,nBas
        b=roccnum(b1)
@@ -319,8 +319,8 @@ contains
 
                       e_lmbc=e(l)+e(m)-e(b)-e(c)
                       F23_ph=F23_ph-dpl(a,b)/e_kb/e_lmbc*(&
-                           vpqrs(b,l,c,m)*(2._d*vpqrs(l,k,m,c)-vpqrs(l,c,m,k))+&
-                           vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,m,k)-vpqrs(l,k,m,c)))
+                           vpqrs(b,l,c,m)*(2._dp*vpqrs(l,k,m,c)-vpqrs(l,c,m,k))+&
+                           vpqrs(b,m,c,l)*(2._dp*vpqrs(l,c,m,k)-vpqrs(l,k,m,c)))
                       
                    end if
                    
@@ -335,13 +335,13 @@ contains
 
 !!$----------------------------------------------
 
-  real(d) function F24_ph(a,k)
+  real(dp) function F24_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,d1,dd,l1,l,sym,sym1,sym2
-    real(d) :: e_kd,e_klbc
+    integer  :: b1,b,c1,c,d1,dd,l1,l,sym,sym1,sym2
+    real(dp) :: e_kd,e_klbc
     
-    F24_ph=0._d
+    F24_ph=0._dp
     
     do d1= nOcc+1,nBas
        dd=roccnum(d1)
@@ -371,8 +371,8 @@ contains
                       
                       e_klbc=e(k)+e(l)-e(b)-e(c)
                       F24_ph=F24_ph+dpl(a,dd)/e_kd/e_klbc*(&
-                           vpqrs(b,k,c,l)*(2._d*vpqrs(dd,b,l,c)-vpqrs(dd,c,l,b))+&
-                           vpqrs(b,l,c,k)*(2._d*vpqrs(dd,c,l,b)-vpqrs(dd,b,l,c)))
+                           vpqrs(b,k,c,l)*(2._dp*vpqrs(dd,b,l,c)-vpqrs(dd,c,l,b))+&
+                           vpqrs(b,l,c,k)*(2._dp*vpqrs(dd,c,l,b)-vpqrs(dd,b,l,c)))
                       
                    end if
                    
@@ -387,13 +387,13 @@ contains
 
 !!$----------------------------------------------------
   
-  real(d) function F25_ph(a,k)
+  real(dp) function F25_ph(a,k)
 
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
-    real(d) :: e_kmac,e_lmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
+    real(dp) :: e_kmac,e_lmbc
 
-    F25_ph=0._d
+    F25_ph=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -414,8 +414,8 @@ contains
                       e_lmbc=e(l)+e(m)-e(b)-e(c)
                 
                       F25_ph=F25_ph+dpl(m,c)/e_kmac/e_lmbc*&
-                           (2._d*vpqrs(a,k,l,b)-vpqrs(a,b,l,k))*&
-                           (2._d*vpqrs(b,l,c,m)-vpqrs(b,m,c,l))
+                           (2._dp*vpqrs(a,k,l,b)-vpqrs(a,b,l,k))*&
+                           (2._dp*vpqrs(b,l,c,m)-vpqrs(b,m,c,l))
 
                    end if
                 
@@ -429,13 +429,13 @@ contains
 
 !!$----------------------------------------
 
-  real(d) function F26_ph(a,k)
+  real(dp) function F26_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
-    real(d) :: e_klab,e_kmac
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
+    real(dp) :: e_klab,e_kmac
 
-    F26_ph=0._d
+    F26_ph=0._dp
 
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -456,8 +456,8 @@ contains
                       e_klab=e(k)+e(l)-e(a)-e(b)
                    
                       F26_ph=F26_ph+dpl(m,c)/e_klab/e_kmac*&
-                           (2._d*vpqrs(l,b,c,m)-vpqrs(l,m,c,b))*&
-                           (2._d*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))
+                           (2._dp*vpqrs(l,b,c,m)-vpqrs(l,m,c,b))*&
+                           (2._dp*vpqrs(a,k,b,l)-vpqrs(a,l,b,k))
                       
                    end if
                 end do
@@ -470,13 +470,13 @@ contains
   
 !!$----------------------------------
 
-  real(d) function F27_ph(a,k)
+  real(dp) function F27_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
-    real(d) :: e_klab,e_kmbc
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
+    real(dp) :: e_klab,e_kmbc
 
-    F27_ph=0._d
+    F27_ph=0._dp
     
     do l1= 1,nOcc
        l=roccnum(l1)
@@ -498,8 +498,8 @@ contains
                       e_kmbc=e(k)+e(m)-e(b)-e(c)
                       
                       F27_ph=F27_ph-dpl(l,b)/e_klab/e_kmbc*(&
-                           vpqrs(a,l,m,c)*(2._d*vpqrs(c,m,b,k)-vpqrs(c,k,b,m))+&
-                           vpqrs(a,c,m,l)*(2._d*vpqrs(c,k,b,m)-vpqrs(c,m,b,k)))
+                           vpqrs(a,l,m,c)*(2._dp*vpqrs(c,m,b,k)-vpqrs(c,k,b,m))+&
+                           vpqrs(a,c,m,l)*(2._dp*vpqrs(c,k,b,m)-vpqrs(c,m,b,k)))
                       
                    end if
     
@@ -514,13 +514,13 @@ contains
 
 !!$--------------------------------------------------------
 
-    real(d) function F28_ph(a,k)
+  real(dp) function F28_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
-    real(d) :: e_kmab,e_lmac
+    integer  :: b1,b,c1,c,l1,l,m1,m,sym1,sym2
+    real(dp) :: e_kmab,e_lmac
 
-    F28_ph=0._d
+    F28_ph=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -542,8 +542,8 @@ contains
                       e_lmac=e(l)+e(m)-e(a)-e(c)
                       
                       F28_ph=F28_ph-dpl(m,b)/e_kmab/e_lmac*(&
-                           vpqrs(a,m,c,l)*(2._d*vpqrs(l,c,b,k)-vpqrs(l,k,b,c))+&
-                           vpqrs(a,l,c,m)*(2._d*vpqrs(l,k,b,c)-vpqrs(l,c,b,k)))
+                           vpqrs(a,m,c,l)*(2._dp*vpqrs(l,c,b,k)-vpqrs(l,k,b,c))+&
+                           vpqrs(a,l,c,m)*(2._dp*vpqrs(l,k,b,c)-vpqrs(l,c,b,k)))
                       
                    end if
              
@@ -558,13 +558,13 @@ contains
 
 !!$-------------------------------------------------------------------
 
-  real(d) function F29_ph(a,k)
+  real(dp) function F29_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,c1,c,d1,dd,l1,l,sym,sym1,sym2
-    real(d) :: e_klab,e_klcd
+    integer  :: b1,b,c1,c,d1,dd,l1,l,sym,sym1,sym2
+    real(dp) :: e_klab,e_klcd
 
-    F29_ph=0._d
+    F29_ph=0._dp
 
     do b1= nOcc+1,nBas
        b=roccnum(b1)
@@ -591,8 +591,8 @@ contains
                       e_klcd=e(k)+e(l)-e(c)-e(dd)
                       
                       F29_ph=F29_ph+dpl(l,b)/e_klab/e_klcd*(&
-                           vpqrs(a,c,b,dd)*(2._d*vpqrs(c,k,dd,l)-vpqrs(c,l,dd,k))+& 
-                           vpqrs(a,dd,b,c)*(2._d*vpqrs(dd,k,c,l)-vpqrs(dd,l,c,k)))
+                           vpqrs(a,c,b,dd)*(2._dp*vpqrs(c,k,dd,l)-vpqrs(c,l,dd,k))+& 
+                           vpqrs(a,dd,b,c)*(2._dp*vpqrs(dd,k,c,l)-vpqrs(dd,l,c,k)))
                       
                    end if
                    
@@ -607,13 +607,13 @@ contains
 
 !!$--------------------------------------------
 
-    real(d) function F210_ph(a,k)
+  real(dp) function F210_ph(a,k)
     
     integer, intent(in) :: a,k
-    integer :: b1,b,l1,l,m1,m,n1,n,sym,sym1,sym2
-    real(d) :: e_klab,e_mnab
+    integer  :: b1,b,l1,l,m1,m,n1,n,sym,sym1,sym2
+    real(dp) :: e_klab,e_mnab
 
-    F210_ph=0._d
+    F210_ph=0._dp
     
     do b1= nOcc+1,nBas
        b=roccnum(b1)
@@ -641,8 +641,8 @@ contains
                       e_mnab=e(m)+e(n)-e(a)-e(b)
                       
                       F210_ph=F210_ph+dpl(l,b)/e_klab/e_mnab*(&
-                           vpqrs(a,m,b,n)*(2._d*vpqrs(m,k,n,l)-vpqrs(m,l,n,k))+& 
-                           vpqrs(a,n,b,m)*(2._d*vpqrs(n,k,m,l)-vpqrs(n,l,m,k)))
+                           vpqrs(a,m,b,n)*(2._dp*vpqrs(m,k,n,l)-vpqrs(m,l,n,k))+& 
+                           vpqrs(a,n,b,m)*(2._dp*vpqrs(n,k,m,l)-vpqrs(n,l,m,k)))
                       
                    end if
                    
@@ -659,13 +659,13 @@ contains
 !!$ Transition moments to the doubly excited states are numerated in accordance with our 
 !!$ choice for the doubly excited configs order: I-a=b,i=j;II-a|=b,i=j;III a=b,i|=j;IV,V-a|=b,i|=j (1,2)
 
-  real(d) function FI_2p2h(a,k)
+  real(dp) function FI_2p2h(a,k)
     
     integer, intent(in) :: a,k
-    integer :: c1,c,m1,m,sym
-    real(d) :: e_mkaa,e_kkac
+    integer  :: c1,c,m1,m,sym
+    real(dp) :: e_mkaa,e_kkac
     
-    FI_2p2h=0._d
+    FI_2p2h=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -685,19 +685,19 @@ contains
        end if
     end do
 
-    FI_2p2h=2._d*FI_2p2h
+    FI_2p2h=2._dp*FI_2p2h
     
   end function FI_2p2h
 
 !!$-------------------------------------------------------------------------------
 
-  real(d) function FII_2p2h(a,b,k)
+  real(dp) function FII_2p2h(a,b,k)
     
     integer, intent(in) :: a,b,k
-    integer :: c1,c,m1,m,sym
-    real(d) :: e_mkab,e_kkac,e_kkbc
+    integer  :: c1,c,m1,m,sym
+    real(dp) :: e_mkab,e_kkac,e_kkbc
     
-    FII_2p2h=0._d
+    FII_2p2h=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -722,19 +722,19 @@ contains
        end if
     end do
 
-    FII_2p2h=sqrt(2._d)*FII_2p2h  
+    FII_2p2h=sqrt(2._dp)*FII_2p2h  
 
   end function FII_2p2h
 
 !!$--------------------------------------------------------------------------------
 
-  real(d) function FIII_2p2h(a,k,l)
+  real(dp) function FIII_2p2h(a,k,l)
     
     integer, intent(in) :: a,k,l
-    integer :: c1,c,m1,m,sym
-    real(d) :: e_mlaa,e_kmaa,e_klac
+    integer  :: c1,c,m1,m,sym
+    real(dp) :: e_mlaa,e_kmaa,e_klac
     
-    FIII_2p2h=0._d
+    FIII_2p2h=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -759,19 +759,19 @@ contains
        end if
     end do
 
-    FIII_2p2h=sqrt(2._d)*FIII_2p2h
+    FIII_2p2h=sqrt(2._dp)*FIII_2p2h
     
   end function FIII_2p2h
 
 !!$---------------------------------------------------------------------------------
 
-  real(d) function FIV2_2p2h(a,b,k,l)
+  real(dp) function FIV2_2p2h(a,b,k,l)
     
     integer, intent(in) :: a,b,k,l
-    integer :: c1,c,m1,m,sym
-    real(d) :: e_mlab,e_kmab,e_klbc,e_klac
+    integer  :: c1,c,m1,m,sym
+    real(dp) :: e_mlab,e_kmab,e_klbc,e_klac
     
-    FIV2_2p2h=0._d
+    FIV2_2p2h=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -801,19 +801,19 @@ contains
        end if
     end do
 
-    FIV2_2p2h=sqrt(3._d)*FIV2_2p2h
+    FIV2_2p2h=sqrt(3._dp)*FIV2_2p2h
     
   end function FIV2_2p2h
 
 !!$------------------------------------------------------------------------------------    
     
-  real(d) function FIV1_2p2h(a,b,k,l)
+  real(dp) function FIV1_2p2h(a,b,k,l)
     
     integer, intent(in) :: a,b,k,l
-    integer :: c1,c,m1,m,sym
-    real(d) :: e_mlab,e_kmab,e_klbc,e_klac
+    integer  :: c1,c,m1,m,sym
+    real(dp) :: e_mlab,e_kmab,e_klbc,e_klac
     
-    FIV1_2p2h=0._d
+    FIV1_2p2h=0._dp
     
     do m1= 1,nOcc
        m=roccnum(m1)
@@ -893,13 +893,13 @@ contains
 
 !#######################################################################
 
-  real(d) function tauA(c1,a)
+  real(dp) function tauA(c1,a)
 
     implicit none
 
     integer, intent(in) :: c1,a
     integer             :: c,b1,b,l1,l,m1,m
-    real(d)             :: e_lmba,e_lmbc
+    real(dp)            :: e_lmba,e_lmbc
 
     tauA=0.0d0
 
@@ -911,8 +911,8 @@ contains
        do l1=1,nOcc
           l=roccnum(l1)
 
-          e_lmba=2._d*e(l)-e(b)-e(a)
-          e_lmbc=2._d*e(l)-e(b)-e(c)
+          e_lmba=2._dp*e(l)-e(b)-e(a)
+          e_lmbc=2._dp*e(l)-e(b)-e(c)
 
           tauA=tauA-0.5d0/e_lmba/e_lmbc*vpqrs(a,l,b,l)*vpqrs(l,c,l,b)
           
@@ -923,8 +923,8 @@ contains
              e_lmbc=e(l)+e(m)-e(b)-e(c)
 
              tauA=tauA-0.5d0/e_lmba/e_lmbc*(&
-                  vpqrs(a,l,b,m)*(2._d*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
-                  vpqrs(a,m,b,l)*(2._d*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
+                  vpqrs(a,l,b,m)*(2._dp*vpqrs(l,c,m,b)-vpqrs(l,b,m,c))+&
+                  vpqrs(a,m,b,l)*(2._dp*vpqrs(l,b,m,c)-vpqrs(l,c,m,b)))
 
           enddo
 
@@ -936,11 +936,11 @@ contains
 
 !#######################################################################
 
-  real(d) function tauB(m1,k)
+  real(dp) function tauB(m1,k)
 
     integer, intent(in) :: k,m1
     integer             :: b1,b,c1,c,l1,l,m,sym,sym1,sym2
-    real(d)             :: e_klbc,e_lmbc
+    real(dp)            :: e_klbc,e_lmbc
     
     tauB=0.0d0
     
@@ -967,8 +967,8 @@ contains
                 e_klbc=e(k)+e(l)-e(b)-e(c)
                 e_lmbc=e(l)+e(m)-e(b)-e(c)                      
                 tauB=tauB-0.5d0/e_klbc/e_lmbc*(&
-                     vpqrs(b,k,c,l)*(2._d*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
-                     vpqrs(b,l,c,k)*(2._d*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
+                     vpqrs(b,k,c,l)*(2._dp*vpqrs(m,b,l,c)-vpqrs(m,c,l,b))+&
+                     vpqrs(b,l,c,k)*(2._dp*vpqrs(m,c,l,b)-vpqrs(m,b,l,c)))
                 
              end if
              
@@ -982,13 +982,13 @@ contains
 
 !#######################################################################
   
-  real(d) function tau21(a,m1)
+  real(dp) function tau21(a,m1)
 
     implicit none
 
     integer, intent(in) :: a,m1
     integer             :: b1,b,c1,c,l1,l,m,sym,sym1,sym2
-    real(d)             :: e_ma,e_lmbc
+    real(dp)            :: e_ma,e_lmbc
 
     tau21=0.0d0
 
@@ -1016,8 +1016,8 @@ contains
              if (MT(sym1,sym2) .eq. 1) then
                 e_lmbc=e(l)+e(m)-e(b)-e(c)
                 tau21= tau21-1.0d0/e_ma/e_lmbc*(&
-                     vpqrs(b,l,c,m)*(2._d*vpqrs(l,b,a,c)-vpqrs(l,c,a,b))+&
-                     vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,a,b)-vpqrs(l,b,a,c)))
+                     vpqrs(b,l,c,m)*(2._dp*vpqrs(l,b,a,c)-vpqrs(l,c,a,b))+&
+                     vpqrs(b,m,c,l)*(2._dp*vpqrs(l,c,a,b)-vpqrs(l,b,a,c)))
              end if
              
           end do
@@ -1030,13 +1030,13 @@ contains
 
 !#######################################################################
 
-  real(d) function tau22(a,n1)
+  real(dp) function tau22(a,n1)
 
     implicit none
 
     integer, intent(in) :: a,n1
     integer             :: b1,b,l1,l,m1,m,n,sym,sym1,sym2
-    real(d)             :: e_na,e_lmba
+    real(dp)            :: e_na,e_lmba
 
     tau22=0.0d0
     
@@ -1062,8 +1062,8 @@ contains
              if (MT(sym1,sym2) .eq. 1) then
                 e_lmba=e(l)+e(m)-e(b)-e(a)
                 tau22=tau22+1.0d0/e_na/e_lmba*(&
-                     vpqrs(l,b,m,n)*(2._d*vpqrs(b,l,a,m)-vpqrs(b,m,a,l))+&
-                     vpqrs(l,n,m,b)*(2._d*vpqrs(b,m,a,l)-vpqrs(b,l,a,m)))
+                     vpqrs(l,b,m,n)*(2._dp*vpqrs(b,l,a,m)-vpqrs(b,m,a,l))+&
+                     vpqrs(l,n,m,b)*(2._dp*vpqrs(b,m,a,l)-vpqrs(b,l,a,m)))
              end if
              
           end do
@@ -1077,13 +1077,13 @@ contains
 
 !#######################################################################
 
-  real(d) function tau23(b1,k)
+  real(dp) function tau23(b1,k)
 
     implicit none
 
     integer, intent(in) :: b1,k
     integer             :: b,c1,c,l1,l,m1,m,sym,sym1,sym2
-    real(d)             :: e_kb,e_lmbc
+    real(dp)            :: e_kb,e_lmbc
 
     tau23=0.0d0
 
@@ -1110,8 +1110,8 @@ contains
                 
                 e_lmbc=e(l)+e(m)-e(b)-e(c)
                 tau23=tau23-1.0d0/e_kb/e_lmbc*(&
-                     vpqrs(b,l,c,m)*(2._d*vpqrs(l,k,m,c)-vpqrs(l,c,m,k))+&
-                     vpqrs(b,m,c,l)*(2._d*vpqrs(l,c,m,k)-vpqrs(l,k,m,c)))
+                     vpqrs(b,l,c,m)*(2._dp*vpqrs(l,k,m,c)-vpqrs(l,c,m,k))+&
+                     vpqrs(b,m,c,l)*(2._dp*vpqrs(l,c,m,k)-vpqrs(l,k,m,c)))
                 
              end if
              
@@ -1126,13 +1126,13 @@ contains
 
 !#######################################################################
 
-  real(d) function tau24(d1,k)
+  real(dp) function tau24(d1,k)
 
     implicit none
 
     integer, intent(in) :: d1,k
     integer             :: b1,b,c1,c,dd,l1,l,sym,sym1,sym2
-    real(d)             :: e_kd,e_klbc
+    real(dp)            :: e_kd,e_klbc
 
     tau24=0.0d0
 
@@ -1162,8 +1162,8 @@ contains
                 
                 e_klbc=e(k)+e(l)-e(b)-e(c)
                 tau24=tau24+1.0d0/e_kd/e_klbc*(&
-                     vpqrs(b,k,c,l)*(2._d*vpqrs(dd,b,l,c)-vpqrs(dd,c,l,b))+&
-                     vpqrs(b,l,c,k)*(2._d*vpqrs(dd,c,l,b)-vpqrs(dd,b,l,c)))
+                     vpqrs(b,k,c,l)*(2._dp*vpqrs(dd,b,l,c)-vpqrs(dd,c,l,b))+&
+                     vpqrs(b,l,c,k)*(2._dp*vpqrs(dd,c,l,b)-vpqrs(dd,b,l,c)))
                 
              end if
                    
@@ -1178,13 +1178,13 @@ contains
 
 !#######################################################################
 
-  real(d) function tauC(b1,l1)
+  real(dp) function tauC(b1,l1)
 
     implicit none
 
     integer, intent(in) :: b1,l1
     integer             :: b,c1,c,l,m1,m,sym
-    real(d)             :: e_klab,e_mlcb
+    real(dp)            :: e_klab,e_mlcb
     
     tauC=0.0d0
 
@@ -1210,7 +1210,7 @@ contains
 
 !#######################################################################
 
-  real(d) function FC_ph_new(a,k,tau,nvirt)
+  real(dp) function FC_ph_new(a,k,tau,nvirt)
 
     implicit none
     
@@ -1218,7 +1218,7 @@ contains
     real*8, intent(in), dimension(nvirt,nocc)  :: tau
     integer                                    :: itmp
     integer                                    :: b1,b,l1,l,sym
-    real(d) :: e_klab,e_mlcb
+    real(dp)                                   :: e_klab,e_mlcb
 
     FC_ph_new=0.0d0
 

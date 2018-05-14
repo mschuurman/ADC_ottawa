@@ -17,21 +17,21 @@ contains
     
     implicit none        
 
-    integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-    integer                              :: i,ndim,ndims,ndimsf,&
-                                            nout,ndimf,ndimd,&
-                                            noutf,itmp
-    real(d)                              :: time
-    real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
-    real(d), dimension(:), allocatable   :: travec
-    real(d)                              :: e_init,e0,s0
-    real(d), dimension(:,:), allocatable :: rvec
-    real(d), dimension(:), allocatable   :: vec_init
-    real*8, dimension(:), allocatable    :: mtmf
+    integer, dimension(:,:), allocatable  :: kpq,kpqd,kpqf
+    integer                               :: i,ndim,ndims,ndimsf,&
+                                             nout,ndimf,ndimd,&
+                                             noutf,itmp
+    real(dp)                              :: time
+    real(dp), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
+    real(dp), dimension(:), allocatable   :: travec
+    real(dp)                              :: e_init,e0,s0
+    real(dp), dimension(:,:), allocatable :: rvec
+    real(dp), dimension(:), allocatable   :: vec_init
+    real(dp), dimension(:), allocatable   :: mtmf
     
-    real(d), dimension(:,:), allocatable :: arr,arrd,arrf
-    real(d), dimension(:), allocatable   :: autvec,tmvecf,osc_strf,&
-                                            enerf
+    real(dp), dimension(:,:), allocatable :: arr,arrd,arrf
+    real(dp), dimension(:), allocatable   :: autvec,tmvecf,osc_strf,&
+                                             enerf
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic (if requested)

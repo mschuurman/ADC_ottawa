@@ -81,11 +81,6 @@ QCLIB=	source/qclib/vpqrsmod.o \
 	source/qclib/load_electronic_structure.o \
 	source/qclib/scf_electronic_structure.o 
 
-# FROM ADC_nrc
-#EIGEN=  source/eigen/block_davidson.o \
-#	source/eigen/block_lanczos.o
-# FROM ADC_nrc
-
 PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/sillib.o \
 	source/propagation/csillib.o \
@@ -129,21 +124,14 @@ ADCLIB= source/adclib/defaults.o \
 	source/adclib/density_matrix.o \
 	source/adclib/dyson_calc.o \
 	source/adclib/dyson_io.o \
-	source/adclib/target_matching.o
-#	source/adclib/nto.o
+	source/adclib/target_matching.o \
+	source/adclib/nto.o
 
-EIGEN2= source/eigen/block_davidson.o \
-        source/eigen/dmatvec_davidson.o \
+EIGEN= source/eigen/block_davidson.o \
+	source/eigen/dmatvec_davidson.o \
         source/eigen/block_lanczos.o
 
-ADCLIB1= source/adclib/adc_common.o \
-	source/adclib/nto.o 
-
-# FROM ADC_nrc
-#	source/adclib/target_matching.o \
-#	source/adclib/adc2common.o \
-#	source/adclib/nto.o 
-# FROM ADC_nrc
+ADCCOMMON= source/adclib/adc_common.o
 
 ADC_MAIN=source/adc/adc1_opa.o \
 	source/adc/adc1_ener.o \
@@ -163,9 +151,9 @@ ADC =   $(INCLUDE) \
 	$(UTILITIES) \
 	$(QCLIB) \
 	$(ADCLIB) \
-	$(EIGEN2) \
+	$(EIGEN) \
 	$(PROPAGATION) \
-	$(ADCLIB1) \
+	$(ADCCOMMON) \
 	$(CAP) \
 	$(ADC_MAIN)
 
@@ -406,6 +394,45 @@ FDIAG_OBJ = constants.o \
 	filtermod.o \
 	fdiag.o
 
+########################################################################
+# TD-NTO analysis code
+########################################################################
+NTOANA = $(MULTI) \
+	source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/adclib/electron_density.o \
+	source/iomodules/molden.o \
+	source/analysis/ntoana/ntoana.o
+
+NTOANA_OBJ = accuracy.o \
+	printing.o \
+	timer.o \
+	lapack.o \
+	dgefa.o \
+	dgedi.o \
+	math.o \
+	matrix_tools.o \
+	os_integral_operators.o \
+	gamess_internal.o \
+	import_gamess.o \
+	integral_tools.o \
+	integrals_mo2e.o \
+        diis.o \
+        sort_tools.o \
+        block_diag.o \
+        biorthogonal_tools.o \
+        scf_tools.o \
+        fock_tools.o \
+	constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	electron_density.o \
+	molden.o \
+	ntoana.o
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -439,6 +466,10 @@ cheby2spec: $(CHEBY2SPEC)
 
 fdiag: $(FDIAG)
 	$(F90) $(F90OPTS) $(FDIAG_OBJ) $(LIBS) -o bin/fdiag.x
+	rm -f *.o *~ *.mod
+
+ntoana: $(NTOANA)
+	$(F90) $(F90OPTS) $(NTOANA_OBJ) $(LIBS) -o bin/ntoana.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90

@@ -154,10 +154,10 @@ contains
     iwfunc=-1
 
     ! Threshold for discarding eigenpairs of the overlap matrix
-    ovrthrsh=1e-6_d
+    ovrthrsh=1e-6_dp
 
     ! Error estimate threshold for printing energies/intensities
-    errthrsh=1e-2_d
+    errthrsh=1e-2_dp
     
 !----------------------------------------------------------------------
 ! Read the input file
@@ -310,8 +310,8 @@ contains
     
     implicit none
 
-    integer :: iauto,n
-    real(d) :: t1,t2,re,im
+    integer  :: iauto,n
+    real(dp) :: t1,t2,re,im
 
 !----------------------------------------------------------------------
 ! Determine the no. timesteps and dt from the a0(t) file
@@ -452,10 +452,10 @@ contains
     
     implicit none
 
-    integer                              :: L,i,j,n,ti,Iindx,Jindx
-    real(d), dimension(0:nener-1,ntauto) :: Gk
-    real(d), dimension(2:2*nener)        :: ebar
-    real(d)                              :: t,e,h,func
+    integer                               :: L,i,j,n,ti,Iindx,Jindx
+    real(dp), dimension(0:nener-1,ntauto) :: Gk
+    real(dp), dimension(2:2*nener)        :: ebar
+    real(dp)                              :: t,e,h,func
 
     L=nener
     
@@ -523,9 +523,9 @@ contains
 
     implicit none
 
-    integer                    :: ti
-    real(d)                    :: hij,h2ij,sij,ebar,h,t
-    real(d), dimension(ntauto) :: Gk
+    integer                     :: ti
+    real(dp)                    :: hij,h2ij,sij,ebar,h,t
+    real(dp), dimension(ntauto) :: Gk
 
 !----------------------------------------------------------------------
 ! Contribution from the first timestep
@@ -589,8 +589,8 @@ contains
 
     implicit none
 
-    integer :: n,tk
-    real(d) :: func,deltae,t,kappa,cosfunc
+    integer  :: n,tk
+    real(dp) :: func,deltae,t,kappa,cosfunc
 
     ! Delta E and t
     deltae=n*de
@@ -661,11 +661,11 @@ contains
 
     implicit none
 
-    real(d)            :: dsinc,x,x2
-    real(d), parameter :: inv6=1.0d0/6.0d0
-    real(d), parameter :: inv20=1.0d0/20.0d0
-    real(d), parameter :: inv42=1.0d0/42.0d0
-    real(d), parameter :: tiny = 4.154252d-2
+    real(dp)            :: dsinc,x,x2
+    real(dp), parameter :: inv6=1.0d0/6.0d0
+    real(dp), parameter :: inv20=1.0d0/20.0d0
+    real(dp), parameter :: inv42=1.0d0/42.0d0
+    real(dp), parameter :: tiny = 4.154252d-2
 
     ! "Tiny" is chosen such that tiny**8 / 8! = eps where "eps" is the
     ! machine precision (here eps = 2.2 10^(-16)).
@@ -693,9 +693,9 @@ contains
     
     implicit none
 
-    integer                         :: i
-    real(d)                         :: sigma,fac1,fac2
-    real(d), dimension(nener,nener) :: hshift,hshift2
+    integer                          :: i
+    real(dp)                         :: sigma,fac1,fac2
+    real(dp), dimension(nener,nener) :: hshift,hshift2
     
 !----------------------------------------------------------------------
 ! Variational principle I:
@@ -734,17 +734,17 @@ contains
     
     implicit none
 
-    integer                              :: matdim,workdim,rdim,&
-                                            error,i
-    real(d), dimension(matdim,matdim)    :: A,B
+    integer                               :: matdim,workdim,rdim,&
+                                             error,i
+    real(dp), dimension(matdim,matdim)    :: A,B
 
-    real(d), parameter                   :: thrsh=1e+2_d
+    real(dp), parameter                   :: thrsh=1e+2_dp
     
-    real(d), dimension(matdim,matdim)    :: U
-    real(d), dimension(matdim)           :: lambda
-    real(d), dimension(:,:), allocatable :: Ubar,normfac,P,Abar,Vbar
-    real(d), dimension(:), allocatable   :: Ebar
-    real(d), dimension(:), allocatable   :: work
+    real(dp), dimension(matdim,matdim)    :: U
+    real(dp), dimension(matdim)           :: lambda
+    real(dp), dimension(:,:), allocatable :: Ubar,normfac,P,Abar,Vbar
+    real(dp), dimension(:), allocatable   :: Ebar
+    real(dp), dimension(:), allocatable   :: work
 
 !----------------------------------------------------------------------
 ! Diagonalise B
@@ -911,8 +911,8 @@ contains
     
     implicit none
 
-    integer :: j,ti
-    real(d) :: dj,t,ener
+    integer  :: j,ti
+    real(dp) :: dj,t,ener
 
 !----------------------------------------------------------------------
 ! E_j
@@ -961,7 +961,7 @@ contains
     
     implicit none
 
-    real(d) :: t,func
+    real(dp) :: t,func
 
     select case(iwfunc)
 
@@ -1008,11 +1008,11 @@ contains
     
     implicit none
 
-    integer                         :: i,j
-    real(d), dimension(nrbas,nrbas) :: tmpmat
-    real(d), dimension(nrbas,nrbas) :: e2diag
+    integer                          :: i,j
+    real(dp), dimension(nrbas,nrbas) :: tmpmat
+    real(dp), dimension(nrbas,nrbas) :: e2diag
 
-    real(d), dimension(nrbas)       :: tmpvec
+    real(dp), dimension(nrbas)       :: tmpvec
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -1059,7 +1059,7 @@ contains
     implicit none
 
     integer          :: i,j,iout
-    real(d)          :: maxi
+    real(dp)          :: maxi
     character(len=1) :: atmp
     
 !----------------------------------------------------------------------
@@ -1133,10 +1133,10 @@ contains
     
     implicit none
 
-    integer                              :: j,k,nactual
-    integer, dimension(nrbas)            :: imap
-    real(d), dimension(nrbas,nener)      :: fullmat
-    real(d), dimension(:,:), allocatable :: redmat
+    integer                               :: j,k,nactual
+    integer, dimension(nrbas)             :: imap
+    real(dp), dimension(nrbas,nener)      :: fullmat
+    real(dp), dimension(:,:), allocatable :: redmat
     
 !----------------------------------------------------------------------
 ! Number of non-spurious states that fall within the energy window

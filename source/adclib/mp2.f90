@@ -18,7 +18,7 @@ contains
     implicit none
         
     integer           :: i
-    real(d)           :: e0,d2
+    real(dp)          :: e0,d2
     character(len=60) :: atmp
     
 !-----------------------------------------------------------------------
@@ -75,10 +75,10 @@ contains
 
     implicit none
 
-    integer                            :: r,s,u,v,nsym1,nsym2,i,j,a,b
-    integer                            :: occ1,nthreads,tid
-    real(d)                            :: DA,eijc,term,etotal
-    real(d), dimension(:), allocatable :: sum1thread
+    integer                             :: r,s,u,v,nsym1,nsym2,i,j,a,b
+    integer                             :: occ1,nthreads,tid
+    real(dp)                            :: DA,eijc,term,etotal
+    real(dp), dimension(:), allocatable :: sum1thread
 
 !-----------------------------------------------------------------------
 ! Set the index of the first non-frozen occupied orbital
@@ -128,7 +128,7 @@ contains
 
                    eijc=e(i)+e(j)-e(a)-e(b)
                        
-                   term= vpqrs(i,a,j,b)*(2._d*vpqrs(i,a,j,b)-vpqrs(i,b,j,a))
+                   term= vpqrs(i,a,j,b)*(2._dp*vpqrs(i,a,j,b)-vpqrs(i,b,j,a))
                        
                    term=term/eijc
 
@@ -168,16 +168,15 @@ contains
       
     implicit none
 
-    integer                              :: i,j,k,a,b,c,albl,blbl,&
-                                            workdim,error
-    real(d)                              :: d2
-    real(d), dimension(:,:), allocatable :: toto,tvtv
-    real(d), dimension(:), allocatable   :: eigval,workarr
+    integer                               :: i,j,k,a,b,c,albl,blbl,&
+                                             workdim,error
+    real(dp)                              :: d2
+    real(dp), dimension(:,:), allocatable :: toto,tvtv
+    real(dp), dimension(:), allocatable   :: eigval,workarr
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(toto(nocc,nocc))
     allocate(tvtv(nvirt,nvirt))
 
@@ -286,8 +285,8 @@ contains
     
     implicit none
     
-    integer, intent(in) :: i,j,a,b
-    real(d)             :: t2amp
+    integer, intent(in)  :: i,j,a,b
+    real(dp)             :: t2amp
     
     t2amp=vpqrs(i,a,j,b)/(e(i)+e(j)-e(a)-e(b))
     
@@ -309,14 +308,14 @@ contains
 
     implicit none
 
-    integer                       :: i,j,a,b,k,occ1
-    real(d), dimension(nbas,nbas) :: rho
-    real(d)                       :: tw1,tw2,tc1,tc2
+    integer                        :: i,j,a,b,k,occ1
+    real(dp), dimension(nbas,nbas) :: rho
+    real(dp)                       :: tw1,tw2,tc1,tc2
 
-    integer                       :: error,workdim
-    real(d), allocatable          :: natvec(:,:)
-    real(d), allocatable          :: natocc(:)
-    real(d), allocatable          :: work(:)
+    integer                        :: error,workdim
+    real(dp), allocatable          :: natvec(:,:)
+    real(dp), allocatable          :: natocc(:)
+    real(dp), allocatable          :: work(:)
     
 !-----------------------------------------------------------------------
 ! Start timing
@@ -427,8 +426,8 @@ contains
     
     implicit none
 
-    integer :: a,b,i1,j1,c1,i,j,c,occ1
-    real(d) :: fret,ftmp,delta_ijac,delta_ijbc
+    integer  :: a,b,i1,j1,c1,i,j,c,occ1
+    real(dp) :: fret,ftmp,delta_ijac,delta_ijbc
       
 !-----------------------------------------------------------------------
 ! Set the index of the first non-frozen occupied orbital
@@ -483,8 +482,8 @@ contains
     
     implicit none
 
-    integer :: i,j,k1,a1,b1,k,a,b,occ1
-    real(d) :: fret,ftmp,delta_ikab,delta_jkab
+    integer  :: i,j,k1,a1,b1,k,a,b,occ1
+    real(dp) :: fret,ftmp,delta_ikab,delta_jkab
 
 !-----------------------------------------------------------------------
 ! Set the index of the first non-frozen occupied orbital
@@ -537,8 +536,8 @@ contains
     
     implicit none
 
-    integer :: i,a,j1,k1,b1,c1,j,k,b,c,occ1
-    real(d) :: fret,ftmp,term1,term2,delta_ijbc,delta_jkab
+    integer  :: i,a,j1,k1,b1,c1,j,k,b,c,occ1
+    real(dp) :: fret,ftmp,term1,term2,delta_ijbc,delta_jkab
 
 !-----------------------------------------------------------------------
 ! Set the index of the first non-frozen occupied orbital

@@ -24,16 +24,16 @@ contains
     
     implicit none
 
-    integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-    integer                              :: i,ndim,ndims,ndimsf,&
-                                            nout,ndimf,ndimd,noutf,&
-                                            itmp
-    integer*8                            :: noffd,noffdf
-    real(d)                              :: e_init,e0,time
-    real(d), dimension(:), allocatable   :: ener,mtm,mtmf,tmvec,osc_str,&
-                                            vec_init,travec
-    real(d), dimension(:,:), allocatable :: rvec
-    type(gam_structure)                  :: gam
+    integer, dimension(:,:), allocatable  :: kpq,kpqd,kpqf
+    integer                               :: i,ndim,ndims,ndimsf,&
+                                             nout,ndimf,ndimd,noutf,&
+                                             itmp
+    integer*8                             :: noffd,noffdf
+    real(dp)                              :: e_init,e0,time
+    real(dp), dimension(:), allocatable   :: ener,mtm,mtmf,tmvec,osc_str,&
+                                             vec_init,travec
+    real(dp), dimension(:,:), allocatable :: rvec
+    type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
@@ -172,7 +172,7 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
     integer                                   :: ndim
     integer*8                                 :: noffd
-    real(d)                                   :: time
+    real(dp)                                  :: time
     character(len=120)                        :: msg
     
 !-----------------------------------------------------------------------
@@ -219,9 +219,9 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
     integer*8                                 :: noffd,noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndim,davstates)        :: rvec
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndim,davstates)       :: rvec
 
 !-----------------------------------------------------------------------
 ! Generate the contractions of the initial and final state vectors
@@ -270,18 +270,18 @@ contains
     integer, dimension(3)                     :: nbuf_cv,nbuf_cc,&
                                                  nbuf_vv
     integer                                   :: dim,error,ivecs
-    real(d), dimension(:,:), allocatable      :: veci,vecf,mtm_v,&
+    real(dp), dimension(:,:), allocatable     :: veci,vecf,mtm_v,&
                                                  mtm_c
-    real(d), dimension(:), allocatable        :: ei,ef
-    real(d), dimension(:,:), allocatable      :: tdmvec,initvecs
-    real(d), dimension(:), allocatable        :: tau,work
+    real(dp), dimension(:), allocatable       :: ei,ef
+    real(dp), dimension(:,:), allocatable     :: tdmvec,initvecs
+    real(dp), dimension(:), allocatable       :: tau,work
     character(len=1), dimension(3)            :: acomp
     character(len=70)                         :: msg
     character(len=60)                         :: filename
         
-    integer                              :: e2
-    real(d), dimension(:,:), allocatable :: smat
-    real(d), dimension(:), allocatable   :: eig
+    integer                               :: e2
+    real(dp), dimension(:,:), allocatable :: smat
+    real(dp), dimension(:), allocatable   :: eig
     
     acomp=(/ 'x','y','z' /)
 
@@ -674,7 +674,6 @@ contains
   
 !#######################################################################
 
-        
   subroutine dipole_ispace_contraction_tpa(ndim,ndimf,kpq,kpqf)
 
     use constants
@@ -695,17 +694,17 @@ contains
                                                  ivecs,a,b
     integer*8, dimension(3)                   :: nel_vv
     integer, dimension(3)                     :: nbuf_vv
-    real(d), dimension(:,:), allocatable      :: vec,initvecs
-    real(d), dimension(:), allocatable        :: ener
-    real(d), dimension(:), allocatable        :: tau,work
-    real(d), dimension(:,:), allocatable      :: mtm
+    real(dp), dimension(:,:), allocatable     :: vec,initvecs
+    real(dp), dimension(:), allocatable       :: ener
+    real(dp), dimension(:), allocatable       :: tau,work
+    real(dp), dimension(:,:), allocatable     :: mtm
     character(len=1), dimension(3)            :: acomp
     character(len=70)                         :: msg
     character(len=60)                         :: filename
     
-    integer                              :: e2
-    real(d), dimension(:,:), allocatable :: smat
-    real(d), dimension(:), allocatable   :: eig
+    integer                               :: e2
+    real(dp), dimension(:,:), allocatable :: smat
+    real(dp), dimension(:), allocatable   :: eig
     
     acomp=(/ 'x','y','z' /)
 
@@ -999,8 +998,8 @@ contains
     
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf,ndimsf,ndim
-    real(d), dimension(ndimf)                 :: travec,mtmf
-    real(d)                                   :: e_init
+    real(dp), dimension(ndimf)                :: travec,mtmf
+    real(dp)                                  :: e_init
 
     if (lcvsfinal) then
        call tdm_tpxas(ndim,ndimf,e_init)
@@ -1022,18 +1021,18 @@ contains
     
     implicit none
     
-    integer                                :: ndim,ndimf,f,k,i,&
-                                              nlanc_v,nlanc_c,&
-                                              ilanc,a,b,alpha,&
-                                              itpa
-    real(d)                                :: e_init
-    real(d), dimension(:,:,:), allocatable :: sabif
-    real(d), dimension(:), allocatable     :: lvec,lener_v,&
-                                              lener_c,xsec,&
-                                              delta
-    real(d), dimension(:,:), allocatable   :: tdmil_v,tdmil_c
-    real(d), dimension(:,:,:), allocatable :: tdmfl_v,tdmfl_c
-    real(d), parameter                     :: c_au=137.0359991d0
+    integer                                 :: ndim,ndimf,f,k,i,&
+                                               nlanc_v,nlanc_c,&
+                                               ilanc,a,b,alpha,&
+                                               itpa
+    real(dp)                                :: e_init
+    real(dp), dimension(:,:,:), allocatable :: sabif
+    real(dp), dimension(:), allocatable     :: lvec,lener_v,&
+                                               lener_c,xsec,&
+                                               delta
+    real(dp), dimension(:,:), allocatable   :: tdmil_v,tdmil_c
+    real(dp), dimension(:,:,:), allocatable :: tdmfl_v,tdmfl_c
+    real(dp), parameter                     :: c_au=137.0359991d0
 
 !----------------------------------------------------------------------
 ! Output where we are at
@@ -1333,16 +1332,16 @@ contains
     
     implicit none
 
-    integer                                :: ndim,ndimf,k,&
-                                              nlanc,ilanc,alpha,&
-                                              a,b,f,itpa
-    real(d)                                :: e_init
-    real(d), dimension(:,:,:), allocatable :: sabif
-    real(d), dimension(:), allocatable     :: lener,lvec,&
-                                              xsec,delta
-    real(d), dimension(:,:), allocatable   :: tdmil
-    real(d), dimension(:,:,:), allocatable :: tdmfl
-    real(d), parameter                     :: c_au=137.0359991d0
+    integer                                 :: ndim,ndimf,k,&
+                                               nlanc,ilanc,alpha,&
+                                               a,b,f,itpa
+    real(dp)                                :: e_init
+    real(dp), dimension(:,:,:), allocatable :: sabif
+    real(dp), dimension(:), allocatable     :: lener,lvec,&
+                                               xsec,delta
+    real(dp), dimension(:,:), allocatable   :: tdmil
+    real(dp), dimension(:,:,:), allocatable :: tdmfl
+    real(dp), parameter                     :: c_au=137.0359991d0
 
 !----------------------------------------------------------------------
 ! Output where we are at
@@ -1553,11 +1552,11 @@ contains
         
     implicit none
 
-    integer                  :: nsta,iout,count,i,k
-    real(d), dimension(nsta) :: ener,xsec
-    real(d), parameter       :: tol=1e-10_d
-    real(d)                  :: lb,ub
-    character(len=400)       :: atmp
+    integer                   :: nsta,iout,count,i,k
+    real(dp), dimension(nsta) :: ener,xsec
+    real(dp), parameter       :: tol=1e-10_dp
+    real(dp)                  :: lb,ub
+    character(len=400)        :: atmp
 
 !----------------------------------------------------------------------
 ! Open the gnuplot file

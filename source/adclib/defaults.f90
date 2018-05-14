@@ -67,7 +67,7 @@
       davstates=0
       maxiter=0
       dmain=0
-      davtol=1e-7_d
+      davtol=1e-7_dp
       ladc1guess=.false.
       lsubdiag=.false.
       davname='SCRATCH/davstates'
@@ -81,7 +81,7 @@
       davstates_f=0
       maxiter_f=0
       dmain_f=0
-      davtol_f=1e-7_d
+      davtol_f=1e-7_dp
       ladc1guess_f=.false.
       lsubdiag_f=.false.
       davname_f='SCRATCH/davstates_final'
@@ -105,12 +105,12 @@
       ! Initial space
       kdim=10
       stepsize=10.0d0
-      siltol=1e-5_d
+      siltol=1e-5_dp
       
       ! Final space
       kdim_f=10
       stepsize_f=10.0d0
-      siltol_f=1e-5_d
+      siltol_f=1e-5_dp
       
 !-----------------------------------------------------------------------
 ! Relaxation parameters
@@ -150,7 +150,7 @@
 ! Autospec parameters
 !-----------------------------------------------------------------------
       lautospec=.false.
-      autotol=1e-5_d
+      autotol=1e-5_dp
       autoord=0
       autoprop=1
       chebyord=0
@@ -171,10 +171,11 @@
       strength=0.0d0
       t0=0.0d0
       phase=0.0d0
-      proptol=1e-5_d
+      proptol=1e-5_dp
       ipulse=0
       ienvelope=0
       envpar=0.0d0
+      tdrep=1
       
 !-----------------------------------------------------------------------
 ! CAP parameters
@@ -185,7 +186,7 @@
       capord=-1
       lprojcap=.false.
       iprojcap=0
-      projlim=1e+6_d
+      projlim=1e+6_dp
       nrad(1)=120
       nrad(2)=1200
       nang(1)=770
@@ -194,6 +195,7 @@
       lautobox=.false.
       densthrsh=-1.0d0
       lflux=.false.
+      lcapdiag=.false.
       
 !-----------------------------------------------------------------------
 ! I/O channels

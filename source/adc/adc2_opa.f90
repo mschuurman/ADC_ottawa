@@ -29,19 +29,19 @@ contains
         
     implicit none
     
-    integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-    integer                              :: i,ndim,ndims,ndimsf,&
-                                            nout,ndimf,ndimd,&
-                                            noutf,itmp,j
-    integer*8                            :: noffd,noffdf
-    real(d)                              :: time,itemp,tnorm
-    real(d), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
-    real(d), dimension(:), allocatable   :: travec
-    real(d)                              :: e_init,e0
-    real(d), dimension(:,:), allocatable :: rvec,travec2
-    real(d), dimension(:), allocatable   :: vec_init
-    real*8, dimension(:), allocatable    :: mtmf
-    type(gam_structure)                  :: gam
+    integer, dimension(:,:), allocatable  :: kpq,kpqd,kpqf
+    integer                               :: i,ndim,ndims,ndimsf,&
+                                             nout,ndimf,ndimd,&
+                                             noutf,itmp,j
+    integer*8                             :: noffd,noffdf
+    real(dp)                              :: time,itemp,tnorm
+    real(dp), dimension(:), allocatable   :: ener,mtm,tmvec,osc_str
+    real(dp), dimension(:), allocatable   :: travec
+    real(dp)                              :: e_init,e0
+    real(dp), dimension(:,:), allocatable :: rvec
+    real(dp), dimension(:), allocatable   :: vec_init
+    real(dp), dimension(:), allocatable   :: mtmf
+    type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
 ! Calculate the MP2 ground state energy and D2 diagnostic
@@ -181,7 +181,7 @@ contains
 ! If requested, calculate and output NTOs
 !-----------------------------------------------------------------------
     if (ldiagfinal.and.lnto) call adc2_nto(gam,ndimf,kpqf,davname_f,&
-         davstates_f)
+         davstates_f,'nto')
         
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -192,7 +192,6 @@ contains
     if (allocated(travec)) deallocate(travec)
     if (allocated(dipmom)) deallocate(dipmom)
     if (allocated(dipmom_f)) deallocate(dipmom_f)
-    if (allocated(travec2)) deallocate(travec2)
     if (allocated(dpl_all)) deallocate(dpl_all)
     if (allocated(travec_ic)) deallocate(travec_ic)
     if (allocated(travec_iv)) deallocate(travec_iv)
@@ -221,10 +220,9 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
     integer*8                                 :: noffd,noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndim,davstates)       :: rvec
     
     if (ldiagfinal) then
        call davidson_final_space_diag(ndim,ndimf,ndimsf,kpq,&
@@ -254,8 +252,8 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf,n
     integer*8                                 :: noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
 
 !-----------------------------------------------------------------------        
 ! Acknowledging that we cannot use 2h2p unit vectors as initial
@@ -339,9 +337,9 @@ contains
 
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndimf)                 :: travec
-    real(d), dimension(:), allocatable        :: mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndimf)                :: travec
+    real(dp), dimension(:), allocatable       :: mtmf
     
     if (statenumber.eq.0) then
        ! Ionisation from the ground state
@@ -373,9 +371,9 @@ contains
                                                  iadc1,itmp,dim2,&
                                                  i,k1,k2,upper
     integer, dimension(:), allocatable        :: indx1,indx2
-    real(d), dimension(:), allocatable        :: mtmf
-    real(d), dimension(:), allocatable        :: tmpvec
-    real(d), dimension(ndimsf,ndimsf)         :: adc1vec
+    real(dp), dimension(:), allocatable       :: mtmf
+    real(dp), dimension(:), allocatable       :: tmpvec
+    real(dp), dimension(ndimsf,ndimsf)        :: adc1vec
 
 !-----------------------------------------------------------------------        
 ! Calculate the vector F_J = < Psi_J | D | Psi_0 >, where the Psi_J
@@ -538,10 +536,10 @@ contains
                                                  itmp,k1,k2,&
                                                  dim2,upper
     integer, dimension(:), allocatable        :: indx_tra,indx1,indx2
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndimf)                 :: travec
-    real(d), dimension(:), allocatable        :: tmpvec
-    real(d), dimension(ndimsf,ndimsf)         :: adc1vec
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndimf)                :: travec
+    real(dp), dimension(:), allocatable       :: tmpvec
+    real(dp), dimension(ndimsf,ndimsf)        :: adc1vec
     
 !-----------------------------------------------------------------------
 ! Calculate travec: the product of the IS representation of the
@@ -692,8 +690,8 @@ contains
  
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf,ndimsf,ndim
-    real(d), dimension(ndimf)                 :: travec,mtmf
-    real(d)                                   :: e_init
+    real(dp), dimension(ndimf)                :: travec,mtmf
+    real(dp)                                  :: e_init
 
     if (ldiagfinal) then
        ! Davidson states
@@ -716,9 +714,9 @@ contains
 
     implicit none
 
-    integer                   :: ndimf,ndimsf
-    real(d), dimension(ndimf) :: travec,mtmf
-    real(d)                   :: e_init
+    integer                    :: ndimf,ndimsf
+    real(dp), dimension(ndimf) :: travec,mtmf
+    real(dp)                   :: e_init
 
 !-----------------------------------------------------------------------
 ! Transition moments from the ground state
@@ -744,10 +742,10 @@ contains
 
     implicit none
     
-    integer                            :: ndimf,ndimsf,nstates,i
-    real(d)                            :: e_init
-    real(d), dimension(ndimf)          :: mtmf
-    real(d), dimension(:), allocatable :: tmvecf,enerf,excit,osc_strf
+    integer                             :: ndimf,ndimsf,nstates,i
+    real(dp)                            :: e_init
+    real(dp), dimension(ndimf)          :: mtmf
+    real(dp), dimension(:), allocatable :: tmvecf,enerf,excit,osc_strf
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments between the ground state and the
@@ -798,10 +796,10 @@ contains
         
     implicit none
 
-    integer                            :: ndimf,ndimsf,nstates,i
-    real(d), dimension(ndimf)          :: travec
-    real(d)                            :: e_init
-    real(d), dimension(:), allocatable :: tmvecf,enerf,excit,osc_strf
+    integer                             :: ndimf,ndimsf,nstates,i
+    real(dp), dimension(ndimf)          :: travec
+    real(dp)                            :: e_init
+    real(dp), dimension(:), allocatable :: tmvecf,enerf,excit,osc_strf
 
 !-----------------------------------------------------------------------
 ! Calculate the transition moments between the initial state and the
@@ -856,11 +854,11 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf,ndimsf,i,&
                                                  itmp,iout,count,k
-    real(d)                                   :: e_init,ftmp,lb,ub
-    real(d), dimension(ndimf)                 :: travec,mtmf
-    real(d), dimension(davstates_f)           :: ener,tdm,osc_str
-    real(d), dimension(:,:), allocatable      :: rvec
-    real(d), parameter                        :: tol=0.00001d0
+    real(dp)                                  :: e_init,ftmp,lb,ub
+    real(dp), dimension(ndimf)                :: travec,mtmf
+    real(dp), dimension(davstates_f)          :: ener,tdm,osc_str
+    real(dp), dimension(:,:), allocatable     :: rvec
+    real(dp), parameter                       :: tol=0.00001d0
     character(len=400)                        :: atmp
 
 !-----------------------------------------------------------------------

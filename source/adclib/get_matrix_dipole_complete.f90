@@ -12,10 +12,10 @@
 
     implicit none
     
-    integer                                  :: nthreads
-    real(d), parameter                       :: vectol=1e-8_d
-    real(d), dimension(:,:), allocatable     :: pre_vv,pre_oo
-    real(d), dimension(:,:,:,:), allocatable :: D261,D262,D263,D264
+    integer                                   :: nthreads
+    real(dp), parameter                       :: vectol=1e-8_dp
+    real(dp), dimension(:,:), allocatable     :: pre_vv,pre_oo
+    real(dp), dimension(:,:,:,:), allocatable :: D261,D262,D263,D264
 
   contains
 
@@ -34,22 +34,22 @@
       
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
-      integer, intent(in)                    :: ndim,ndimf
-      integer                                :: inda,indb,indk,indl,&
-                                                spin,indapr,indbpr,&
-                                                indkpr,indlpr,spinpr
-      integer                                :: i,j,nlim,rec_count,&
-                                                dim_count,ndim1,&
-                                                dim_countf,ndim1f
-      integer                                :: k,k1,b,b1 
-      real(d), dimension(ndim), intent(in)   :: autvec
-      real(d), dimension(ndimf), intent(out) :: travec
-      real(d)                                :: ar_offdiag_ij
-      character(10)                          :: name
+      integer, intent(in)                     :: ndim,ndimf
+      integer                                 :: inda,indb,indk,indl,&
+                                                 spin,indapr,indbpr,&
+                                                 indkpr,indlpr,spinpr
+      integer                                 :: i,j,nlim,rec_count,&
+                                                 dim_count,ndim1,&
+                                                 dim_countf,ndim1f
+      integer                                 :: k,k1,b,b1 
+      real(dp), dimension(ndim), intent(in)   :: autvec
+      real(dp), dimension(ndimf), intent(out) :: travec
+      real(dp)                                :: ar_offdiag_ij
+      character(10)                           :: name
 
-      integer                                :: nvirt,itmp,itmp1,dim
-      real(d)                                :: func
-      real(d)                                :: tw1,tw2,tc1,tc2
+      integer                                 :: itmp,itmp1,dim
+      real(dp)                                :: func
+      real(dp)                                :: tw1,tw2,tc1,tc2
 
 !-----------------------------------------------------------------------
 ! Output where we are at
@@ -73,7 +73,6 @@
 ! Initialise things
 !-----------------------------------------------------------------------
       call times(tw1,tc1)
-      nvirt=nbas-nocc
       travec(:)=0.0d0      
 
 !-----------------------------------------------------------------------
@@ -254,9 +253,9 @@
                                                  spin,indapr,indbpr,&
                                                  indkpr,indlpr,spinpr
     integer                                   :: i,j,ndim1,ndim1f,itmp,itmp1,tid
-    real(d)                                   :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)      :: autvec
-    real(d), dimension(ndimf), intent(out)    :: travec
+    real(dp)                                  :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)     :: autvec
+    real(dp), dimension(ndimf), intent(out)   :: travec
 
     ndim1=kpq(1,0)
     ndim1f=kpqf(1,0)
@@ -309,14 +308,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,ndim1f
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,ndim1f
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)
     ndim1f=kpqf(1,0)
@@ -383,14 +382,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,ndim1f
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,ndim1f
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)
     ndim1f=kpqf(1,0)
@@ -457,14 +456,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,ndim1f
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,ndim1f
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     ndim1f=kpqf(1,0)
@@ -531,14 +530,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,ndim1f
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,ndim1f
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     ndim1f=kpqf(1,0)
@@ -609,14 +608,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,ndim1f
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,ndim1f
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     ndim1f=kpqf(1,0)
@@ -689,14 +688,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,ndim1,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,ndim1,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     ndim1=kpq(1,0)
     dim_countf=kpqf(1,0)
@@ -763,14 +762,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)
     dim_countf=kpqf(1,0)
@@ -810,14 +809,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)
     dim_countf=kpqf(1,0)
@@ -857,14 +856,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     dim_countf=kpqf(1,0)
@@ -904,14 +903,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     dim_countf=kpqf(1,0)
@@ -951,14 +950,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     dim_countf=kpqf(1,0)
@@ -998,14 +997,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,ndim1,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,ndim1,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     ndim1=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1072,14 +1071,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1119,14 +1118,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)+kpq(2,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1166,14 +1165,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1213,14 +1212,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1260,14 +1259,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)
@@ -1307,14 +1306,14 @@
     
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,ndim1,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,ndim1,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     ndim1=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1381,14 +1380,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1428,14 +1427,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1475,14 +1474,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1522,14 +1521,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1569,14 +1568,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)
@@ -1616,14 +1615,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,ndim1,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,ndim1,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     ndim1=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1690,14 +1689,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1737,14 +1736,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1784,14 +1783,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1831,14 +1830,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1878,14 +1877,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)
@@ -1925,14 +1924,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,ndim1,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,ndim1,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     ndim1=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -1999,14 +1998,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     
     dim_count=kpq(1,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -2046,14 +2045,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -2093,14 +2092,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -2140,14 +2139,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -2187,14 +2186,14 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer, intent(in)                    :: ndim,ndimf
-    integer                                :: inda,indb,indk,indl,&
-                                              spin,indapr,indbpr,&
-                                              indkpr,indlpr,spinpr
-    integer                                :: i,j,dim_count,dim_countf
-    real(d)                                :: ar_offdiag_ij
-    real(d), dimension(ndim), intent(in)   :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    integer, intent(in)                     :: ndim,ndimf
+    integer                                 :: inda,indb,indk,indl,&
+                                               spin,indapr,indbpr,&
+                                               indkpr,indlpr,spinpr
+    integer                                 :: i,j,dim_count,dim_countf
+    real(dp)                                :: ar_offdiag_ij
+    real(dp), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
 
     dim_count=kpq(1,0)+kpq(2,0)+kpq(3,0)+kpq(4,0)+kpq(5,0)
     dim_countf=kpqf(1,0)+kpqf(2,0)+kpqf(3,0)+kpqf(4,0)+kpqf(5,0)
@@ -2234,8 +2233,8 @@
 
     implicit none
 
-    integer :: k,a
-    real(d) :: tw1,tw2,tc1,tc2
+    integer  :: k,a
+    real(dp) :: tw1,tw2,tc1,tc2
 
 !-----------------------------------------------------------------------
 ! Calculate occ-virt part of the ground state density matrix iff this
@@ -2278,13 +2277,11 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
-    integer                                             :: nvirt
-    real(d), dimension(ndim), intent(in)                :: autvec
+    real(dp), dimension(ndim), intent(in)               :: autvec
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
@@ -2302,12 +2299,12 @@
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
+    call dmatrix_precalc_4indx(autvec,ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
+    call dmatrix_precalc_2indx(autvec,ndim,kpq,kpqf)
 
     return
 
@@ -2315,7 +2312,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_2indx(nvirt,autvec,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_2indx(autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2323,17 +2320,17 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+    integer                                :: ndim,a,apr,i,j,itmp,&
                                               itmp1,inda,indb,indk,indl,&
                                               spin,indapr,indbpr,indkpr,&
                                               indlpr,spinpr,b,b1,itmp2,k,&
                                               k1,kpr,j1
     integer, dimension(:,:), allocatable   :: iszeroa,iszerok
-    real(d), dimension(ndim), intent(in)   :: autvec
+    real(dp), dimension(ndim), intent(in)  :: autvec
 
-    real(d), dimension(:,:), allocatable   :: tau_2_2_1,tau_2_2_2,&
+    real(dp), dimension(:,:), allocatable  :: tau_2_2_1,tau_2_2_2,&
                                               tau_4_2_1,tau_4_2_2
-    real(d)                                :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
+    real(dp)                               :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
 
     call times(tw1,tc1)
 
@@ -2487,7 +2484,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_4indx(nvirt,autvec,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_4indx(autvec,ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2495,11 +2492,11 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                  :: nvirt,ndim,a,apr,k,&
+    integer                                  :: ndim,a,apr,k,&
                                                 kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
-    real(d), dimension(ndim), intent(in)     :: autvec
-    real(d)                                  :: tw1,tw2,tc1,tc2
+    real(dp), dimension(ndim), intent(in)    :: autvec
+    real(dp)                                 :: tw1,tw2,tc1,tc2
     character(len=60)                        :: filename
 
     call times(tw1,tc1)
@@ -2579,7 +2576,7 @@
 
     implicit none
 
-    real(d)                                  :: func,ftmp,curr
+    real(dp)                                 :: func,ftmp,curr
     integer                                  :: a,apr,k,kpr,itmp,b,b1,j,j1
 
 !-----------------------------------------------------------------------
@@ -2660,12 +2657,10 @@
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, intent(in)                                 :: ndim
-    integer                                             :: nvirt
 
 !-----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !-----------------------------------------------------------------------
-    nvirt=nbas-nocc
     allocate(pre_vv(nvirt,nvirt),pre_oo(nocc,nocc))
     pre_vv=0.0d0
     pre_oo=0.0d0
@@ -2683,12 +2678,12 @@
 ! Calculation of intermediate four-index terms, which may need to be 
 ! saved to file
 !-----------------------------------------------------------------------
-    call dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+    call dmatrix_precalc_4indx_noscreen(ndim,kpq,kpqf)
 
 !-----------------------------------------------------------------------    
 ! Calculation of two-index terms, which can always be held in memory
 !----------------------------------------------------------------------- 
-    call dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+    call dmatrix_precalc_2indx_noscreen(ndim,kpq,kpqf)
 
     return
 
@@ -2696,7 +2691,7 @@
 
 !#######################################################################
 
-    subroutine dmatrix_precalc_2indx_noscreen(nvirt,ndim,kpq,kpqf)
+    subroutine dmatrix_precalc_2indx_noscreen(ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2704,16 +2699,16 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                :: nvirt,ndim,a,apr,i,j,itmp,&
+    integer                                :: ndim,a,apr,i,j,itmp,&
                                               itmp1,inda,indb,indk,indl,&
                                               spin,indapr,indbpr,indkpr,&
                                               indlpr,spinpr,b,b1,itmp2,k,&
                                               k1,kpr,j1
     integer, dimension(:,:), allocatable   :: iszeroa,iszerok
 
-    real(d), dimension(:,:), allocatable   :: tau_2_2_1,tau_2_2_2,&
+    real(dp), dimension(:,:), allocatable  :: tau_2_2_1,tau_2_2_2,&
                                               tau_4_2_1,tau_4_2_2
-    real(d)                                :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
+    real(dp)                               :: tw1,tw2,tc1,tc2,ftmp1,ftmp2
 
     call times(tw1,tc1)
 
@@ -2865,7 +2860,7 @@
 
 !#######################################################################
 
-  subroutine dmatrix_precalc_4indx_noscreen(nvirt,ndim,kpq,kpqf)
+  subroutine dmatrix_precalc_4indx_noscreen(ndim,kpq,kpqf)
 
     use timingmod
 
@@ -2873,10 +2868,10 @@
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq,kpqf
 
-    integer                                  :: nvirt,ndim,a,apr,k,&
+    integer                                  :: ndim,a,apr,k,&
                                                 kpr,b,j
     integer, dimension(:,:), allocatable     :: iszero
-    real(d)                                  :: tw1,tw2,tc1,tc2
+    real(dp)                                 :: tw1,tw2,tc1,tc2
     character(len=60)                        :: filename
 
     call times(tw1,tc1)
@@ -2963,8 +2958,8 @@
 ! number of saved els to a caller.
 
     integer, intent(in) :: ndim,ndimf
-    real(d), dimension(ndim), intent(in) :: autvec
-    real(d), dimension(ndimf), intent(out) :: travec
+    real(dp), dimension(ndim), intent(in) :: autvec
+    real(dp), dimension(ndimf), intent(out) :: travec
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     
@@ -2972,9 +2967,9 @@
     integer :: indapr,indbpr,indkpr,indlpr,spinpr 
     
     character(10) :: name
-    integer :: i,j,nlim,rec_count,dim_count,ndim1,dim_countf,ndim1f
-    real(d) :: ar_offdiag_ij
-    integer :: k,k1,b,b1 
+    integer  :: i,j,nlim,rec_count,dim_count,ndim1,dim_countf,ndim1f
+    real(dp) :: ar_offdiag_ij
+    integer  :: k,k1,b,b1 
     
     write(ilog,*) "Writing the travec vector of ADC-DIPOLE matrix INITIAL-STATE product "
 
@@ -3043,8 +3038,8 @@
     integer                                             :: indapr,indbpr,indkpr,&
                                                            indlpr,spinpr
     integer                                             :: i,j,ndim1,ndim1f
-    real(d), dimension(ndimf,ndim), intent(out)         :: ar_offdiagd
-    real(d)                                             :: tw1,tw2,tc1,tc2
+    real(dp), dimension(ndimf,ndim), intent(out)        :: ar_offdiagd
+    real(dp)                                            :: tw1,tw2,tc1,tc2
 
 !----------------------------------------------------------------------
 ! Begin timing
@@ -3099,7 +3094,7 @@
   integer, intent(in) :: ndimf
   integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
   integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
-  real(d), dimension(ndimf,ndim), intent(out) :: ar_offdiagd
+  real(dp), dimension(ndimf,ndim), intent(out) :: ar_offdiagd
   
   integer :: inda,indb,indk,indl,spin
   integer :: indapr,indbpr,indkpr,indlpr,spinpr 
@@ -3107,7 +3102,7 @@
   integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
   integer :: lim1i,lim2i,lim1j,lim2j
 
-  ar_offdiagd(:,:)=0._d 
+  ar_offdiagd(:,:)=0._dp
 
 !!$ Full diagonalization. Filling the lower half of the matrix
 
@@ -4012,15 +4007,15 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiagd
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiagd
     
     integer :: inda,indb,indk,indl,spin
     integer :: indapr,indbpr,indkpr,indlpr,spinpr 
     
     integer :: i,j,dim_count,ndim1
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiagd
+    integer, dimension(buf_size)  :: oi,oj
+    real(dp), dimension(buf_size) :: file_offdiagd
    
     integer :: lim1i,lim2i,lim1j,lim2j
  
@@ -4063,10 +4058,10 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     
     integer, intent(in) :: ndim1
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1), intent(out) :: ar_diagd
+    real(dp), dimension(ndim1), intent(out) :: ar_diagd
     
-    integer :: inda,indb,indk,indl,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indk,indl,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,lim1,lim2
     
@@ -4104,19 +4099,19 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim,ndim), intent(out) :: ar_offdiagd
+    real(dp), dimension(ndim,ndim), intent(out) :: ar_offdiagd
     
     integer :: inda,indb,indk,indl,spin
     integer :: indapr,indbpr,indkpr,indlpr,spinpr 
     
     integer :: i,j,dim_count,ndim1
     
-    integer, dimension(buf_size) :: oi,oj
-    real(d), dimension(buf_size) :: file_offdiagd
+    integer, dimension(buf_size)  :: oi,oj
+    real(dp), dimension(buf_size) :: file_offdiagd
    
     integer :: lim1i,lim2i,lim1j,lim2j
  
-    ar_offdiagd(:,:)=0._d
+    ar_offdiagd(:,:)=0._dp
     
 !!$ Full diagonalization. 
 
@@ -4816,10 +4811,10 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   
     integer, intent(in) :: ndim1,ndim2
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-    real(d), dimension(ndim1+ndim2), intent(out) :: ar_diagd
+    real(dp), dimension(ndim1+ndim2), intent(out) :: ar_diagd
     
-    integer :: inda,indb,indk,indl,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indk,indl,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     integer :: i,lim1,lim2
     
@@ -5006,23 +5001,23 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     integer, dimension(7,0:nBas**2*nOcc**2) :: kpqf
     integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
     
-    integer                            :: ndimf
-    integer                            :: ndim
-    integer*8                          :: count
-    integer                            :: nbuf
-    integer                            :: unit_dip
-    integer                            :: inda,indb,indk,indl,&
-                                          spin
-    integer                            :: indapr,indbpr,indkpr,indlpr,&
-                                          spinpr
-    integer                            :: i,j,nlim,dim_count,dim_countf,&
-                                          ndim1,ndim1f
-    integer                            :: lim1i,lim2i,lim1j,lim2j
-    integer                            :: rec_count
-    integer, dimension(:), allocatable :: oi,oj
-    real(d), dimension(:), allocatable :: file_offdiagd
-    real(d)                            :: ar_offdiagd_ij
-    character(len=60)                  :: filename
+    integer                             :: ndimf
+    integer                             :: ndim
+    integer*8                           :: count
+    integer                             :: nbuf
+    integer                             :: unit_dip
+    integer                             :: inda,indb,indk,indl,&
+                                           spin
+    integer                             :: indapr,indbpr,indkpr,indlpr,&
+                                           spinpr
+    integer                             :: i,j,nlim,dim_count,dim_countf,&
+                                           ndim1,ndim1f
+    integer                             :: lim1i,lim2i,lim1j,lim2j
+    integer                             :: rec_count
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp), dimension(:), allocatable :: file_offdiagd
+    real(dp)                            :: ar_offdiagd_ij
+    character(len=60)                   :: filename
 
 !-----------------------------------------------------------------------
 ! Allocation and initialisation
@@ -5151,8 +5146,8 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
     integer                                 :: lim1i,lim2i,lim1j,lim2j
     integer                                 :: rec_count
     integer, dimension(:), allocatable      :: oi,oj
-    real(d), dimension(:), allocatable      :: file_offdiagd
-    real(d)                                 :: ar_offdiagd_ij
+    real(dp), dimension(:), allocatable     :: file_offdiagd
+    real(dp)                                :: ar_offdiagd_ij
     character(len=60)                       :: filename
 
 !-----------------------------------------------------------------------
@@ -5274,9 +5269,9 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
 
 
   integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
@@ -5286,8 +5281,8 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer :: nlim1 , nlim2 , a , k
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -5315,7 +5310,7 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
        a=kpq(5,j)
 
      ar_offdiagd_ij  =  dpl(a,k) + F0_ph(a,k) 
-     ar_offdiagd_ij  =  -sqrt(2._d) * ar_offdiagd_ij
+     ar_offdiagd_ij  =  -sqrt(2._dp) * ar_offdiagd_ij
 
              !Culling  small matrix elements
              if (abs(ar_offdiagd_ij) .gt. minc) then
@@ -5415,17 +5410,17 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
 
 
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -5530,17 +5525,17 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
 
 
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -5668,18 +5663,18 @@ ar_offdiagd(i,j) = ar_offdiagd(i,j) + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indk
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
   
   integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
   integer :: lim1i,lim2i,lim1j,lim2j
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
-  real(d) :: tw1,tw2,tc1,tc2
+  real(dp) :: tw1,tw2,tc1,tc2
 
   call times(tw1,tc1)
 
@@ -6938,9 +6933,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
   
   integer :: i,j,nlim,dim_count,dim_countf,ndim1,ndim1f
   integer :: lim1i,lim2i,lim1j,lim2j
@@ -6948,8 +6943,8 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   integer :: nlim1 , nlim2 , a , k , b , jmuto
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -6980,7 +6975,7 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
      ar_offdiagd_ij  =  dpl(a,k) + F0_ph(a,k) + FA_ph(a,k) + FB_ph(a,k) + FC_ph(a,k)
      ar_offdiagd_ij  =  ar_offdiagd_ij + F21_ph(a,k) + F22_ph(a,k) + F23_ph(a,k) + F24_ph(a,k) + F25_ph(a,k)
      ar_offdiagd_ij  =  ar_offdiagd_ij + F26_ph(a,k) + F27_ph(a,k) + F28_ph(a,k) + F29_ph(a,k) + F210_ph(a,k)
-     ar_offdiagd_ij  =  -sqrt(2._d) * ar_offdiagd_ij
+     ar_offdiagd_ij  =  -sqrt(2._dp) * ar_offdiagd_ij
 
              !Culling  small matrix elements
              if (abs(ar_offdiagd_ij) .gt. minc) then
@@ -8337,16 +8332,16 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
   
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -9106,16 +9101,16 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   integer, intent(out)   :: nbuf
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij  
   
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
 
   integer :: rec_count
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   count=0
   rec_count=0
@@ -9906,9 +9901,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   real*8, dimension(ndim) , intent(out) :: ar_diag
   INTEGER, INTENT(IN) :: UNIT_DIP
 
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_diagd_ij, Dground_0
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_diagd_ij, Dground_0
 
 
   integer :: i,j,nlim,dim_count,ndim1
@@ -9957,9 +9952,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   real*8, dimension( ndim + 1 ) , intent(out) :: ar_diag
   INTEGER, INTENT(IN) :: UNIT_DIP
 
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_diagd_ij , Dground_0  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_diagd_ij , Dground_0  
 
 
   integer :: i,j,nlim,dim_count,ndim1
@@ -10029,9 +10024,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   real*8, dimension(ndim), intent(out) :: ar_offdiag
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij, Dground_0, Dground_2  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij, Dground_0, Dground_2  
   
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
@@ -10210,9 +10205,9 @@ ar_offdiagd_ij = ar_offdiagd_ij + D2_12_ph_2p2h(inda,indk,indapr,indbpr,indkpr)
   real*8, dimension( ndim + 1 ), intent(out) :: ar_offdiag
   integer, intent(in) :: UNIT_DIP
   
-  integer :: inda,indb,indk,indl,spin
-  integer :: indapr,indbpr,indkpr,indlpr,spinpr 
-  real(d) :: ar_offdiagd_ij, Dground_0, Dground_2  
+  integer  :: inda,indb,indk,indl,spin
+  integer  :: indapr,indbpr,indkpr,indlpr,spinpr 
+  real(dp) :: ar_offdiagd_ij, Dground_0, Dground_2  
   
   integer :: i,j,nlim,dim_count,ndim1
   integer :: lim1i,lim2i,lim1j,lim2j
@@ -10493,13 +10488,13 @@ subroutine get_offdiag_adc2_DIPOLE_save(ndim,kpq,nbuf,count,chr)
   integer :: indapr,indbpr,indkpr,indlpr,spinpr 
   
   character(13) :: name
-  integer :: rec_count
-  integer :: i,j,nlim,dim_count,ndim1,unt
-  integer :: lim1i, lim2i, lim1j, lim2j
-  real(d) :: ar_offdiag_ij
+  integer  :: rec_count
+  integer  :: i,j,nlim,dim_count,ndim1,unt
+  integer  :: lim1i, lim2i, lim1j, lim2j
+  real(dp) :: ar_offdiag_ij
   
-  integer, dimension(buf_size) :: oi,oj
-  real(d), dimension(buf_size) :: file_offdiagd
+  integer, dimension(buf_size)  :: oi,oj
+  real(dp), dimension(buf_size) :: file_offdiagd
 
   name="SCRATCH/hmlt.off"//chr
   unt=22
@@ -11113,12 +11108,12 @@ ar_offdiag_ij = 0.
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     character(1), intent(in) :: chr
    
-    integer :: inda,indb,indj,indk,indl,spin
-    real(d) ::ea,eb,ej,ek,temp
+    integer  :: inda,indb,indj,indk,indl,spin
+    real(dp) ::ea,eb,ej,ek,temp
     
     character(13) :: name
     integer :: i,ktype,dim_count,lim1,lim2,unt,a,b,c,d1
-    real(d), dimension(ndim1+ndim2) :: ar_diagd
+    real(dp), dimension(ndim1+ndim2) :: ar_diagd
      
     ktype=1
     name="SCRATCH/hmlt.dia"//chr 
@@ -11251,25 +11246,25 @@ ar_offdiag_ij = 0.
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    integer, intent(in)          :: ndimf,ndim
-    integer*8, intent(out)       :: count
-    integer, intent(out)         :: nbuf
-    integer                      :: inda,indb,indk,indl,spin,indapr,&
-                                    indbpr,indkpr,indlpr,spinpr   
-    integer                      :: i,j,nlim,dim_count,dim_countf,&
-                                    ndim1,ndim1f
-    integer                      :: lim1i,lim2i,lim1j,lim2j
-    integer                      :: rec_count
-    integer, dimension(buf_size) :: oi,oj
-    real(d)                      :: ar_offdiag_ij
-    real(d), dimension(buf_size) :: file_offdiag
-    character(len=60)            :: filename
+    integer, intent(in)           :: ndimf,ndim
+    integer*8, intent(out)        :: count
+    integer, intent(out)          :: nbuf
+    integer                       :: inda,indb,indk,indl,spin,indapr,&
+                                     indbpr,indkpr,indlpr,spinpr   
+    integer                       :: i,j,nlim,dim_count,dim_countf,&
+                                     ndim1,ndim1f
+    integer                       :: lim1i,lim2i,lim1j,lim2j
+    integer                       :: rec_count
+    integer, dimension(buf_size)  :: oi,oj
+    real(dp)                      :: ar_offdiag_ij
+    real(dp), dimension(buf_size) :: file_offdiag
+    character(len=60)             :: filename
 
     ! NEW
-    integer                      :: idpl
-    integer                      :: nvirt,itmp,itmp1,dim
-    real(d)                      :: func
-    real(d)                      :: tw1,tw2,tc1,tc2
+    integer                       :: idpl
+    integer                       :: itmp,itmp1,dim
+    real(dp)                      :: func
+    real(dp)                      :: tw1,tw2,tc1,tc2
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -11282,8 +11277,6 @@ ar_offdiag_ij = 0.
     oi(:)=0
     oj(:)=0
     file_offdiag(:)=0.d0
-
-    nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
 ! Open the dipole matrix file
@@ -12425,23 +12418,23 @@ ar_offdiag_ij = 0.
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     
-    integer, intent(in)                :: ndimf,ndim
-    integer*8, intent(out)             :: count
-    integer, intent(out)               :: nbuf
-    integer                            :: inda,indb,indk,indl,spin,&
-                                          indapr,indbpr,indkpr,&
-                                          indlpr,spinpr
-    integer                            :: i,j,k,nlim,dim_count,&
-                                          dim_countf,ndim1,ndim1f
-    integer                            :: lim1i,lim2i,lim1j,lim2j
-    integer                            :: rec_count
-    integer, dimension(:), allocatable :: oi,oj
-    real(d)                            :: ar_offdiag_ij
-    real(d), dimension(:), allocatable :: file_offdiag
-    character(len=60)                  :: filename
+    integer, intent(in)                 :: ndimf,ndim
+    integer*8, intent(out)              :: count
+    integer, intent(out)                :: nbuf
+    integer                             :: inda,indb,indk,indl,spin,&
+                                           indapr,indbpr,indkpr,&
+                                           indlpr,spinpr
+    integer                             :: i,j,k,nlim,dim_count,&
+                                           dim_countf,ndim1,ndim1f
+    integer                             :: lim1i,lim2i,lim1j,lim2j
+    integer                             :: rec_count
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp)                            :: ar_offdiag_ij
+    real(dp), dimension(:), allocatable :: file_offdiag
+    character(len=60)                   :: filename
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
+    integer                                       :: itmp,itmp1,dim
     integer                                       :: tid
     integer, dimension(:), allocatable            :: dplunit    
     integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
@@ -12451,9 +12444,9 @@ ar_offdiag_ij = 0.
     integer*8                                     :: nonzero
     integer                                       :: n,nprev
     integer, dimension(:), allocatable            :: nsaved
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
-    real(d)                                       :: func
-    real(d)                                       :: tw1,tw2,tc1,tc2
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
+    real(dp)                                      :: func
+    real(dp)                                      :: tw1,tw2,tc1,tc2
     character(len=120), dimension(:), allocatable :: dplfile
 
 !-----------------------------------------------------------------------
@@ -12496,7 +12489,6 @@ ar_offdiag_ij = 0.
     oi_omp=0
     oj_omp=0
     file_offdiag_omp=0.0d0
-    nvirt=nbas-nocc
     
 !-----------------------------------------------------------------------
 ! Open the working dipole files
@@ -14558,23 +14550,23 @@ ar_offdiag_ij = 0.
 
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    integer, intent(in)                :: ndim
-    integer*8, intent(out)             :: count
-    integer, intent(out)               :: nbuf
-    integer                            :: inda,indb,indk,indl,spin,&
-                                          indapr,indbpr,indkpr,&
-                                          indlpr,spinpr
-    integer                            :: i,j,k,nlim,dim_count,&
-                                          dim_countf,ndim1,ndim1f
-    integer                            :: lim1i,lim2i,lim1j,lim2j
-    integer                            :: rec_count
-    integer, dimension(:), allocatable :: oi,oj
-    real(d)                            :: ar_offdiag_ij,ar_ii
-    real(d), dimension(:), allocatable :: file_offdiag
-    character(len=60)                  :: filename
+    integer, intent(in)                 :: ndim
+    integer*8, intent(out)              :: count
+    integer, intent(out)                :: nbuf
+    integer                             :: inda,indb,indk,indl,spin,&
+                                           indapr,indbpr,indkpr,&
+                                           indlpr,spinpr
+    integer                             :: i,j,k,nlim,dim_count,&
+                                           dim_countf,ndim1,ndim1f
+    integer                             :: lim1i,lim2i,lim1j,lim2j
+    integer                             :: rec_count
+    integer, dimension(:), allocatable  :: oi,oj
+    real(dp)                            :: ar_offdiag_ij,ar_ii
+    real(dp), dimension(:), allocatable :: file_offdiag
+    character(len=60)                   :: filename
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
+    integer                                       :: itmp,itmp1,dim
     integer                                       :: tid
     integer, dimension(:), allocatable            :: dplunit    
     integer, dimension(:,:), allocatable          :: oi_omp,oj_omp
@@ -14584,10 +14576,10 @@ ar_offdiag_ij = 0.
     integer*8                                     :: nonzero
     integer                                       :: n,nprev
     integer, dimension(:), allocatable            :: nsaved
-    real(d), dimension(:), allocatable            :: diag
-    real(d), dimension(:,:), allocatable          :: file_offdiag_omp
-    real(d)                                       :: func
-    real(d)                                       :: tw1,tw2,tc1,tc2
+    real(dp), dimension(:), allocatable           :: diag
+    real(dp), dimension(:,:), allocatable         :: file_offdiag_omp
+    real(dp)                                      :: func
+    real(dp)                                      :: tw1,tw2,tc1,tc2
     character(len=120), dimension(:), allocatable :: dplfile
 
 !-----------------------------------------------------------------------
@@ -14630,7 +14622,6 @@ ar_offdiag_ij = 0.
     oi_omp=0
     oj_omp=0
     file_offdiag_omp=0.0d0
-    nvirt=nbas-nocc
 
 !-----------------------------------------------------------------------
 ! Open the working dipole files
@@ -15998,14 +15989,12 @@ ar_offdiag_ij = 0.
     integer                                             :: indapr,indbpr,indkpr,&
                                                            indlpr,spinpr
     integer                                             :: i,j,ndim1,ndim1f
-    real(d), dimension(ndimf,ndim), intent(out)         :: arr
-    real(d)                                             :: tw1,tw2,tc1,tc2
+    real(dp), dimension(ndimf,ndim), intent(out)        :: arr
+    real(dp)                                            :: tw1,tw2,tc1,tc2
 
     integer                                       :: idpl
-    integer                                       :: nvirt,itmp,itmp1,dim
-    real(d)                                       :: func
-    
-    nvirt=nbas-nocc
+    integer                                       :: itmp,itmp1,dim
+    real(dp)                                      :: func
     
 !----------------------------------------------------------------------
 ! Begin timing

@@ -37,8 +37,8 @@
 
       implicit none
 
-      integer            :: i
-      real(d), parameter :: tol=-5.0d0
+      integer             :: i
+      real(dp), parameter :: tol=-5.0d0
 
 !-----------------------------------------------------------------------
 ! Determine the number of core orbitals and their indices
@@ -65,8 +65,8 @@
 
       implicit none
 
-      integer            :: i,ncont
-      real(d), parameter :: tol=1e-15_d
+      integer             :: i,ncont
+      real(dp), parameter :: tol=1e-15_dp
 
 !-----------------------------------------------------------------------
 ! Determine the index of the 'continuum' orbital

@@ -5,15 +5,13 @@
 
   module dyson_io
 
+    use constants
+    
     save
 
-    private :: dp
+    real(dp), dimension(10,10) :: ftransmat
     
-    ! Annoyingly, the gamess_internal module contains a variable
-    ! named 'd', so we will use 'dp' here instead
-    integer, parameter :: dp=selected_real_kind(8)
-
-    contains
+  contains
 
 !#######################################################################
       
@@ -25,11 +23,11 @@
 
         implicit none
 
-        integer             :: i,j,p1,p2,np
-        real(dp)            :: alpha
-        real(dp), parameter :: zettol=1e-15_dp
-        logical             :: ldir
-        type(gam_structure) :: gam
+        integer                    :: i,j,p1,p2,np
+        real(dp)                   :: alpha
+        real(dp), parameter        :: zettol=1e-15_dp
+        logical                    :: ldir
+        type(gam_structure)        :: gam
 
 !-----------------------------------------------------------------------
 ! Determine where the 'continuum' orbital is centred
@@ -120,14 +118,16 @@
 
         implicit none
 
-        integer, intent(in)          :: n
-        integer                      :: imolden,i,j,k,iang,p1,p2,np,&
-                                        count,pk,norb,atmcnt,irmfunc
-        real(dp), dimension(nbas)    :: dyscoeff
-        real(dp), dimension(nbas_ao) :: dyscoeff_ao
-        real(dp)                     :: nfac,alpha,coeff
-        character(len=60)            :: filename
-        type(gam_structure)          :: gam
+        integer, intent(in)              :: n
+        integer                          :: imolden,i,j,k,iang,p1,p2,&
+                                            np,count,pk,norb,atmcnt,&
+                                            irmfunc
+        real(dp), dimension(nbas)        :: dyscoeff
+        real(dp), dimension(nbas_ao)     :: dyscoeff_ao
+        real(dp)                         :: nfac,alpha,coeff
+        character(len=60)                :: filename
+        character(len=1), dimension(0:3) :: shlbl
+        type(gam_structure)              :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels
@@ -310,15 +310,16 @@
 
         implicit none
 
-        integer, intent(in)               :: n
-        integer                           :: iezd,i,j,k,m,pk,iang,p1,p2,&
-                                             np,count,norb
-        real(dp), dimension(nbas)         :: dyscoeff
-        real(dp), dimension(nbas_ao)      :: dyscoeff_ao
-        real(dp)                          :: alpha,dnorm,si,sf,coeff,de
-        character(len=60)                 :: filename
-        character(len=60), dimension(2)   :: comment
-        type(gam_structure)               :: gam
+        integer, intent(in)              :: n
+        integer                          :: iezd,i,j,k,m,pk,iang,p1,p2,&
+                                            np,count,norb
+        real(dp), dimension(nbas)        :: dyscoeff
+        real(dp), dimension(nbas_ao)     :: dyscoeff_ao
+        real(dp)                         :: alpha,dnorm,si,sf,coeff,de
+        character(len=60)                :: filename
+        character(len=60), dimension(2)  :: comment
+        character(len=1), dimension(0:3) :: shlbl
+        type(gam_structure)              :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels

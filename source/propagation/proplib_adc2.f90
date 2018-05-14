@@ -11,13 +11,14 @@ module propagate_adc2
   use channels
   use iomod
   use timingmod
-
+  use gamess_internal
+  
   save
 
-  integer                               :: matdim
-  integer*8                             :: noffdiag
-  integer                               :: iflux
-  complex(d), dimension(:), allocatable :: psi
+  integer                                :: matdim
+  integer*8                              :: noffdiag
+  integer                                :: iflux
+  complex(dp), dimension(:), allocatable :: psi
   
 contains
 
@@ -33,9 +34,10 @@ contains
 !                  is taken to be the last basis function in the set.
 !#######################################################################
   
-  subroutine propagate_laser_adc2(ndimf,noffdf,kpqf)
+  subroutine propagate_laser_adc2(gam,ndimf,noffdf,kpqf)
 
     use tdsemod
+    use nto
     
     implicit none
 
@@ -43,8 +45,9 @@ contains
     integer*8, intent(in)                     :: noffdf
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: tw1,tw2,tc1,tc2
-
+    real(dp)                                  :: tw1,tw2,tc1,tc2
+    type(gam_structure)                       :: gam
+    
 !----------------------------------------------------------------------
 ! Start timing
 !----------------------------------------------------------------------
@@ -81,11 +84,17 @@ contains
 !----------------------------------------------------------------------
     if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
          'SCRATCH/hmlt.offc',ndimf,noffdf)
+
+!----------------------------------------------------------------------
+! Precalculation of intermediate terms entering into the equations
+! for the time-dependent NTOs
+!----------------------------------------------------------------------
+    if (lnto) call tdadc2_nto_init(gam%nbasis,tout)
     
 !----------------------------------------------------------------------
 ! Peform the wavepacket propagation
 !----------------------------------------------------------------------
-    call propagate_wavepacket(kpqf)
+    call propagate_wavepacket(gam,kpqf)
     
 !----------------------------------------------------------------------
 ! Finalise and deallocate arrays
@@ -265,9 +274,9 @@ contains
 
     implicit none
     
-    integer              :: unit,itmp,i
-    real(d)              :: ftmp
-    real(d), allocatable :: vec(:)
+    integer               :: unit,itmp,i
+    real(dp)              :: ftmp
+    real(dp), allocatable :: vec(:)
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -321,7 +330,7 @@ contains
 
     integer*8 :: maxrecl,reqmem
     integer   :: nthreads
-    real(d)   :: memavail
+    real(dp)  :: memavail
     
 !----------------------------------------------------------------------
 ! Available memory
@@ -378,19 +387,20 @@ contains
     
 !#######################################################################
 
-  subroutine propagate_wavepacket(kpqf)
+  subroutine propagate_wavepacket(gam,kpqf)
     
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
+    type(gam_structure)                       :: gam
 
     if (lcap) then
        ! Propagation using the short iterative Lanczos-Arnoldi
        ! algorithm
-        call propagate_wavepacket_csil(kpqf)
+        call propagate_wavepacket_csil(gam,kpqf)
     else
        ! Propagation using the short iterative Lanczos algorithm
-       call propagate_wavepacket_sil(kpqf)
+       call propagate_wavepacket_sil(gam,kpqf)
     endif
        
     return
@@ -399,31 +409,34 @@ contains
 
 !#######################################################################
 
-  subroutine propagate_wavepacket_sil(kpqf)
+  subroutine propagate_wavepacket_sil(gam,kpqf)
 
     use tdsemod
     use sillib
-    
+    use nto
+
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
-    
+    real(dp)                                  :: norm,flux
+    real(dp)                                  :: exnorm
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
+    type(gam_structure)                       :: gam
+
     ! SIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
-                                                 truestepsize,time,&
+    real(dp)                                  :: intperiod,step,&
+                                                 truestep,time,&
                                                  inttime
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2    
-    complex(d), dimension(:,:), allocatable   :: krylov
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2    
+    complex(dp), dimension(:,:), allocatable  :: krylov
     logical(kind=4)                           :: restart,relax,stdform
 
 !----------------------------------------------------------------------
@@ -489,7 +502,7 @@ contains
 100    continue
 
        ! Update the required stepsize
-       stepsize=intperiod-inttime
+       step=intperiod-inttime
 
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        ! NOTE THAT IN THIS MODULE MATDIM = NO. ISs + 1
@@ -509,8 +522,8 @@ contains
        if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
        
           ! Take one step using the SIL algorithm
-          call silstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,proptol,relax,&
-               restart,stdform,steps,krylov,truestepsize,trueorder,&
+          call silstep(psi,dtpsi,matdim,noffdiag,step,kdim,proptol,relax,&
+               restart,stdform,steps,krylov,truestep,trueorder,&
                errorcode,time,matxvec_treal_laser,eigenvector,eigenval,&
                diagonal,offdg2,offdiag)
           
@@ -521,10 +534,10 @@ contains
           endif
           
           ! Updtate the propagation time
-          time=time+truestepsize
+          time=time+truestep
           
           ! Check whether the integration is complete
-          inttime=inttime+truestepsize
+          inttime=inttime+truestep
           if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
 
        else
@@ -534,7 +547,16 @@ contains
           time=time+intperiod
           
        endif
-          
+
+       ! TD-NTO analysis
+       if (lnto) then
+          exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
+               psi(1:matdim-1))))
+          if (exnorm.gt.1e-4_dp) &
+               call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
+               i*intperiod)
+       endif
+
     enddo
 
 !----------------------------------------------------------------------
@@ -561,33 +583,36 @@ contains
 
 !######################################################################
 
-  subroutine propagate_wavepacket_csil(kpqf)
+  subroutine propagate_wavepacket_csil(gam,kpqf)
 
     use tdsemod
     use csillib
     use fluxmod
+    use nto
     
     implicit none
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
-    
+    real(dp)                                  :: norm,flux
+    real(dp)                                  :: exnorm
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
+    type(gam_structure)                       :: gam
+
     ! CSIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
-                                                 truestepsize,time,&
+    real(dp)                                  :: intperiod,step,&
+                                                 truestep,time,&
                                                  inttime,macheps
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2
-    complex(d), dimension(:,:), allocatable   :: krylov
-    complex(d), dimension(0:kdim,0:kdim)      :: hessenberg,eigvec,&
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2
+    complex(dp), dimension(:,:), allocatable  :: krylov
+    complex(dp), dimension(0:kdim,0:kdim)     :: hessenberg,eigvec,&
                                                  auxmat
     logical(kind=4)                           :: restart,relax,&
                                                  stdform,olderrcri
@@ -651,7 +676,7 @@ contains
 100    continue
 
        ! Update the required stepsize
-       stepsize=intperiod-inttime
+       step=intperiod-inttime
 
        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
        ! NOTE THAT IN THIS MODULE MATDIM = NO. ISs + 1
@@ -672,9 +697,9 @@ contains
        if (real(sqrt(dot_product(dtpsi,dtpsi))).gt.tinier) then
        
           ! Take one step using the SIL algorithm
-          call csilstep(psi,dtpsi,matdim,noffdiag,stepsize,kdim,&
+          call csilstep(psi,dtpsi,matdim,noffdiag,step,kdim,&
                proptol,relax,restart,stdform,olderrcri,steps,&
-               truestepsize,trueorder,errorcode,time,macheps,&
+               truestep,trueorder,errorcode,time,macheps,&
                matxvec_treal_laser,hessenberg,eigvec,krylov,&
                auxmat)
           
@@ -685,10 +710,10 @@ contains
           endif
           
           ! Updtate the propagation time
-          time=time+truestepsize
+          time=time+truestep
           
           ! Check whether the integration is complete
-          inttime=inttime+truestepsize
+          inttime=inttime+truestep
           if (abs(intperiod-inttime).gt.abs(tiny*intperiod)) goto 100
 
        else
@@ -697,6 +722,15 @@ contains
           ! then skip the integration for this timestep
           time=time+intperiod
           
+       endif
+
+       ! TD-NTO analysis
+       if (lnto) then
+          exnorm=real(sqrt(dot_product(psi(1:matdim-1),&
+               psi(1:matdim-1))))
+          if (exnorm.gt.1e-4_dp) &
+               call tdadc2_nto(gam,psi(1:matdim-1),matdim-1,kpqf,&
+               i*intperiod)
        endif
        
     enddo
@@ -733,7 +767,7 @@ contains
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: t,norm,flux
+    real(dp)                                  :: t,norm,flux
 
     write(ilog,'(70a)') ('+',k=1,70)
 
@@ -768,8 +802,8 @@ contains
     integer, dimension(:), allocatable        :: indx
     integer                                   :: k,ilbl
     integer                                   :: kpqdim2
-    real(d), dimension(:), allocatable        :: abscoeff
-    real(d), parameter                        :: coefftol=0.01d0
+    real(dp), dimension(:), allocatable       :: abscoeff
+    real(dp), parameter                       :: coefftol=0.01d0
     character(len=2)                          :: spincase
 
     kpqdim2=nbas**2*4*nocc**2+1
@@ -851,6 +885,7 @@ contains
   subroutine finalise
 
     use tdsemod
+    use nto
     
     implicit none
 
@@ -859,6 +894,7 @@ contains
 !----------------------------------------------------------------------
     deallocate(psi)
     if (hincore) call deallocate_hamiltonian
+    if (lnto) call tdadc2_nto_finalise
     
     return
     

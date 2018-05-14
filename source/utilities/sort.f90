@@ -7,13 +7,13 @@ program main
   implicit none
   
     integer :: ndim,i
-    real(d), dimension(:), allocatable:: arrin
+    real(dp), dimension(:), allocatable:: arrin
     integer, dimension(:), allocatable :: indx 
     
     ndim=8
     
     allocate(arrin(8),indx(8))
-    arrin(1:8)=(/ 4._d,7._d,1._d,5._d,12._d,105._d,22._d,0.5_d /)
+    arrin(1:8)=(/ 4._dp,7._dp,1._dp,5._dp,12._dp,105._dp,22._dp,0.5_dp /)
     call indexx('D',ndim,arrin,indx)
     
     write(ilog,*) arrin(:)
@@ -28,11 +28,11 @@ program main
 
     character(1), intent(in) :: order
     integer, intent(in) :: ndim
-    real(d), dimension(ndim), intent(in) :: arrin
+    real(dp), dimension(ndim), intent(in) :: arrin
     integer, dimension(ndim), intent(inout) :: indx
     
     integer :: i,l,ir,indxt,j
-    real(d) :: q
+    real(dp) :: q
 !!$ The subroutine is taken from the NR p233, employs heapsort.
 
     do i= 1,ndim

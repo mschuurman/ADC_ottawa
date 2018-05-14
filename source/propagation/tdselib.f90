@@ -9,10 +9,10 @@ module tdsemod
   
   save
 
-  integer                            :: mxbl,nrecord,nmult
-  integer, dimension(:), allocatable :: iindx,jindx
-  real(d), dimension(:), allocatable :: hon,hoff
-  logical                            :: hincore
+  integer                             :: mxbl,nrecord,nmult
+  integer, dimension(:), allocatable  :: iindx,jindx
+  real(dp), dimension(:), allocatable :: hon,hoff
+  logical                             :: hincore
   
 contains
 
@@ -27,12 +27,12 @@ contains
     
     implicit none
 
-    integer, intent(in)                :: matdim
-    integer*8, intent(in)              :: noffdiag
-    integer                            :: unit,count,k,nlim
-    integer, dimension(:), allocatable :: itmp,jtmp
-    real(d), dimension(:), allocatable :: ftmp
-    character(len=*), intent(in)       :: fileon,fileoff
+    integer, intent(in)                 :: matdim
+    integer*8, intent(in)               :: noffdiag
+    integer                             :: unit,count,k,nlim
+    integer, dimension(:), allocatable  :: itmp,jtmp
+    real(dp), dimension(:), allocatable :: ftmp
+    character(len=*), intent(in)        :: fileon,fileoff
 
 !-----------------------------------------------------------------------
 ! Get the next free file unit
@@ -117,9 +117,9 @@ contains
   
     implicit none
 
-    integer                    :: matdim
-    integer*8                  :: noffdiag
-    real(d), dimension(matdim) :: v1,v2
+    integer                     :: matdim
+    integer*8                   :: noffdiag
+    real(dp), dimension(matdim) :: v1,v2
 
     if (hincore) then
        call matxvec_incore(matdim,noffdiag,v1,v2)
@@ -153,8 +153,8 @@ contains
                                               ion,i,j,k,l,nthreads,tid
     integer*8                              :: noffdiag,npt
     integer*8, dimension(:,:), allocatable :: irange
-    real(d), dimension(matdim)             :: v1,v2
-    real(d), dimension(:,:), allocatable   :: tmpvec
+    real(dp), dimension(matdim)            :: v1,v2
+    real(dp), dimension(:,:), allocatable  :: tmpvec
     character(len=70)                      :: fileon,fileoff
 
 !-----------------------------------------------------------------------
@@ -239,13 +239,13 @@ contains
   
     implicit none
 
-    integer                            :: matdim,maxbl,nrec,nlim,&
-                                          ion,ioff,k,l
-    integer*8                          :: noffdiag
-    integer, dimension(:), allocatable :: indxi,indxj
-    real(d), dimension(matdim)         :: v1,v2
-    real(d), dimension(:), allocatable :: hii,hij
-    character(len=70)                  :: fileon,fileoff
+    integer                             :: matdim,maxbl,nrec,nlim,&
+                                           ion,ioff,k,l
+    integer*8                           :: noffdiag
+    integer, dimension(:), allocatable  :: indxi,indxj
+    real(dp), dimension(matdim)         :: v1,v2
+    real(dp), dimension(:), allocatable :: hii,hij
+    character(len=70)                   :: fileon,fileoff
 
 !-----------------------------------------------------------------------
 ! Open files
@@ -326,10 +326,10 @@ contains
 
     implicit none
     
-    integer                       :: matdim
-    integer*8                     :: noffdiag
-    real(d)                       :: time
-    complex(d), dimension(matdim) :: v1,v2
+    integer                        :: matdim
+    integer*8                      :: noffdiag
+    real(dp)                       :: time
+    complex(dp), dimension(matdim) :: v1,v2
 
     if (hincore) then
        call matxvec_treal_incore(matdim,noffdiag,v1,v2)
@@ -359,13 +359,13 @@ contains
   
     implicit none
 
-    integer                                 :: matdim,maxbl,nrec,nlim,&
-                                               ion,i,j,k,l,nthreads,tid
-    integer*8                               :: noffdiag,npt
-    integer*8, dimension(:,:), allocatable  :: irange
-    complex(d), dimension(matdim)           :: v1,v2
-    complex(d), dimension(:,:), allocatable :: tmpvec
-    character(len=70)                       :: fileon,fileoff
+    integer                                  :: matdim,maxbl,nrec,nlim,&
+                                                ion,i,j,k,l,nthreads,tid
+    integer*8                                :: noffdiag,npt
+    integer*8, dimension(:,:), allocatable   :: irange
+    complex(dp), dimension(matdim)           :: v1,v2
+    complex(dp), dimension(:,:), allocatable :: tmpvec
+    character(len=70)                        :: fileon,fileoff
 
 !-----------------------------------------------------------------------
 ! Number of threads
@@ -451,14 +451,14 @@ contains
   
     implicit none
 
-    integer                                 :: matdim,maxbl,nrec,nlim,&
-                                               ion,i,j,k,l,nthreads,tid
-    integer*8                               :: noffdiag
-    integer, dimension(:), allocatable      :: indxi,indxj,ioff
-    real(d), dimension(:), allocatable      :: hii,hij
-    complex(d), dimension(matdim)           :: v1,v2
-    complex(d), dimension(:,:), allocatable :: tmpvec
-    character(len=70)                       :: fileon,fileoff
+    integer                                  :: matdim,maxbl,nrec,nlim,&
+                                                ion,i,j,k,l,nthreads,tid
+    integer*8                                :: noffdiag
+    integer, dimension(:), allocatable       :: indxi,indxj,ioff
+    real(dp), dimension(:), allocatable      :: hii,hij
+    complex(dp), dimension(matdim)           :: v1,v2
+    complex(dp), dimension(:,:), allocatable :: tmpvec
+    character(len=70)                        :: fileon,fileoff
 
 !-----------------------------------------------------------------------
 ! Number of threads
@@ -574,18 +574,18 @@ contains
     
     implicit none
     
-    integer                               :: matdim,i,j,k,unit
-    integer*8                             :: noffdiag
-    real(d)                               :: time,ener
-    real(d), dimension(3)                 :: Et
-    real(d), allocatable                  :: rvec(:)
-    complex(d), dimension(matdim)         :: v1,v2
-    complex(d), dimension(:), allocatable :: opxv1
+    integer                                :: matdim,i,j,k,unit
+    integer*8                              :: noffdiag
+    real(dp)                               :: time,ener
+    real(dp), dimension(3)                 :: Et
+    real(dp), allocatable                  :: rvec(:)
+    complex(dp), dimension(matdim)         :: v1,v2
+    complex(dp), dimension(:), allocatable :: opxv1
     character(len=70)                     :: filename
     character(len=1), dimension(3)        :: acomp
-    complex(d), allocatable               :: vtmp1(:)
-    complex(d), allocatable               :: vtmp2(:)
-    complex(d), allocatable               :: vtmp3(:)
+    complex(dp), allocatable              :: vtmp1(:)
+    complex(dp), allocatable              :: vtmp2(:)
+    complex(dp), allocatable              :: vtmp3(:)
     
     acomp=(/ 'x','y','z' /)
     
@@ -847,9 +847,9 @@ contains
     
     implicit none
 
-    real(d), dimension(3) :: efield
-    real(d)               :: pulse,envelope
-    real(d)               :: t
+    real(dp), dimension(3) :: efield
+    real(dp)               :: pulse,envelope
+    real(dp)               :: t
 
 !----------------------------------------------------------------------
 ! Carrier wave value
@@ -900,7 +900,7 @@ contains
 
     implicit none
 
-    real(d) :: t,func,tzero,fwhm
+    real(dp) :: t,func,tzero,fwhm
 
     ! tzero
     tzero=envpar(1)
@@ -931,7 +931,7 @@ contains
 
     implicit none
 
-    real(d) :: t,func,tzero,fwhm
+    real(dp) :: t,func,tzero,fwhm
 
     ! tzero
     tzero=envpar(1)
@@ -962,7 +962,7 @@ contains
 
     implicit none
 
-    real(d) :: t,func,tau
+    real(dp) :: t,func,tau
 
     ! tau
     tau=envpar(1)
@@ -992,7 +992,7 @@ contains
 
     implicit none
 
-    real(d) :: t,func,ti,tf
+    real(dp) :: t,func,ti,tf
 
     ! t_i
     ti=envpar(1)
@@ -1026,15 +1026,15 @@ contains
     
     implicit none
 
-    integer                                 :: matdim,nrec,nlim,&
-                                               unit,i,k,n,nthreads,&
-                                               tid,npt,tmp
-    integer, dimension(:), allocatable      :: indxi,indxj
-    integer*8, dimension(:,:), allocatable  :: irange
-    real(d), dimension(:), allocatable      :: oij,oii
-    complex(d), dimension(matdim)           :: v1,v2
-    complex(d), dimension(:,:), allocatable :: tmpvec
-    character(len=70)                       :: filename
+    integer                                  :: matdim,nrec,nlim,&
+                                                unit,i,k,n,nthreads,&
+                                                tid,npt,tmp
+    integer, dimension(:), allocatable       :: indxi,indxj
+    integer*8, dimension(:,:), allocatable   :: irange
+    real(dp), dimension(:), allocatable      :: oij,oii
+    complex(dp), dimension(matdim)           :: v1,v2
+    complex(dp), dimension(:,:), allocatable :: tmpvec
+    character(len=70)                        :: filename
     
 !-----------------------------------------------------------------------
 ! Number of threads
@@ -1150,34 +1150,12 @@ contains
     
     implicit none
     
-    integer                       :: matdim,i,j,k,unit
-    integer*8                     :: noffdiag
-    real(d)                       :: time,ener
-    real(d), dimension(3)         :: Et
-    real(d), allocatable          :: rvec(:)
-    complex(d), dimension(matdim) :: v1,v2
-    complex(d), allocatable       :: vtmp1(:)
-    complex(d), allocatable       :: vtmp2(:)
-    complex(d), allocatable       :: vtmp3(:)
-    
-!----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-    if (lcap) then
-       allocate(vtmp1(matdim))
-       allocate(vtmp2(matdim))
-       allocate(vtmp3(matdim))
-       vtmp1=czero
-       vtmp2=czero
-       vtmp3=czero
-    endif
-       
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) then
-       allocate(rvec(matdim))
-       rvec=0.0d0
-    endif
-       
+    integer                        :: matdim,i,j,k,unit
+    integer*8                      :: noffdiag
+    real(dp)                       :: time,ener
+    real(dp), dimension(3)         :: Et
+    complex(dp), dimension(matdim) :: v1,v2
+
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
@@ -1185,179 +1163,30 @@ contains
 
 !----------------------------------------------------------------------
 ! (1) Molecular Hamiltonian contribution: -i * H * v1
-!
-! Note that: (i)  < Psi0 | H | Psi_J > = 0 for all J (by definition
-!                 of the intermediate state basis).
-!
-!            (ii) < Psi0 | H | Psi0 > = 0 (as we are dealing with
-!                 ground state energy-shifted Hamiltonian)
-!
 !----------------------------------------------------------------------
-    v2(1:matdim-1)=v2(matdim-1)-ci*matmul(h1,v1(1:matdim-1))
-
+    v2=v2-ci*matmul(h1,v1)
+    
 !----------------------------------------------------------------------
 ! (2) Dipole-laser contribution: -i * -mu.E(t) * v1 = +i * mu.E(t) * v1
-!----------------------------------------------------------------------
-! Three pieces: (a) IS representation of the dipole operator, D_IJ.
-!               (b) Ground state dipole matrix element, D_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, D_0J.
 !----------------------------------------------------------------------
     ! External electric field
     Et=efield(time)
 
-    ! (a) IS-IS block
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
-       
-       ! Cycle if the current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(1:matdim-1)=v2(1:matdim-1)&
-            + ci*Et(i)*matmul(dij(i,:,:),v1(1:matdim-1))
-
-    enddo
-
-    ! (b) Ground state-ground state element
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
-       
-       ! Cycle if the  current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
-
-    enddo
-
-    ! (c) Ground state-IS block
-    !
     ! Loop over components of the dipole operator
     do i=1,3
 
        ! Cycle if the  current component does not contribute
        if (pulse_vec(i).eq.0.0d0) cycle
 
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+&
-            ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1)+&
-            ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
-       
-    enddo
+       ! Matrix-vector product
+       v2=v2+ci*Et(i)*matmul(d1(i,:,:),v1)
 
+    enddo
+    
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1 = - W * v1
 !----------------------------------------------------------------------
-! Three pieces: (a) IS representation of the CAP operator, W_IJ.
-!               (b) Ground state CAP matrix element, W_00.
-!               (c) Off-diagonal elements between the ground state
-!                   and the intermediate states, W_0J.
-!
-! Note that (b) and (c) do not contribute if the CAP is projected
-! onto the space orthogonal to the ground state
-!----------------------------------------------------------------------
-    if (lcap) then
-
-       ! Make a copy of the input vector to project against selected
-       ! bound states
-       vtmp1=v1
-       
-       ! First projection against selected bound states
-       !
-       ! Excited state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-          ! Open the ADC(1)/CIS vector file
-          call freeunit(unit)
-          open(unit,file='SCRATCH/initvecs',status='unknown',&
-               access='sequential',form='unformatted')
-          ! Project the input vector onto the space orthogonal to
-          ! the selected states
-          do i=1,matdim-1
-             read(unit) k,ener,rvec(1:matdim-1)
-             if (ener.gt.projlim) exit
-             if (iprojcap.eq.1.and.i.gt.statenumber) exit
-             if (projmask(i).eq.0) cycle
-             vtmp1(1:matdim-1)=vtmp1(1:matdim-1) &
-                  -rvec(1:matdim-1) &
-                  *dot_product(rvec(1:matdim-1),v1(1:matdim-1))
-          enddo
-          ! Close the ADC(1)/CIS vector file
-          close(unit)
-       endif
-       !
-       ! Ground state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.eq.0) &
-            .or.iprojcap.eq.2) vtmp1(matdim)=czero
-       
-       ! Temporary vector 2: this will hold the contribution of the
-       ! CAP to the Hamiltonian matrix-vector product
-       vtmp2=czero
-       
-       ! (a) IS-IS block
-       !
-       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-            -matmul(wij,vtmp1(1:matdim-1))
-       
-       ! (b) Ground state-ground state element
-       !
-       vtmp2(matdim)=vtmp2(matdim)-w00*vtmp1(matdim)
-       
-       ! (c) Ground state-IS block
-       !
-       vtmp2(matdim)=vtmp2(matdim) &
-            -dot_product(w0j(1:matdim-1),vtmp1(1:matdim-1))
-       vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-            -w0j(1:matdim-1)*vtmp1(matdim)
-
-       ! Second projection against selected bound states
-       !
-       ! Excited state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.gt.0).or.iprojcap.eq.2) then
-          ! Copy of vtmp2
-          vtmp3=vtmp2
-          ! Open the ADC(1)/CIS vector file
-          call freeunit(unit)
-          open(unit,file='SCRATCH/initvecs',status='unknown',&
-               access='sequential',form='unformatted')
-          ! Project the input vector onto the space orthogonal to
-          ! the selected states
-          do i=1,matdim-1
-             read(unit) k,ener,rvec(1:matdim-1)
-             if (ener.gt.projlim) exit
-             if (iprojcap.eq.1.and.i.gt.statenumber) exit
-             if (projmask(i).eq.0) cycle
-             vtmp2(1:matdim-1)=vtmp2(1:matdim-1) &
-                  -rvec(1:matdim-1) &
-                  *dot_product(rvec(1:matdim-1),vtmp3(1:matdim-1))
-          enddo
-          ! Close the ADC(1)/CIS vector file
-          close(unit)
-       endif
-       !
-       ! Ground state contribution to the projector
-       if ((iprojcap.eq.1.and.statenumber.eq.0) &
-            .or.iprojcap.eq.2) vtmp2(matdim)=czero
-
-       ! Contribution of the CAP to the matrix vector product
-       v2=v2+vtmp2
-       
-    endif
-
-!----------------------------------------------------------------------
-! Deallocate arrays
-!----------------------------------------------------------------------
-    if (lcap) then
-       deallocate(vtmp1)
-       deallocate(vtmp2)
-       deallocate(vtmp3)
-    endif
-
-    if ((lprojcap.and.statenumber.gt.0) &
-         .or.(statenumber.eq.0.and.iprojcap.eq.2)) deallocate(rvec)
+    if (lcap) v2=v2-matmul(w1,v1)
     
     return
     
@@ -1383,10 +1212,10 @@ contains
     
     implicit none
 
-    integer, intent(in)               :: k,matdim
-    integer*8, intent(in)             :: noffdiag
-    real(d), dimension(2), intent(in) :: bounds
-    real(d), dimension(matdim)        :: qk,qkm1,qkm2
+    integer, intent(in)                :: k,matdim
+    integer*8, intent(in)              :: noffdiag
+    real(dp), dimension(2), intent(in) :: bounds
+    real(dp), dimension(matdim)        :: qk,qkm1,qkm2
 
 !----------------------------------------------------------------------
 ! 2 * H_norm * q_k-1 (k>2)
@@ -1420,10 +1249,10 @@ contains
     
     implicit none
 
-    integer, intent(in)               :: matdim
-    integer*8, intent(in)             :: noffdiag
-    real(d), dimension(2), intent(in) :: bounds
-    real(d), dimension(matdim)        :: v1,v2
+    integer, intent(in)                :: matdim
+    integer*8, intent(in)              :: noffdiag
+    real(dp), dimension(2), intent(in) :: bounds
+    real(dp), dimension(matdim)        :: v1,v2
 
     if (hincore) then
        call matxvec_chebyshev_incore(matdim,noffdiag,bounds,v1,v2)
@@ -1453,16 +1282,16 @@ contains
     
     implicit none
 
-    integer, intent(in)                    :: matdim
-    integer*8, intent(in)                  :: noffdiag
-    integer                                :: nthreads,i,k,tid
-    integer*8, allocatable                 :: irange(:,:)
-    integer*8                              :: npt
-    real(d), dimension(2), intent(in)      :: bounds
-    real(d), dimension(matdim), intent(in) :: v1
-    real(d), dimension(matdim)             :: v2
-    real(d), allocatable                   :: tmpvec(:,:)
-    real(d)                                :: DeltaE,Emin
+    integer, intent(in)                     :: matdim
+    integer*8, intent(in)                   :: noffdiag
+    integer                                 :: nthreads,i,k,tid
+    integer*8, allocatable                  :: irange(:,:)
+    integer*8                               :: npt
+    real(dp), dimension(2), intent(in)      :: bounds
+    real(dp), dimension(matdim), intent(in) :: v1
+    real(dp), dimension(matdim)             :: v2
+    real(dp), allocatable                   :: tmpvec(:,:)
+    real(dp)                                :: DeltaE,Emin
     
 !-----------------------------------------------------------------------
 ! Number of threads

@@ -1,7 +1,7 @@
 !#######################################################################
 ! propagate_adc1: Routines to perform ADC(1) and CIS wavepacket
 !                 propagations including the interaction of the
-!                 molecule with a laser pulse
+!                 molecule with a laser pulse.
 !#######################################################################
 
 module propagate_adc1
@@ -14,9 +14,9 @@ module propagate_adc1
 
   save
 
-  integer                               :: matdim
-  integer                               :: iflux
-  complex(d), dimension(:), allocatable :: psi
+  integer                                :: matdim
+  integer                                :: iflux
+  complex(dp), dimension(:), allocatable :: psi
   
 contains
 
@@ -27,10 +27,9 @@ contains
 !                       consisting of the intermediate state basis plus
 !                       the HF ground state.
 !########################################################################
-! IMPORTANT:            For ease of implementation of the Hamiltonian
-!                       and dipole matrix-vector products, the HF ground
-!                       state is taken to be the last basis function in
-!                       the set.
+! IMPORTANT:            To be consistent with the TD-ADC(2) code, the
+!                       HF ground state is taken to be the last basis
+!                       function in the set.
 !#######################################################################
   
   subroutine propagate_laser_adc1(ndimf,kpqf)
@@ -42,7 +41,7 @@ contains
     integer, intent(in)                       :: ndimf
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: tw1,tw2,tc1,tc2
+    real(dp)                                  :: tw1,tw2,tc1,tc2
 
 !----------------------------------------------------------------------
 ! Start timing
@@ -154,15 +153,6 @@ contains
     allocate(psi(matdim))
     psi=czero
     
-!----------------------------------------------------------------------
-! Set the initial wavepacket
-!
-! For now, we will only support excitation/ionisation from the ground
-! state, corresponding to the vector (0,...,0,1)^T
-!----------------------------------------------------------------------
-    psi=czero
-    psi(matdim)=cone
-    
     return
     
   end subroutine initialise
@@ -183,9 +173,15 @@ contains
        psi=czero
        psi(matdim)=cone
     else
-       ! Excited state: read the initial wavefunction vector from
-       ! disk
-       call initwf_exci_initstate
+       ! Excited state
+       if (tdrep.eq.1) then
+          ! ISR basis: read the initial wavefunction vector from disk
+          call initwf_exci_initstate
+       else
+          ! Eigenstate basis
+          psi=czero
+          psi(statenumber)=cone
+       endif
     endif
        
     return
@@ -198,9 +194,9 @@ contains
 
     implicit none
     
-    integer              :: unit,itmp,i
-    real(d)              :: ftmp
-    real(d), allocatable :: vec(:)
+    integer               :: unit,itmp,i
+    real(dp)              :: ftmp
+    real(dp), allocatable :: vec(:)
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -274,6 +270,16 @@ contains
 
     write(ilog,'(2x,a,x,ES15.8)') 'Error tolerance:',proptol
 
+!----------------------------------------------------------------------
+! N-electron basis
+!----------------------------------------------------------------------
+    if (tdrep.eq.1) then
+       write(ilog,'(/,2x,a)') 'The ISR basis is used'
+    else if (tdrep.eq.2) then
+       write(ilog,'(/,2x,a,/)') &
+            'The field-free eigenstate basis is used'
+    endif
+    
     return
     
   end subroutine wrinfo
@@ -311,24 +317,24 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
     integer*8                                 :: dummy
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
+    real(dp)                                  :: norm,flux
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     
     ! SIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
+    real(dp)                                  :: intperiod,stepsize,&
                                                  truestepsize,time,&
                                                  inttime
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2    
-    complex(d), dimension(:,:), allocatable   :: krylov
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2    
+    complex(dp), dimension(:,:), allocatable  :: krylov
     logical(kind=4)                           :: restart,relax,stdform
-
+    
 !----------------------------------------------------------------------
 ! sillib variables
 !----------------------------------------------------------------------
@@ -484,23 +490,23 @@ contains
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: i
     integer*8                                 :: dummy
-    real(d)                                   :: norm,flux
-    real(d), parameter                        :: tiny=1e-9_d
-    real(d), parameter                        :: tinier=1e-10_d
-    complex(d), dimension(:), allocatable     :: dtpsi,hpsi
+    real(dp)                                  :: norm,flux
+    real(dp), parameter                       :: tiny=1e-9_dp
+    real(dp), parameter                       :: tinier=1e-10_dp
+    complex(dp), dimension(:), allocatable    :: dtpsi,hpsi
     
     ! CSIL arrays and variables
     integer                                   :: steps,trueorder,&
                                                  errorcode
-    real(d)                                   :: intperiod,stepsize,&
+    real(dp)                                  :: intperiod,stepsize,&
                                                  truestepsize,time,&
                                                  inttime,macheps
-    real(d), dimension(:,:), allocatable      :: eigenvector
-    real(d), dimension(:), allocatable        :: diagonal,eigenval
-    real(d), dimension(:), allocatable        :: offdiag
-    real(d), dimension(:), allocatable        :: offdg2
-    complex(d), dimension(:,:), allocatable   :: krylov
-    complex(d), dimension(0:kdim,0:kdim)      :: hessenberg,eigvec,&
+    real(dp), dimension(:,:), allocatable     :: eigenvector
+    real(dp), dimension(:), allocatable       :: diagonal,eigenval
+    real(dp), dimension(:), allocatable       :: offdiag
+    real(dp), dimension(:), allocatable       :: offdg2
+    complex(dp), dimension(:,:), allocatable  :: krylov
+    complex(dp), dimension(0:kdim,0:kdim)     :: hessenberg,eigvec,&
                                                  auxmat
     logical(kind=4)                           :: restart,relax,&
                                                  stdform,olderrcri
@@ -655,7 +661,7 @@ contains
 
     integer, dimension(7,0:nbas**2*4*nocc**2) :: kpqf
     integer                                   :: k
-    real(d)                                   :: t,norm,flux
+    real(dp)                                  :: t,norm,flux
 
     write(ilog,'(70a)') ('+',k=1,70)
 
@@ -672,15 +678,19 @@ contains
     if (lflux) write(iflux,'(F10.4,5x,ES15.8)') t,flux
     
     ! Wavefunction analysis
-    call wrpsi(kpqf)
-    
+    if (tdrep.eq.1) then
+       call wrpsi_isr(kpqf)
+    else
+       call wrpsi_eigen
+    endif
+       
     return
     
   end subroutine wrstepinfo
 
 !#######################################################################
 
-    subroutine wrpsi(kpqf)
+    subroutine wrpsi_isr(kpqf)
 
     use misc, only: dsortindxa1,getspincase
     
@@ -690,8 +700,8 @@ contains
     integer, dimension(:), allocatable        :: indx
     integer                                   :: k,ilbl
     integer                                   :: kpqdim2
-    real(d), dimension(:), allocatable        :: abscoeff
-    real(d), parameter                        :: coefftol=0.01d0
+    real(dp), dimension(:), allocatable       :: abscoeff
+    real(dp), parameter                       :: coefftol=0.01d0
     character(len=2)                          :: spincase
 
     kpqdim2=nbas**2*4*nocc**2+1
@@ -718,7 +728,8 @@ contains
     write(ilog,'(2x,30a)') ('*',k=1,30)
 
     ! Ground state contribution
-    write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
+     if (abs(psi(matdim)).gt.coefftol) &
+          write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
 
     ! IS basis functions
     do k=1,50
@@ -747,8 +758,79 @@ contains
     
     return
     
-  end subroutine wrpsi
-  
+  end subroutine wrpsi_isr
+
+!#######################################################################
+
+  subroutine wrpsi_eigen
+
+    use misc, only: dsortindxa1,getspincase
+
+    implicit none
+
+    integer                             :: k,ilbl
+    integer, dimension(:), allocatable  :: indx
+    real(dp), dimension(:), allocatable :: abscoeff
+    real(dp), parameter                 :: coefftol=0.01d0
+    character(len=3)                    :: as
+    character(len=5)                    :: aket
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(abscoeff(matdim))
+    allocate(indx(matdim))
+
+!-----------------------------------------------------------------------
+! Sort the coefficients by magnitude
+!-----------------------------------------------------------------------
+    abscoeff=abs(psi)
+    call dsortindxa1('D',matdim,abscoeff,indx)
+
+!-----------------------------------------------------------------------
+! Output the field-free eigenstates contributing significantly to the
+! wavepacket
+!-----------------------------------------------------------------------
+    write(ilog,'(/,2x,a,/)') 'Dominant States:'
+
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+    write(ilog,'(3x,a)') '|J>                 |C_J|'
+    write(ilog,'(2x,30a)') ('*',k=1,30)
+
+    ! Ground state contribution
+    if (abs(psi(matdim)).gt.coefftol) &
+         write(ilog,'(3x,a,15x,F8.5)') '|HF>',abs(psi(matdim))
+
+    ! Excited state contributions
+    do k=1,50
+
+       ilbl=indx(k)
+
+       ! Skip the ground state
+       if (ilbl.eq.matdim) cycle
+
+       ! Skip if the coefficient is small
+       if (abs(psi(ilbl)).lt.coefftol) cycle
+
+       ! State and absolute coefficient value
+       write(as,'(i3)') ilbl
+       write(aket,'(a)') '|'//trim(adjustl(as))//'>'       
+       write(ilog,'(3x,a,14x,F8.5)') aket,abs(psi(ilbl))
+
+    enddo
+    
+    write(ilog,'(2x,30a,/)') ('*',k=1,30)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(abscoeff)
+    deallocate(indx)
+    
+    return
+    
+  end subroutine wrpsi_eigen
+    
 !#######################################################################
 
     subroutine finalise

@@ -7,15 +7,11 @@
 
 module monomial_analytic
 
+  use constants
+  
   implicit none
 
   save
-
-  private :: dp
-  
-  ! Annoyingly, the gamess_internal module contains a variable
-  ! named 'd', so we will use 'dp' here instead
-  integer, parameter     :: dp=selected_real_kind(8)
 
   ! Conversion factors
   real(dp), parameter    :: ang2bohr=1.889725989d0

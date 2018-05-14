@@ -24,16 +24,16 @@ contains
     
     implicit none
 
-    integer, dimension(:,:), allocatable :: kpq,kpqd,kpqf
-    integer                              :: i,ndim,ndims,ndimsf,&
-                                            nout,ndimf,ndimd,noutf,&
-                                            itmp
-    integer*8                            :: noffd,noffdf
-    real(d)                              :: e_init,e0,time
-    real(d), dimension(:), allocatable   :: ener,mtm,mtmf,tmvec,osc_str,&
-                                            vec_init,travec
-    real(d), dimension(:,:), allocatable :: rvec,travec2
-    type(gam_structure)                  :: gam
+    integer, dimension(:,:), allocatable  :: kpq,kpqd,kpqf
+    integer                               :: i,ndim,ndims,ndimsf,&
+                                             nout,ndimf,ndimd,noutf,&
+                                             itmp
+    integer*8                             :: noffd,noffdf
+    real(dp)                              :: e_init,e0,time
+    real(dp), dimension(:), allocatable   :: ener,mtm,mtmf,tmvec,&
+                                             osc_str,vec_init,travec
+    real(dp), dimension(:,:), allocatable :: rvec,travec2
+    type(gam_structure)                   :: gam
 
 !-----------------------------------------------------------------------
 ! Make sure that symmetry is not being used as this is not currently
@@ -168,10 +168,10 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
     integer*8                                 :: noffd,noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndim,davstates)       :: rvec
+    real(dp), dimension(:,:), allocatable     :: travec2
 
     if (ldiagfinal) then
        call davidson_final_space_diag_rixs(ndim,ndimf,ndimsf,kpq,&
@@ -202,10 +202,10 @@ contains
     integer                                   :: ndim,ndimf,ndimsf,&
                                                  n
     integer*8                                 :: noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndim,davstates)       :: rvec
+    real(dp), dimension(:,:), allocatable     :: travec2
 
 !-----------------------------------------------------------------------
 ! Determine the initial Lanczos vectors
@@ -261,9 +261,9 @@ contains
     integer                                   :: i,j,k,c,ndim,ndimf,&
                                                  ndimsf,error,&
                                                  ivecs,ilbl
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2,initvecs
-    real(d), dimension(:), allocatable        :: tau,work
+    real(dp), dimension(ndim,davstates)       :: rvec
+    real(dp), dimension(:,:), allocatable     :: travec2,initvecs
+    real(dp), dimension(:), allocatable       :: tau,work
 
 !----------------------------------------------------------------------
 ! Allocate the travec2 array
@@ -346,10 +346,10 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
     integer                                   :: ndim,ndimf,ndimsf
     integer*8                                 :: noffdf
-    real(d), dimension(:), allocatable        :: travec,mtmf
-    real(d), dimension(ndim)                  :: vec_init
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(:,:), allocatable      :: travec2
+    real(dp), dimension(:), allocatable       :: travec,mtmf
+    real(dp), dimension(ndim)                 :: vec_init
+    real(dp), dimension(ndim,davstates)       :: rvec
+    real(dp), dimension(:,:), allocatable     :: travec2
 
 !-----------------------------------------------------------------------        
 ! If requested, determine the Davidson guess vectors by diagonalising 
@@ -423,17 +423,17 @@ contains
         
     implicit none
 
-    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq,kpqf
-    integer                                   :: ndim,ndimf,c,i,&
-                                                 k,ilbl
-    real(d), dimension(ndim,davstates)        :: rvec
-    real(d), dimension(ndimf,3*(davstates+1)) :: travec2
-    character(len=1), dimension(3)            :: acomp
-    character(len=70)                         :: msg
+    integer, dimension(7,0:nBas**2*4*nOcc**2)  :: kpq,kpqf
+    integer                                    :: ndim,ndimf,c,i,&
+                                                  k,ilbl
+    real(dp), dimension(ndim,davstates)        :: rvec
+    real(dp), dimension(ndimf,3*(davstates+1)) :: travec2
+    character(len=1), dimension(3)             :: acomp
+    character(len=70)                          :: msg
 
-    integer*8, dimension(3)                   :: nel_cv
-    integer, dimension(3)                     :: nbuf_cv
-    character(len=60)                         :: filename
+    integer*8, dimension(3)                    :: nel_cv
+    integer, dimension(3)                      :: nbuf_cv
+    character(len=60)                          :: filename
 
 !-----------------------------------------------------------------------
 ! Calculate the matrix F_Ja = < Psi_J | Da | Psi_0 >, where the Psi_J
@@ -510,18 +510,18 @@ contains
 
     implicit none
     
-    integer                                   :: ndim,ndimf,&
-                                                 ndimsf,i,j,k,&
-                                                 ivecf,irixs,&
-                                                 idav,nfinal
-    real(d)                                   :: e_init
-    real(d), dimension(ndimf,3*(davstates+1)) :: travec2
-    real(d), dimension(:,:), allocatable      :: tdm
-    real(d), dimension(:), allocatable        :: vec
-    real(d), dimension(:), allocatable        :: enerf
-    real(d), dimension(davstates)             :: ener
-    real(d)                                   :: tw1,tw2,tc1,tc2
-    character(len=70)                         :: filename
+    integer                                    :: ndim,ndimf,&
+                                                  ndimsf,i,j,k,&
+                                                  ivecf,irixs,&
+                                                  idav,nfinal
+    real(dp)                                   :: e_init
+    real(dp), dimension(ndimf,3*(davstates+1)) :: travec2
+    real(dp), dimension(:,:), allocatable      :: tdm
+    real(dp), dimension(:), allocatable        :: vec
+    real(dp), dimension(:), allocatable        :: enerf
+    real(dp), dimension(davstates)             :: ener
+    real(dp)                                   :: tw1,tw2,tc1,tc2
+    character(len=70)                          :: filename
 
 !-----------------------------------------------------------------------
 ! Output what we are doing

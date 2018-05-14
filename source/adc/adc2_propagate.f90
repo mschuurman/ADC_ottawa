@@ -31,8 +31,8 @@ contains
     integer                               :: i,ndim,ndims,ndimsf,&
                                              nout,ndimf,ndimd,noutf
     integer*8                             :: noffd,noffdf
-    real(d)                               :: e0
-    real(d), dimension(:,:), allocatable  :: cap_mo,theta_mo
+    real(dp)                              :: e0
+    real(dp), dimension(:,:), allocatable :: cap_mo,theta_mo
     type(gam_structure)                   :: gam
     
 !-----------------------------------------------------------------------
@@ -103,7 +103,7 @@ contains
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     hamflag='f'
-    call propagate_laser_adc2(ndimf,noffdf,kpqf)
+    call propagate_laser_adc2(gam,ndimf,noffdf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -171,9 +171,9 @@ contains
     integer                                   :: ndimf
     integer                                   :: p,q,k
     integer                                   :: error
-    real(d), dimension(nbas,nbas)             :: cap_mo
-    real(d), dimension(nbas,nbas)             :: rho0
-    real(d), dimension(nbas,nbas)             :: dpl_orig
+    real(dp), dimension(nbas,nbas)            :: cap_mo
+    real(dp), dimension(nbas,nbas)            :: rho0
+    real(dp), dimension(nbas,nbas)            :: dpl_orig
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
@@ -248,7 +248,7 @@ contains
     integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
     integer                                   :: ndimf
     integer                                   :: p,q,k,c
-    real(d), dimension(nbas,nbas)             :: rho0
+    real(dp), dimension(nbas,nbas)            :: rho0
     character(len=60)                         :: filename
     character(len=1), dimension(3)            :: acomp
 
@@ -312,9 +312,6 @@ contains
 
        dpl(:,:)=dpl_all(c,:,:)
        
-       !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-       !     nbuf_dip(c),nel_dip(c),filename)
-
        call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_dip(c),&
             nel_dip(c),filename)
        
@@ -340,9 +337,9 @@ contains
     integer                                   :: ndimf
     integer                                   :: p,q,k
     integer                                   :: error
-    real(d), dimension(nbas,nbas)             :: theta_mo
-    real(d), dimension(nbas,nbas)             :: rho0
-    real(d), dimension(nbas,nbas)             :: dpl_orig
+    real(dp), dimension(nbas,nbas)            :: theta_mo
+    real(dp), dimension(nbas,nbas)            :: rho0
+    real(dp), dimension(nbas,nbas)            :: dpl_orig
     character(len=60)                         :: filename
 
 !----------------------------------------------------------------------
@@ -393,9 +390,6 @@ contains
     
     filename='SCRATCH/theta'
     
-    !call get_adc2_dipole_improved_omp(ndimf,ndimf,kpqf,kpqf,&
-    !     nbuf_theta,nel_theta,filename)
-
     call get_adc2_dipole_same_space(ndimf,kpqf,nbuf_theta,nel_theta,&
          filename)
     
@@ -424,11 +418,11 @@ contains
     integer                                   :: ndim,ndims
     integer                                   :: i,itmp
     integer*8                                 :: noffd
-    real(d)                                   :: time
-    real(d), dimension(:), allocatable        :: ener
-    real(d), dimension(:), allocatable        :: mtm,tmvec,&
+    real(dp)                                  :: time
+    real(dp), dimension(:), allocatable       :: ener
+    real(dp), dimension(:), allocatable       :: mtm,tmvec,&
                                                  osc_str
-    real(d), dimension(:,:), allocatable      :: rvec
+    real(dp), dimension(:,:), allocatable     :: rvec
     
 !-----------------------------------------------------------------
 ! Diagonalise the initial space Hamiltonian and calculate the
@@ -465,9 +459,9 @@ contains
     
     implicit none
 
-    integer              :: ndim,unit,itmp,i
-    real(d), allocatable :: ener(:)
-    real(d), allocatable :: vec(:)
+    integer               :: ndim,unit,itmp,i
+    real(dp), allocatable :: ener(:)
+    real(dp), allocatable :: vec(:)
     
 !----------------------------------------------------------------------
 ! Allocate arrays

@@ -4,17 +4,17 @@ module auto2specmod
 
   save
 
-  integer                               :: maxtp,iauto,epoints
-  integer                               :: padesolver
-  integer                               :: ishape
-  real(d)                               :: dt,t0,emin,emax,tau,fwhm,&
-                                           dele,a0,b0,tcutoff
-  real(d), dimension(:,:), allocatable  :: sp
-  real(d), parameter                    :: eh2ev=27.2113845d0
-  real(d), parameter                    :: fs2au=41.3413745758d0
-  complex(d), dimension(:), allocatable :: auto,avec,bvec
-  character(len=70)                     :: outfile
-  logical                               :: lpade,lnormalise
+  integer                                :: maxtp,iauto,epoints
+  integer                                :: padesolver
+  integer                                :: ishape
+  real(dp)                               :: dt,t0,emin,emax,tau,fwhm,&
+                                            dele,a0,b0,tcutoff
+  real(dp), dimension(:,:), allocatable  :: sp
+  real(dp), parameter                    :: eh2ev=27.2113845d0
+  real(dp), parameter                    :: fs2au=41.3413745758d0
+  complex(dp), dimension(:), allocatable :: auto,avec,bvec
+  character(len=70)                      :: outfile
+  logical                                :: lpade,lnormalise
   
 end module auto2specmod
 
@@ -84,7 +84,7 @@ contains
     padesolver=1
     
     ! Timestep cutofff (in fs)
-    tcutoff=1e+10_d
+    tcutoff=1e+10_dp
 
     ! Normalisation of the spectra
     lnormalise=.false.
@@ -217,8 +217,8 @@ contains
     
     implicit none
 
-    integer :: iin,i
-    real(d) :: t,re,im
+    integer  :: iin,i
+    real(dp) :: t,re,im
     
 !----------------------------------------------------------------------
 ! Open the autocorrelation function file
@@ -287,8 +287,8 @@ contains
     
     implicit none
 
-    integer :: i,j
-    real(d) :: eau,t,cc,sum0,sum1,sum2,sum3,pia,gfac
+    integer  :: i,j
+    real(dp) :: eau,t,cc,sum0,sum1,sum2,sum3,pia,gfac
 
 !----------------------------------------------------------------------
 ! Allocate the spectrum arrays
@@ -359,7 +359,7 @@ contains
     
     implicit none
 
-    real(d) :: t,func
+    real(dp) :: t,func
 
     select case(ishape)
 
@@ -386,9 +386,9 @@ contains
     
     implicit none
 
-    integer                                 :: k,m,n
-    complex(d), dimension(:), allocatable   :: cvec,dvec
-    complex(d), dimension(:,:), allocatable :: gmat
+    integer                                  :: k,m,n
+    complex(dp), dimension(:), allocatable   :: cvec,dvec
+    complex(dp), dimension(:,:), allocatable :: gmat
 
 !----------------------------------------------------------------------
 ! Allocate and initialisae arrays
@@ -467,10 +467,10 @@ contains
     
     implicit none
 
-    integer                                 :: n
-    complex(d), dimension(n,n)              :: gmat
-    complex(d), dimension(n)                :: dvec
-    complex(d), dimension(:,:), allocatable :: invgmat
+    integer                                  :: n
+    complex(dp), dimension(n,n)              :: gmat
+    complex(dp), dimension(n)                :: dvec
+    complex(dp), dimension(:,:), allocatable :: invgmat
 
     select case(padesolver)
 
@@ -494,10 +494,10 @@ contains
     
     implicit none
 
-    integer                                 :: n
-    complex(d), dimension(n,n)              :: gmat
-    complex(d), dimension(n)                :: dvec
-    complex(d), dimension(:,:), allocatable :: invgmat
+    integer                                  :: n
+    complex(dp), dimension(n,n)              :: gmat
+    complex(dp), dimension(n)                :: dvec
+    complex(dp), dimension(:,:), allocatable :: invgmat
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -535,10 +535,10 @@ contains
     
     implicit none
 
-    integer                            :: n,info
-    integer, dimension(:), allocatable :: ipiv
-    complex(d), dimension(n,n)         :: gmat
-    complex(d), dimension(n)           :: dvec
+    integer                             :: n,info
+    integer, dimension(:), allocatable  :: ipiv
+    complex(dp), dimension(n,n)         :: gmat
+    complex(dp), dimension(n)           :: dvec
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -588,12 +588,12 @@ contains
     
     implicit none
 
-    integer                    :: n,lwork,info,i,j
-    real(d), dimension(n)      :: sigma
-    real(d), dimension(5*n)    :: rwork
-    real(d), parameter         :: thrsh=1e-10_d
-    complex(d), dimension(n,n) :: mat,invmat,u,vt,tmpmat,smat
-    complex(d), dimension(3*n) :: work
+    integer                     :: n,lwork,info,i,j
+    real(dp), dimension(n)      :: sigma
+    real(dp), dimension(5*n)    :: rwork
+    real(dp), parameter         :: thrsh=1e-10_dp
+    complex(dp), dimension(n,n) :: mat,invmat,u,vt,tmpmat,smat
+    complex(dp), dimension(3*n) :: work
     
 !-----------------------------------------------------------------------
 ! SVD of the matrix to be inverted
@@ -639,9 +639,9 @@ contains
     
     implicit none
 
-    integer    :: k
-    real(d)    :: e,func
-    complex(d) :: z,numer,denom
+    integer     :: k
+    real(dp)    :: e,func
+    complex(dp) :: z,numer,denom
     
     z=exp(ci*e*dt)
     
@@ -668,8 +668,8 @@ contains
     
     implicit none
 
-    integer :: i,iout
-    real(d) :: e,sup
+    integer  :: i,iout
+    real(dp) :: e
 
 !----------------------------------------------------------------------
 ! Open the spectrum file

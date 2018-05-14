@@ -32,28 +32,28 @@
     
     ! Parameters concerning the Slater determinant expansions of the
     ! ADC and target states
-    integer                                   :: maxnsd,nsd_targ,&
-                                                 nbas_targ
-    integer                                   :: nao_adc,nao_targ,&
-                                                 nel,ncount
-    integer, dimension(:), allocatable        :: nsd_adc,tstate
-    integer, dimension(:,:,:), allocatable    :: onv_adc
-    integer, dimension(:,:), allocatable      :: onv_targ
-    real(d), dimension(:,:), allocatable      :: c_adc
-    real(d), dimension(:), allocatable        :: c_targ,s2_adc,&
-                                                 norm_adc,overlap,&
-                                                 trunc_overlap
-    real(d)                                   :: s2_targ,norm_targ,&
-                                                 norm
-    real(d), dimension(:,:), allocatable      :: sao,smo,ao2mo_adc,&
-                                                 ao2mo_targ,smk
+    integer                                :: maxnsd,nsd_targ,&
+                                              nbas_targ
+    integer                                :: nao_adc,nao_targ,&
+                                              nel,ncount
+    integer, dimension(:), allocatable     :: nsd_adc,tstate
+    integer, dimension(:,:,:), allocatable :: onv_adc
+    integer, dimension(:,:), allocatable   :: onv_targ
+    real(dp), dimension(:,:), allocatable  :: c_adc
+    real(dp), dimension(:), allocatable    :: c_targ,s2_adc,&
+                                              norm_adc,overlap,&
+                                              trunc_overlap
+    real(dp)                               :: s2_targ,norm_targ,&
+                                              norm
+    real(dp), dimension(:,:), allocatable  :: sao,smo,ao2mo_adc,&
+                                              ao2mo_targ,smk
 
     ! Target state gamess structure
     type(gam_structure) :: gamess_target
 
     ! Useful common prefactors
-    real(d), parameter :: invsqrt2=1.0d0/sqrt(2.0d0)
-    real(d), parameter :: invsqrt12=1.0d0/sqrt(12.0d0)
+    real(dp), parameter :: invsqrt2=1.0d0/sqrt(2.0d0)
+    real(dp), parameter :: invsqrt12=1.0d0/sqrt(12.0d0)
 
   contains
 
@@ -248,8 +248,8 @@
 
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
       integer                                   :: ndim,i,idav,itmp
-      real(d), dimension(:), allocatable        :: coeff
-      real(d)                                   :: ftmp
+      real(dp), dimension(:), allocatable       :: coeff
+      real(dp)                                  :: ftmp
 
 !-----------------------------------------------------------------------
 ! Open the Davidson vector file
@@ -314,8 +314,8 @@
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
       integer                                   :: indx,ndim,n,count,&
                                                    nI,nII
-      real(d), dimension(ndim)                  :: coeff
-      real(d)                                   :: coeffsd
+      real(dp), dimension(ndim)                 :: coeff
+      real(dp)                                  :: coeffsd
 
       nsd_adc(indx)=0
 
@@ -393,8 +393,8 @@
       
       integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpq
       integer                                   :: ndim,s,idav,itmp
-      real(d), dimension(:), allocatable        :: coeff
-      real(d)                                   :: ftmp
+      real(dp), dimension(:), allocatable       :: coeff
+      real(dp)                                  :: ftmp
 
 !-----------------------------------------------------------------------
 ! Open the Davidson vector file
@@ -462,8 +462,8 @@
       integer                                   :: maxnsd,ndim,n,&
                                                    count,i,j,a,b,&
                                                    ksd,nI,nII,sindx
-      real(d), dimension(ndim)                  :: coeff
-      real(d)                                   :: ftmp
+      real(dp), dimension(ndim)                 :: coeff
+      real(dp)                                  :: ftmp
 
 !-----------------------------------------------------------------------
 ! IS index mappings
@@ -754,8 +754,8 @@
       integer, dimension(norb,maxdet) :: det
       integer, dimension(ndet)        :: par
       integer, dimension(norb)        :: td
-      real(d)                         :: s2
-      real(d), dimension(maxdet)      :: c
+      real(dp)                        :: s2
+      real(dp), dimension(maxdet)     :: c
 
 !-----------------------------------------------------------------------
 ! Calculate parity factor connecting amplitudes of the same determinant,
@@ -894,10 +894,10 @@
       implicit none
 
       integer             :: i,k,m,p,q
-      real(d)             :: detsmk
+      real(dp)            :: detsmk
       type(gam_structure) :: gamess_internal
 
-      real(d) :: tmp
+      real(dp) :: tmp
 
 !-----------------------------------------------------------------------
 ! Set the no. AOs
@@ -961,7 +961,7 @@
       implicit none
 
       integer             :: i,j
-      real(d)             :: val
+      real(dp)            :: val
       type(gam_structure) :: gamess_internal
 
 !-----------------------------------------------------------------------
@@ -1017,11 +1017,11 @@
 
       implicit none
 
-      integer, intent(in)  :: occbra(:)            ! Parent determinant
-      integer, intent(in)  :: occket(:)            ! Ion determinant
-      real(d), intent(out) :: adet(:,:)            ! Integral matrix
+      integer, intent(in)   :: occbra(:)           ! Parent determinant
+      integer, intent(in)   :: occket(:)           ! Ion determinant
+      real(dp), intent(out) :: adet(:,:)           ! Integral matrix
                                                    ! for a given determinant
-      real(d), intent(in)  :: amo (:,:)            ! Integral matrix for all MOs
+      real(dp), intent(in)  :: amo (:,:)           ! Integral matrix for all MOs
 
       integer :: mobra, moket     ! Spatial MO indices
       integer :: spinbra, spinket ! Spin+space MO indices
@@ -1083,9 +1083,9 @@
       
       implicit none
       
-      real(d), intent(in) :: sdet(:,:)
-      real(d)             :: overdet
-      real(d)             :: scr(nel,nel) ! Buffer for the 1-particle 
+      real(dp), intent(in) :: sdet(:,:)
+      real(dp)             :: overdet
+      real(dp)             :: scr(nel,nel) ! Buffer for the 1-particle 
                                           !  overlap matrix 
       scr     = sdet
       overdet = determinant(scr)
@@ -1099,13 +1099,13 @@
 !              Taken from superdyson.
 !#######################################################################
 
-    real(d) function determinant(mat)
+    real(dp) function determinant(mat)
     
-      real(d), intent(inout) :: mat(:,:) ! Matrix destroyed on exit
-      integer                :: order, info
-      integer                :: ipvt(size(mat,dim=1))
-      real(d)                :: work(size(mat,dim=1))
-      real(d)                :: detx(2)
+      real(dp), intent(inout) :: mat(:,:) ! Matrix destroyed on exit
+      integer                 :: order, info
+      integer                 :: ipvt(size(mat,dim=1))
+      real(dp)                :: work(size(mat,dim=1))
+      real(dp)                :: detx(2)
       
       order = size(mat,dim=1)
       if (order==0) stop 'null matrix passed to determinant'

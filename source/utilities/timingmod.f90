@@ -40,8 +40,8 @@
 
         implicit none
 
-        real(d) :: twall,tcpu
-        integer :: c,cr,cm
+        real(dp) :: twall,tcpu
+        integer  :: c,cr,cm
 
         ! cpu time
         call cpu_time(tcpu)

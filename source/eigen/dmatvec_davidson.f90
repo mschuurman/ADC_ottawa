@@ -18,19 +18,19 @@
 
     save
 
-    integer                              :: blocksize,nstates,maxvec,&
-                                            niter,currdim,ipre,nconv,&
-                                            nconv_prev,nrec,maxbl,&
-                                            blocksize_curr,maxvec_curr,&
-                                            nstates_curr,nmult
-    integer, dimension(:), allocatable   :: indxi,indxj
-    real(d), dimension(:), allocatable   :: hii,hij
-    real(d), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
-                                            res,reigvec,ca,cb
-    real(d), dimension(:), allocatable   :: reigval,norm
-    real(d)                              :: tol
-    character(len=36)                    :: vecfile
-    logical                              :: lincore,lrdadc1,lsub,&
+    integer                               :: blocksize,nstates,maxvec,&
+                                             niter,currdim,ipre,nconv,&
+                                             nconv_prev,nrec,maxbl,&
+                                             blocksize_curr,maxvec_curr,&
+                                             nstates_curr,nmult
+    integer, dimension(:), allocatable    :: indxi,indxj
+    real(dp), dimension(:), allocatable   :: hii,hij
+    real(dp), dimension(:,:), allocatable :: vmat,wmat,rmat,ritzvec,&
+                                             res,reigvec,ca,cb
+    real(dp), dimension(:), allocatable   :: reigval,norm
+    real(dp)                              :: tol
+    character(len=36)                     :: vecfile
+    logical                               :: lincore,lrdadc1,lsub,&
                                             ldeflate
 !    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
@@ -54,10 +54,10 @@
       integer, intent(in)   :: matdim
 !      integer*8, intent(in) :: noffd
       integer               :: k
-      real(d)               :: tw1,tw2,tc1,tc2
+      real(dp)              :: tw1,tw2,tc1,tc2
       character(len=120)    :: atmp
       character(len=1)      :: chr
-!      real(d), allocatable  :: diag(:),offdij(:)
+!      real(dp), allocatable :: diag(:),offdij(:)
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
       
 !-----------------------------------------------------------------------
@@ -159,7 +159,7 @@
 
       integer, intent(in) :: matdim
       integer             :: itmp,nvir
-      real(d)             :: ftmp
+      real(dp)            :: ftmp
 
 !-----------------------------------------------------------------------
 ! Set the block size, no. eigenpairs, memory...
@@ -264,9 +264,9 @@
 
       implicit none
 
-      integer                              :: iadc1,dim1,i
-      integer, dimension(:), allocatable   :: indx1
-      real(d), dimension(:,:), allocatable :: vec1
+      integer                               :: iadc1,dim1,i
+      integer, dimension(:), allocatable    :: indx1
+      real(dp), dimension(:,:), allocatable :: vec1
 
 !-----------------------------------------------------------------------
 ! Open the ADC(1) eigenvector file
@@ -312,14 +312,14 @@
 
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer*8, intent(in)                :: noffd
-      integer, dimension(:), allocatable   :: full2sub,sub2full,indxhii
-      integer                              :: subdim,i,j,k,i1,j1,e2,&
-                                              error,iham,nlim,l
-      real(d), dimension(:,:), allocatable :: hsub
-      real(d), dimension(:), allocatable   :: subeig,work
-      character(len=70)                    :: filename
+      integer, intent(in)                   :: matdim
+      integer*8, intent(in)                 :: noffd
+      integer, dimension(:), allocatable    :: full2sub,sub2full,indxhii
+      integer                               :: subdim,i,j,k,i1,j1,e2,&
+                                               error,iham,nlim,l
+      real(dp), dimension(:,:), allocatable :: hsub
+      real(dp), dimension(:), allocatable   :: subeig,work
+      character(len=70)                     :: filename
 
 !-----------------------------------------------------------------------
 ! Subspace dimension check
@@ -362,7 +362,7 @@
 !-----------------------------------------------------------------------
       if (subdim.lt.matdim) then
 5        continue
-         if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_d) then
+         if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_dp) then
             subdim=subdim+1
             goto 5
          endif
@@ -504,11 +504,11 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer                            :: iham,i,k
-      integer, dimension(:), allocatable :: indx_hii
-      real(d), dimension(:), allocatable :: hii
-      character(len=70)                  :: filename
+      integer, intent(in)                 :: matdim
+      integer                             :: iham,i,k
+      integer, dimension(:), allocatable  :: indx_hii
+      real(dp), dimension(:), allocatable :: hii
+      character(len=70)                   :: filename
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -577,7 +577,7 @@
 
       integer, intent(in)   :: matdim
       integer*8, intent(in) :: noffd
-      real(d)               :: mem
+      real(dp)              :: mem
 
       mem=0.0d0
       
@@ -673,11 +673,11 @@
 
       implicit none
 
-      integer*8, intent(in)              :: noffd
-      integer                            :: iham,count,k,nlim
-      integer, dimension(:), allocatable :: itmp1,itmp2
-      real(d), dimension(:), allocatable :: ftmp
-      character(len=70)                  :: filename
+      integer*8, intent(in)               :: noffd
+      integer                             :: iham,count,k,nlim
+      integer, dimension(:), allocatable  :: itmp1,itmp2
+      real(dp), dimension(:), allocatable :: ftmp
+      character(len=70)                   :: filename
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -737,7 +737,7 @@
 !      integer*8, intent(in) :: noffd
       integer               :: k
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
-!      real(d), dimension(:),allocatable :: hii
+!      real(dp), dimension(:),allocatable :: hii
 
 !-----------------------------------------------------------------------
 ! Initialisation
@@ -907,11 +907,11 @@
                                indjpr,indkpr,spinpr
 !      integer*8, intent(in) :: noffd
       integer               :: m,n,i,j,k,ndim1,ndim2,ndim
-!      real(d), dimension(:,:), allocatable :: ca,cb
+!      real(dp), dimension(:,:), allocatable :: ca,cb
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 !      character(len=30)     :: name
       integer                              :: nvir
-!      real(d), dimension(:), allocatable,  :: hii
+!      real(dp), dimension(:), allocatable,  :: hii
 
 !-----------------------------------------------------------------------
 ! Update the no. matrix-vector multiplications
@@ -1003,9 +1003,9 @@
       integer               :: m,n,i,j,k,ndim1,ndim2,ndim
       integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
       integer                              :: nvir,indxi,indxj
-      real(d)                              :: hik,hjk,haa
-      real(d), parameter                   :: small=1e-12_d
-
+      real(dp)                             :: hik,hjk,haa
+      real(dp), parameter                  :: small=1e-12_dp
+      
 !-----------------------------------------------------------------------
 ! Request flavour of ADC(2) for matrix-vector multiplication
 !-----------------------------------------------------------------------
@@ -1051,8 +1051,8 @@
     integer               :: m,n,i,j,k,ndim1,ndim2,ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                              :: nvir,indxi,indxj
-    real(d)                              :: hik,hjk,haa
-    real(d), parameter                   :: small=1e-12_d
+    real(dp)                             :: hik,hjk,haa
+    real(dp), parameter                  :: small=1e-12_dp
 
 !-----------------------------------------------------------------------
 ! Update the no. matrix-vector multiplications
@@ -1255,8 +1255,8 @@
     integer               :: m,n,i,j,k,ndim1,ndim2,ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
     integer                              :: nvir,indxi,indxj
-    real(d)                              :: hik,hjk,haa
-    real(d), parameter                   :: small=1e-12_d
+    real(dp)                             :: hik,hjk,haa
+    real(dp), parameter                  :: small=1e-12_dp
 
 !-----------------------------------------------------------------------
 ! Update the no. matrix-vector multiplications
@@ -1419,26 +1419,26 @@
     integer :: inda,indb,indj,indk,spin
     integer :: indapr,indbpr,indjpr,indkpr,spinpr 
     
-    integer :: i,j,k,nlim,dim_count,ndim1,unt,ndim2
-    integer :: lim1i, lim2i, lim1j, lim2j
-    real(d) :: hik,hjk,haa
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt,ndim2
+    integer  :: lim1i, lim2i, lim1j, lim2j
+    real(dp) :: hik,hjk,haa
     
-    real(d), dimension(:), allocatable :: file_offdiag
+    real(dp), dimension(:), allocatable :: file_offdiag
     
-    integer                              :: nvir,a,b,nzero
-    real(d)                              :: tw1,tw2,tc1,tc2
+    integer                               :: nvir,a,b,nzero
+    real(dp)                              :: tw1,tw2,tc1,tc2
 
     
     integer                                       :: nthreads,tid
 
-    integer :: n
-    real(d) :: minc2
+    integer  :: n
+    real(dp) :: minc2
 
     integer :: c,cr,cm
    
-    real(d) ::ea,eb,ej,ek,temp
-    integer :: ktype,lim1,lim2,d1
-    real(d), parameter                   :: small=1e-12_d
+    real(dp) ::ea,eb,ej,ek,temp
+    integer  :: ktype,lim1,lim2
+    real(dp), parameter                   :: small=1e-12_dp
 
     
  
@@ -2106,20 +2106,20 @@
     integer, intent(in) :: ndim
     integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpq
 
-    integer :: inda,indb,indj,indk,spin
-    integer :: indapr,indbpr,indjpr,indkpr,spinpr
-    integer :: i,j,k,nlim,dim_count,ndim1,unt,ndim2
-    integer :: lim1i, lim2i, lim1j, lim2j,lim1,lim2
-    real(d) :: hik,hjk,haa
-    real(d), dimension(:), allocatable :: file_offdiag
+    integer  :: inda,indb,indj,indk,spin
+    integer  :: indapr,indbpr,indjpr,indkpr,spinpr
+    integer  :: i,j,k,nlim,dim_count,ndim1,unt,ndim2
+    integer  :: lim1i, lim2i, lim1j, lim2j,lim1,lim2
+    real(dp) :: hik,hjk,haa
+    real(dp), dimension(:), allocatable :: file_offdiag
     integer                              :: nvir,a,b,nzero,ktype
-    real(d)                              :: tw1,tw2,tc1,tc2
+    real(dp)                              :: tw1,tw2,tc1,tc2
     integer                                       :: nthreads,tid
-    integer :: n
-    real(d) :: minc2
-    integer :: c,cr,cm
-    real(d) :: ea,eb,ej,ek,temp
-    real(d), parameter                   :: small=1e-12_d
+    integer  :: n
+    real(dp) :: minc2
+    integer  :: c,cr,cm
+    real(dp) :: ea,eb,ej,ek,temp
+    real(dp), parameter                   :: small=1e-12_dp
 
     
  
@@ -2646,11 +2646,11 @@
 
       implicit none
 
-      integer                             :: e2,i
-      real(d), dimension(3*currdim)       :: work
-      real(d)                             :: error
-      real(d), dimension(currdim)         :: val
-      real(d), dimension(currdim,currdim) :: vec
+      integer                              :: e2,i
+      real(dp), dimension(3*currdim)       :: work
+      real(dp)                             :: error
+      real(dp), dimension(currdim)         :: val
+      real(dp), dimension(currdim,currdim) :: vec
 
 !-----------------------------------------------------------------------
 ! Diagonalise the Rayleigh matrix
@@ -2705,7 +2705,7 @@
 
       integer, intent(in) :: matdim
       integer             :: i
-      real(d)             :: ddot
+      real(dp)            :: ddot
 
       external ddot
 
@@ -2822,11 +2822,11 @@
       
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer                            :: indx,i,j,count
-      integer, dimension(nstates)        :: convmap
-      real(d), dimension(:), allocatable :: swapvec
-      real(d)                            :: swapval
+      integer, intent(in)                 :: matdim
+      integer                             :: indx,i,j,count
+      integer, dimension(nstates)         :: convmap
+      real(dp), dimension(:), allocatable :: swapvec
+      real(dp)                            :: swapval
       
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -2901,11 +2901,11 @@
       
       implicit none
 
-      integer, intent(in)                  :: matdim
-      integer                              :: i,j,lower,upper,indx,&
-                                              nsubvec
-      real(d), dimension(:,:), allocatable :: overlap
-      logical                              :: lcollapse
+      integer, intent(in)                   :: matdim
+      integer                               :: i,j,lower,upper,indx,&
+                                               nsubvec
+      real(dp), dimension(:,:), allocatable :: overlap
+      logical                               :: lcollapse
 
 !-----------------------------------------------------------------------
 ! Set the lower and upper indices on the unconverged subspace vectors
@@ -2963,10 +2963,10 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer                            :: i,j,ilbl,ilast
-      real(d), dimension(:), allocatable :: tmpvec
-      logical                            :: lcollapse
+      integer, intent(in)                 :: matdim
+      integer                             :: i,j,ilbl,ilast
+      real(dp), dimension(:), allocatable :: tmpvec
+      logical                             :: lcollapse
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
@@ -3021,11 +3021,11 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer                            :: i,j,ilbl,ilast,info
-      real(d), dimension(:), allocatable :: tmpvec,cdiag
-      real(d)                            :: alpha,xz,xy,ddot
-      logical                            :: lcollapse
+      integer, intent(in)                 :: matdim
+      integer                             :: i,j,ilbl,ilast,info
+      real(dp), dimension(:), allocatable :: tmpvec,cdiag
+      real(dp)                            :: alpha,xz,xy,ddot
+      logical                             :: lcollapse
 
       external ddot
 
@@ -3098,10 +3098,10 @@
 
       implicit none
 
-      integer, intent(in)                :: matdim
-      integer                            :: n,info
-      real(d), dimension(:), allocatable :: tau,work
-      logical                            :: lcollapse
+      integer, intent(in)                 :: matdim
+      integer                             :: n,info
+      real(dp), dimension(:), allocatable :: tau,work
+      logical                             :: lcollapse
 
 !-----------------------------------------------------------------------
 ! Orthogonalisation of the subspace vectors via the QR factorization

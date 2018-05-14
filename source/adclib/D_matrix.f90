@@ -16,7 +16,7 @@ module D_matrix
 contains
  
 
- real(d) function t2_1h1p(apr,kpr)
+ real(dp) function t2_1h1p(apr,kpr)
 
     integer, intent(in) :: kpr,apr
 
@@ -98,7 +98,7 @@ do b1=nOcc+1,nBas
 
 
 
- real(d) function t2_1h1p_hc(apr,kpr)
+ real(dp) function t2_1h1p_hc(apr,kpr)
 
  integer, intent(in) :: kpr,apr
 
@@ -191,7 +191,7 @@ do b1=nOcc+1,nBas
 
 
 
- real(d) function t2_2h2p(apr,bpr,kpr,lpr)
+ real(dp) function t2_2h2p(apr,bpr,kpr,lpr)
 
  integer, intent(in) :: kpr,apr,bpr,lpr
 
@@ -375,7 +375,7 @@ do b1=nOcc+1,nBas
 
 
 
- real(d) function t2_2h2p_hc(apr,bpr,kpr,lpr,P)
+ real(dp) function t2_2h2p_hc(apr,bpr,kpr,lpr,P)
 
  integer, intent(in) :: kpr,apr,bpr,lpr,P
 
@@ -601,7 +601,7 @@ do b1=nOcc+1,nBas
 
 
 
- real(d) function t2_3h3p_hc(apr,bpr,cpr,kpr,lpr,mpr,I)
+ real(dp) function t2_3h3p_hc(apr,bpr,cpr,kpr,lpr,mpr,I)
 
  integer, intent(in) :: kpr,apr,bpr,lpr,cpr,mpr,I
 
@@ -1191,7 +1191,7 @@ do b1=nOcc+1,nBas
   function calc_density(k,a) result(func)
  
     integer, intent(in) :: k,a
-    real(d)             :: func
+    real(dp)            :: func
 
 !!! I only have to write the occupied-unoccupied part of the density matrix !!!
 !!!!!!!   THE APR OR KPR HAVE ONLY ONE POSSIBLITY FOR THE SPIN
@@ -1439,7 +1439,7 @@ do b1=nOcc+1,nBas
 
 
 
- real(d) function densityhc(k,a)
+ real(dp) function densityhc(k,a)
  
  integer, intent(in) :: k,a
 
@@ -1526,7 +1526,7 @@ do b1=nOcc+1,nBas
  end function densityhc
 
 
- real(d) function proper_density(k,a)
+ real(dp) function proper_density(k,a)
  
  integer, intent(in) :: k,a
 
@@ -1636,7 +1636,7 @@ do b1=nOcc+1,nBas
 !!$Zeroth order contribution D0_1_ak,a'k'. The condition that k=k'
 !!$is checked by the calling procedure
 
-  real(d) function D0_1_ph_ph(a,apr)
+  real(dp) function D0_1_ph_ph(a,apr)
     
     integer, intent(in) :: a,apr
 
@@ -1652,7 +1652,7 @@ do b1=nOcc+1,nBas
 !!$is checked by the calling procedure
 
 
- real(d) function D0_2_ph_ph(k,kpr)
+ real(dp) function D0_2_ph_ph(k,kpr)
 
     integer, intent(in) :: k,kpr
 
@@ -1691,7 +1691,7 @@ do b1=nOcc+1,nBas
 
 !!$SECOND order contribution D2_1_ak,a'k'. The condition that k=k' is checked by the calling procedure
 
- real(d) function D2_1_ph_ph(a,apr)
+ real(dp) function D2_1_ph_ph(a,apr)
 
     integer :: l1,l,sym
     integer, intent(in) :: a,apr
@@ -1718,7 +1718,7 @@ do b1=nOcc+1,nBas
 !!$SECOND order contribution D2_2_ak,a'k'. The condition that k'=k
 !!$is checked by the calling procedure
 
- real(d) function D2_2_ph_ph(a,apr)
+ real(dp) function D2_2_ph_ph(a,apr)
 
     integer :: l1,l,sym
     integer, intent(in) :: a,apr
@@ -1749,7 +1749,7 @@ do b1=nOcc+1,nBas
 !!$SECOND order contribution D2_3_ak,a'k'. The condition that a=a'
 !!$is checked by the calling procedure
 
- real(d) function D2_3_ph_ph(k,kpr)
+ real(dp) function D2_3_ph_ph(k,kpr)
 
     integer :: b1,b,sym
     integer, intent(in) :: k,kpr
@@ -1781,7 +1781,7 @@ do b1=nOcc+1,nBas
 !!$SECOND order contribution D2_4_ak,a'k'. The condition that a'=a
 !!$is checked by the calling procedure
 
- real(d) function D2_4_ph_ph(k,kpr)
+ real(dp) function D2_4_ph_ph(k,kpr)
 
     integer :: b1,b,sym
     integer, intent(in) :: k,kpr
@@ -1823,7 +1823,7 @@ do b1=nOcc+1,nBas
 !!$checked in the calling procedure.
 
 
-    real(d) function D2_2_1_ph_ph(a,apr)
+  real(dp) function D2_2_1_ph_ph(a,apr)
 
     integer, intent(in) :: a,apr
 
@@ -1883,7 +1883,7 @@ do b1=nOcc+1,nBas
 !!$checked in the calling procedure.
 
 
-    real(d) function D2_2_2_ph_ph(a,apr)
+  real(dp) function D2_2_2_ph_ph(a,apr)
 
     integer, intent(in) :: a,apr
 
@@ -1944,7 +1944,7 @@ do b1=nOcc+1,nBas
 !!$checked in the calling procedure.
 
 
-    real(d) function D2_3_1_ph_ph(a,apr)
+  real(dp) function D2_3_1_ph_ph(a,apr)
 
     integer, intent(in) :: a,apr
 
@@ -2006,7 +2006,7 @@ do b1=nOcc+1,nBas
 !!$checked in the calling procedure.
 
 
-    real(d) function D2_3_2_ph_ph(a,apr)
+  real(dp) function D2_3_2_ph_ph(a,apr)
 
     integer, intent(in) :: a,apr
 
@@ -2065,7 +2065,7 @@ do b1=nOcc+1,nBas
 !!$Second order contribution D2_4_1_ak,a'k'. The condition that a=a' is
 !!$checked in the calling procedure.
 
-  real(d) function D2_4_1_ph_ph(k,kpr)
+  real(dp) function D2_4_1_ph_ph(k,kpr)
 
     integer, intent(in) :: k,kpr
 
@@ -2124,7 +2124,7 @@ end do
 !!$checked in the calling procedure.
 
 
-  real(d) function D2_4_2_ph_ph(k,kpr)
+  real(dp) function D2_4_2_ph_ph(k,kpr)
 
     integer, intent(in) :: k,kpr
 
@@ -2183,7 +2183,7 @@ end do
 !!$Second order contribution D2_5_1_ak,a'k'. The condition that a=a' is
 !!$checked in the calling procedure.
 
-  real(d) function D2_5_1_ph_ph(k,kpr)
+  real(dp) function D2_5_1_ph_ph(k,kpr)
 
     integer, intent(in) :: k,kpr
 
@@ -2243,7 +2243,7 @@ end do
 !!$Second order contribution D2_5_2_ak,a'k'. The condition that a=a' is
 !!$checked in the calling procedure.
 
-  real(d) function D2_5_2_ph_ph(k,kpr)
+  real(dp) function D2_5_2_ph_ph(k,kpr)
 
     integer, intent(in) :: k,kpr
 
@@ -2300,7 +2300,7 @@ do i1=1,nOcc
  
  !!$Second order contribution D2_6_1_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
-    real(d) function D2_6_1_ph_ph(a,apr,k,kpr)
+    real(dp) function D2_6_1_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2355,7 +2355,7 @@ do i1=1,nOcc
 
   !!$Second order contribution D2_6_2_ak,a'k'. NO DELTA FUNCTIONS (hc)
 
-    real(d) function D2_6_2_ph_ph(a,apr,k,kpr)
+    real(dp) function D2_6_2_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2411,7 +2411,7 @@ do i1=1,nOcc
 
 !!$Second order contribution D2_6_3_ak,a'k'. 
 
-  real(d) function D2_6_3_ph_ph(a,apr,k,kpr)
+  real(dp) function D2_6_3_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2467,7 +2467,7 @@ do j1=1,nOcc
 
 !!$Second order contribution D2_6_4_ak,a'k'. (hc)
 
-  real(d) function D2_6_4_ph_ph(a,apr,k,kpr)
+  real(dp) function D2_6_4_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2524,7 +2524,7 @@ do j1=1,nOcc
  
 !!$Second order contribution D2_7_1_ak,a'k'. 
 
-  real(d) function D2_7_1_ph_ph(a,apr,k,kpr)
+  real(dp) function D2_7_1_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2579,7 +2579,7 @@ do j1=1,nOcc
  
 !!$Second order contribution D2_7_2_ak,a'k'. 
 
-  real(d) function D2_7_2_ph_ph(a,apr,k,kpr)
+  real(dp) function D2_7_2_ph_ph(a,apr,k,kpr)
 
     integer, intent(in) :: a,apr,k,kpr
 
@@ -2646,7 +2646,7 @@ do j1=1,nOcc
 !!$ a'=b' and k'=l'; EMPTY AND FILL THE SAME SPATIAL ORBITALS  SPIN CASE 5   (5 IN TROFIMOV FILE)
 
 ! the condition a=a' k=k' is checked in the call  
- real(d) function D5_1_ph_2p2h(a,k,bpr,lpr)
+ real(dp) function D5_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
@@ -2654,14 +2654,14 @@ do j1=1,nOcc
 
 !    if((kdelta(a,apr) .eq. 1).and.(kdelta(k,kpr) .eq. 1))
 !      D5_1_ph_2p2h=dpl(lpr,bpr)
-!      D5_1_ph_2p2h=D5_1_ph_2p2h/sqrt(2._d)
+!      D5_1_ph_2p2h=D5_1_ph_2p2h/sqrt(2._dp)
 !     end if
 
   end function D5_1_ph_2p2h
 
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D5_2_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D5_2_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -2679,7 +2679,7 @@ do j1=1,nOcc
 
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D5_3_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D5_3_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -2696,7 +2696,7 @@ do j1=1,nOcc
    end function D5_3_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D5_4_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D5_4_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -2705,7 +2705,7 @@ do j1=1,nOcc
 !    if((kdelta(a,bpr) .eq. 1).and.(kdelta(k,lpr) .eq. 1))
     
 !    D5_4_ph_2p2h=dpl(kpr,apr)
-!    D5_4_ph_2p2h=D5_4_ph_2p2h/sqrt(2._d)
+!    D5_4_ph_2p2h=D5_4_ph_2p2h/sqrt(2._dp)
 
 !    D5_4_ph_2p2h=-D5_4_ph_2p2h  !!! FACTOR FORM EXPRESSION IN THE PAPER
 
@@ -2717,7 +2717,7 @@ do j1=1,nOcc
 
 
 ! the condition a=a' k=k' is checked in the call  
-  real(d) function D5_5_ph_2p2h(a,k,bpr,lpr)
+  real(dp) function D5_5_ph_2p2h(a,k,bpr,lpr)
     
     integer, intent(in) :: a,k,bpr,lpr
     
@@ -2743,7 +2743,7 @@ do j1=1,nOcc
 !      end do
 !   end do
     
-!    D5_5_ph_2p2h=D5_5_ph_2p2h/sqrt(2._d)
+!    D5_5_ph_2p2h=D5_5_ph_2p2h/sqrt(2._dp)
 
 
 ! end if
@@ -2751,7 +2751,7 @@ do j1=1,nOcc
   end function D5_5_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D5_6_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D5_6_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -2788,7 +2788,7 @@ do j1=1,nOcc
 
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D5_7_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D5_7_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -2826,7 +2826,7 @@ do j1=1,nOcc
 
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D5_8_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D5_8_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -2853,7 +2853,7 @@ do j1=1,nOcc
 !      end do
 !   end do
 
-!    D5_8_ph_2p2h=D5_8_ph_2p2h/sqrt(2._d)
+!    D5_8_ph_2p2h=D5_8_ph_2p2h/sqrt(2._dp)
 
 
 
@@ -2862,7 +2862,7 @@ do j1=1,nOcc
   end function D5_8_ph_2p2h
 
 ! the condition a=a'  is checked in the call  
- real(d) function D5_9_ph_2p2h(a,k,bpr,kpr,lpr)
+ real(dp) function D5_9_ph_2p2h(a,k,bpr,kpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr,lpr
 
@@ -2900,7 +2900,7 @@ do j1=1,nOcc
 
 
 ! the condition a=b'  is checked in the call  
- real(d) function D5_10_ph_2p2h(a,k,apr,kpr,lpr)
+ real(dp) function D5_10_ph_2p2h(a,k,apr,kpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr,lpr
 
@@ -2936,7 +2936,7 @@ do j1=1,nOcc
 
 
 ! the condition  k=k' is checked in the call  
- real(d) function D5_11_ph_2p2h(a,k,apr,bpr,lpr)
+ real(dp) function D5_11_ph_2p2h(a,k,apr,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,bpr,lpr
 
@@ -2971,7 +2971,7 @@ do j1=1,nOcc
 
 
 ! the condition  k=l' is checked in the call  
- real(d) function D5_12_ph_2p2h(a,k,apr,bpr,kpr)
+ real(dp) function D5_12_ph_2p2h(a,k,apr,bpr,kpr)
 
     integer, intent(in) :: a,k,apr,bpr,kpr
 
@@ -3008,7 +3008,7 @@ do j1=1,nOcc
 !!$ a'|=b' and k'=l';  EMPTY THE SAME SPATIAL ORBITAL  SPIN CASE 4 (4 IN TROFIMOV FILE)
  
 ! the condition a=a' k=k' is checked in the call  
-real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
+real(dp) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
@@ -3030,7 +3030,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D4_2_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D4_2_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3048,7 +3048,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D4_3_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D4_3_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3065,7 +3065,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
    end function D4_3_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D4_4_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D4_4_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3086,7 +3086,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 
 
 ! the condition a=a' k=k' is checked in the call  
-  real(d) function D4_5_ph_2p2h(a,k,bpr,lpr)
+  real(dp) function D4_5_ph_2p2h(a,k,bpr,lpr)
     
     integer, intent(in) :: a,k,bpr,lpr
     
@@ -3122,7 +3122,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_5_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D4_6_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D4_6_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3160,7 +3160,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_6_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D4_7_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D4_7_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3197,7 +3197,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_7_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D4_8_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D4_8_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3233,7 +3233,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_8_ph_2p2h
 
 ! the condition a=a'  is checked in the call  
- real(d) function D4_9_ph_2p2h(a,k,bpr,kpr,lpr)
+ real(dp) function D4_9_ph_2p2h(a,k,bpr,kpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr,lpr
 
@@ -3269,7 +3269,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_9_ph_2p2h
 
 ! the condition a=b'  is checked in the call  
- real(d) function D4_10_ph_2p2h(a,k,apr,kpr,lpr)
+ real(dp) function D4_10_ph_2p2h(a,k,apr,kpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr,lpr
 
@@ -3304,7 +3304,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_10_ph_2p2h
 
 ! the condition  k=k' is checked in the call  
- real(d) function D4_11_ph_2p2h(a,k,apr,bpr,lpr)
+ real(dp) function D4_11_ph_2p2h(a,k,apr,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,bpr,lpr
 
@@ -3339,7 +3339,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
   end function D4_11_ph_2p2h
 
 ! the condition  k=l' is checked in the call  
- real(d) function D4_12_ph_2p2h(a,k,apr,bpr,kpr)
+ real(dp) function D4_12_ph_2p2h(a,k,apr,bpr,kpr)
 
     integer, intent(in) :: a,k,apr,bpr,kpr
 
@@ -3376,7 +3376,7 @@ real(d) function D4_1_ph_2p2h(a,k,bpr,lpr)
 !!$ a'=b' and k'/=l';  FILL THE SAME SPATIAL ORBITAL  SPIN CASE 3 (3 IN TROFIMOV FILE)
 
 ! the condition a=a' k=k' is checked in the call  
-real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
+real(dp) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
@@ -3397,7 +3397,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D3_2_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D3_2_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3415,7 +3415,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D3_3_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D3_3_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3432,7 +3432,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
    end function D3_3_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D3_4_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D3_4_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3452,7 +3452,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_4_ph_2p2h
 
 ! the condition a=a' k=k' is checked in the call  
-  real(d) function D3_5_ph_2p2h(a,k,bpr,lpr)
+  real(dp) function D3_5_ph_2p2h(a,k,bpr,lpr)
     
     integer, intent(in) :: a,k,bpr,lpr
     
@@ -3487,7 +3487,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_5_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D3_6_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D3_6_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3524,7 +3524,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_6_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D3_7_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D3_7_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3561,7 +3561,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_7_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D3_8_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D3_8_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3597,7 +3597,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_8_ph_2p2h
 
 ! the condition a=a'  is checked in the call  
- real(d) function D3_9_ph_2p2h(a,k,bpr,kpr,lpr)
+ real(dp) function D3_9_ph_2p2h(a,k,bpr,kpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr,lpr
     
@@ -3632,7 +3632,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_9_ph_2p2h
 
 ! the condition a=b'  is checked in the call  
- real(d) function D3_10_ph_2p2h(a,k,apr,kpr,lpr)
+ real(dp) function D3_10_ph_2p2h(a,k,apr,kpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr,lpr
 
@@ -3665,7 +3665,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_10_ph_2p2h
 
 ! the condition  k=k' is checked in the call  
- real(d) function D3_11_ph_2p2h(a,k,apr,bpr,lpr)
+ real(dp) function D3_11_ph_2p2h(a,k,apr,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,bpr,lpr
 
@@ -3700,7 +3700,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
   end function D3_11_ph_2p2h
 
 ! the condition  k=l' is checked in the call  
- real(d) function D3_12_ph_2p2h(a,k,apr,bpr,kpr)
+ real(dp) function D3_12_ph_2p2h(a,k,apr,bpr,kpr)
 
     integer, intent(in) :: a,k,apr,bpr,kpr
 
@@ -3738,7 +3738,7 @@ real(d) function D3_1_ph_2p2h(a,k,bpr,lpr)
 !!$ a'/=b' and k'/=l'; EMPTY AND  FILL DIFFERENT  SPATIAL ORBITALS  SPIN CASE 2 (2 IN TROFIMOV FILE) sqrt(1/12)  IS THE NORMALIZATION OF THE STATE, THE STATE IS THE A STATE IN SZABO AND OSTLUND
 
 ! the condition a=a' k=k' is checked in the call  
-real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
+real(dp) function D2_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
@@ -3758,7 +3758,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_1_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D2_2_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D2_2_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3775,7 +3775,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_2_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D2_3_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D2_3_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3792,7 +3792,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
    end function D2_3_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D2_4_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D2_4_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3812,7 +3812,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_4_ph_2p2h
 
 ! the condition a=a' k=k' is checked in the call  
-  real(d) function D2_5_ph_2p2h(a,k,bpr,lpr)
+  real(dp) function D2_5_ph_2p2h(a,k,bpr,lpr)
     
     integer, intent(in) :: a,k,bpr,lpr
     
@@ -3848,7 +3848,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_5_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D2_6_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D2_6_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -3885,7 +3885,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_6_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D2_7_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D2_7_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -3922,7 +3922,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_7_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D2_8_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D2_8_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -3957,7 +3957,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_8_ph_2p2h
 
 ! the condition a=a'  is checked in the call  
- real(d) function D2_9_ph_2p2h(a,k,bpr,kpr,lpr)
+ real(dp) function D2_9_ph_2p2h(a,k,bpr,kpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr,lpr
 
@@ -3992,7 +3992,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_9_ph_2p2h
 
 ! the condition a=b' is checked in the call  
- real(d) function D2_10_ph_2p2h(a,k,apr,kpr,lpr)
+ real(dp) function D2_10_ph_2p2h(a,k,apr,kpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr,lpr
 
@@ -4027,7 +4027,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_10_ph_2p2h
 
 ! the condition  k=k' is checked in the call  
- real(d) function D2_11_ph_2p2h(a,k,apr,bpr,lpr)
+ real(dp) function D2_11_ph_2p2h(a,k,apr,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,bpr,lpr
 
@@ -4063,7 +4063,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
   end function D2_11_ph_2p2h
 
 ! the condition  k=l' is checked in the call  
- real(d) function D2_12_ph_2p2h(a,k,apr,bpr,kpr)
+ real(dp) function D2_12_ph_2p2h(a,k,apr,bpr,kpr)
 
     integer, intent(in) :: a,k,apr,bpr,kpr
 
@@ -4099,7 +4099,7 @@ real(d) function D2_1_ph_2p2h(a,k,bpr,lpr)
 !!$ a'/=b' and k'/=l'; EMPTY AND  FILL DIFFERENT  SPATIAL ORBITALS  SPIN CASE 1 (1 IN TROFIMOV FILE) 1/2 IS THE NORMALIZATION OF THE STATE, THE STATE IS THE B STATE IN SZABO AND OSTLUND
 
 ! the condition a=a' k=k' is checked in the call  
-real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
+real(dp) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     integer, intent(in) :: a,k,bpr,lpr
 
@@ -4119,7 +4119,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_1_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D1_2_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D1_2_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -4135,7 +4135,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_2_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D1_3_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D1_3_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -4151,7 +4151,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
    end function D1_3_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D1_4_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D1_4_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -4171,7 +4171,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_4_ph_2p2h
 
 ! the condition a=a' k=k' is checked in the call  
-  real(d) function D1_5_ph_2p2h(a,k,bpr,lpr)
+  real(dp) function D1_5_ph_2p2h(a,k,bpr,lpr)
     
     integer, intent(in) :: a,k,bpr,lpr
     
@@ -4207,7 +4207,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_5_ph_2p2h
 
 ! the condition a=a' k=l' is checked in the call  
- real(d) function D1_6_ph_2p2h(a,k,bpr,kpr)
+ real(dp) function D1_6_ph_2p2h(a,k,bpr,kpr)
 
     integer, intent(in) :: a,k,bpr,kpr
 
@@ -4244,7 +4244,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_6_ph_2p2h
 
 ! the condition a=b' k=k' is checked in the call  
- real(d) function D1_7_ph_2p2h(a,k,apr,lpr)
+ real(dp) function D1_7_ph_2p2h(a,k,apr,lpr)
 
     integer, intent(in) :: a,k,apr,lpr
 
@@ -4281,7 +4281,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_7_ph_2p2h
 
 ! the condition a=b' k=l' is checked in the call  
- real(d) function D1_8_ph_2p2h(a,k,apr,kpr)
+ real(dp) function D1_8_ph_2p2h(a,k,apr,kpr)
 
     integer, intent(in) :: a,k,apr,kpr
 
@@ -4316,7 +4316,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_8_ph_2p2h
 
 ! the condition a=a'  is checked in the call  
- real(d) function D1_9_ph_2p2h(a,k,bpr,kpr,lpr)
+ real(dp) function D1_9_ph_2p2h(a,k,bpr,kpr,lpr)
 
     integer, intent(in) :: a,k,bpr,kpr,lpr
 
@@ -4350,7 +4350,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_9_ph_2p2h
 
 ! the condition a=b'  is checked in the call  
- real(d) function D1_10_ph_2p2h(a,k,apr,kpr,lpr)
+ real(dp) function D1_10_ph_2p2h(a,k,apr,kpr,lpr)
 
     integer, intent(in) :: a,k,apr,kpr,lpr
 
@@ -4383,7 +4383,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_10_ph_2p2h
 
 ! the condition  k=k' is checked in the call  
- real(d) function D1_11_ph_2p2h(a,k,apr,bpr,lpr)
+ real(dp) function D1_11_ph_2p2h(a,k,apr,bpr,lpr)
 
     integer, intent(in) :: a,k,apr,bpr,lpr
 
@@ -4418,7 +4418,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   end function D1_11_ph_2p2h
 
 ! the condition  k=l' is checked in the call  
- real(d) function D1_12_ph_2p2h(a,k,apr,bpr,kpr)
+ real(dp) function D1_12_ph_2p2h(a,k,apr,bpr,kpr)
 
     integer, intent(in) :: a,k,apr,bpr,kpr
 
@@ -4478,7 +4478,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 !!$ (1,1)-Dabkl,a'b'k'l' TERM WITH   b=b' k=k' l=l'(THE LOWER PART OF THE MATRIX)
 
-  real(d) function D_1_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_1_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
     
     integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
     
@@ -4501,7 +4501,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
    end  if
 
@@ -4512,7 +4512,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4522,7 +4522,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_1_1_2p2h_2p2h = D_1_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -4531,19 +4531,19 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   
     end if
 
-!    D_1_1_2p2h_2p2h= +0.25*D_1_1_2p2h_2p2h    
+!    D_1_1_2p2h_2p2h= +0.25_dp*D_1_1_2p2h_2p2h    
  
 
   
  
-!    D_1_1_2p2h_2p2h=+4._d*dpl(a,apr)
-!    D_1_1_2p2h_2p2h=+0.25*D_1_1_2p2h_2p2h    
+!    D_1_1_2p2h_2p2h=+4._dp*dpl(a,apr)
+!    D_1_1_2p2h_2p2h=+0.25_dp*D_1_1_2p2h_2p2h    
   
   end function D_1_1_2p2h_2p2h
 
   !!$ (2,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_2_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_2_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
      integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4568,7 +4568,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  - 1.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4580,7 +4580,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4590,7 +4590,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_2_1_2p2h_2p2h = D_2_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -4605,7 +4605,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
    !!$ (3,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_3_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_3_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
       integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4630,7 +4630,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4642,7 +4642,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  -  1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4652,7 +4652,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_3_1_2p2h_2p2h = D_3_1_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -4668,7 +4668,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4i_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4i_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
        integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4693,7 +4693,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4704,7 +4704,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4714,7 +4714,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4i_1_2p2h_2p2h = D_4i_1_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&   
@@ -4730,7 +4730,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4ii_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4ii_1_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4755,7 +4755,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4766,7 +4766,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4776,7 +4776,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4ii_1_2p2h_2p2h = D_4ii_1_2p2h_2p2h  + 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -4793,7 +4793,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (2,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_2_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_2_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4818,7 +4818,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)& 
     D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  - 2.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
     
@@ -4829,7 +4829,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4839,7 +4839,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_2_2_2p2h_2p2h = D_2_2_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -4856,7 +4856,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (3,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_3_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_3_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
      integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4881,7 +4881,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  + 1.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4892,7 +4892,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4902,7 +4902,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_3_2_2p2h_2p2h = D_3_2_2p2h_2p2h  - 1.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -4919,7 +4919,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4i_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4i_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
       integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -4944,7 +4944,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  + 2.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -4955,7 +4955,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -4965,7 +4965,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4i_2_2p2h_2p2h = D_4i_2_2p2h_2p2h  - 2.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -4983,7 +4983,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4ii_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4ii_2_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
        integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5008,7 +5008,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)& 
     D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5019,7 +5019,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
@@ -5029,7 +5029,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4ii_2_2p2h_2p2h = D_4ii_2_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5048,7 +5048,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (3,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_3_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_3_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
     integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5074,7 +5074,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&
     D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5085,7 +5085,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -5095,7 +5095,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_3_3_2p2h_2p2h = D_3_3_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)& 
@@ -5112,7 +5112,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4i_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4i_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5137,7 +5137,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)& 
     D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  - 2.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5148,7 +5148,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
@@ -5158,7 +5158,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4i_3_2p2h_2p2h = D_4i_3_2p2h_2p2h  + 2.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5178,7 +5178,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4ii_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4ii_3_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5203,7 +5203,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5214,7 +5214,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -5224,7 +5224,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_4ii_3_2p2h_2p2h = D_4ii_3_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5242,7 +5242,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,4i)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4i_4i_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4i_4i_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5268,7 +5268,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&  
     D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  - 4.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5279,7 +5279,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)& 
@@ -5289,7 +5289,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_4i_4i_2p2h_2p2h = D_4i_4i_2p2h_2p2h  + 4.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5306,7 +5306,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,4i)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4ii_4i_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4ii_4i_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
 
         integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5334,7 +5334,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)& 
     D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  - 0.0d0*dpl(b,apr)*(-1.0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5345,7 +5345,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)& 
     D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(kpr,k)*(-1.0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -5355,7 +5355,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)& 
     D_4ii_4i_2p2h_2p2h = D_4ii_4i_2p2h_2p2h  + 0.0d0*dpl(lpr,l)*(-1.0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5374,7 +5374,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,4ii)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-  real(d) function D_4ii_4ii_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
+  real(dp) function D_4ii_4ii_2p2h_2p2h(a,b,k,l,apr,bpr,kpr,lpr)
     
     integer , intent(in) :: a,b,k,l,apr,bpr,kpr,lpr
 
@@ -5402,7 +5402,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     if(kdelta(a,bpr) .eq. 1)&
     D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(b,apr)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
  
     end if
 
@@ -5413,7 +5413,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(l,lpr) .eq. 1)&  
     D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(kpr,k)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  - 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(l,kpr) .eq. 1)&  
@@ -5423,7 +5423,7 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
        if(kdelta(k,kpr) .eq. 1)&  
     D_4ii_4ii_2p2h_2p2h = D_4ii_4ii_2p2h_2p2h  + 12.0d0*dpl(lpr,l)*(-1.0d0)
-!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._d)
+!    D_1_1_2p2h_2p2h= D_1_1_2p2h_2p2h  + 0.25*D_1_1_2p2h_2p2h*(-1._dp)
 
  
        if(kdelta(k,lpr) .eq. 1)&  
@@ -5449,48 +5449,48 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 !!$******************DIAGONAL**************************
 !!$****
 
-!  real(d) function DD_1_1_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_1_1_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: term
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: term
 !    integer :: j
     
-!    DD_1_1_2p2h_2p2h=+0._d
+!    DD_1_1_2p2h_2p2h=+0._dp
 
-!    term=+0._d
+!    term=+0._dp
 
 !    do j=1,nOcc
 
-!    term=term+4._d*dpl(j,j)
+!    term=term+4._dp*dpl(j,j)
 
 !    end do
 
 !    DD_1_1_2p2h_2p2h=DD_1_1_2p2h_2p2h+term
-!    DD_1_1_2p2h_2p2h=DD_1_1_2p2h_2p2h+4._d*(dpl(a,a)+dpl(b,b)-dpl(k,k)-dpl(l,l))
+!    DD_1_1_2p2h_2p2h=DD_1_1_2p2h_2p2h+4._dp*(dpl(a,a)+dpl(b,b)-dpl(k,k)-dpl(l,l))
 !    DD_1_1_2p2h_2p2h=+0.25*DD_1_1_2p2h_2p2h
 
 !  end function DD_1_1_2p2h_2p2h
 
   !!$ (2,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_2_1_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_2_1_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: term
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: term
 !    integer :: j
 
-!    DD_2_1_2p2h_2p2h=+0._d
+!    DD_2_1_2p2h_2p2h=+0._dp
 
-!    term=+0._d
+!    term=+0._dp
 
 !    do j=1,nOcc
 
-!    term=term+0._d*dpl(j,j)
+!    term=term+0._dp*dpl(j,j)
 
 !    end do
 
 !    DD_2_1_2p2h_2p2h=DD_2_1_2p2h_2p2h+term
-!    DD_2_1_2p2h_2p2h=DD_2_1_2p2h_2p2h+0._d*(dpl(a,a)+dpl(b,b)-dpl(k,k)-dpl(l,l))
+!    DD_2_1_2p2h_2p2h=DD_2_1_2p2h_2p2h+0._dp*(dpl(a,a)+dpl(b,b)-dpl(k,k)-dpl(l,l))
 
 !    DD_2_1_2p2h_2p2h=+0.5*DD_2_1_2p2h_2p2h
 !    DD_2_1_2p2h_2p2h=+(1/sqrt(12))*DD_2_1_2p2h_2p2h
@@ -5499,12 +5499,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
    !!$ (3,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_3_1_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_3_1_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_3_1_2p2h_2p2h=+0._d
@@ -5527,12 +5527,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4i_1_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4i_1_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4i_1_2p2h_2p2h=+0._d
@@ -5555,12 +5555,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,1)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4ii_1_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4ii_1_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4ii_1_2p2h_2p2h=+0._d
@@ -5582,12 +5582,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (2,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_2_2_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_2_2_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_2_2_2p2h_2p2h=+0._d
@@ -5609,12 +5609,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (3,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_3_2_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_3_2_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_3_2_2p2h_2p2h=+0._d
@@ -5637,12 +5637,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4i_2_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4i_2_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4i_2_2p2h_2p2h=+0._d
@@ -5665,12 +5665,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,2)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4ii_2_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4ii_2_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4ii_2_2p2h_2p2h=+0._d
@@ -5692,12 +5692,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (3,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_3_3_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_3_3_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_3_3_2p2h_2p2h=+0._d
@@ -5719,12 +5719,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4i_3_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4i_3_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4i_3_2p2h_2p2h=+0._d
@@ -5746,12 +5746,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,3)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4ii_3_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4ii_3_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4ii_3_2p2h_2p2h=+0._d
@@ -5773,12 +5773,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4i,4i)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4i_4i_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4i_4i_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4i_4i_2p2h_2p2h=+0._d
@@ -5800,12 +5800,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,4i)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4ii_4i_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4ii_4i_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4ii_4i_2p2h_2p2h=+0._d
@@ -5827,12 +5827,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$ (4ii,4ii)-Dabkl,a'b'k'l'  b=b' k=k' l=l'
 
-!  real(d) function DD_4ii_4ii_2p2h_2p2h(a,b,k,l)
+!  real(dp) function DD_4ii_4ii_2p2h_2p2h(a,b,k,l)
     
-!    real(d), intent(in) :: a,b,k,l
-!    real(d) :: dpl
+!    real(dp), intent(in) :: a,b,k,l
+!    real(dp) :: dpl
 !    external dpl
-!    real(d) :: term
+!    real(dp) :: term
 !    integer :: j
 
 !    DD_4ii_4ii_2p2h_2p2h=+0._d
@@ -5869,12 +5869,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 !!$Second order contribution D2_1_1_ak,a'k'. The condition that k=k' is
 !!$checked in the calling procedure.
 
-!  real(d) function D2_1_1_ph_ph(a,apr)
+!  real(dp) function D2_1_1_ph_ph(a,apr)
 
 !    integer, intent(in) :: a,apr
 
 !    integer :: b,c,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_1_ph_ph=0._d
 !    cnt=0
@@ -5930,12 +5930,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
   !!$Second order contribution D2_1_2_ak,a'k'. The condition that k'=k is
 !!$checked in the calling procedure. (hc)
 
-!  real(d) function D2_1_2_ph_ph(a,apr)
+!  real(dp) function D2_1_2_ph_ph(a,apr)
 
 !    integer, intent(in) :: a,apr
 
 !    integer :: b,c,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_2_ph_ph=0._d
 !    cnt=0
@@ -5989,12 +5989,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_3_ak,a'k'. NO DELTA FUNCTIONS
 
-!    real(d) function D2_1_3_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_3_ph_ph(a,apr,k,kpr)
 !
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,c,i, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_3_ph_ph=0._d
 !    cnt=0
@@ -6046,12 +6046,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_4_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
-!    real(d) function D2_1_4_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_4_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,c,i, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_4_ph_ph=0._d
 !    cnt=0
@@ -6103,12 +6103,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_5_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
-!    real(d) function D2_1_5_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_5_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,c,i, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_5_ph_ph=0._d
 !    cnt=0
@@ -6161,12 +6161,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_6_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
- !   real(d) function D2_1_6_ph_ph(a,apr,k,kpr)
+ !   real(dp) function D2_1_6_ph_ph(a,apr,k,kpr)
 
  !   integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,c,i, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_6_ph_ph=0._d
 !    cnt=0
@@ -6218,12 +6218,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_7_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
-!    real(d) function D2_1_7_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_7_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_7_ph_ph=0._d
 !    cnt=0
@@ -6275,12 +6275,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_8_ak,a'k'. NO DELTA FUNCTIONS(hc)
 
-!    real(d) function D2_1_8_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_8_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_7_ph_ph=0._d
 !    cnt=0
@@ -6333,12 +6333,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  !!$Second order contribution D2_1_9_ak,a'k'. The condition that a=a' is
 !!$checked in the calling procedure. (hc)
 
-!  real(d) function D2_1_9_ph_ph(k,kpr)
+!  real(dp) function D2_1_9_ph_ph(k,kpr)
 
 !    integer, intent(in) :: k,kpr
 
 !    integer :: b,c,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_9_ph_ph=0._d
 !    cnt=0
@@ -6395,12 +6395,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 !!$checked in the calling procedure.
 
 
-!  real(d) function D2_1_10_ph_ph(k,kpr)
+!  real(dp) function D2_1_10_ph_ph(k,kpr)
 
 !    integer, intent(in) :: k,kpr
 
 !    integer :: b,c,i,j, nsym1,nsym2,nsym3,u,v,r,s,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_10_ph_ph=0._d
 !    cnt=0
@@ -6454,12 +6454,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_11_ak,a'k'. NO DELTA FUNCTIONS
 
-!   real(d) function D2_1_11_ph_ph(a,apr,k,kpr)
+!   real(dp) function D2_1_11_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_11_ph_ph=0._d
 !    cnt=0
@@ -6512,12 +6512,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
  !!$Second order contribution D2_1_12_ak,a'k'. NO DELTA FUNCTIONS (hc)
 
-!    real(d) function D2_1_12_ph_ph(a,apr,k,kpr)
+!    real(dp) function D2_1_12_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_12_ph_ph=0._d
 !    cnt=0
@@ -6569,12 +6569,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
 !!$Second order contribution D2_1_13_ak,a'k'. 
 
-!  real(d) function D2_1_13_ph_ph(a,apr,k,kpr)
+!  real(dp) function D2_1_13_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,i,j, nsym1,nsym2,nsym3,u,v,r,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_13_ph_ph=0._d
 !    cnt=0
@@ -6628,12 +6628,12 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
  
 !!$Second order contribution D2_1_14_ak,a'k'. 
 
-!  real(d) function D2_1_14_ph_ph(a,apr,k,kpr)
+!  real(dp) function D2_1_14_ph_ph(a,apr,k,kpr)
 
 !    integer, intent(in) :: a,apr,k,kpr
 
 !    integer :: b,c,j, nsym1,nsym2,nsym3,u,r,t,cnt
-!    real(d) :: DA,eacij,ebcij,term
+!    real(dp) :: DA,eacij,ebcij,term
 
 !    D2_1_14_ph_ph=0._d
 !    cnt=0
@@ -6691,10 +6691,10 @@ real(d) function D1_1_ph_2p2h(a,k,bpr,lpr)
 
     implicit none
 
-    real(d)             :: func
+    real(dp)            :: func
     integer, intent(in) :: a,k,kpr,b1
     integer             :: b,c,i,sym,nsym1,nsym2,nsym3,nsym4,c1,i1,cnt
-    real*8              :: DA,eacij,ebcij,term
+    real(dp)            :: DA,eacij,ebcij,term
 
     func=0.0d0
 
