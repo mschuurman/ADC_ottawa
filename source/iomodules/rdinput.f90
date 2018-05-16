@@ -94,14 +94,45 @@
             endif
 
          else if (keyword(i).eq.'initial_state') then
+
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'target') then
+                  ! Initial state determined by comparison to a
+                  ! user-supplied target state.
+                  !
                   ! Assign any integer i>0: this is 
                   ! necessary to get around checks on the 
                   ! statenumber
                   statenumber=999
+               else if (keyword(i).eq.'mix') then
+                  ! Mixed initial state
+                  lmixistate=.true.
+                  ! Set statenumber to something positive to
+                  ! get around checks later on
+                  statenumber=999
+                  ! Read the state indices and coefficientes
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) nmix
+                     allocate(imix(nmix),cmix(nmix))
+                     do k=1,nmix
+                        i=i+2
+                        read(keyword(i),*) imix(k)
+                     enddo
+                     do k=1,nmix
+                        i=i+2
+                        read(keyword(i),*) cmix(k)
+                     enddo
+                     ! Normalisation of the coefficient vector
+                     cmix=cmix/sqrt(dot_product(cmix,cmix))
+                  else
+                     errmsg='The initial mixed state numbers and &
+                          coefficients have not been given'
+                     call error_control
+                  endif
                else
+                  ! ADC eigenstate number
                   read(keyword(i),*) statenumber
                endif
             else
@@ -544,6 +575,14 @@
 
       if (energyonly) statenumber=0
 
+      ! Mixed initial states: only supported for wavepacket
+      ! propagations
+      if (lmixistate.and..not.lpropagation) then
+         msg='Mixed initial states are only supported in TD-ADC and &
+              TD-CIS calculations'
+         goto 999
+      endif
+      
 !-----------------------------------------------------------------------
 ! Dipole operator component
 !-----------------------------------------------------------------------
@@ -563,7 +602,7 @@
 !-----------------------------------------------------------------------
 ! Initial space diagonalisation section: only required if either:
 !
-! (1) We are ionizing from an excited state, or;
+! (1) We are condisdering excitation from an excited state, or;
 ! (2) We are performing an energy-only calculation.
 !-----------------------------------------------------------------------
       if (.not.lautospec.and.abs(method).ne.1) then
@@ -992,9 +1031,9 @@
 
 !-----------------------------------------------------------------------
 ! Natural transition orbitals: currently these are only available for
-! excitation from the ground state
+! excitation from the ground state or for wavepacket propagations
 !-----------------------------------------------------------------------
-      if (lnto.and.statenumber.ne.0) then
+      if (lnto.and.statenumber.ne.0.and..not.lpropagation) then
          msg='NTOs are currently only available for excitation from &
               the ground state'
          goto 999

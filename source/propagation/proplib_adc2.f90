@@ -252,7 +252,10 @@ contains
 !----------------------------------------------------------------------
 ! Fill in the initial wavefunction vector
 !----------------------------------------------------------------------
-    if (statenumber.eq.0) then
+    if (lmixistate) then
+       ! Mixed initial state
+       call initwf_mixed
+    else if (statenumber.eq.0) then
        ! Ground state: the MP2 ground state is included in the basis
        ! as the ndimf'th + 1 IS basis function, i.e., the initial
        ! wavefunction vector is given by (0,...,0,1)^T
@@ -268,6 +271,77 @@ contains
     
   end subroutine initwf
 
+!#######################################################################
+
+  subroutine initwf_mixed
+
+    use misc, only: dsortindxa1
+    
+    implicit none
+
+    integer               :: i,j,klbl,unit,itmp
+    integer, allocatable  :: indx(:)
+    real(dp)              :: ftmp
+    real(dp), allocatable :: vec(:)
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(indx(nmix))
+    allocate(vec(matdim-1))
+
+!-----------------------------------------------------------------------
+! Sort the state indices in the expansion in order of increasing value
+!-----------------------------------------------------------------------
+    call dsortindxa1('A',nmix,dble(imix),indx)
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+    psi=czero
+    
+!-----------------------------------------------------------------------
+! Ground state contribution
+!-----------------------------------------------------------------------
+    if (imix(indx(1)).eq.0) then
+       psi(matdim)=cmplx(cmix(indx(1)))
+       klbl=2
+    else
+       klbl=1
+    endif
+       
+!-----------------------------------------------------------------------    
+! Excited state contributions
+!-----------------------------------------------------------------------
+    ! Open the file containing the initial space eigenpairs
+    call freeunit(unit)
+    open(unit,file=davname,status='old',access='sequential',&
+         form='unformatted')
+
+    ! Read the initial state vectors from disk
+    do i=1,imix(indx(nmix))
+       read(unit) itmp,ftmp,vec(1:matdim-1)
+       if (i.eq.imix(indx(klbl))) then
+          do j=1,matdim-1
+             psi(j)=psi(j)+cmix(indx(klbl))*cmplx(vec(j),0.0d0)
+          enddo
+          klbl=klbl+1
+       endif
+    enddo
+    
+    ! Close the file containing the initial space eigenpairs
+    close(unit)
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(indx)
+    deallocate(vec)
+    
+    return
+    
+  end subroutine initwf_mixed
+    
 !#######################################################################
 
   subroutine initwf_exci_initstate
@@ -318,7 +392,7 @@ contains
     return
     
   end subroutine initwf_exci_initstate
-    
+  
 !#######################################################################
 
   subroutine memory_managment

@@ -170,7 +170,11 @@ module parameters
   logical                              :: lnto
   logical                              :: llci
   real(dp)                             :: init_energy
-
+  logical                              :: lmixistate
+  integer                              :: nmix
+  integer, dimension(:), allocatable   :: imix
+  real(dp), dimension(:), allocatable  :: cmix
+  
 !!$************************************************
 !!$**********Physical Constants********************
 !!$************************************************

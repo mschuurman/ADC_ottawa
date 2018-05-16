@@ -39,6 +39,8 @@
       maxmem=250.0d0
       ldipole=.false.
       lnto=.false.
+      lmixistate=.false.
+      nmix=0
       
 !-----------------------------------------------------------------------
 ! CIS calculation (use the unmodified ground-to-excited state

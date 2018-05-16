@@ -38,14 +38,14 @@ contains
 !       integer, intent (in) :: r,s,u,v
 !     end function func
 !  end interface
-!
+!  
 !  procedure(func), pointer :: vpqrs
 !  
-! contains
+!contains
 !   
 !!#######################################################################
 !  
-!   function vpqrs_incore(r,s,u,v) result(val)
+!  function vpqrs_incore(r,s,u,v) result(val)
 !    
 !    use parameters
 !
@@ -65,7 +65,7 @@ contains
 !  function vpqrs_ext(r,s,u,v) result(val)
 !    
 !    use parameters
-!
+!    
 !    implicit none
 !    
 !    integer,intent(in) :: r,s,u,v
@@ -83,7 +83,7 @@ contains
 !    return    
 !    
 !  end function vpqrs_ext
-!
-!!#######################################################################
+
+!#######################################################################
   
 end module vpqrsmod
