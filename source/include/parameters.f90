@@ -337,23 +337,24 @@ logical                               :: lfdstates
 !!$************************************************
 !!$************External Electric Field*************
 !!$************************************************
-integer*8, dimension(3)       :: nel_dip
-integer, dimension(3)         :: nbuf_dip
-integer, parameter            :: mxenvpar=20
-integer                       :: nenvpar
-integer                       :: ipulse
-integer                       :: ienvelope
-real(dp), dimension(3)        :: d00
-real(dp), allocatable         :: d0j(:,:)
-real(dp), allocatable         :: dij(:,:,:)
-real(dp), dimension(3)        :: pulse_vec
-real(dp)                      :: proptol
-real(dp)                      :: freq
-real(dp)                      :: strength
-real(dp)                      :: t0
-real(dp)                      :: phase
-real(dp), dimension(mxenvpar) :: envpar
-logical                       :: lpropagation
+integer*8, dimension(3) :: nel_dip
+integer, dimension(3)   :: nbuf_dip
+real(dp), dimension(3)  :: d00
+real(dp), allocatable   :: d0j(:,:)
+real(dp), allocatable   :: dij(:,:,:)
+integer                 :: npulse
+integer, parameter      :: mxenvpar=20
+integer, allocatable    :: nenvpar(:)
+integer, allocatable    :: ipulse(:)
+integer, allocatable    :: ienvelope(:)
+real(dp), allocatable   :: pulse_vec(:,:)
+real(dp), allocatable   :: freq(:)
+real(dp), allocatable   :: strength(:)
+real(dp), allocatable   :: t0(:)
+real(dp), allocatable   :: phase(:)
+real(dp), allocatable   :: envpar(:,:)
+real(dp)                :: proptol
+logical                 :: lpropagation
 
 !!$************************************************
 !!$***************CAP Parameters*******************

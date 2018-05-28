@@ -150,7 +150,7 @@
             
          else if (keyword(i).eq.'cvs') then
             iscvs=.true.
-
+            
          else if (keyword(i).eq.'rixs') then
             lrixs=.true.
 
@@ -402,6 +402,7 @@
 
          else if (keyword(i).eq.'laser_section') then
             llasersection=.true.
+            npulse=npulse+1
 80          continue
             call rdinp(iin)
             if (keyword(1).ne.'end-laser_section') goto 80
@@ -498,9 +499,20 @@
       if (lpropagation) call rdpropagationinp
 
 !-----------------------------------------------------------------------
-! Read the laser section
+! Read the laser sections (after allocating arrays now that the number
+! of pulses in known)
 !-----------------------------------------------------------------------
-      if (llasersection) call rdlaserinp
+      if (llasersection) then
+
+         ! Allocate arrays
+         call alloclaserpar
+
+         ! Read the laser sections
+         do i=1,npulse
+            call rdlaserinp(i)
+         enddo
+
+      endif
       
 !-----------------------------------------------------------------------
 ! Read the diffuse function section
@@ -530,7 +542,9 @@
 
       implicit none
 
+      integer            :: i
       character(len=170) :: msg
+      character(len=2)   :: ai
       logical            :: ldiag,llanc,energyonly
 
 !-----------------------------------------------------------------------
@@ -938,36 +952,6 @@
 !-----------------------------------------------------------------------
       if (lpropagation) then
 
-         ! Pulse type
-         if (ipulse.eq.0) then
-            msg='The pulse type has not been given'
-            goto 999
-         endif
-
-         ! Pulse envelope type
-         if (ienvelope.eq.0) then
-            msg='The pulse envelope type has not been given'
-            goto 999
-         endif
-         
-         ! Laser-molecule orientation
-         if (sum(abs(pulse_vec)).eq.0.0d0) then
-            msg='The laser pulse orientation has not been given'
-            goto 999
-         endif
-
-         ! Laser frequency
-         if (freq.eq.0.0d0) then
-            msg='The laser frequency has not been given'
-            goto 999
-         endif
-
-         ! Laser strength
-         if (strength.eq.0.0d0) then
-            msg='The laser strength has not been given'
-            goto 999
-         endif
-         
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
             msg='The final propagation time has not been given'
@@ -1019,6 +1003,49 @@
          
       endif
 
+!-----------------------------------------------------------------------
+! Laser sections
+!-----------------------------------------------------------------------
+      do i=1,npulse
+         write(ai,'(i2)') i
+
+         ! Carrier wave
+         if (ipulse(i).eq.0) then
+            msg='The pulse type (carrier wave) has not been given &
+                 for laser_section '//trim(adjustl(ai))
+            goto 999
+         endif
+
+         ! Pulse envelope type
+         if (ienvelope(i).eq.0) then
+            msg='The pulse envelope type has not been given &
+                 for laser_section '//trim(adjustl(ai))
+            goto 999
+         endif
+         
+         ! Laser-molecule orientation
+         if (sum(abs(pulse_vec(:,i))).eq.0.0d0) then
+            msg='The laser pulse orientation has not been given &
+                 for laser_section '//trim(adjustl(ai))
+            goto 999
+         endif
+
+         ! Laser frequency
+         if (freq(i).eq.0.0d0) then
+            msg='The laser frequency has not been given &
+                 for laser_section '//trim(adjustl(ai))
+            goto 999
+         endif
+
+         ! Laser strength
+         if (strength(i).eq.0.0d0) then
+            msg='The laser strength has not been given &
+                 for laser_section '//trim(adjustl(ai))
+            goto 999
+         endif
+         
+      enddo
+      
 !-----------------------------------------------------------------------
 ! ADC(1)-x calculations - at present, this is only supported for a
 ! wavepacket propagation calculation
@@ -2337,58 +2364,7 @@
 10       continue
          i=i+1
          
-         if (keyword(i).eq.'pulse_vec') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               if (keyword(i).eq.'polar') then
-                  ! Spherical polar specification
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) theta
-                  else
-                     errmsg='The polar angle was not given'
-                     call error_control
-                  endif
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) phi
-                  else
-                     errmsg='The azimuthal angle was not given'
-                     call error_control
-                  endif
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     call convert_angle(keyword(i),theta)
-                     call convert_angle(keyword(i),phi)
-                  endif
-                  pulse_vec(1)=sin(theta)*cos(phi)
-                  pulse_vec(2)=sin(theta)*sin(phi)
-                  pulse_vec(3)=cos(theta)
-               else
-                  ! Cartesian specification
-                  read(keyword(i),*) pulse_vec(1)
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) pulse_vec(2)
-                  else
-                     errmsg='Only one argument out of three was given &
-                          with the pulse_vec keyword'
-                  endif
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) pulse_vec(3)
-                  else
-                     errmsg='Only two arguments out of three was given &
-                          with the pulse_vec keyword'
-                  endif
-               endif
-               ! Normalisation of the vector
-               pulse_vec=pulse_vec/sqrt(dot_product(pulse_vec,pulse_vec))
-            else
-               goto 100
-            endif
-            
-         else if (keyword(i).eq.'tfinal') then
+         if (keyword(i).eq.'tfinal') then
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) tfinal
@@ -2416,93 +2392,6 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                read(keyword(i),*) kdim
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'pulse_freq') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) freq
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'pulse_strength') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) strength
-               if (keyword(i+1).eq.',') then
-                  i=i+2
-                  call convert_intensity(keyword(i),strength)
-               endif
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'pulse_t0') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) t0
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'pulse_phase') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               read(keyword(i),*) phase
-            else
-               goto 100
-            endif
-            
-         else if (keyword(i).eq.'pulse'.or.keyword(i).eq.'carrier') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               if (keyword(i).eq.'cos') then
-                  ipulse=1
-               else if (keyword(i).eq.'sin') then
-                  ipulse=2
-               else
-                  errmsg='Unknown pulse type: '//trim(keyword(i))
-                  call error_control
-               endif
-            else
-               goto 100
-            endif
-
-         else if (keyword(i).eq.'envelope') then
-            if (keyword(i+1).eq.'=') then
-               i=i+2
-               ! Read the envelope type
-               if (keyword(i).eq.'cos2') then
-                  ienvelope=1
-                  nenvpar=2
-               else if (keyword(i).eq.'sin2-ramp') then
-                  ienvelope=2
-                  nenvpar=1
-               else if (keyword(i).eq.'box') then
-                  ienvelope=3
-                  nenvpar=2
-               else if (keyword(i).eq.'sin2') then
-                  ienvelope=4
-                  nenvpar=2
-               else
-                  errmsg='Unknown evelope type: '//trim(keyword(i))
-                  call error_control
-               endif
-               ! Read the envelope parameters
-               do n=1,nenvpar
-                  if (keyword(i+1).eq.',') then
-                     i=i+2
-                     read(keyword(i),*) envpar(n)
-                  else
-                     write(ai,'(i2)') nenvpar
-                     errmsg='Not enough evelope parameters were given: '&
-                          //trim(adjustl(ai))//' parameters expected.'
-                     call error_control
-                  endif
-               enddo
             else
                goto 100
             endif
@@ -2549,7 +2438,7 @@
 
 !#######################################################################
 
-    subroutine rdlaserinp
+    subroutine rdlaserinp(ip)
 
       use parameters
       use parsemod
@@ -2558,20 +2447,24 @@
 
       implicit none
 
-      integer          :: i,n
+      integer          :: ip,count,i,n
       real(dp)         :: theta,phi
       character(len=2) :: ai
 
 !-----------------------------------------------------------------------
-! Read to the laser section
+! Read to the current laser section
 !-----------------------------------------------------------------------
       rewind(iin)
 
+      count=0
+      
 1     call rdinp(iin)
       if (keyword(1).ne.'laser_section') goto 1
-
+      count=count+1
+      if (count.ne.ip) goto 1
+      
 !-----------------------------------------------------------------------
-! Read to the laser parameters
+! Read the laser parameters
 !-----------------------------------------------------------------------
 5     call rdinp(iin)
       
@@ -2606,29 +2499,30 @@
                      call convert_angle(keyword(i),theta)
                      call convert_angle(keyword(i),phi)
                   endif
-                  pulse_vec(1)=sin(theta)*cos(phi)
-                  pulse_vec(2)=sin(theta)*sin(phi)
-                  pulse_vec(3)=cos(theta)
+                  pulse_vec(1,ip)=sin(theta)*cos(phi)
+                  pulse_vec(2,ip)=sin(theta)*sin(phi)
+                  pulse_vec(3,ip)=cos(theta)
                else
                   ! Cartesian specification
-                  read(keyword(i),*) pulse_vec(1)
+                  read(keyword(i),*) pulse_vec(1,ip)
                   if (keyword(i+1).eq.',') then
                      i=i+2
-                     read(keyword(i),*) pulse_vec(2)
+                     read(keyword(i),*) pulse_vec(2,ip)
                   else
                      errmsg='Only one argument out of three was given &
                           with the pulse_vec keyword'
                   endif
                   if (keyword(i+1).eq.',') then
                      i=i+2
-                     read(keyword(i),*) pulse_vec(3)
+                     read(keyword(i),*) pulse_vec(3,ip)
                   else
                      errmsg='Only two arguments out of three was given &
                           with the pulse_vec keyword'
                   endif
                endif
                ! Normalisation of the vector
-               pulse_vec=pulse_vec/sqrt(dot_product(pulse_vec,pulse_vec))
+               pulse_vec(:,ip)=pulse_vec(:,ip)&
+                    /sqrt(dot_product(pulse_vec(:,ip),pulse_vec(:,ip)))
             else
                goto 100
             endif
@@ -2636,7 +2530,7 @@
          else if (keyword(i).eq.'pulse_freq') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) freq
+               read(keyword(i),*) freq(ip)
             else
                goto 100
             endif
@@ -2644,10 +2538,10 @@
          else if (keyword(i).eq.'pulse_strength') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) strength
+               read(keyword(i),*) strength(ip)
                if (keyword(i+1).eq.',') then
                   i=i+2
-                  call convert_intensity(keyword(i),strength)
+                  call convert_intensity(keyword(i),strength(ip))
                endif
             else
                goto 100
@@ -2656,7 +2550,7 @@
          else if (keyword(i).eq.'pulse_t0') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) t0
+               read(keyword(i),*) t0(ip)
             else
                goto 100
             endif
@@ -2664,7 +2558,7 @@
          else if (keyword(i).eq.'pulse_phase') then
             if (keyword(i+1).eq.'=') then
                i=i+2
-               read(keyword(i),*) phase
+               read(keyword(i),*) phase(ip)
             else
                goto 100
             endif
@@ -2673,9 +2567,9 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                if (keyword(i).eq.'cos') then
-                  ipulse=1
+                  ipulse(ip)=1
                else if (keyword(i).eq.'sin') then
-                  ipulse=2
+                  ipulse(ip)=2
                else
                   errmsg='Unknown pulse type: '//trim(keyword(i))
                   call error_control
@@ -2689,28 +2583,28 @@
                i=i+2
                ! Read the envelope type
                if (keyword(i).eq.'cos2') then
-                  ienvelope=1
-                  nenvpar=2
+                  ienvelope(ip)=1
+                  nenvpar(ip)=2
                else if (keyword(i).eq.'sin2-ramp') then
-                  ienvelope=2
-                  nenvpar=1
+                  ienvelope(ip)=2
+                  nenvpar(ip)=1
                else if (keyword(i).eq.'box') then
-                  ienvelope=3
-                  nenvpar=2
+                  ienvelope(ip)=3
+                  nenvpar(ip)=2
                else if (keyword(i).eq.'sin2') then
-                  ienvelope=4
-                  nenvpar=2
+                  ienvelope(ip)=4
+                  nenvpar(ip)=2
                else
                   errmsg='Unknown evelope type: '//trim(keyword(i))
                   call error_control
                endif
                ! Read the envelope parameters
-               do n=1,nenvpar
+               do n=1,nenvpar(ip)
                   if (keyword(i+1).eq.',') then
                      i=i+2
-                     read(keyword(i),*) envpar(n)
+                     read(keyword(i),*) envpar(n,ip)
                   else
-                     write(ai,'(i2)') nenvpar
+                     write(ai,'(i2)') nenvpar(ip)
                      errmsg='Not enough evelope parameters were given: '&
                           //trim(adjustl(ai))//' parameters expected.'
                      call error_control
@@ -2882,6 +2776,45 @@
 
     end subroutine rdgeometry
 
+!#######################################################################
+
+    subroutine alloclaserpar
+
+      use parameters
+
+      implicit none
+
+      allocate(pulse_vec(3,npulse))
+      pulse_vec=0.0d0
+
+      allocate(freq(npulse))
+      freq=0.0d0
+
+      allocate(strength(npulse))
+      strength=0.0d0
+
+      allocate(t0(npulse))
+      t0=0.0d0
+
+      allocate(phase(npulse))
+      phase=0.0d0
+
+      allocate(ipulse(npulse))
+      ipulse=0
+
+      allocate(ienvelope(npulse))
+      ienvelope=0
+
+      allocate(envpar(mxenvpar,npulse))
+      envpar=0.0d0
+
+      allocate(nenvpar(npulse))
+      nenvpar=0
+      
+      return
+      
+    end subroutine alloclaserpar
+      
 !#######################################################################
 
     subroutine convert_intensity(unit,val)

@@ -86,7 +86,7 @@ contains
 !-----------------------------------------------------------------------
 ! Calculate the dipole matrices
 !-----------------------------------------------------------------------
-    call dipole_isbas_adc1(kpqf,ndimf)
+    if (npulse.gt.0) call dipole_isbas_adc1(kpqf,ndimf)
 
 !-----------------------------------------------------------------------
 ! If flux analysis is to be performed, then calculate the matrix
@@ -342,7 +342,7 @@ contains
     do c=1,3
 
        ! Skip if the current component is not required
-       if (pulse_vec(c).eq.0.0d0) cycle
+       if (sum(abs(pulse_vec(c,1:npulse))).eq.0.0d0) cycle
        
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the vector D'//acomp(c)//&
@@ -374,7 +374,7 @@ contains
     do c=1,3
     
        ! Skip if the current component is not required
-       if (pulse_vec(c).eq.0.0d0) cycle
+       if (sum(abs(pulse_vec(c,1:npulse))).eq.0.0d0) cycle
        
        write(ilog,'(/,72a)') ('-',k=1,72)
        write(ilog,'(2x,a)') 'Calculating the IS representation of &
@@ -716,7 +716,7 @@ contains
 
     ! Dipole operator
     do i=1,3
-       if (pulse_vec(i).eq.0.0d0) cycle
+       if (sum(abs(pulse_vec(i,1:npulse))).eq.0.0d0) cycle
        tmp=matmul(transpose(eigvec),matmul(d1(i,:,:),eigvec))
        d1(i,:,:)=tmp
     enddo

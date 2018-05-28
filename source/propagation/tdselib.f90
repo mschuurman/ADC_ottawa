@@ -581,11 +581,11 @@ contains
     real(dp), allocatable                  :: rvec(:)
     complex(dp), dimension(matdim)         :: v1,v2
     complex(dp), dimension(:), allocatable :: opxv1
-    character(len=70)                     :: filename
-    character(len=1), dimension(3)        :: acomp
-    complex(dp), allocatable              :: vtmp1(:)
-    complex(dp), allocatable              :: vtmp2(:)
-    complex(dp), allocatable              :: vtmp3(:)
+    character(len=70)                      :: filename
+    character(len=1), dimension(3)         :: acomp
+    complex(dp), allocatable               :: vtmp1(:)
+    complex(dp), allocatable               :: vtmp2(:)
+    complex(dp), allocatable               :: vtmp3(:)
     
     acomp=(/ 'x','y','z' /)
     
@@ -658,58 +658,65 @@ contains
 !               (c) Off-diagonal elements between the ground state
 !                   and the intermediate states, D_0J.
 !----------------------------------------------------------------------
-    ! External electric field
-    Et=efield(time)
-    
-    ! (a) IS-IS block
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
+    if (npulse.ne.0) then
+
+       ! Sum of the external electric fields
+       Et(:)=0.0d0
+       do i=1,npulse
+          Et(:)=Et(:)+efield(i,time)
+       enddo
        
-       ! Cycle if the  current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
+       ! (a) IS-IS block
+       !
+       ! Loop over components of the dipole operator
+       do i=1,3
+          
+          ! Cycle if the  current component does not contribute
+          if (Et(i).eq.0.0d0) cycle
 
-       ! Calculate Dc*v1
-       filename='SCRATCH/dipole_'//acomp(i)
-       call opxvec_ext(matdim-1,v1(1:matdim-1),&
-            opxv1(1:matdim-1),filename,nbuf_dip(i))
+          ! Calculate Dc*v1
+          filename='SCRATCH/dipole_'//acomp(i)
+          call opxvec_ext(matdim-1,v1(1:matdim-1),&
+               opxv1(1:matdim-1),filename,nbuf_dip(i))
+          
+          ! Contribution to v2=dt|Psi>
+          v2(1:matdim-1)=v2(1:matdim-1) &
+               + ci*Et(i)*opxv1(1:matdim-1) &
+               + ci*Et(i)*d00(i)*v1(1:matdim-1)
+          
+       enddo
+
+       ! (b) Ground state-ground state element
+       !
+       ! Loop over components of the dipole operator
+       do i=1,3
+          
+          ! Cycle if the  current component does not contribute
+          if (Et(i).eq.0.0d0) cycle
+          
+          ! Contribution to v2=dt|Psi>
+          v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
+          
+       enddo
+
+       ! (c) Ground state-IS block
+       !
+       ! Loop over components of the dipole operator
+       do i=1,3
+          
+          ! Cycle if the current component does not contribute
+          if (Et(i).eq.0.0d0) cycle
        
-       ! Contribution to v2=dt|Psi>
-       v2(1:matdim-1)=v2(1:matdim-1) &
-            + ci*Et(i)*opxv1(1:matdim-1) &
-            + ci*Et(i)*d00(i)*v1(1:matdim-1)
+          ! Contribution to v2=dt|Psi>
+          v2(matdim)=v2(matdim)+&
+               ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
+          v2(1:matdim-1)=v2(1:matdim-1)+&
+               ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
+          
+       enddo
 
-    enddo
-
-    ! (b) Ground state-ground state element
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
+    endif
        
-       ! Cycle if the  current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+ci*Et(i)*d00(i)*v1(matdim)
-
-    enddo
-
-    ! (c) Ground state-IS block
-    !
-    ! Loop over components of the dipole operator
-    do i=1,3
-
-       ! Cycle if the current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Contribution to v2=dt|Psi>
-       v2(matdim)=v2(matdim)+&
-            ci*Et(i)*dot_product(d0j(i,1:matdim-1),v1(1:matdim-1))
-       v2(1:matdim-1)=v2(1:matdim-1)+&
-            ci*Et(i)*d0j(i,1:matdim-1)*v1(matdim)
-
-    enddo
-    
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1 = - W * v1
 !----------------------------------------------------------------------
@@ -836,53 +843,54 @@ contains
   end subroutine matxvec_treal_laser
 
 !#######################################################################
-! efield: calculates the value of the applied external electric field
-!         at the time t
+! efield: calculates the value of the ip'th applied external electric
+!         field at the time t
 !#######################################################################
 
-  function efield(t)
+  function efield(ip,t)
 
     use constants
     use parameters
     
     implicit none
 
+    integer                :: ip
     real(dp), dimension(3) :: efield
-    real(dp)               :: pulse,envelope
+    real(dp)               :: carrier,envelope
     real(dp)               :: t
 
 !----------------------------------------------------------------------
 ! Carrier wave value
 !----------------------------------------------------------------------
-    if (ipulse.eq.1) then
-       ! cosine pulse
-       pulse=cos(freq*(t-t0)-phase)
-    else if (ipulse.eq.2) then
-       ! sine pulse
-       pulse=sin(freq*(t-t0)-phase)
+    if (ipulse(ip).eq.1) then
+       ! cosine carrier wave
+       carrier=cos(freq(ip)*(t-t0(ip))-phase(ip))
+    else if (ipulse(ip).eq.2) then
+       ! sine carrier
+       carrier=sin(freq(ip)*(t-t0(ip))-phase(ip))
     endif
 
 !----------------------------------------------------------------------
 ! Envelope value
 !----------------------------------------------------------------------
-    if (ienvelope.eq.1) then
+    if (ienvelope(ip).eq.1) then
        ! Cosine squared envelope
-       envelope=cos2_envelope(t)
-    else if (ienvelope.eq.2) then
+       envelope=cos2_envelope(ip,t)
+    else if (ienvelope(ip).eq.2) then
        ! Sine squared-ramp envelope
-       envelope=sin2ramp_envelope(t)
-    else if (ienvelope.eq.3) then
+       envelope=sin2ramp_envelope(ip,t)
+    else if (ienvelope(ip).eq.3) then
        ! Box-type envelope
-       envelope=box_envelope(t)
-    else if (ienvelope.eq.4) then
+       envelope=box_envelope(ip,t)
+    else if (ienvelope(ip).eq.4) then
        ! Sine squared envelope
-       envelope=sin2_envelope(t)
+       envelope=sin2_envelope(ip,t)
     endif
  
 !----------------------------------------------------------------------
 ! Electric field value
 !----------------------------------------------------------------------
-    efield(1:3)=pulse_vec(1:3)*strength*envelope*pulse
+    efield(1:3)=pulse_vec(1:3,ip)*strength(ip)*envelope*carrier
     
     return
 
@@ -893,20 +901,21 @@ contains
 !                function at the time t
 !#######################################################################
   
-  function cos2_envelope(t) result(func)
+  function cos2_envelope(ip,t) result(func)
 
     use constants
     use parameters
 
     implicit none
 
+    integer  :: ip
     real(dp) :: t,func,tzero,fwhm
 
     ! tzero
-    tzero=envpar(1)
+    tzero=envpar(1,ip)
 
     ! fwhm
-    fwhm=envpar(2)
+    fwhm=envpar(2,ip)
 
     ! Envelope value
     if (t.gt.tzero-fwhm.and.t.lt.tzero+fwhm) then
@@ -924,20 +933,21 @@ contains
 !                function at the time t
 !#######################################################################
   
-  function sin2_envelope(t) result(func)
+  function sin2_envelope(ip,t) result(func)
 
     use constants
     use parameters
 
     implicit none
 
+    integer  :: ip
     real(dp) :: t,func,tzero,fwhm
 
     ! tzero
-    tzero=envpar(1)
+    tzero=envpar(1,ip)
 
     ! fwhm
-    fwhm=envpar(2)
+    fwhm=envpar(2,ip)
 
     ! Envelope value
     if (t.gt.tzero.and.t.lt.tzero+2.0d0*fwhm) then
@@ -955,17 +965,18 @@ contains
 !                    envelope function at the time t.
 !#######################################################################
   
-  function sin2ramp_envelope(t) result(func)
+  function sin2ramp_envelope(ip,t) result(func)
 
     use constants
     use parameters
 
     implicit none
 
+    integer  :: ip
     real(dp) :: t,func,tau
 
     ! tau
-    tau=envpar(1)
+    tau=envpar(1,ip)
 
     ! Envelope value
     if (t.lt.0.0d0) then
@@ -985,20 +996,21 @@ contains
 ! box_envelope: calculates the value of a box function at the time t.
 !#######################################################################
 
-  function box_envelope(t) result(func)
+  function box_envelope(ip,t) result(func)
 
     use constants
     use parameters
 
     implicit none
 
+    integer  :: ip
     real(dp) :: t,func,ti,tf
 
     ! t_i
-    ti=envpar(1)
+    ti=envpar(1,ip)
 
     ! t_f
-    tf=envpar(2)
+    tf=envpar(2,ip)
 
     ! Envelope value
     if (t.lt.ti.or.t.gt.tf) then
@@ -1169,20 +1181,27 @@ contains
 !----------------------------------------------------------------------
 ! (2) Dipole-laser contribution: -i * -mu.E(t) * v1 = +i * mu.E(t) * v1
 !----------------------------------------------------------------------
-    ! External electric field
-    Et=efield(time)
-
-    ! Loop over components of the dipole operator
-    do i=1,3
-
-       ! Cycle if the  current component does not contribute
-       if (pulse_vec(i).eq.0.0d0) cycle
-
-       ! Matrix-vector product
-       v2=v2+ci*Et(i)*matmul(d1(i,:,:),v1)
-
-    enddo
+    if (npulse.ne.0) then
     
+       ! Sum of the external electric fields
+       Et(:)=0.0d0
+       do i=1,npulse
+          Et(:)=Et(:)+efield(i,time)
+       enddo
+       
+       ! Loop over components of the dipole operator
+       do i=1,3
+
+          ! Cycle if the  current component does not contribute
+          if (Et(i).eq.0.0d0) cycle
+          
+          ! Matrix-vector product
+          v2=v2+ci*Et(i)*matmul(d1(i,:,:),v1)
+
+       enddo
+
+    endif
+       
 !----------------------------------------------------------------------
 ! (3) CAP contribution: -i * -i * W * v1 = - W * v1
 !----------------------------------------------------------------------

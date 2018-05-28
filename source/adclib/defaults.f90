@@ -168,16 +168,9 @@
 ! Wavepacket propagation parameters
 !-----------------------------------------------------------------------
       lpropagation=.false.
-      pulse_vec=0.0d0
-      freq=0.0d0
-      strength=0.0d0
-      t0=0.0d0
-      phase=0.0d0
       proptol=1e-5_dp
-      ipulse=0
-      ienvelope=0
-      envpar=0.0d0
       tdrep=1
+      npulse=0
       
 !-----------------------------------------------------------------------
 ! CAP parameters
