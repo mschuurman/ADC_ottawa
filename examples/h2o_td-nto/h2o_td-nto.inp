@@ -1,4 +1,4 @@
-method=adc2
+method=adc1
 
 initial_state = 0
 istate_symm = 1

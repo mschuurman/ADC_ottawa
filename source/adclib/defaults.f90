@@ -67,7 +67,7 @@
 !-----------------------------------------------------------------------
       ! Initial space
       davstates=0
-      maxiter=0
+      maxiter=100
       dmain=0
       davtol=1e-7_dp
       ladc1guess=.false.
@@ -81,7 +81,7 @@
       
       ! Final space
       davstates_f=0
-      maxiter_f=0
+      maxiter_f=100
       dmain_f=0
       davtol_f=1e-7_dp
       ladc1guess_f=.false.

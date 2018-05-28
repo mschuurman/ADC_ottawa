@@ -26,12 +26,6 @@ end-diag_section
 
 diag_final_section
  nstates = 3
- block_size = 5
- maxvec=15
- tol=1d-6
- maxit=200
- guess = subdiag,800
- nodfl
 end-diag_final_section
 
 end-input

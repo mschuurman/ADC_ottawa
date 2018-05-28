@@ -632,15 +632,6 @@
             if (davstates.eq.0) then
                msg='The number of initial space states has not been given'
                goto 999
-            else if (maxiter.eq.0) then
-               msg='The maximum no. iterations for the initial space &
-                    diagonalisation has not been &
-                    given'
-               goto 999
-            else if (dmain.eq.0) then
-               msg='The block size for the initial space diagonalisation &
-                    has not been given'
-               goto 999
             endif
          endif
 
@@ -652,14 +643,6 @@
       if (ldiagfinal) then
          if (davstates_f.eq.0) then
             msg='The number of final space states has not been given'
-            goto 999
-         else if (maxiter_f.eq.0) then
-            msg='The maximum no. iterations for the final space &
-                 diagonalisation has not been given'
-            goto 999
-         else if (dmain_f.eq.0) then
-            msg='The block size for the final space diagonalisation &
-                 has not been given'
             goto 999
          endif
       endif
@@ -962,32 +945,6 @@
          if (tout.eq.0.0d0) then
             msg='The timestep has not been given'
             goto 999
-         endif
-
-         ! Make sure that the initial space and final space dimensions
-         ! are the same if an excited initial state has been requested
-         ! (note that the problem here is that the initial space
-         ! configurations are used in the code to calculate the initial
-         ! excited state, whilst the final space configurations are used
-         ! to do the wavepacket propagation)
-         if (statenumber.gt.0) then
-            if (lifrzcore.and..not.lffrzcore) then
-               msg='For TD-ADC calculations starting from an excited &
-                    state, both the initial and final state spaces &
-                    must have frozen or unfrozen cores'
-               goto 999
-            endif
-            if (lffrzcore.and..not.lifrzcore) then
-               msg='For TD-ADC calculations starting from an excited &
-                    state, both the initial and final state spaces &
-                    must have frozen or unfrozen cores'
-               goto 999
-            endif
-            if (lcvsfinal) then
-               msg='For TD-ADC calculations starting from an excited &
-                    state, the CVS approximation is not yet supported'
-               goto 999
-            endif
          endif
 
          ! Represenation of the wavefunction: using the Hamiltonian

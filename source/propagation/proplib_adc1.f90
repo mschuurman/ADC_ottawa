@@ -860,7 +860,7 @@ contains
           write(ilog,'(3x,a,15x,F8.5)') 'Psi0',abs(psi(matdim))
 
     ! IS basis functions
-    do k=1,50
+    do k=1,min(50,matdim-1)
 
        ilbl=indx(k)
 
@@ -930,7 +930,7 @@ contains
          write(ilog,'(3x,a,15x,F8.5)') '|HF>',abs(psi(matdim))
 
     ! Excited state contributions
-    do k=1,50
+    do k=1,min(50,matdim-1)
 
        ilbl=indx(k)
 

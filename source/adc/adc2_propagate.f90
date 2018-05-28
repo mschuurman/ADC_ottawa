@@ -47,6 +47,14 @@ contains
          ndims,ndimsf)
 
 !-----------------------------------------------------------------------
+! For now, we will take the initial space to be equal to the final space
+!-----------------------------------------------------------------------
+    kpq=kpqf
+    ndim=ndimf
+    nout=noutf
+    ndims=ndimsf
+    
+!-----------------------------------------------------------------------
 ! Set MO representation of the dipole operator
 !-----------------------------------------------------------------------
     call set_dpl

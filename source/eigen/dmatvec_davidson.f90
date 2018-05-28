@@ -193,18 +193,14 @@
       nvir=nbas-nocc
 
 !-----------------------------------------------------------------------
-! Temporary: set the maximum subspace dimension
+! Set the values of the maximum subspace dimension and the blocksize
+! if these have not been specified by the user
 !-----------------------------------------------------------------------
-      ! If the maximum subspace dimension has not been set by the user
-      ! then set it here
-      if (maxvec.lt.0) then
-         maxvec=min(nstates+blocksize+10,2*(nstates+blocksize))
-      endif
-         
-      ! Make sure that maxvec is an integer multiple of the block size
-      ftmp=real(maxvec)/real(blocksize)
-      itmp=floor(ftmp)
-      maxvec=itmp*blocksize
+      ! Blocksize
+      if (blocksize.eq.0) blocksize=max(nstates+5,2*nstates)
+
+      ! Maximum subspace dimension
+      if (maxvec.lt.0) maxvec=4*blocksize
 
 !-----------------------------------------------------------------------
 ! Allocate arrays
