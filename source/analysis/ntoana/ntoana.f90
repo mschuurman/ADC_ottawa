@@ -105,6 +105,7 @@ contains
     inquire(file='gamess.dat',exist=found)
     if (.not.found) then
        errmsg='The gamess.dat file is missing. Quitting.'
+       call error_control
     endif
 
     ! Read in the basis and geometry
