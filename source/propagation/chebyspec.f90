@@ -54,6 +54,10 @@ contains
 !----------------------------------------------------------------------
     call spectral_bounds(bounds,'c','lanczos',ndimf,noffdf)
     
+    ! CHECK
+    bounds(1)=0.25473134858876151d0
+    ! CHECK
+    
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
 !----------------------------------------------------------------------
@@ -190,12 +194,13 @@ contains
   subroutine chebyshev_auto(q0,ndimf,noffdf)
 
     use tdsemod
+    use channels
     
     implicit none
 
     integer, intent(in)        :: ndimf
     integer*8, intent(in)      :: noffdf
-    integer                    :: k
+    integer                    :: k,i
     real(dp), dimension(ndimf) :: q0
     real(dp), allocatable      :: qk(:),qkm1(:),qkm2(:)
     real(dp)                   :: N0
@@ -222,10 +227,16 @@ contains
 !----------------------------------------------------------------------
     ! Initialisation
     qkm1=q0
-
+    
     ! Loop over Chebyshev polynomials of order k >= 1
     do k=1,chebyord
 
+       ! Output our progress
+       if (mod(k,10).eq.0) then
+          write(ilog,'(70a)') ('+',i=1,70)
+          write(ilog,'(a,x,i6)') 'Order:',k
+       endif
+       
        ! Calculate the kth Chebyhev polynomial-vector product
        call chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
 
@@ -244,7 +255,8 @@ contains
        qk=0.0d0
        
     enddo
-    
+    write(ilog,'(70a)') ('+',i=1,70)
+
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -276,7 +288,9 @@ contains
 !----------------------------------------------------------------------
 ! Write the file header
 !----------------------------------------------------------------------
-    write(unit,'(a)') '#    Order [k]    C_k'
+    write(unit,'(a,2(2x,E21.14),/)') '#    Spectral bounds:',&
+         bounds(1),bounds(2)
+    write(unit,'(a)')   '#    Order [k]    C_k'
     
 !----------------------------------------------------------------------
 ! Write the order-domain autocorrelation function to file

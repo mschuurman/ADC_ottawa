@@ -144,15 +144,15 @@ contains
 !----------------------------------------------------------------------
 ! Read the spectral bounds
 !----------------------------------------------------------------------
-    read(unit,'(28x,2(2x,E21.14))') bounds(1),bounds(2)
+    read(unit,'(21x,2(2x,E21.14))') bounds(1),bounds(2)
 
 !----------------------------------------------------------------------
 ! Determine the order of the Chebyshev expansion and allocate the auto
 ! array
 !----------------------------------------------------------------------
     read(unit,*)
-    read(unit,*)
-
+    read(unit,*)    
+    
     order=-1
 5   read(unit,*,end=10)
     order=order+1
@@ -196,7 +196,7 @@ contains
 
     integer  :: i,k
     real(dp) :: e,escaled,theta,spec
-    
+
     ! Loop over energies
     do i=1,epoints
 
@@ -222,7 +222,8 @@ contains
        ! Spectrum in the energy domain
        spec=spec/sin(theta)
        
-       print*,e*eh2ev,spec
+       ! Output the energy and spectrum value
+       write(6,'(ES15.6,2x,ES15.)') e*eh2ev,spec
        
     enddo
     

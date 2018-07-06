@@ -71,7 +71,7 @@ contains
     lmain=2
 
     ! No. iterations
-    ncycles=20
+    ncycles=50
 
 !----------------------------------------------------------------------
 ! Perform the Lanczos iterations
@@ -91,7 +91,7 @@ contains
        if (i.eq.1) bounds(1)=ener
        if (i.eq.lancstates) bounds(2)=ener
     enddo
-    
+
     deallocate(vec)
 
     close(ilanc)

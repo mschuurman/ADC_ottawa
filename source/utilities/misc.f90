@@ -694,7 +694,7 @@ contains
        write(iout,'(/,2x,a,2x,F14.8)') 'Ground state MP2 energy:',&
             ehf+e_mp2
     endif
-       
+    
     ! ADC state information
     do i=1,ndim2
        coeff(:)=vspace(:,i)**2
