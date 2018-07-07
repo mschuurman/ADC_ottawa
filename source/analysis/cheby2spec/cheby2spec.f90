@@ -7,7 +7,6 @@ module cheby2specmod
   integer                :: order,epoints
   real(dp), dimension(2) :: bounds
   real(dp)               :: emin,emax
-  real(dp)               :: gam
   real(dp), allocatable  :: auto(:)
   real(dp), parameter    :: eh2ev=27.2113845d0
   
@@ -62,9 +61,6 @@ contains
     ! No. energy points
     epoints=1000
 
-    ! Gaussian window function width parameter
-    gam=1e-3_dp
-    
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -90,12 +86,6 @@ contains
           i=i+1
           call getarg(i,string2)
           read(string2,*) epoints
-
-       else if (string1.eq.'-gamma') then
-          ! Gaussian window function width parameter
-          i=i+1
-          call getarg(i,string2)
-          read(string2,*) gam
           
        else
           errmsg='Unknown keyword: '//trim(string1)
@@ -205,15 +195,24 @@ contains
 
     implicit none
 
-    integer  :: i,k,unit
-    real(dp) :: e,escaled,theta,spec
+    integer                :: i,k,unit
+    real(dp)               :: e,escaled,theta
+    real(dp), dimension(3) :: spec
     
 !----------------------------------------------------------------------
 ! Open the output file
 !----------------------------------------------------------------------
     call freeunit(unit)
     open(unit,file='chebyspec.dat',form='formatted',status='unknown')
-    
+
+!----------------------------------------------------------------------
+! File header
+!----------------------------------------------------------------------
+    write(unit,'(67a)') ('#',k=1,67)
+    write(unit,'(a)') '#  Energy (eV)      Gaussian window  &
+         cos2 window      no window'
+    write(unit,'(67a)') ('#',k=1,67)
+
 !----------------------------------------------------------------------
 ! Calculate and output the spectrum
 !----------------------------------------------------------------------
@@ -233,20 +232,25 @@ contains
        theta=acos(escaled)
 
        ! Calculate the spectrum in the angle domain
-       spec=auto(0)*gam/sqrt(pi)
+       spec(:)=auto(0)
+       spec(2)=spec(1)*gausswindow(0)
+       spec(3)=spec(1)*cos2window(0)       
        do k=1,order
-          spec=spec+2.0d0*cos(k*theta)*auto(k)*gam/sqrt(pi)*exp(-gam**2*k**2/2.0d0)
+          spec(1)=spec(1)+2.0d0*cos(k*theta)*auto(k)
+          spec(2)=spec(2)+2.0d0*cos(k*theta)*auto(k)*gausswindow(k)
+          spec(3)=spec(3)+2.0d0*cos(k*theta)*auto(k)*cos2window(k)
        enddo
        spec=spec/pi
-       
+
        ! Spectrum in the energy domain
        spec=spec/sin(theta)
 
        ! Prefactor
        spec=spec*e*2.0d0/3.0d0
        
-       ! Output the energy and spectrum value
-       write(unit,'(ES15.6,2x,ES15.6)') e*eh2ev,spec
+       ! Output the energy and spectrum values
+       write(unit,'(ES15.6,3(2x,ES15.6))') e*eh2ev,spec(2),spec(3),&
+            spec(1)
        
     enddo
 
@@ -275,7 +279,44 @@ contains
     return
     
   end function scalefunc
+
+!######################################################################
+
+  function cos2window(k) result(func)
+
+    use constants
+    use cheby2specmod
     
+    implicit none
+
+    integer  :: k
+    real(dp) :: func
+
+    func=cos(k*pi/(2.0d0*order))
+    func=func**2
+
+    return
+    
+  end function cos2window
+
+!######################################################################
+
+  function gausswindow(k) result(func)
+
+    use constants
+    use cheby2specmod
+    
+    implicit none
+
+    integer  :: k
+    real(dp) :: func,gfac
+
+    func=exp(-(2.24d0*k/order)**2)    
+
+    return
+    
+  end function gausswindow
+  
 !######################################################################
   
 end program cheby2spec
