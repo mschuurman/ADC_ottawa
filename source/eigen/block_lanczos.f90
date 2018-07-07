@@ -156,6 +156,9 @@ module block_lanczos
 !
 !             8 <-> Double subspace diagonalisation (used for spectral
 !                   bounds estimation)
+!
+!             9 <-> Single subspace diagonalisation (used for spectral
+!                   bounds estimation)
 !-----------------------------------------------------------------------
 
       select case(lancguess)
@@ -183,6 +186,9 @@ module block_lanczos
 
       case(8)
          call init_vec_doublesubspace
+
+      case(9)
+         call init_vec_singlesubspace
          
       end select
       
@@ -736,6 +742,185 @@ module block_lanczos
       return
       
     end subroutine init_vec_doublesubspace
+
+!#######################################################################
+    
+    subroutine init_vec_singlesubspace
+
+      use iomod
+      use misc, only: dsortindxa1
+      
+      implicit none
+
+      integer, dimension(:), allocatable    :: full2sub,sub2full,&
+                                               indxhii,indxi,indxj
+      integer                               :: i,j,k,i1,j1,e2,error,&
+                                               iham,nlim,l,subdim,&
+                                               maxbl,nrec,dim
+      real(dp), dimension(:), allocatable   :: hii,hij
+      real(dp), dimension(:,:), allocatable :: hsub
+      real(dp), dimension(:), allocatable   :: subeig,work
+      character(len=70)                     :: filename
+
+!-----------------------------------------------------------------------
+! Subspace dimension
+!-----------------------------------------------------------------------
+      subdim=800
+
+!-----------------------------------------------------------------------
+! Read the on-diagonal elements from file
+!-----------------------------------------------------------------------
+      allocate(hii(matdim))
+
+      call freeunit(iham)
+      
+      if (hflag.eq.'i') then
+         filename='SCRATCH/hmlt.diai'
+      else if (hflag.eq.'c') then
+         filename='SCRATCH/hmlt.diac'
+      endif
+
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')
+
+      read(iham) maxbl,nrec
+      read(iham) hii
+
+      close(iham)
+
+!-----------------------------------------------------------------------
+! Allocate Hamiltonian matrix arrays
+!-----------------------------------------------------------------------
+      allocate(indxhii(matdim))
+      allocate(hij(maxbl))
+      allocate(indxi(maxbl))
+      allocate(indxj(maxbl))
+      
+!-----------------------------------------------------------------------
+! Sort the on-diagonal Hamiltonian matrix elements in order of
+! descending value for use in the subspace diagonalisation
+!-----------------------------------------------------------------------
+      ! Stupidly, matdim is declared as integer*8, but needs to be
+      ! passed as integer*4 to dsortindxa1
+      dim=matdim
+
+      call dsortindxa1('D',dim,hii,indxhii)
+      
+!-----------------------------------------------------------------------
+! Ensure that the subdim'th IS is not degenerate with subdim+1'th IS,
+! and if it is, increase subdim accordingly
+!-----------------------------------------------------------------------
+5     continue
+      if (abs(hii(indxhii(subdim))-hii(indxhii(subdim+1))).lt.1e-6_dp) then
+         subdim=subdim+1
+         goto 5
+      endif
+
+!-----------------------------------------------------------------------
+! Allocate subspace-related arrays
+!-----------------------------------------------------------------------
+      allocate(full2sub(matdim))
+      allocate(sub2full(subdim))
+      allocate(hsub(subdim,subdim))
+      allocate(subeig(subdim))
+      allocate(work(3*subdim))
+      
+!-----------------------------------------------------------------------
+! Set the full space-to-subspace mappings
+!-----------------------------------------------------------------------
+      full2sub=0
+      do i=1,subdim
+         k=indxhii(i)
+         sub2full(i)=k
+         full2sub(k)=i
+      enddo
+      
+!-----------------------------------------------------------------------
+! Construct the Hamiltonian matrix in the subspace
+!-----------------------------------------------------------------------
+      hsub=0.0d0
+            
+      ! (i) On-diagonal elements
+      do i=1,subdim
+         k=sub2full(i)
+         hsub(i,i)=hii(k)
+      enddo
+
+      ! (ii) Off-diagonal elements
+      !
+      ! Open the off-diagonal element file
+      call freeunit(iham)
+      if (hamflag.eq.'i') then
+         filename='SCRATCH/hmlt.offi'
+      else if (hamflag.eq.'f') then
+         filename='SCRATCH/hmlt.offc'
+      endif
+      open(iham,file=filename,status='old',access='sequential',&
+           form='unformatted')      
+      ! Loop over records
+      do k=1,nrec
+         read(iham) hij(:),indxi(:),indxj(:),nlim
+         ! Loop over the non-zero elements of the full space
+         ! Hamiltonian in the current record
+         do l=1,nlim
+            ! Indices of the current off-diagonal element of the
+            ! full space Hamiltonian
+            i=indxi(l)
+            j=indxj(l)
+            ! If both indices correspond to subspace ISs, then
+            ! add the element to subspace Hamiltonian
+            if (full2sub(i).ne.0.and.full2sub(j).ne.0) then
+               i1=full2sub(i)
+               j1=full2sub(j)
+               hsub(i1,j1)=hij(l)
+               hsub(j1,i1)=hsub(i1,j1)
+            endif
+         enddo
+      enddo
+      ! Close the off-diagonal element file
+      close(iham)
+
+!-----------------------------------------------------------------------
+! Diagonalise the subspace Hamiltonian
+!-----------------------------------------------------------------------
+      e2=3*subdim
+      call dsyev('V','U',subdim,hsub,subdim,subeig,work,e2,error)
+
+      if (error.ne.0) then
+         errmsg='The diagonalisation of the subspace Hamiltonian 1 &
+              failed.'
+         call error_control
+      endif
+
+!-----------------------------------------------------------------------
+! Construct half the initial vectors from the subspace vectors.
+! Note that after calling dsyev, hsub now holds the eigenvectors of
+! the subspace Hamiltonian 2.
+!-----------------------------------------------------------------------
+      do i=1,blocksize
+         do j=1,subdim
+            k=sub2full(j)
+            qmat2(k,i)=hsub(j,i)            
+         enddo
+      enddo
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+      deallocate(hii)
+      deallocate(hij)
+      deallocate(indxi)
+      deallocate(indxj)
+      deallocate(indxhii)
+      deallocate(full2sub)
+      deallocate(sub2full)
+      deallocate(hsub)
+      deallocate(subeig)
+      deallocate(work)
+
+      return
+      
+    end subroutine init_vec_singlesubspace
       
 !#######################################################################
       

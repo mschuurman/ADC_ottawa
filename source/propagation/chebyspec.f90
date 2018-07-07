@@ -49,14 +49,9 @@ contains
          'SCRATCH/hmlt.offc',matdim,noffdf)
     
 !----------------------------------------------------------------------
-! Estimation of the spectral bounds using a few-iteration Lanczos
-! calculation
+! Estimation of the spectral bounds
 !----------------------------------------------------------------------
-    call spectral_bounds(bounds,'c','lanczos',ndimf,noffdf)
-    
-    ! CHECK
-    bounds(1)=0.25473134858876151d0
-    ! CHECK
+    call spectral_bounds(bounds,'c','davlanc',ndimf,noffdf)
     
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function

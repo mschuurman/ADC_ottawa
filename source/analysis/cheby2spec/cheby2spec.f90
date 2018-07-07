@@ -7,6 +7,7 @@ module cheby2specmod
   integer                :: order,epoints
   real(dp), dimension(2) :: bounds
   real(dp)               :: emin,emax
+  real(dp)               :: gam
   real(dp), allocatable  :: auto(:)
   real(dp), parameter    :: eh2ev=27.2113845d0
   
@@ -61,6 +62,9 @@ contains
     ! No. energy points
     epoints=1000
 
+    ! Gaussian window function width parameter
+    gam=1e-3_dp
+    
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -86,6 +90,12 @@ contains
           i=i+1
           call getarg(i,string2)
           read(string2,*) epoints
+
+       else if (string1.eq.'-gamma') then
+          ! Gaussian window function width parameter
+          i=i+1
+          call getarg(i,string2)
+          read(string2,*) gam
           
        else
           errmsg='Unknown keyword: '//trim(string1)
@@ -190,13 +200,23 @@ contains
   subroutine calc_spectrum
 
     use constants
+    use iomod
     use cheby2specmod
 
     implicit none
 
-    integer  :: i,k
+    integer  :: i,k,unit
     real(dp) :: e,escaled,theta,spec
-
+    
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='chebyspec.dat',form='formatted',status='unknown')
+    
+!----------------------------------------------------------------------
+! Calculate and output the spectrum
+!----------------------------------------------------------------------
     ! Loop over energies
     do i=1,epoints
 
@@ -213,19 +233,27 @@ contains
        theta=acos(escaled)
 
        ! Calculate the spectrum in the angle domain
-       spec=cos(k*theta)*auto(0)
+       spec=auto(0)*gam/sqrt(pi)
        do k=1,order
-          spec=spec+2.0d0*cos(k*theta)*auto(k)
+          spec=spec+2.0d0*cos(k*theta)*auto(k)*gam/sqrt(pi)*exp(-gam**2*k**2/2.0d0)
        enddo
        spec=spec/pi
        
        ! Spectrum in the energy domain
        spec=spec/sin(theta)
+
+       ! Prefactor
+       spec=spec*e*2.0d0/3.0d0
        
        ! Output the energy and spectrum value
-       write(6,'(ES15.6,2x,ES15.)') e*eh2ev,spec
+       write(unit,'(ES15.6,2x,ES15.6)') e*eh2ev,spec
        
     enddo
+
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
     
     return
     
