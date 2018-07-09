@@ -232,7 +232,7 @@ contains
        theta=acos(escaled)
 
        ! Calculate the spectrum in the angle domain
-       spec(:)=auto(0)
+       spec(1)=auto(0)
        spec(2)=spec(1)*gausswindow(0)
        spec(3)=spec(1)*cos2window(0)       
        do k=1,order

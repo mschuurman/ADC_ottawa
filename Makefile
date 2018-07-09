@@ -129,7 +129,8 @@ ADCLIB= source/adclib/defaults.o \
 
 EIGEN= source/eigen/block_davidson.o \
 	source/eigen/dmatvec_davidson.o \
-        source/eigen/block_lanczos.o
+        source/eigen/block_lanczos.o \
+	source/eigen/power.o
 
 ADCCOMMON= source/adclib/adc_common.o
 
@@ -211,6 +212,7 @@ ADC_OBJ=accuracy.o \
 	block_davidson.o \
         dmatvec_davidson.o \
 	block_lanczos.o \
+	power.o \
 	tdselib.o \
 	sillib.o \
 	csillib.o \

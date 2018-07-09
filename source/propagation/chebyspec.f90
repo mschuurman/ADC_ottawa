@@ -51,7 +51,7 @@ contains
 !----------------------------------------------------------------------
 ! Estimation of the spectral bounds
 !----------------------------------------------------------------------
-    call spectral_bounds(bounds,'c','davlanc',ndimf,noffdf)
+    call spectral_bounds(bounds,'c','davpower',ndimf,noffdf)
     
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
