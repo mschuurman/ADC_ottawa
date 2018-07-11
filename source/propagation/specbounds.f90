@@ -147,10 +147,10 @@ contains
     davstates_f=1
 
     ! Block size
-    dmain_f=2
+    dmain_f=5
 
     ! Maximum subspace dimension
-    maxsubdim_f=10
+    maxsubdim_f=20
     
     ! Convergence threshold
     davtol_f=1e-8_dp
@@ -179,8 +179,11 @@ contains
     lmain=2
 
     ! No. iterations
-    ncycles=50
+    ncycles=100
 
+    ! Partial reorthogonalisation
+    orthotype=1
+    
     ! Perform the Lanczos iterations
     call lancdiag_block(dim,noff,flag)
     

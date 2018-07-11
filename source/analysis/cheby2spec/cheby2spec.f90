@@ -4,7 +4,7 @@ module cheby2specmod
 
   save
 
-  integer                :: order,epoints
+  integer                :: order,epoints,kfinal
   real(dp), dimension(2) :: bounds
   real(dp)               :: emin,emax
   real(dp), allocatable  :: auto(:)
@@ -61,6 +61,9 @@ contains
     ! No. energy points
     epoints=1000
 
+    ! Maximum order
+    kfinal=1e+6
+    
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
@@ -86,7 +89,14 @@ contains
           i=i+1
           call getarg(i,string2)
           read(string2,*) epoints
-          
+
+       else if (string1.eq.'-kf') then
+          ! Maximum order
+          i=i+1
+          call getarg(i,string2)
+          read(string2,*) kfinal
+          if (mod(kfinal,2).ne.0) kfinal=kfinal-1
+
        else
           errmsg='Unknown keyword: '//trim(string1)
           call error_control
@@ -160,6 +170,8 @@ contains
     
 10  continue
 
+    if (order.gt.kfinal) order=kfinal
+    
     allocate(auto(0:order))
     auto=0.0d0
     
@@ -195,9 +207,10 @@ contains
 
     implicit none
 
-    integer                :: i,k,unit
-    real(dp)               :: e,escaled,theta
-    real(dp), dimension(3) :: spec
+    integer                        :: i,k,unit
+    real(dp)                       :: e,escaled,theta
+    real(dp), dimension(0:3)       :: spec
+    real(dp), dimension(0:order,3) :: window
     
 !----------------------------------------------------------------------
 ! Open the output file
@@ -209,10 +222,24 @@ contains
 ! File header
 !----------------------------------------------------------------------
     write(unit,'(67a)') ('#',k=1,67)
-    write(unit,'(a)') '#  Energy (eV)      Gaussian window  &
-         cos2 window      no window'
+    write(unit,'(a)') '#  Energy (eV)      Gaussian         &
+         Jackson          No'
+    write(unit,'(a)') '#                   Window           &
+         Window           Window'
     write(unit,'(67a)') ('#',k=1,67)
 
+!----------------------------------------------------------------------
+! Precompute window function values
+!----------------------------------------------------------------------
+    do k=0,order
+       ! Gaussian window
+       window(k,1)=gausswindow(k)
+       ! cos^2 window
+       window(k,2)=cos2window(k)
+       ! Jackson window
+       window(k,3)=jacksonwindow(k)
+    enddo
+    
 !----------------------------------------------------------------------
 ! Calculate and output the spectrum
 !----------------------------------------------------------------------
@@ -232,13 +259,15 @@ contains
        theta=acos(escaled)
 
        ! Calculate the spectrum in the angle domain
-       spec(1)=auto(0)
-       spec(2)=spec(1)*gausswindow(0)
-       spec(3)=spec(1)*cos2window(0)       
+       spec(0)=auto(0)
+       spec(1)=spec(0)*window(0,1)
+       spec(2)=spec(0)*window(0,2)
+       spec(3)=spec(0)*window(0,3)
        do k=1,order
-          spec(1)=spec(1)+2.0d0*cos(k*theta)*auto(k)
-          spec(2)=spec(2)+2.0d0*cos(k*theta)*auto(k)*gausswindow(k)
-          spec(3)=spec(3)+2.0d0*cos(k*theta)*auto(k)*cos2window(k)
+          spec(0)=spec(0)+2.0d0*cos(k*theta)*auto(k)
+          spec(1)=spec(1)+2.0d0*cos(k*theta)*auto(k)*window(k,1)
+          spec(2)=spec(2)+2.0d0*cos(k*theta)*auto(k)*window(k,2)
+          spec(3)=spec(3)+2.0d0*cos(k*theta)*auto(k)*window(k,3)
        enddo
        spec=spec/pi
 
@@ -249,8 +278,8 @@ contains
        spec=spec*e*2.0d0/3.0d0
        
        ! Output the energy and spectrum values
-       write(unit,'(ES15.6,3(2x,ES15.6))') e*eh2ev,spec(2),spec(3),&
-            spec(1)
+       write(unit,'(ES15.6,3(2x,ES15.6))') e*eh2ev,spec(1),spec(3),&
+            spec(0)
        
     enddo
 
@@ -309,13 +338,35 @@ contains
     implicit none
 
     integer  :: k
-    real(dp) :: func,gfac
+    real(dp) :: func
 
     func=exp(-(2.24d0*k/order)**2)    
 
     return
     
   end function gausswindow
+
+!######################################################################
+
+  function jacksonwindow(k) result(func)
+
+    use constants
+    use cheby2specmod
+    
+    implicit none
+
+    integer  :: k
+    real(dp) :: func,alpha
+
+    alpha=pi/(order+2)
+
+    func=(order-k+2)*cos(k*alpha) &
+         -cos((order+1)*alpha)*sin((order-k+2)*alpha)/sin(alpha)
+    func=func/(order+2)
+
+    return
+    
+  end function jacksonwindow
   
 !######################################################################
   
