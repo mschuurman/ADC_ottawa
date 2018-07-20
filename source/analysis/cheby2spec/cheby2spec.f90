@@ -269,13 +269,12 @@ contains
           spec(2)=spec(2)+2.0d0*cos(k*theta)*auto(k)*window(k,2)
           spec(3)=spec(3)+2.0d0*cos(k*theta)*auto(k)*window(k,3)
        enddo
-       spec=spec/pi
 
        ! Spectrum in the energy domain
        spec=spec/sin(theta)
 
        ! Prefactor
-       spec=spec*e*2.0d0/3.0d0
+       spec=spec*e*2.0d0/3.0d0/pi/(order/2)
        
        ! Output the energy and spectrum values
        write(unit,'(ES15.6,3(2x,ES15.6))') e*eh2ev,spec(1),spec(3),&

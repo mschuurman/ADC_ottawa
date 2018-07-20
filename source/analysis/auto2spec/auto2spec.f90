@@ -344,6 +344,9 @@ contains
 
     enddo
 
+    ! Prefactor
+    sp(:,:)=sp(:,:)*2.0d0/3.0d0
+
     return
     
   end subroutine calc_spectrum

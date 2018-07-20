@@ -51,8 +51,16 @@ contains
 !----------------------------------------------------------------------
 ! Estimation of the spectral bounds
 !----------------------------------------------------------------------
+    ! Estimation of the spectral bounds using a combination of
+    ! block Davidson and block Lanczos
     call spectral_bounds(bounds,'c','davlanc',ndimf,noffdf)
 
+    ! Adjust the bounds s.t. the lower eigenvalue is actually scaled
+    ! to a value e_a > -1. This is necessary when the lowest
+    ! eigenstate is bright so that its entire lineshape can be
+    ! plotted.
+    bounds(1)=0.95d0*bounds(1)
+    
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
 !----------------------------------------------------------------------
