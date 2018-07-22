@@ -8,6 +8,7 @@ module chebyspec
   use constants
   use parameters
   use iomod
+  use channels
   
   implicit none
 
@@ -24,12 +25,28 @@ contains
 
     use tdsemod
     use specbounds
+    use timingmod
     
     implicit none
 
     integer, intent(in)        :: ndimf
     integer*8, intent(in)      :: noffdf
+    integer                    :: k
     real(dp), dimension(ndimf) :: q0
+    real(dp)                   :: tw1,tw2,tc1,tc2
+
+!----------------------------------------------------------------------
+! Start timing
+!----------------------------------------------------------------------
+    call times(tw1,tc1)
+    
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write(ilog,'(/,70a)') ('-',k=1,70)
+    write(ilog,'(2x,a)') 'Calculation of the order-domain &
+         Chebyshev autocorrelation function'
+    write(ilog,'(70a,/)') ('-',k=1,70)
     
 !----------------------------------------------------------------------
 ! Initialisation
@@ -75,6 +92,12 @@ contains
 ! Finalisation
 !----------------------------------------------------------------------
    call chebyshev_finalise
+
+!----------------------------------------------------------------------
+! Output timings
+!----------------------------------------------------------------------
+   call times(tw2,tc2)
+   write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
    
    return
     
@@ -197,7 +220,6 @@ contains
   subroutine chebyshev_auto(q0,ndimf,noffdf)
 
     use tdsemod
-    use channels
     
     implicit none
 
