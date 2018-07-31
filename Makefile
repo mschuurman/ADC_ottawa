@@ -435,6 +435,35 @@ NTOANA_OBJ = accuracy.o \
 	molden.o \
 	ntoana.o
 
+########################################################################
+# DPSS code
+########################################################################
+SLEPIAN = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/chebyfd/dpss_ev.o \
+	source/analysis/chebyfd/pythag.o \
+	source/analysis/chebyfd/set_xint.o \
+	source/analysis/chebyfd/sft.o \
+	source/analysis/chebyfd/tinvit.o \
+	source/analysis/chebyfd/tridib.o \
+	source/analysis/chebyfd/xint.o \
+	source/analysis/chebyfd/slepian.o
+
+SLEPIAN_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	dpss_ev.o \
+	pythag.o \
+	set_xint.o \
+	sft.o \
+	tinvit.o \
+	tridib.o \
+	xint.o \
+	slepian.o 
+
 #-----------------------------------------------------------------------
 # Rules to create the programs
 #-----------------------------------------------------------------------
@@ -472,6 +501,10 @@ fdiag: $(FDIAG)
 
 ntoana: $(NTOANA)
 	$(F90) $(F90OPTS) $(NTOANA_OBJ) $(LIBS) -o bin/ntoana.x
+	rm -f *.o *~ *.mod
+
+slepian: $(SLEPIAN)
+	$(F90) $(F90OPTS) $(SLEPIAN_OBJ) $(LIBS) -o bin/slepian.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
