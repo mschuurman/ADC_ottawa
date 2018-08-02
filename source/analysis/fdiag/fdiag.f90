@@ -169,7 +169,7 @@ contains
     i=0
     if (.not.lend.and.keyword(i).ne.'end-input') then
 10     continue
-       i=i+1      
+       i=i+1
        
        if (keyword(i).eq.'window') then
           if (keyword(i+1).eq.'=') then

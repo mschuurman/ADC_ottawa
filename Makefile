@@ -480,6 +480,7 @@ CHEBYFD = source/include/constants.o \
 	source/analysis/chebyfd/tinvit.o \
 	source/analysis/chebyfd/tridib.o \
 	source/analysis/chebyfd/xint.o \
+	source/analysis/chebyfd/dpssmt.o \
 	source/analysis/chebyfd/chebyfd.o
 
 CHEBYFD_OBJ = constants.o \
@@ -493,6 +494,7 @@ CHEBYFD_OBJ = constants.o \
 	tinvit.o \
 	tridib.o \
 	xint.o \
+	dpssmt.o \
 	chebyfd.o
 
 #-----------------------------------------------------------------------
