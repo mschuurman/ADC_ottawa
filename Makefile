@@ -449,6 +449,7 @@ SLEPIAN = source/include/constants.o \
 	source/analysis/chebyfd/tinvit.o \
 	source/analysis/chebyfd/tridib.o \
 	source/analysis/chebyfd/xint.o \
+	source/analysis/chebyfd/dpssmt.o \
 	source/analysis/chebyfd/slepian.o
 
 SLEPIAN_OBJ = constants.o \
@@ -462,7 +463,37 @@ SLEPIAN_OBJ = constants.o \
 	tinvit.o \
 	tridib.o \
 	xint.o \
+	dpssmt.o \
 	slepian.o 
+
+########################################################################
+# Chebyshev filter diagonalisation code
+########################################################################
+CHEBYFD = source/include/constants.o \
+	source/include/channels.o \
+	source/iomodules/iomod.o \
+	source/iomodules/parsemod.o \
+	source/analysis/chebyfd/dpss_ev.o \
+	source/analysis/chebyfd/pythag.o \
+	source/analysis/chebyfd/set_xint.o \
+	source/analysis/chebyfd/sft.o \
+	source/analysis/chebyfd/tinvit.o \
+	source/analysis/chebyfd/tridib.o \
+	source/analysis/chebyfd/xint.o \
+	source/analysis/chebyfd/chebyfd.o
+
+CHEBYFD_OBJ = constants.o \
+	channels.o \
+	iomod.o \
+	parsemod.o \
+	dpss_ev.o \
+	pythag.o \
+	set_xint.o \
+	sft.o \
+	tinvit.o \
+	tridib.o \
+	xint.o \
+	chebyfd.o
 
 #-----------------------------------------------------------------------
 # Rules to create the programs
@@ -505,6 +536,10 @@ ntoana: $(NTOANA)
 
 slepian: $(SLEPIAN)
 	$(F90) $(F90OPTS) $(SLEPIAN_OBJ) $(LIBS) -o bin/slepian.x
+	rm -f *.o *~ *.mod
+
+chebyfd: $(CHEBYFD)
+	$(F90) $(F90OPTS) $(CHEBYFD_OBJ) $(LIBS) -o bin/chebyfd.x
 	rm -f *.o *~ *.mod
 
 %.o: %.f90
