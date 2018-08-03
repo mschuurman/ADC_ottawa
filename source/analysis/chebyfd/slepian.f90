@@ -54,7 +54,9 @@ program slepian
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------  
-  call dpss(npts,fw,nev,v,lambda,theta)
+  call dpss(npts,fw,nev,v,lambda)
+
+  theta=1.0d0-lambda
   
 !----------------------------------------------------------------------
 ! Output the DPSSs

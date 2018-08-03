@@ -16,31 +16,34 @@ module chebyfdmod
   real(dp), allocatable  :: auto(:)
 
   ! Spectral bounds
-  real(dp), dimension(2) :: bounds  
+  real(dp), dimension(2)  :: bounds
   
   ! DPSS information
-  integer                :: nslepian
-  integer                :: npts
-  real(dp)               :: fw
+  integer  :: nslepian
+  integer  :: npts
+  real(dp) :: fw
   
   ! Slepian functions
   real(dp), dimension(:,:), allocatable :: v
 
   ! Eigenvalues of the Slepians
-  real(dp), dimension(:), allocatable   :: lambda
-
-  ! 1-eigenvalues
-  real(dp), dimension(:), allocatable   :: theta
+  real(dp), dimension(:), allocatable :: lambda
   
   ! Energy interval
-  real(dp)               :: Ea,Eb
+  real(dp) :: Ea,Eb
 
+  ! Scaled energy interval
+  real(dp) :: Eabar,Ebbar
+
+  ! Expansion coefficients
+  real(dp), dimension(:,:), allocatable :: fkn
+  
   ! Output
-  integer                :: idat
-  character(len=120)     :: adat
+  integer            :: idat
+  character(len=120) :: adat
 
   ! Unit conversion factors
-  real(dp), parameter    :: eh2ev=27.2113845d0
+  real(dp), parameter :: eh2ev=27.2113845d0
 
   
 end module chebyfdmod
@@ -70,9 +73,19 @@ program chebyfd
 
 !----------------------------------------------------------------------
 ! If the lower bound of the energy window is less than the lower
-! spectral bound, then reset it
+! spectral bound, then reset it.
+!
+! Note that we cannot set Ea to bounds(1) as this will end up
+! introducing a singularity into the sqrt(1-Ebar^2) term appearing
+! in the equation for the coefficients...
 !----------------------------------------------------------------------
-  if (Ea.lt.bounds(1)) Ea=bounds(1)
+  if (Ea.lt.bounds(1)) Ea=bounds(1)*1.001d0
+
+!----------------------------------------------------------------------
+! Calculate the scaled energy window bounds
+!----------------------------------------------------------------------
+  Eabar=scalefunc(Ea)
+  Ebbar=scalefunc(Eb)
 
 !----------------------------------------------------------------------
 ! Calculate the Slepian filter functions
@@ -362,6 +375,23 @@ contains
 
 !######################################################################
 
+  function scalefunc(e) result(escale)
+
+    use constants
+    use chebyfdmod
+
+    real(dp) :: e,escale
+
+    escale=e-(0.5d0*(bounds(2)-bounds(1))+bounds(1))
+    escale=escale/(bounds(2)-bounds(1))
+    escale=2.0d0*escale
+    
+    return
+    
+  end function scalefunc
+  
+!######################################################################
+
   subroutine calc_slepians
 
     use chebyfdmod
@@ -380,7 +410,7 @@ contains
 ! Gauss-Chebyshev quadrature in the calculation of the expansion
 ! coefficients ???
 !----------------------------------------------------------------------
-    npts=order+1
+    npts=max(1000,order+1)
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -393,14 +423,15 @@ contains
     allocate(lambda(nslepian))
     lambda=0.0d0
 
-    ! 1-eigenvalues
-    allocate(theta(nslepian))
-    theta=0.0d0
-
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------
-    call dpss(npts,fw,nslepian,v,lambda,theta)
+    call dpss(npts,fw,nslepian,v,lambda)
+
+!----------------------------------------------------------------------
+! Renormalisation on the interval [Eabar,Ebbar]
+!----------------------------------------------------------------------
+    v=v/((Ebbar-Eabar)/npts)
     
     return
     
@@ -429,7 +460,7 @@ contains
     write(ilog,'(a)') '  DPSS       lambda         1 - lambda'
     write(ilog,'(41a)') ('#',i=1,41)
     do i=1,nslepian
-       write(ilog,'(2x,i3,2(2x,ES15.6))') i,lambda(i),theta(i)
+       write(ilog,'(2x,i3,2(2x,ES15.6))') i,lambda(i),1.0d0-lambda(i)
     enddo
 
     ! Overlaps
@@ -473,28 +504,92 @@ contains
   subroutine calc_expansion_coeffs
 
     use chebyfdmod
-
+    use iomod
+    
     implicit none
 
-    integer :: n,k
+    integer                               :: n,j,k,unit
+    real(dp)                              :: debar,ebar,theta
+    real(dp), dimension(:,:), allocatable :: Tk,Tkw,val
+    character(len=3)                      :: an
+    character(len=20)                     :: filename
     
 !----------------------------------------------------------------------
-! Calculation of the expansion coefficients using Gauss-Chebyshev
-! quadrature
+! Output what we are doing
 !----------------------------------------------------------------------
-    ! Loop over Slepians
-    do n=1,nslepian
+    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(fkn(0:order,nslepian))
+    fkn=0.0d0
 
-       ! Loop over Chebyshev polynomials
+    allocate(Tk(0:order,npts))
+    Tkw=0.0d0
+    
+    allocate(Tkw(0:order,npts))
+    Tkw=0.0d0
+
+    allocate(val(npts,nslepian))
+    val=0.0d0
+    
+!----------------------------------------------------------------------
+! Calculation of the expansion coefficients using the trapezoidal
+! rule
+!----------------------------------------------------------------------
+    ! Precalculate the values of the Chebyshev polynomials at the
+    ! quadrature points weighted by 1/sqrt(1-Ebar)
+    debar=((Ebbar-Eabar)/(npts-1))
+    do j=1,npts
+       ebar=Eabar+debar*(j-1)
+       theta=acos(ebar)
        do k=0,order
-
-          
-          
+          Tk(k,j)=cos(k*theta)
        enddo
-       
+       Tkw(:,j)=Tk(:,j)/sqrt(1.0d0-ebar**2)
     enddo
-
     
+    ! Scale the first and last values of the weighted Chebyshev
+    ! polynomials at the quadrature points s.t. we can take dot
+    ! products to calculate the overlaps
+    Tkw(:,1)=Tkw(:,1)/2.0d0
+    Tkw(:,npts)=Tkw(:,npts)/2.0d0
+
+    ! Calculate the expansion coefficients
+    fkn=matmul(Tkw,v)
+    
+    ! Multiplication by DeltaE
+    fkn=fkn*(Ebbar-Eabar)/npts
+
+    ! Prefactors
+    fkn(0,:)=fkn(0,:)/pi
+    fkn(1:order,:)=fkn(1:order,:)*2.0d0/pi
+    
+!----------------------------------------------------------------------
+! TEST: Do the calculated coefficients reproduce the DPSSs?
+!----------------------------------------------------------------------
+    ! Calculate the Chebyshev expansions of the DPSSs
+    val=matmul(transpose(Tk),fkn)
+
+    ! Output the Chebyshev expansions of the DPSSs
+    call freeunit(unit)
+    do n=1,nslepian
+       write(an,'(i3)') n
+       filename='dpss.'//trim(adjustl(an))//'.cheby.dat'
+       open(unit,file=filename,form='formatted',status='unknown')
+       do j=1,npts
+          write(unit,'(i5,2x,ES15.6)') j,val(j,n)*((Ebbar-Eabar)/npts)
+       enddo
+       close(unit)
+    enddo
+       
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(Tk)
+    deallocate(Tkw)
+
     return
     
   end subroutine calc_expansion_coeffs
