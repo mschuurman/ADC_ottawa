@@ -80,7 +80,7 @@ contains
 !----------------------------------------------------------------------
     if (iargc().ne.3) then
        write(6,'(/,2(2x,a,/))') 'Incorrect no. command line &
-            arguments','Correct input: npts fw nev'
+            arguments','Correct input: npts nev fw'
        stop
     endif
     
@@ -91,16 +91,16 @@ contains
     read(string,*) npts
 
 !----------------------------------------------------------------------    
-! Argument 2: time-bandwidth product
+! Argument 2: number of Slepians
 !----------------------------------------------------------------------    
     call getarg(2,string)
-    read(string,*) fw
+    read(string,*) nev
 
 !----------------------------------------------------------------------    
-! Argument 3: number of Slepians
+! Argument 3: time-bandwidth profuct
 !----------------------------------------------------------------------    
     call getarg(3,string)
-    read(string,*) nev
+    read(string,*) fw
     
     return
     
@@ -143,10 +143,15 @@ contains
     real(dp)          :: ovrlp
     character(len=60) :: filename
     character(len=5)  :: ai
-
+    logical           :: exists
+    
 !----------------------------------------------------------------------
 ! Output the Slepians to file
 !----------------------------------------------------------------------
+    inquire(file='dpss/.',exist=exists)
+    if (exists) call system('rm dpss/*')
+    if (.not.exists) call system('mkdir dpss')
+    
     call freeunit(unit)
 
     ! Loop over the Slepians
@@ -154,7 +159,7 @@ contains
 
        ! Open the output file
        write(ai,'(i5)') i
-       filename='dpss.'//trim(adjustl(ai))//'.dat'
+       filename='dpss/dpss.'//trim(adjustl(ai))//'.dat'
        open(unit,file=filename,form='formatted',status='unknown')
        
        ! Write the output file
