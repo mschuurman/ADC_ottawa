@@ -32,6 +32,10 @@ module chebyfdmod
   ! Energy interval
   real(dp) :: Ea,Eb
 
+  ! Tabulated optimal time-bandwidth products
+  integer, parameter        :: nopt=50
+  real(dp), dimension(nopt) :: optfw
+  
   ! Scaled energy interval
   real(dp) :: Eabar,Ebbar
 
@@ -83,12 +87,18 @@ program chebyfd
 ! Open the input and log files
 !----------------------------------------------------------------------
   call openchebyfdfiles
-  
+
 !----------------------------------------------------------------------
 ! Read the command line arguments
 !----------------------------------------------------------------------
   call rdchebyfdinp
 
+!----------------------------------------------------------------------
+! If the time-bandwidth product has not been supplied by the user,
+! then look up the optimal value
+!----------------------------------------------------------------------
+  if (fw.eq.0.0d0) call get_optimal_fw
+     
 !----------------------------------------------------------------------
 ! Read the Chebyshev order domain autocorrelation function file
 !----------------------------------------------------------------------
@@ -131,6 +141,11 @@ program chebyfd
 !----------------------------------------------------------------------
   call calc_smat_fsbas
 
+!----------------------------------------------------------------------
+! Analysis of the filtered-state overlap matrix
+!----------------------------------------------------------------------
+  call smat_ana
+  
 !----------------------------------------------------------------------
 ! Calculate the filtered-state Hamiltonian matrix
 !----------------------------------------------------------------------
@@ -283,14 +298,10 @@ contains
              i=i+2
              ! No. slepian filter functions
              read(keyword(i),*) ndpss
-             ! Time half-bandwidth product factor
+             ! Optional argument: time-bandwidth product factor
              if (keyword(i+1).eq.',') then
                 i=i+2
                 read(keyword(i),*) fw
-             else
-                errmsg='The ime half-bandwidth product factor has &
-                     not been given with the slepians keyword'
-                call error_control
              endif
           else
              goto 100
@@ -344,6 +355,108 @@ contains
     return
     
   end subroutine rdchebyfdinp
+
+!######################################################################
+
+  subroutine get_optimal_fw
+
+    use channels
+    use iomod
+    use chebyfdmod
+    
+    implicit none
+
+    character(len=4) :: ai
+
+!----------------------------------------------------------------------
+! Exit if the optimal time-bandwidth product is not available for the
+! value of ndpss
+!----------------------------------------------------------------------
+    if (ndpss.gt.nopt) then
+       write(ai,'(i4)') nopt
+       errmsg='Optimal time-bandwidth products are not currently &
+            available for numbers of Slepians greater than '&
+            //trim(adjustl(ai))
+       call error_control
+    endif
+    
+!----------------------------------------------------------------------
+! Set the optimal time-bandwidth product for the current no. Slepians
+!----------------------------------------------------------------------
+    call fill_optfw
+    fw=optfw(ndpss)
+    
+    return
+    
+  end subroutine get_optimal_fw
+    
+!######################################################################
+  
+  subroutine fill_optfw
+
+    use channels
+    use chebyfdmod
+    
+    implicit none
+
+!----------------------------------------------------------------------
+! Fill in the optfw array with the time-bandwidth products that yield
+! 1-lambda_N values less than 5e-7
+!----------------------------------------------------------------------
+    optfw(1)=2.8d0
+    optfw(2)=3.6d0
+    optfw(3)=4.2d0
+    optfw(4)=4.8d0
+    optfw(5)=5.4d0
+    optfw(6)=6.0d0
+    optfw(7)=6.6d0
+    optfw(8)=7.2d0
+    optfw(9)=7.7d0
+    optfw(10)=8.3d0
+    optfw(11)=8.8d0
+    optfw(12)=9.4d0
+    optfw(13)=9.9d0
+    optfw(14)=10.5d0
+    optfw(15)=11.0d0
+    optfw(16)=11.5d0
+    optfw(17)=12.1d0
+    optfw(18)=12.6d0
+    optfw(19)=13.1d0
+    optfw(20)=13.7d0
+    optfw(21)=14.2d0
+    optfw(22)=14.7d0
+    optfw(23)=15.2d0
+    optfw(24)=15.8d0
+    optfw(25)=16.3d0
+    optfw(26)=16.8d0
+    optfw(27)=17.3d0
+    optfw(28)=17.9d0
+    optfw(29)=18.4d0
+    optfw(30)=18.9d0
+    optfw(31)=19.4d0
+    optfw(32)=20.0d0
+    optfw(33)=20.5d0
+    optfw(34)=21.0d0
+    optfw(35)=21.5d0
+    optfw(36)=22.0d0
+    optfw(37)=22.5d0
+    optfw(38)=23.1d0
+    optfw(39)=23.6d0
+    optfw(40)=24.1d0
+    optfw(41)=24.6d0
+    optfw(42)=25.1d0
+    optfw(43)=25.6d0
+    optfw(44)=26.2d0
+    optfw(45)=26.7d0
+    optfw(46)=27.2d0
+    optfw(47)=27.7d0
+    optfw(48)=28.2d0
+    optfw(49)=28.7d0
+    optfw(50)=29.2d0
+    
+    return
+    
+  end subroutine fill_optfw
     
 !######################################################################
 
@@ -593,7 +706,7 @@ contains
     fkn=0.0d0
 
     allocate(Tk(0:Kdim,npts))
-    Tkw=0.0d0
+    Tk=0.0d0
     
     allocate(Tkw(0:Kdim,npts))
     Tkw=0.0d0
@@ -659,7 +772,8 @@ contains
 !----------------------------------------------------------------------
     deallocate(Tk)
     deallocate(Tkw)
-
+    deallocate(val)
+    
     return
     
   end subroutine calc_expansion_coeffs
@@ -674,8 +788,6 @@ contains
     implicit none
 
     integer                                :: m,n,j,k
-    real(dp), dimension(:), allocatable    :: gramdet
-    real(dp), parameter                    :: thrsh=1e-6_dp
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -687,9 +799,6 @@ contains
 !----------------------------------------------------------------------
     allocate(smat(ndpss,ndpss))
     smat=0.0d0
-
-    allocate(gramdet(ndpss))
-    gramdet=0.0d0
     
 !----------------------------------------------------------------------
 ! Calculate the filtered state overlap matrix
@@ -708,24 +817,56 @@ contains
     
     ! Prefactor
     smat=0.5d0*smat
+    
+    return
+    
+  end subroutine calc_smat_fsbas
+
+!######################################################################
+
+  subroutine smat_ana
+
+    use channels
+    use chebyfdmod
+    
+    implicit none
+
+    integer                                :: n
+    real(dp), dimension(:), allocatable    :: gramdet
+    real(dp), parameter                    :: thrsh=1e-6_dp
 
 !----------------------------------------------------------------------
-! Determine the no. filtered states to use in the calculation of the
-! Hamiltonian matrix
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(gramdet(ndpss))
+    gramdet=0.0d0
+    
+!----------------------------------------------------------------------
+! Calculate the Gram determinant for S_n, n=1,...,ndpss
 !----------------------------------------------------------------------
     ! Gram determinants
     do n=1,ndpss
        gramdet(n)=finddet(smat(1:n,1:n),n)
     enddo
 
-    ! Output the Gram determinant of the full-dimension overlap matrix
-    write(ilog,'(/,2x,a,ES15.6)') 'det(S) = ',gramdet(ndpss)
+!----------------------------------------------------------------------
+! Output the Gram determinants
+!----------------------------------------------------------------------
+    write(ilog,'(/,41a)') ('#',i=1,41)
+    write(ilog,'(2x,a)') 'Gram determinants'
+    write(ilog,'(41a)') ('#',i=1,41)
+    do n=1,ndpss
+       write(ilog,'(2x,i3,2x,ES15.6)') n,gramdet(n)
+    enddo
+
     write(6,'(/,2x,a,ES15.6)') 'det(S) = ',gramdet(ndpss)
 
-    ! Reduce the dimension of the filtered-state basis if necessary
+!----------------------------------------------------------------------
+! Reduce the dimension of the filtered-state basis if necessary
+!----------------------------------------------------------------------
     if (abs(gramdet(ndpss)).lt.thrsh) then
-       do n=1,ndpss-1
-          if (abs(gramdet(n+1)).lt.thrsh) then
+       do n=1,ndpss
+          if (abs(gramdet(n)).lt.thrsh) then
              nfsbas=n
              exit
           endif
@@ -733,7 +874,7 @@ contains
     else
        nfsbas=ndpss
     endif
-
+    
     if (nfsbas.lt.ndpss) then
        write(ilog,'(/,2x,a,i3)') &
             'Filtered-state basis dimension reduced to ',nfsbas
@@ -748,7 +889,7 @@ contains
     
     return
     
-  end subroutine calc_smat_fsbas
+  end subroutine smat_ana
     
 !######################################################################
 

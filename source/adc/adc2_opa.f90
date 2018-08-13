@@ -182,7 +182,12 @@ contains
 !-----------------------------------------------------------------------
     if (ldiagfinal.and.lnto) call adc2_nto(gam,ndimf,kpqf,davname_f,&
          davstates_f,'nto')
-        
+
+!-----------------------------------------------------------------------
+! TEMPORARY HACK: chi-dependent NTOs for NH3
+!-----------------------------------------------------------------------
+!    call chi_ntos(gam,ndimf,kpqf)
+    
 !-----------------------------------------------------------------------
 ! Deallocate arrays
 !-----------------------------------------------------------------------
@@ -995,6 +1000,105 @@ contains
 
   end subroutine tdm_davstates_final
 
+!#######################################################################
+
+  subroutine chi_ntos(gam,ndimf,kpqf)
+
+    use constants
+    use parameters
+    use adc_common, only: readdavvc
+    use nto
+    use gamess_internal
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf,i,nstep
+    real(dp)                                  :: chi
+    real(dp), dimension(101)                  :: chivals
+    real(dp), allocatable                     :: ener(:)
+    real(dp), allocatable                     :: rvec(:,:)
+    complex(dp), allocatable                  :: psi(:)
+    complex(dp)                               :: cx,cy
+    type(gam_structure)                       :: gam
+
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(psi(ndimf))
+    psi=czero
+
+    allocate(rvec(ndimf,davstates_f))
+    rvec=0.0d0
+
+    allocate(ener(davstates_f))
+    ener=0.0d0
+    
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+    call tdadc2_nto_init(gam%nbasis,1.0d0)
+
+!-----------------------------------------------------------------------    
+! Read the wavefunction vectors from file
+!-----------------------------------------------------------------------    
+    call readdavvc(davstates_f,ener,rvec,'f',ndimf)
+
+!-----------------------------------------------------------------------    
+! Calculate the chi-dependent NTOs
+!-----------------------------------------------------------------------    
+!    nstep=100
+!
+!    do i=0,nstep
+!
+!       ! Current chi value
+!       chi=i*2.0d0*3.1415926535897932_dp/nstep
+!
+!       ! Coefficients
+!       cx=cos(chi)+ci*sin(chi)
+!       cy=cos(chi)-ci*sin(chi)
+!
+!       ! Wavepacket
+!       psi=(cx*rvec(:,2)-cy*rvec(:,3))/sqrt(2.0d0)
+!       
+!       ! NTOs
+!       call tdadc2_nto(gam,psi,ndimf,kpqf,dble(i))
+!       
+!    enddo
+
+    chivals(1)=0.0d0
+    chivals(2)=3.1415926535897932d0/8.0d0
+    chivals(3)=3.1415926535897932d0/4.0d0
+    do i=1,3
+       chi=chivals(i)
+       
+       ! Coefficients
+       cx=cos(chi)+ci*sin(chi)
+       cy=cos(chi)-ci*sin(chi)
+
+       ! Wavepacket
+       psi=(cx*rvec(:,2)-cy*rvec(:,3))/sqrt(2.0d0)
+       
+       ! NTOs
+       call tdadc2_nto(gam,psi,ndimf,kpqf,dble(i))
+    enddo
+    
+!-----------------------------------------------------------------------    
+! Finalisation
+!-----------------------------------------------------------------------
+    call tdadc2_nto_finalise
+
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(psi)
+    deallocate(rvec)
+    deallocate(ener)
+    
+    return
+    
+  end subroutine chi_ntos
+    
 !#######################################################################
 
 end module adc2specmod
