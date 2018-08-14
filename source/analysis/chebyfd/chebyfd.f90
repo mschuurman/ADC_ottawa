@@ -259,7 +259,7 @@ contains
 
     ! Maximum order
     kfinal=1e+6
-    
+
 !----------------------------------------------------------------------
 ! Read the input file
 !----------------------------------------------------------------------
@@ -336,7 +336,7 @@ contains
        call error_control
        
     endif
-
+       
 !----------------------------------------------------------------------
 ! Make sure that all required information has been given
 !----------------------------------------------------------------------
@@ -589,7 +589,7 @@ contains
 !----------------------------------------------------------------------
 ! Set the number of points at which the DPSSs will be evaluated.
 !----------------------------------------------------------------------
-    npts=max(5001,Kdim)
+    npts=5001
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -846,7 +846,7 @@ contains
 !----------------------------------------------------------------------
     ! Gram determinants
     do n=1,ndpss
-       gramdet(n)=finddet(smat(1:n,1:n),n)
+       gramdet(n)=ludet(smat(1:n,1:n),n)
     enddo
 
 !----------------------------------------------------------------------
@@ -890,65 +890,47 @@ contains
     return
     
   end subroutine smat_ana
-    
+
 !######################################################################
 
-  real(dp) function finddet(matrix1,n)
+  function ludet(matrix,n) result(det)
 
+    use constants
+    use iomod
+    
     implicit none
 
-    integer, intent(in)      :: n
-    integer                  :: i,j,k,l
-    real(dp), dimension(n,n) :: matrix,matrix1
-    real(dp)                 :: m,temp
-    logical                  :: detexists = .true.
-
-    matrix=matrix1
+    integer                  :: n,info
+    integer, dimension(n)    :: ipiv
+    real(dp), dimension(n,n) :: matrix,A
+    real(dp)                 :: det
 
 !----------------------------------------------------------------------
-! Convert to upper triangular form
-!----------------------------------------------------------------------    
-    l=1
-    do k=1,n-1
-       if (matrix(k,k)==0.0d0) then
-          detexists = .false.
-          do i=k+1,n
-             if (matrix(i,k)/=0) then
-                do j=1,n
-                   temp=matrix(i,j)
-                   matrix(i,j)=matrix(k,j)
-                   matrix(k,j)=temp
-                enddo
-                detexists=.true.
-                l=-l
-                exit
-             endif
-          enddo
-          if (detexists.eqv..false.) then
-             finddet=0
-             return
-          endif
-       endif
-       do j=k+1,n
-          m=matrix(j,k)/matrix(k,k)
-          do i=k+1,n
-             matrix(j,i)=matrix(j,i)-m*matrix(k,i)
-          enddo
-       enddo
-    enddo
+! LU decomposition of the input matrix
+!----------------------------------------------------------------------
+    A=matrix
+
+    call dgetrf(n,n,A,n,ipiv,info)
+
+    if (info.ne.0) then
+       errmsg='LU decomposition failed in subroutine ludet'
+       call error_control
+    endif
 
 !----------------------------------------------------------------------
-! Calculate determinant by finding product of diagonal elements
+! Calculation of the determinant of the input matrix
 !----------------------------------------------------------------------
-    finddet=l
+    det=1.0d0
+
     do i=1,n
-       finddet=finddet*matrix(i,i)
+       det=det*A(i,i)
+       if (ipiv(i).ne.1) det=-1*det
     enddo
 
     return
-    
-  end function finddet
 
+  end function ludet
+  
 !######################################################################
 
   subroutine calc_hmat_fsbas
