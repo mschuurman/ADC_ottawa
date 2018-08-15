@@ -1291,7 +1291,12 @@ contains
 
     ! Transition energies and oscillator strengths
     do i=1,nrbas
+
+       ! Skip if the transition energy is not in the interval [Ea,Eb]
+       if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
+
        write(unit,'(2(2x,F12.7))') ener(i)*eh2ev,osc(i)
+
     enddo
     
 !---------------------------------------------------------------------- 
