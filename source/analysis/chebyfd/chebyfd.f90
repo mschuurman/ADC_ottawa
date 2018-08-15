@@ -19,9 +19,9 @@ module chebyfdmod
   real(dp), dimension(2)  :: bounds
   
   ! DPSS information
-  integer  :: ndpss
-  integer  :: npts
-  real(dp) :: fw
+  integer             :: ndpss
+  integer, parameter  :: npts=5001
+  real(dp)            :: fw
   
   ! Slepian functions
   real(dp), dimension(:,:), allocatable :: v
@@ -35,6 +35,10 @@ module chebyfdmod
   ! Tabulated optimal time-bandwidth products
   integer, parameter        :: nopt=50
   real(dp), dimension(nopt) :: optfw
+
+  ! Variable time-bandwidth products
+  integer, parameter :: nprecalc=50
+  logical            :: varfw
   
   ! Scaled energy interval
   real(dp) :: Eabar,Ebbar
@@ -97,7 +101,7 @@ program chebyfd
 ! If the time-bandwidth product has not been supplied by the user,
 ! then look up the optimal value
 !----------------------------------------------------------------------
-  if (fw.eq.0.0d0) call get_optimal_fw
+  if (fw.eq.0.0d0.and..not.varfw) call get_optimal_fw
      
 !----------------------------------------------------------------------
 ! Read the Chebyshev order domain autocorrelation function file
@@ -121,9 +125,9 @@ program chebyfd
   Ebbar=scalefunc(Eb)
 
 !----------------------------------------------------------------------
-! Calculate the Slepian filter functions
+! Get the Slepian filter functions
 !----------------------------------------------------------------------
-  call calc_slepians
+  call get_slepians
 
 !----------------------------------------------------------------------
 ! Output some information about the Slepians to the log file
@@ -144,8 +148,12 @@ program chebyfd
 !----------------------------------------------------------------------
 ! Analysis of the filtered-state overlap matrix
 !----------------------------------------------------------------------
-  call smat_ana
-  
+  if (varfw) then
+     nfsbas=ndpss
+  else
+     call smat_ana
+  endif
+
 !----------------------------------------------------------------------
 ! Calculate the filtered-state Hamiltonian matrix
 !----------------------------------------------------------------------
@@ -301,7 +309,12 @@ contains
              ! Optional argument: time-bandwidth product factor
              if (keyword(i+1).eq.',') then
                 i=i+2
-                read(keyword(i),*) fw
+                if (keyword(i).eq.'variable') then
+                   ! Variable time-bandwidth products
+                   varfw=.true.
+                else
+                   read(keyword(i),*) fw
+                endif
              endif
           else
              goto 100
@@ -573,6 +586,105 @@ contains
     return
     
   end function unscalefunc
+
+!######################################################################
+
+  subroutine get_slepians
+
+    use chebyfdmod
+    
+    implicit none
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! Slepians
+    allocate(v(npts,ndpss))
+    v=0.0d0
+
+    ! Eigenvalues
+    allocate(lambda(ndpss))
+    lambda=0.0d0
+
+!----------------------------------------------------------------------
+! Get the DPSSs
+!----------------------------------------------------------------------
+    if (varfw) then
+       ! Variable time-bandwidth product for each Slepian filter: read
+       ! in the pre-calculated DPSSs
+       call read_slepians
+    else
+       ! Constant time-bandwidth product for all Slepian filters:
+       ! calculate the DPSSs
+       call calc_slepians
+    endif
+    
+    return
+    
+  end subroutine get_slepians
+
+!######################################################################
+
+  subroutine read_slepians
+
+    use iomod
+    use chebyfdmod
+    
+    implicit none
+
+    integer            :: n,i,unit,itmp
+    character(len=350) :: adcdir
+    character(len=500) :: path
+    character(len=550) :: filename
+    character(len=4)   :: an
+    
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write(6,'(/,2x,a)') 'Reading the DPSSs from file...'
+
+!----------------------------------------------------------------------
+! Exit if the no. DPSSs is greater than the no. pre-calculated
+!----------------------------------------------------------------------
+    if (ndpss.gt.nprecalc) then
+       errmsg='The no. Slepians requested is greater than the no. &
+            that has been pre-calculated'
+       call error_control
+    endif
+    
+!----------------------------------------------------------------------
+! Read in the pre-calculated DPSSs
+!----------------------------------------------------------------------
+    ! Path to the DPSS files
+    call get_environment_variable("ADC_DIR",adcdir)
+    path=trim(adcdir)//'/source/analysis/chebyfd/dpss.var/'
+
+    ! Next free unit
+    call freeunit(unit)
+    
+    ! Loop over the Slepians
+    do n=1,ndpss
+
+       ! Current filename
+       write(an,'(i4)') n
+       filename=trim(path)//'dpss.var.'//trim(adjustl(an))//'.dat'
+
+       ! Open the DPSS file
+       open(unit,file=filename,form='formatted',status='old')
+       
+       ! Read the DPSS file
+       do i=1,npts
+          read(unit,*) itmp,v(i,n)
+       enddo
+       
+       ! Close the DPSS file
+       close(unit)
+       
+    enddo
+
+    return
+    
+  end subroutine read_slepians
     
 !######################################################################
 
@@ -585,22 +697,6 @@ contains
 ! Output what we are doing
 !----------------------------------------------------------------------
     write(6,'(/,2x,a)') 'Calculating the DPSSs...'
-    
-!----------------------------------------------------------------------
-! Set the number of points at which the DPSSs will be evaluated.
-!----------------------------------------------------------------------
-    npts=5001
-
-!----------------------------------------------------------------------
-! Allocate arrays
-!----------------------------------------------------------------------
-    ! Slepians
-    allocate(v(npts,ndpss))
-    v=0.0d0
-
-    ! Eigenvalues
-    allocate(lambda(ndpss))
-    lambda=0.0d0
 
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
@@ -632,7 +728,8 @@ contains
 ! Output some information about the Slepians to file
 !----------------------------------------------------------------------
     ! fw
-    write(ilog,'(a,2x,F10.7)') '# Time half-bandwidth product:',fw
+    if (.not.varfw) &
+         write(ilog,'(a,2x,F10.7)') '# Time half-bandwidth product:',fw
     
     ! Eigenvalues
     write(ilog,'(/,41a)') ('#',i=1,41)
@@ -1015,12 +1112,13 @@ contains
   subroutine solve_geneig(A,B,Vbar,Ebar,P,matdim,rdim)
 
     use constants
+    use channels
     use iomod
         
     implicit none
 
     integer                               :: matdim,workdim,rdim,&
-                                             error,i
+                                             error,i,nnull
     real(dp), dimension(matdim,matdim)    :: A,B
 
     real(dp), parameter                   :: thrsh=1e+2_dp
@@ -1030,8 +1128,17 @@ contains
     real(dp), dimension(:,:), allocatable :: Ubar,normfac,P,Abar,Vbar
     real(dp), dimension(:), allocatable   :: Ebar
     real(dp), dimension(:), allocatable   :: work
-    real(dp), parameter                   :: ovrthrsh=1e-4_dp
-    
+    real(dp)                              :: ovrthrsh
+
+!----------------------------------------------------------------------
+! Set the threshold for discarding vectors
+!----------------------------------------------------------------------
+    if (varfw) then
+       ovrthrsh=1e-10_dp
+    else
+       ovrthrsh=1e-4_dp
+    endif
+       
 !----------------------------------------------------------------------
 ! Diagonalise B
 !----------------------------------------------------------------------
@@ -1055,11 +1162,20 @@ contains
 ! projects onto the orthogonal complement of the null space
 !----------------------------------------------------------------------
     ! Number of eigenvectors
+    nnull=0
     rdim=0
     do i=1,matdim
-       if (lambda(i).gt.ovrthrsh) rdim=rdim+1
+       if (lambda(i).gt.ovrthrsh) then
+          rdim=rdim+1
+       else
+          nnull=nnull+1
+       endif
     enddo
 
+    ! Output the no. null space vectors
+    write(ilog,'(/,2x,a,i3)') 'Number of null space vectors:',nnull
+    write(6,'(/,2x,a,i3)') 'Number of null space vectors:',nnull
+    
     ! Truncated eigenvector matrix
     allocate(Ubar(matdim,rdim))
     Ubar(:,1:rdim)=U(:,matdim-rdim+1:matdim)
