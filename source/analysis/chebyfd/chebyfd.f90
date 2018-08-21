@@ -67,7 +67,7 @@ module chebyfdmod
 
   ! Transition dipoles and oscillator strengths
   real(dp), dimension(:), allocatable :: tdm,osc
-
+  
   ! Output
   integer            :: idat
   character(len=120) :: adat
@@ -168,7 +168,7 @@ program chebyfd
 ! Calculate the transition dipoles and oscillator strengths
 !----------------------------------------------------------------------
   call calc_intens
-
+  
 !----------------------------------------------------------------------
 ! Output the spectrum
 !----------------------------------------------------------------------
@@ -884,7 +884,7 @@ contains
     
     implicit none
 
-    integer                                :: m,n,j,k
+    integer :: m,n,j,k
     
 !----------------------------------------------------------------------
 ! Output what we are doing
@@ -928,9 +928,9 @@ contains
     
     implicit none
 
-    integer                                :: n
-    real(dp), dimension(:), allocatable    :: gramdet
-    real(dp), parameter                    :: thrsh=1e-6_dp
+    integer                              :: n
+    real(dp), dimension(:), allocatable  :: gramdet
+    real(dp), parameter                  :: thrsh=1e-6_dp
 
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -1286,7 +1286,7 @@ contains
 !---------------------------------------------------------------------- 
     ! Table header
     write(unit,'(29a)') ('#',i=1,29)
-    write(unit,'(a)') '#  Energy          Intensity'
+    write(unit,'(a)') '#  Energy        Intensity'
     write(unit,'(29a)') ('#',i=1,29)
 
     ! Transition energies and oscillator strengths
@@ -1295,7 +1295,7 @@ contains
        ! Skip if the transition energy is not in the interval [Ea,Eb]
        if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
 
-       write(unit,'(2(2x,F12.7))') ener(i)*eh2ev,osc(i)
+       write(unit,'(2(2x,F10.5))') ener(i)*eh2ev,osc(i)
 
     enddo
     
