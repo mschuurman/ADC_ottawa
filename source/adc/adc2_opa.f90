@@ -187,6 +187,7 @@ contains
 ! TEMPORARY HACK: chi-dependent NTOs for NH3
 !-----------------------------------------------------------------------
 !    call chi_ntos(gam,ndimf,kpqf)
+    call roelec_ntos(gam,ndimf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1101,4 +1102,157 @@ contains
     
 !#######################################################################
 
+  subroutine roelec_ntos(gam,ndimf,kpqf)
+
+    use constants
+    use parameters
+    use adc_common, only: readdavvc
+    use nto
+    use iomod
+    use parsemod
+    use gamess_internal
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    integer                                   :: ndimf,i,nstep
+    integer                                   :: unit
+    real(dp)                                  :: ta,tb,deltat
+    real(dp), allocatable                     :: ener(:)
+    real(dp), allocatable                     :: rvec(:,:)
+    real(dp), allocatable                     :: cx_re(:),cx_im(:),&
+                                                 cy_re(:),cy_im(:)
+    complex(dp)                               :: cx,cy
+    complex(dp), allocatable                  :: psi(:)
+    type(gam_structure)                       :: gam
+
+!-----------------------------------------------------------------------
+! Read the time file
+!-----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='time.txt',form='formatted',status='old')
+    
+    call rdinp(unit)
+
+    ! No. timesteps
+    nstep=inkw
+
+    ! Delta t
+    read(keyword(1),*) ta
+    read(keyword(2),*) tb
+    deltat=tb-ta
+    
+    close(unit)
+    
+!-----------------------------------------------------------------------
+! Allocate arrays
+!-----------------------------------------------------------------------
+    allocate(cx_re(nstep))
+    cx_re=0.0d0
+
+    allocate(cx_im(nstep))
+    cx_im=0.0d0
+
+    allocate(cy_re(nstep))
+    cy_re=0.0d0
+
+    allocate(cy_im(nstep))
+    cy_im=0.0d0
+    
+    allocate(psi(ndimf))
+    psi=czero
+
+    allocate(rvec(ndimf,davstates_f))
+    rvec=0.0d0
+
+    allocate(ener(davstates_f))
+    ener=0.0d0
+
+!-----------------------------------------------------------------------
+! Read the coefficient files
+!-----------------------------------------------------------------------
+    ! Re Cx
+    open(unit,file='Re_c1.txt',form='formatted',status='old')
+    call rdinp(unit)
+    do i=1,nstep
+       read(keyword(i),*) cx_re(i)
+    enddo
+    close(unit)
+
+    ! Im Cx
+    open(unit,file='Im_c1.txt',form='formatted',status='old')
+    call rdinp(unit)
+    do i=1,nstep
+       read(keyword(i),*) cx_im(i)
+    enddo
+    close(unit)
+
+    ! Re Cy
+    open(unit,file='Re_c2.txt',form='formatted',status='old')
+    call rdinp(unit)
+    do i=1,nstep
+       read(keyword(i),*) cy_re(i)
+    enddo
+    close(unit)
+
+    ! Im Cy
+    open(unit,file='Im_c2.txt',form='formatted',status='old')
+    call rdinp(unit)
+    do i=1,nstep
+       read(keyword(i),*) cy_im(i)
+    enddo
+    close(unit)
+
+!-----------------------------------------------------------------------
+! Initialisation
+!-----------------------------------------------------------------------
+    call tdadc2_nto_init(gam%nbasis,deltat)
+    
+!-----------------------------------------------------------------------    
+! Read the wavefunction vectors from file
+!-----------------------------------------------------------------------    
+    call readdavvc(davstates_f,ener,rvec,'f',ndimf)
+
+!-----------------------------------------------------------------------
+! Calculate the NTOs
+!-----------------------------------------------------------------------
+    do i=1,nstep
+
+       ! Coefficients
+       cx=cx_re(i)+ci*cx_im(i)
+       cy=cy_re(i)+ci*cy_im(i)
+
+       ! Wavepacket
+       psi=(cx*rvec(:,2)+cy*rvec(:,3))
+       psi=psi/sqrt(dot_product(psi,psi))
+       
+       ! NTOs
+       call tdadc2_nto(gam,psi,ndimf,kpqf,deltat*(i-1))
+
+       print*,i,deltat*(i-1)
+       
+    enddo
+    
+!-----------------------------------------------------------------------    
+! Finalisation
+!-----------------------------------------------------------------------
+    call tdadc2_nto_finalise
+    
+!-----------------------------------------------------------------------
+! Deallocate arrays
+!-----------------------------------------------------------------------
+    deallocate(cx_re)
+    deallocate(cx_im)
+    deallocate(cy_re)
+    deallocate(cy_im)
+    deallocate(psi)
+    deallocate(rvec)
+    deallocate(ener)
+    
+    return
+    
+  end subroutine roelec_ntos
+
+!#######################################################################
+  
 end module adc2specmod

@@ -392,8 +392,9 @@ contains
     do i=1,npair
        read(iin) hole(:,i),particle(:,i),sigma(i)
     enddo
-    if (t.ne.tplt) goto 10
-
+    !if (t.ne.tplt) goto 10
+    if (abs(t-tplt).gt.1e-8_dp) goto 10
+    
 !-----------------------------------------------------------------------
 ! Output the TD-NTOs or TD-PHDs
 !-----------------------------------------------------------------------

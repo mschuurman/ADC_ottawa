@@ -7,7 +7,7 @@
     integer                              :: iline,inkw
     integer, parameter                   :: maxkw=60
     integer, dimension(maxkw)            :: ilkw
-    character(len=120), dimension(maxkw) :: keyword
+    character(len=920), dimension(maxkw) :: keyword
     logical(kind=4)                      :: lend
 
   contains
@@ -35,7 +35,7 @@
       implicit none
 
       integer            :: unit,i,k,istart,iend
-      character(len=120) :: string,message
+      character(len=920) :: string,message
 
 !------------------------------------------------------------------------
 ! Initialise arrays
