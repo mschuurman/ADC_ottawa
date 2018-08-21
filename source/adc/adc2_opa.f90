@@ -187,7 +187,7 @@ contains
 ! TEMPORARY HACK: chi-dependent NTOs for NH3
 !-----------------------------------------------------------------------
 !    call chi_ntos(gam,ndimf,kpqf)
-    call roelec_ntos(gam,ndimf,kpqf)
+!    call roelec_ntos(gam,ndimf,kpqf)
     
 !-----------------------------------------------------------------------
 ! Deallocate arrays
