@@ -74,6 +74,8 @@ module chebyfdmod
 
   ! Unit conversion factors
   real(dp), parameter :: eh2ev=27.2113845d0
+  real(dp)            :: convfac
+  logical             :: lau
   
 end module chebyfdmod
 
@@ -268,6 +270,9 @@ contains
     ! Maximum order
     kfinal=1e+6
 
+    ! Energies in a.u.
+    lau=.false.
+
 !----------------------------------------------------------------------
 ! Read the input file
 !----------------------------------------------------------------------
@@ -294,9 +299,6 @@ contains
                      with the window keyword'
                 call error_control
              endif
-             ! Conversion to a.u.
-             Ea=Ea/eh2ev
-             Eb=Eb/eh2ev
           else
              goto 100
           endif
@@ -328,6 +330,9 @@ contains
           else
              goto 100
           endif
+
+       else if (keyword(i).eq.'au') then
+          lau=.true.
           
        else
           ! Exit if the keyword is not recognised
@@ -364,6 +369,22 @@ contains
        errmsg='The slepian filter functions have not been specified'
        call error_control
     endif
+
+!----------------------------------------------------------------------
+! Set the energy conversion factor
+!----------------------------------------------------------------------
+    if (lau) then
+       convfac=1.0d0
+    else
+       convfac=eh2ev
+    endif
+
+!----------------------------------------------------------------------
+! Conversion of the energy window bounds
+!----------------------------------------------------------------------    
+    ! Conversion to a.u.
+    Ea=Ea/convfac
+    Eb=Eb/convfac
     
     return
     
@@ -1295,7 +1316,7 @@ contains
        ! Skip if the transition energy is not in the interval [Ea,Eb]
        if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
 
-       write(unit,'(2(2x,F10.5))') ener(i)*eh2ev,osc(i)
+       write(unit,'(2(2x,F10.5))') ener(i)*convfac,osc(i)
 
     enddo
     

@@ -9,6 +9,8 @@ module cheby2specmod
   real(dp)               :: emin,emax
   real(dp), allocatable  :: auto(:)
   real(dp), parameter    :: eh2ev=27.2113845d0
+  real(dp)               :: convfac
+  logical                :: lau
   
 end module cheby2specmod
 
@@ -63,6 +65,9 @@ contains
 
     ! Maximum order
     kfinal=1e+6
+
+    ! Energies in a.u.
+    lau=.false.
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -79,10 +84,7 @@ contains
           read(string2,*) emin
           i=i+1
           call getarg(i,string2)
-          read(string2,*) emax
-          ! Convert to au
-          emin=emin/eh2ev
-          emax=emax/eh2ev
+          read(string2,*) emax         
 
        else if (string1.eq.'-np') then
           ! No. energy points
@@ -97,6 +99,10 @@ contains
           read(string2,*) kfinal
           if (mod(kfinal,2).ne.0) kfinal=kfinal-1
 
+       else if (string1.eq.'-au') then
+          ! Energies are given in a.u.
+          lau=.true.
+          
        else
           errmsg='Unknown keyword: '//trim(string1)
           call error_control
@@ -116,6 +122,21 @@ contains
        errmsg='The energy range has not been given'
        call error_control
     endif
+
+!----------------------------------------------------------------------
+! Set the energy conversion factor
+!----------------------------------------------------------------------
+    if (lau) then
+       convfac=1.0d0
+    else
+       convfac=eh2ev
+    endif
+
+!----------------------------------------------------------------------
+! Conversion of the spectrum bounds
+!----------------------------------------------------------------------    
+    emin=emin/convfac
+    emax=emax/convfac
     
     return
     
@@ -222,8 +243,13 @@ contains
 ! File header
 !----------------------------------------------------------------------
     write(unit,'(67a)') ('#',k=1,67)
-    write(unit,'(a)') '#  Energy (eV)      Gaussian         &
-         Jackson          No'
+    if (lau) then
+       write(unit,'(a)') '#  Energy (au)      Gaussian         &
+            Jackson          No'
+    else
+       write(unit,'(a)') '#  Energy (eV)      Gaussian         &
+            Jackson          No'
+    endif
     write(unit,'(a)') '#                   Window           &
          Window           Window'
     write(unit,'(67a)') ('#',k=1,67)
@@ -277,7 +303,7 @@ contains
        spec=spec*e*2.0d0/3.0d0/pi/(order/2)
        
        ! Output the energy and spectrum values
-       write(unit,'(ES15.6,3(2x,ES15.6))') e*eh2ev,spec(1),spec(3),&
+       write(unit,'(ES15.6,3(2x,ES15.6))') e*convfac,spec(1),spec(3),&
             spec(0)
        
     enddo
