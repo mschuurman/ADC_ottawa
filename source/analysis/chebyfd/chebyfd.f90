@@ -567,7 +567,7 @@ contains
 ! Close the chebyauto file
 !----------------------------------------------------------------------
     close(unit)
-    
+
     return
     
   end subroutine rdautofile
@@ -879,8 +879,11 @@ contains
        write(an,'(i3)') n
        filename='dpss.cheby/dpss.cheby.'//trim(adjustl(an))//'.dat'
        open(unit,file=filename,form='formatted',status='unknown')
+       write(unit,'(40a)') ('#',k=1,40)
+       write(unit,'(a)') '# Point   Approximate      Actual'
+       write(unit,'(40a)') ('#',k=1,40)
        do j=1,npts
-          write(unit,'(i5,2x,ES15.6)') j,val(j,n)*((Ebbar-Eabar)/npts)
+          write(unit,'(i5,2(2x,ES15.6))') j,val(j,n),v(j,n)
        enddo
        close(unit)
     enddo
@@ -1295,6 +1298,11 @@ contains
     implicit none
 
     integer :: i,unit
+
+!    ! CHECK
+!    integer  :: n
+!    real(dp) :: en,D,b
+!    ! CHECK
     
 !---------------------------------------------------------------------- 
 ! Open the output file
@@ -1319,6 +1327,25 @@ contains
        write(unit,'(2(2x,F10.5))') ener(i)*convfac,osc(i)
 
     enddo
+
+
+!    ! CHECK
+!    D=1000.0d0
+!    b=0.15d0
+!
+!    n=99
+!    do i=1,nrbas
+!
+!       if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
+!       
+!       n=n+1
+!       
+!       en=-D+2.0d0*D*(n+0.5d0)*sqrt(b**2/(2.0d0*D))-0.5d0*(n+0.5d0)**2*b**2
+!
+!       print*,n,ener(i),en,ener(i)-en
+!       
+!    enddo
+!    ! CHECK
     
 !---------------------------------------------------------------------- 
 ! Close the output file
