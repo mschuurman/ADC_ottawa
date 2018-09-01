@@ -19,7 +19,7 @@ module chebyfdmod
   real(dp), dimension(2)  :: bounds
   
   ! DPSS information
-  integer             :: ndpss
+  integer             :: nfsbas
   integer, parameter  :: npts=5001
   real(dp)            :: fw
   
@@ -48,9 +48,6 @@ module chebyfdmod
 
   ! Filtered state overlap and Hamiltonian matrices
   real(dp), dimension(:,:), allocatable :: smat,hmat
-
-  ! Working dimension of the filtered state basis
-  integer :: nfsbas
 
   ! Eigenvectors and eigenvalues of the filtered-state
   ! Hamiltonian matrix
@@ -150,12 +147,8 @@ program chebyfd
 !----------------------------------------------------------------------
 ! Analysis of the filtered-state overlap matrix
 !----------------------------------------------------------------------
-  if (varfw) then
-     nfsbas=ndpss
-  else
-     call smat_ana
-  endif
-
+  call smat_ana
+  
 !----------------------------------------------------------------------
 ! Calculate the filtered-state Hamiltonian matrix
 !----------------------------------------------------------------------
@@ -258,7 +251,7 @@ contains
 ! Initialisation
 !----------------------------------------------------------------------
     ! Number of Slepian filter functions
-    ndpss=0
+    nfsbas=0
 
     ! Time half-bandwidth parameter
     fw=0.0d0
@@ -307,7 +300,7 @@ contains
           if (keyword(i+1).eq.'=') then
              i=i+2
              ! No. slepian filter functions
-             read(keyword(i),*) ndpss
+             read(keyword(i),*) nfsbas
              ! Optional argument: time-bandwidth product factor
              if (keyword(i+1).eq.',') then
                 i=i+2
@@ -365,7 +358,7 @@ contains
     endif
 
     ! Slepian filter functions
-    if (ndpss.eq.0) then
+    if (nfsbas.eq.0) then
        errmsg='The slepian filter functions have not been specified'
        call error_control
     endif
@@ -404,9 +397,9 @@ contains
 
 !----------------------------------------------------------------------
 ! Exit if the optimal time-bandwidth product is not available for the
-! value of ndpss
+! value of nfsbas
 !----------------------------------------------------------------------
-    if (ndpss.gt.nopt) then
+    if (nfsbas.gt.nopt) then
        write(ai,'(i4)') nopt
        errmsg='Optimal time-bandwidth products are not currently &
             available for numbers of Slepians greater than '&
@@ -418,7 +411,7 @@ contains
 ! Set the optimal time-bandwidth product for the current no. Slepians
 !----------------------------------------------------------------------
     call fill_optfw
-    fw=optfw(ndpss)
+    fw=optfw(nfsbas)
     
     return
     
@@ -620,11 +613,11 @@ contains
 ! Allocate arrays
 !----------------------------------------------------------------------
     ! Slepians
-    allocate(v(npts,ndpss))
+    allocate(v(npts,nfsbas))
     v=0.0d0
 
     ! Eigenvalues
-    allocate(lambda(ndpss))
+    allocate(lambda(nfsbas))
     lambda=0.0d0
 
 !----------------------------------------------------------------------
@@ -639,7 +632,12 @@ contains
        ! calculate the DPSSs
        call calc_slepians
     endif
-    
+
+!----------------------------------------------------------------------
+! Renormalisation on the interval [Eabar,Ebbar]
+!----------------------------------------------------------------------
+    v=v/sqrt(((Ebbar-Eabar)/(npts-1)))
+
     return
     
   end subroutine get_slepians
@@ -667,7 +665,7 @@ contains
 !----------------------------------------------------------------------
 ! Exit if the no. DPSSs is greater than the no. pre-calculated
 !----------------------------------------------------------------------
-    if (ndpss.gt.nprecalc) then
+    if (nfsbas.gt.nprecalc) then
        errmsg='The no. Slepians requested is greater than the no. &
             that has been pre-calculated'
        call error_control
@@ -684,7 +682,7 @@ contains
     call freeunit(unit)
     
     ! Loop over the Slepians
-    do n=1,ndpss
+    do n=1,nfsbas
 
        ! Current filename
        write(an,'(i4)') n
@@ -722,12 +720,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------
-    call dpss(npts,fw,ndpss,v,lambda)
-
-!----------------------------------------------------------------------
-! Renormalisation on the interval [Eabar,Ebbar]
-!----------------------------------------------------------------------
-    v=v/((Ebbar-Eabar)/npts)
+    call dpss(npts,fw,nfsbas,v,lambda)
     
     return
     
@@ -753,19 +746,21 @@ contains
          write(ilog,'(a,2x,F10.7)') '# Time half-bandwidth product:',fw
     
     ! Eigenvalues
-    write(ilog,'(/,41a)') ('#',i=1,41)
-    write(ilog,'(a)') '  DPSS       lambda         1 - lambda'
-    write(ilog,'(41a)') ('#',i=1,41)
-    do i=1,ndpss
-       write(ilog,'(2x,i3,2(2x,ES15.6))') i,lambda(i),1.0d0-lambda(i)
-    enddo
-
-    ! Overlaps
+    if (.not.varfw) then
+       write(ilog,'(/,41a)') ('#',i=1,41)
+       write(ilog,'(a)') '  DPSS       lambda         1 - lambda'
+       write(ilog,'(41a)') ('#',i=1,41)
+       do i=1,nfsbas
+          write(ilog,'(2x,i3,2(2x,ES15.6))') i,lambda(i),1.0d0-lambda(i)
+       enddo
+    endif
+       
+    ! Overlaps on the interval [Eabar,Ebbar]
     write(ilog,'(/,41a)') ('#',i=1,41)
     write(ilog,'(a)') '  Overlaps'
     write(ilog,'(41a)') ('#',i=1,41)
-    do i=1,ndpss-1
-       do j=i,ndpss
+    do i=1,nfsbas-1
+       do j=i,nfsbas
           ovrlp=dpss_overlap(i,j)
           write(ilog,'(2(2x,i3),2x,ES15.6)') i,j,ovrlp
        enddo
@@ -791,6 +786,8 @@ contains
        ovrlp=ovrlp+v(n,i)*v(n,j)
     enddo
     ovrlp=ovrlp+v(npts,i)*v(npts,j)/2.0d0
+
+    ovrlp=ovrlp*((Ebbar-Eabar)/(npts-1))
     
     return
     
@@ -820,7 +817,7 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(fkn(0:Kdim,ndpss))
+    allocate(fkn(0:Kdim,nfsbas))
     fkn=0.0d0
 
     allocate(Tk(0:Kdim,npts))
@@ -829,7 +826,7 @@ contains
     allocate(Tkw(0:Kdim,npts))
     Tkw=0.0d0
 
-    allocate(val(npts,ndpss))
+    allocate(val(npts,nfsbas))
     val=0.0d0
     
 !----------------------------------------------------------------------
@@ -875,7 +872,7 @@ contains
     if (exists) call system('rm dpss.cheby/*')
     if (.not.exists) call system('mkdir dpss.cheby')
     call freeunit(unit)
-    do n=1,ndpss
+    do n=1,nfsbas
        write(an,'(i3)') n
        filename='dpss.cheby/dpss.cheby.'//trim(adjustl(an))//'.dat'
        open(unit,file=filename,form='formatted',status='unknown')
@@ -918,23 +915,22 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(smat(ndpss,ndpss))
+    allocate(smat(nfsbas,nfsbas))
     smat=0.0d0
     
 !----------------------------------------------------------------------
 ! Calculate the filtered state overlap matrix
 !----------------------------------------------------------------------
-    do m=1,ndpss
-       do n=m,ndpss
-          do j=0,Kdim
-             do k=0,Kdim
-                smat(m,n)=smat(m,n)+fkn(j,m)*fkn(k,n) &
-                     *(auto(j+k)+auto(abs(k-j)))
-             enddo
-          enddo
+    !$omp parallel do &
+    !$omp& private(m,n) &
+    !$omp& shared(smat)
+    do m=1,nfsbas
+       do n=m,nfsbas
+          smat(m,n)=smat_1element(m,n)
           smat(n,m)=smat(m,n)
        enddo
     enddo
+    !$omp end parallel do
     
     ! Prefactor
     smat=0.5d0*smat
@@ -943,6 +939,31 @@ contains
     
   end subroutine calc_smat_fsbas
 
+!######################################################################
+
+  function smat_1element(m,n) result(Smn)
+
+    use channels
+    use chebyfdmod
+    
+    implicit none
+
+    integer  :: m,n,j,k
+    real(dp) :: Smn
+
+    ! Note that this function does not include the 1/2 prefactor
+    
+    Smn=0.0d0
+    do j=0,Kdim
+       do k=0,Kdim
+          Smn=Smn+fkn(j,m)*fkn(k,n)*(auto(j+k)+auto(abs(k-j)))
+       enddo
+    enddo
+    
+    return
+    
+  end function smat_1element
+    
 !######################################################################
 
   subroutine smat_ana
@@ -959,14 +980,14 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(gramdet(ndpss))
+    allocate(gramdet(nfsbas))
     gramdet=0.0d0
     
 !----------------------------------------------------------------------
-! Calculate the Gram determinant for S_n, n=1,...,ndpss
+! Calculate the Gram determinant for S_n, n=1,...,nfsbas
 !----------------------------------------------------------------------
     ! Gram determinants
-    do n=1,ndpss
+    do n=1,nfsbas
        gramdet(n)=ludet(smat(1:n,1:n),n)
     enddo
 
@@ -976,32 +997,11 @@ contains
     write(ilog,'(/,41a)') ('#',i=1,41)
     write(ilog,'(2x,a)') 'Gram determinants'
     write(ilog,'(41a)') ('#',i=1,41)
-    do n=1,ndpss
+    do n=1,nfsbas
        write(ilog,'(2x,i3,2x,ES15.6)') n,gramdet(n)
     enddo
 
-    write(6,'(/,2x,a,ES15.6)') 'det(S) = ',gramdet(ndpss)
-
-!----------------------------------------------------------------------
-! Reduce the dimension of the filtered-state basis if necessary
-!----------------------------------------------------------------------
-    if (abs(gramdet(ndpss)).lt.thrsh) then
-       do n=1,ndpss
-          if (abs(gramdet(n)).lt.thrsh) then
-             nfsbas=n
-             exit
-          endif
-       enddo
-    else
-       nfsbas=ndpss
-    endif
-    
-    if (nfsbas.lt.ndpss) then
-       write(ilog,'(/,2x,a,i3)') &
-            'Filtered-state basis dimension reduced to ',nfsbas
-       write(6,'(/,2x,a,i3)') &
-            'Filtered-state basis dimension reduced to ',nfsbas
-    endif
+    write(6,'(/,2x,a,ES15.6)') 'det(S) = ',gramdet(nfsbas)
 
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -1076,19 +1076,17 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the filtered state Hamiltonian matrix
 !----------------------------------------------------------------------
+    !$omp parallel do &
+    !$omp& private(m,n) &
+    !$omp& shared(hmat)
     do m=1,nfsbas
        do n=m,nfsbas
-          do j=0,Kdim
-             do k=0,Kdim
-                hmat(m,n)=hmat(m,n)+fkn(j,m)*fkn(k,n) &
-                     *(auto(j+k+1)+auto(abs(j-k-1))+auto(abs(j+k-1)) &
-                     +auto(abs(j-k+1)))
-             enddo
-          enddo
+          hmat(m,n)=hmat_1element(m,n)
           hmat(n,m)=hmat(m,n)
        enddo
     enddo
-
+    !$omp end parallel do
+    
     ! Prefactor
     hmat=0.25d0*hmat
     
@@ -1096,6 +1094,33 @@ contains
     
   end subroutine calc_hmat_fsbas
 
+!######################################################################
+
+  function hmat_1element(m,n) result(Hmn)
+
+    use channels
+    use chebyfdmod
+    
+    implicit none
+
+    integer  :: m,n,j,k
+    real(dp) :: Hmn
+
+    ! Note that this function does not include the 1/4 prefactor
+    
+    Hmn=0.0d0
+    do j=0,Kdim
+       do k=0,Kdim
+          Hmn=Hmn+fkn(j,m)*fkn(k,n) &
+               *(auto(j+k+1)+auto(abs(j-k-1))+auto(abs(j+k-1)) &
+               +auto(abs(j-k+1)))
+       enddo
+    enddo
+
+    return
+    
+  end function hmat_1element
+    
 !######################################################################
 
   subroutine hmat_eigen
