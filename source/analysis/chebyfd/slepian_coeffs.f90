@@ -12,7 +12,7 @@ contains
   
   subroutine get_coeffs_slepians
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -48,7 +48,7 @@ contains
 
     use channels
     use iomod
-    use global
+    use cfdmod
     
     implicit none
 
@@ -81,7 +81,7 @@ contains
   subroutine fill_optfw
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -148,7 +148,7 @@ contains
 
   subroutine get_slepians
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -190,7 +190,7 @@ contains
   subroutine read_slepians
 
     use iomod
-    use global
+    use cfdmod
     
     implicit none
 
@@ -252,7 +252,7 @@ contains
 
   subroutine calc_slepians
 
-    use global
+    use cfdmod
     use dpssmt
 
 !----------------------------------------------------------------------
@@ -274,7 +274,7 @@ contains
   subroutine wrslepinfo
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -317,7 +317,7 @@ contains
 
   function dpss_overlap(i,j) result(ovrlp)
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -340,7 +340,7 @@ contains
 
   subroutine calc_expansion_coeffs
 
-    use global
+    use cfdmod
     use iomod
     
     implicit none
@@ -353,16 +353,8 @@ contains
     logical                               :: exists
     
 !----------------------------------------------------------------------
-! Output what we are doing
-!----------------------------------------------------------------------
-    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
-    
-!----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    allocate(fkn(0:Kdim,nfsbas))
-    fkn=0.0d0
-
     allocate(Tk(0:Kdim,npts))
     Tk=0.0d0
     

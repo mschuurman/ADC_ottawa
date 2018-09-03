@@ -5,8 +5,8 @@
 
 program chebyfd
 
-  use global
-  
+  use cfdmod
+ 
   implicit none
 
 !----------------------------------------------------------------------
@@ -40,6 +40,13 @@ program chebyfd
   Eabar=scalefunc(Ea)
   Ebbar=scalefunc(Eb)
 
+!----------------------------------------------------------------------
+! Scaled Gaussian width parameter
+!----------------------------------------------------------------------
+  if (ifilter.eq.2) then
+     sigmabar=scalefunc(Ea+sigma)-Eabar
+  endif
+  
 !----------------------------------------------------------------------
 ! Calculate the coefficients entering into the expansion of the
 ! filter functions with respect to the Chebyshev polynomials
@@ -90,7 +97,7 @@ contains
     use constants
     use channels
     use iomod
-    use global
+    use cfdmod
     
     implicit none
 
@@ -153,7 +160,7 @@ contains
     use iomod
     use parsemod
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -333,7 +340,7 @@ contains
     use constants
     use iomod
     use parsemod
-    use global
+    use cfdmod
     
     implicit none
 
@@ -410,7 +417,7 @@ contains
 
   function scalefunc(e) result(escale)
 
-    use global
+    use cfdmod
 
     implicit none
     
@@ -428,7 +435,7 @@ contains
 
   function unscalefunc(escale) result(e)
 
-    use global
+    use cfdmod
 
     implicit none
     
@@ -450,7 +457,21 @@ contains
     use gaussianmod
 
     implicit none
+
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
     
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(fkn(0:Kdim,nfsbas))
+    fkn=0.0d0
+
+!----------------------------------------------------------------------
+! Calculate the expansion coefficients
+!----------------------------------------------------------------------    
     select case(ifilter)
 
     case(1) ! Slepian filter functions
@@ -470,7 +491,7 @@ contains
   subroutine normalise_fsbas
 
     use constants
-    use global
+    use cfdmod
     
     implicit none
 
@@ -513,7 +534,7 @@ contains
   subroutine calc_smat_fsbas
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -553,7 +574,7 @@ contains
   function smat_1element(m,n) result(Smn)
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -577,7 +598,7 @@ contains
   subroutine smat_ana
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -666,7 +687,7 @@ contains
 
   subroutine calc_hmat_fsbas
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -706,7 +727,7 @@ contains
   function hmat_1element(m,n) result(Hmn)
 
     use channels
-    use global
+    use cfdmod
     
     implicit none
 
@@ -731,7 +752,7 @@ contains
 
   subroutine hmat_eigen
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -874,7 +895,7 @@ contains
 
   subroutine calc_intens
 
-    use global
+    use cfdmod
     
     implicit none
 
@@ -912,7 +933,7 @@ contains
   subroutine wrspec
     
     use iomod
-    use global
+    use cfdmod
     
     implicit none
 

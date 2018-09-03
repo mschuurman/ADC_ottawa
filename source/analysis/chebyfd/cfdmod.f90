@@ -1,4 +1,4 @@
-module global
+module cfdmod
 
   use constants
   
@@ -46,6 +46,9 @@ module global
   !
   ! Width
   real(dp) :: sigma
+  !
+  ! Scaled width
+  real(dp) :: sigmabar
   !----------------------------------------------------------
   
   ! Energy interval
@@ -85,4 +88,4 @@ module global
   real(dp)            :: convfac
   logical             :: lau
   
-end module global
+end module cfdmod
