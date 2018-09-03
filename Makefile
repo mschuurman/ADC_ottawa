@@ -481,6 +481,9 @@ CHEBYFD = source/include/constants.o \
 	source/analysis/chebyfd/tridib.o \
 	source/analysis/chebyfd/xint.o \
 	source/analysis/chebyfd/dpssmt.o \
+	source/analysis/chebyfd/global.o \
+	source/analysis/chebyfd/gaussian_coeffs.o \
+	source/analysis/chebyfd/slepian_coeffs.o \
 	source/analysis/chebyfd/chebyfd.o
 
 CHEBYFD_OBJ = constants.o \
@@ -495,6 +498,9 @@ CHEBYFD_OBJ = constants.o \
 	tridib.o \
 	xint.o \
 	dpssmt.o \
+	global.o \
+	gaussian_coeffs.o \
+	slepian_coeffs.o \
 	chebyfd.o
 
 #-----------------------------------------------------------------------
