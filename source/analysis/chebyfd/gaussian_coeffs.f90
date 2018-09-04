@@ -89,6 +89,11 @@ contains
     character(len=3)                      :: an
     character(len=60)                     :: filename
     logical                               :: exists
+
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
     
 !----------------------------------------------------------------------
 ! No. quadrature points

@@ -457,11 +457,6 @@ contains
     use gaussianmod
 
     implicit none
-
-!----------------------------------------------------------------------
-! Output what we are doing
-!----------------------------------------------------------------------
-    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
     
 !----------------------------------------------------------------------
 ! Allocate arrays

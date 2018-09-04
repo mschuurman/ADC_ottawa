@@ -340,17 +340,24 @@ contains
 
   subroutine calc_expansion_coeffs
 
-    use cfdmod
+    use channels
     use iomod
+    use cfdmod
     
     implicit none
 
     integer                               :: n,j,k,unit
     real(dp)                              :: debar,ebar,theta
     real(dp), dimension(:,:), allocatable :: Tk,Tkw,val
+    real(dp), dimension(:), allocatable   :: rmsd
     character(len=3)                      :: an
     character(len=60)                     :: filename
     logical                               :: exists
+
+!----------------------------------------------------------------------
+! Output what we are doing
+!----------------------------------------------------------------------
+    write(6,'(/,2x,a)') 'Calculating the expansion coefficients...'
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -363,6 +370,9 @@ contains
 
     allocate(val(npts,nfsbas))
     val=0.0d0
+
+    allocate(rmsd(nfsbas))
+    rmsd=0.0d0
     
 !----------------------------------------------------------------------
 ! Calculation of the expansion coefficients using the trapezoidal
@@ -397,7 +407,7 @@ contains
     fkn(1:Kdim,:)=fkn(1:Kdim,:)*2.0d0/pi
     
 !----------------------------------------------------------------------
-! For checking purposes, output the Chebyshev expansions of the DPSSs
+! Calculate and output the Chebyshev expansions of the DPSSs
 !----------------------------------------------------------------------
     ! Calculate the Chebyshev expansions of the DPSSs
     val=matmul(transpose(Tk),fkn)
@@ -421,11 +431,33 @@ contains
     enddo
 
 !----------------------------------------------------------------------
+! Output the RMSDs of the Chebyshev expansions of the DPSSs and the
+! actual values
+!----------------------------------------------------------------------
+    ! Calculate the RMSDs
+    rmsd=0.0d0
+    do n=1,nfsbas
+       do j=1,npts
+          rmsd(n)=rmsd(n)+(val(j,n)-v(j,n))**2
+       enddo
+       rmsd(n)=sqrt(rmsd(n)/npts)
+    enddo
+
+    ! Output the RMSDs to the log file
+    write(ilog,'(/,41a)') ('#',k=1,41)
+    write(ilog,'(2x,a)') 'RMSDs of the Chebyshev expansions'
+    write(ilog,'(41a)') ('#',k=1,41)
+    do n=1,nfsbas
+       write(ilog,'(2x,i3,2x,ES15.6)') n,rmsd(n)
+    enddo
+    
+!----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
     deallocate(Tk)
     deallocate(Tkw)
     deallocate(val)
+    deallocate(rmsd)
     
     return
     
