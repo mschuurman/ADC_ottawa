@@ -380,7 +380,7 @@ contains
 !----------------------------------------------------------------------
     ! Precalculate the values of the Chebyshev polynomials at the
     ! quadrature points weighted by 1/sqrt(1-Ebar)
-    debar=((Ebbar-Eabar)/(npts-1))
+    debar=(Ebbar-Eabar)/(npts-1)
     do j=1,npts
        ebar=Eabar+debar*(j-1)
        theta=acos(ebar)
@@ -400,7 +400,7 @@ contains
     fkn=matmul(Tkw,v)
     
     ! Multiplication by DeltaE
-    fkn=fkn*(Ebbar-Eabar)/npts
+    fkn=fkn*(Ebbar-Eabar)/(npts-1)
 
     ! Prefactors
     fkn(0,:)=fkn(0,:)/pi
