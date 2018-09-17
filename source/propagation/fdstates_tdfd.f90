@@ -1,9 +1,9 @@
 !######################################################################
-! fdstates: Routines for the calculation of filter diagonalisation
-!           states via the real-time propagation of the f-vector
-!           f_J = < Psi_J | D | Psi_0 >
+! fdstates_tdfd: Routines for the calculation of filter
+!                diagonalisation states via the real-time propagation
+!                of the f-vector f_J = < Psi_J | D | Psi_0 >
 !######################################################################
-module fdstates
+module fdstates_tdfd
 
   use constants
   use parameters
@@ -25,7 +25,7 @@ contains
 
 !######################################################################
 
-  subroutine calc_fdstates(fvec,ndimf,noffdf)
+  subroutine calc_fdstates_tdfd(fvec,ndimf,noffdf)
 
     use tdsemod
     
@@ -93,7 +93,7 @@ contains
     
     return
     
-  end subroutine calc_fdstates
+  end subroutine calc_fdstates_tdfd
 
 !######################################################################
 
@@ -656,4 +656,4 @@ contains
   
 !######################################################################
   
-end module fdstates
+end module fdstates_tdfd

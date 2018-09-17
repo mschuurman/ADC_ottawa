@@ -823,7 +823,8 @@
 !-----------------------------------------------------------------------
 ! Filter diagonalisation states section
 !-----------------------------------------------------------------------
-      if (lfdstates) then
+      ! Wavepacket propagation
+      if (lfdstates.and.autoprop.eq.1) then
 
          ! Final propagation time
          if (tfinal.eq.0.0d0) then
@@ -839,19 +840,37 @@
 
          ! fdiag data file
          if (fdiagdat.eq.'') then
-            msg='The name of the fdiag data filehas not been given'
+            msg='The name of the FDIAG data filehas not been given'
             goto 999
          endif
          
          ! State selection file
          if (fdiagsel.eq.'') then
-            msg='The name of the fdiag state selection file has &
+            msg='The name of the FDIAG state selection file has &
                  not been given'
             goto 999
          endif
          
       endif
 
+      ! Chebyshev recursion
+      if (lfdstates.and.autoprop.eq.2) then
+
+         ! Data file
+         if (fdiagdat.eq.'') then
+            msg='The name of the CHEBYFD data filehas not been given'
+            goto 999
+         endif
+         
+         ! State selection file
+         if (fdiagsel.eq.'') then
+            msg='The name of the CHEBYFD state selection file has &
+                 not been given'
+            goto 999
+         endif
+         
+      endif
+         
 !-----------------------------------------------------------------------
 ! CAP section
 !-----------------------------------------------------------------------
@@ -2049,6 +2068,29 @@
             if (keyword(i+1).eq.'=') then
                i=i+2
                fdiagsel=keyword(i)
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'method') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               if (keyword(i).eq.'propagation') then
+                  autoprop=1
+               else if (keyword(i).eq.'chebyshev') then
+                  autoprop=2
+               else
+                  errmsg='Unknown keyword: '//trim(keyword(i))
+                  call error_control
+               endif
+            else
+               goto 100
+            endif
+
+         else if (keyword(i).eq.'nterms') then
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) chebyord
             else
                goto 100
             endif

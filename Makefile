@@ -90,7 +90,8 @@ PROPAGATION= source/propagation/tdselib.o \
 	source/propagation/relaxation.o \
 	source/propagation/fvecprop.o \
 	source/propagation/chebyspec.o \
-	source/propagation/fdstates.o \
+	source/propagation/fdstates_tdfd.o \
+	source/propagation/fdstates_cfd.o \
 	source/propagation/flux.o \
 	source/propagation/proplib_adc2.o \
 	source/propagation/proplib_adc1.o
@@ -222,7 +223,8 @@ ADC_OBJ=accuracy.o \
 	relaxation.o \
 	chebyspec.o \
 	fvecprop.o \
-	fdstates.o \
+	fdstates_tdfd.o \
+	fdstates_cfd.o \
 	flux.o \
 	proplib_adc2.o \
 	proplib_adc1.o \

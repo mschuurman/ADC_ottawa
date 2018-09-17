@@ -1,9 +1,8 @@
 !######################################################################
-! chebyspec: routines for the calculation of the Chebyshev order-domain
-!            autocorrelation function
+! fdstates_cfd: Routines for the calculation of Chebyshev filter
+!               diagonalisation eigenstates
 !######################################################################
-
-module chebyspec
+module fdstates_cfd
 
   use constants
   use parameters
@@ -12,23 +11,23 @@ module chebyspec
   
   implicit none
 
-  integer                :: matdim
-  integer*8              :: noffdiag
-  real(dp), dimension(2) :: bounds
-  real(dp), allocatable  :: auto(:)
+  integer                               :: matdim
+  integer*8                             :: noffdiag
+  real(dp), dimension(:,:), allocatable :: eigvec
+  real(dp), dimension(:), allocatable   :: eigval
+  real(dp), dimension(2)                :: bounds
   
 contains
 
 !######################################################################
-
-  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf)
+  
+  subroutine calc_fdstates_cfd(q0,ndimf,noffdf)
 
     use tdsemod
-    use specbounds
     use timingmod
-    
+  
     implicit none
-
+    
     integer, intent(in)        :: ndimf
     integer*8, intent(in)      :: noffdf
     integer                    :: k
@@ -39,19 +38,19 @@ contains
 ! Start timing
 !----------------------------------------------------------------------
     call times(tw1,tc1)
-    
+
 !----------------------------------------------------------------------
 ! Output what we are doing
 !----------------------------------------------------------------------
     write(ilog,'(/,70a)') ('-',k=1,70)
-    write(ilog,'(2x,a)') 'Calculation of the order-domain &
-         Chebyshev autocorrelation function'
+    write(ilog,'(2x,a)') 'Calculation of Chebyshev filter &
+         diagonalisation eigenstates'
     write(ilog,'(70a,/)') ('-',k=1,70)
-    
+
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
-    call chebyshev_initialise(ndimf,noffdf)
+    call fdstates_cfd_initialise(ndimf,noffdf)
 
 !----------------------------------------------------------------------
 ! Determine what can be held in memory
@@ -63,79 +62,63 @@ contains
 ! memory
 !----------------------------------------------------------------------
     if (hincore) call load_hamiltonian('SCRATCH/hmlt.diac',&
-         'SCRATCH/hmlt.offc',matdim,noffdf)
+         'SCRATCH/hmlt.offc',matdim,noffdiag)
+
+!----------------------------------------------------------------------
+! Spectral bounds
+!----------------------------------------------------------------------
+    bounds=ebound
+
+!----------------------------------------------------------------------
+! Calculate the Chebyshev filter diagonalisation eigenstates
+!----------------------------------------------------------------------
+    call calc_eigenstates(q0)
+
+
     
-!----------------------------------------------------------------------
-! Estimation of the spectral bounds
-!----------------------------------------------------------------------
-    ! Estimation of the spectral bounds using a combination of
-    ! block Davidson and block Lanczos
-    call spectral_bounds(bounds,'c','davlanc',ndimf,noffdf)
-
-    ! Adjust the estimated bounds to ensure that all eigenvalues are
-    ! definitely in the interval [Ea,Eb]
-    bounds(1)=0.9d0*bounds(1)
-    bounds(2)=1.1d0*bounds(2)
-    
-!----------------------------------------------------------------------
-! Calculate the order-domain autocorrelation function
-!----------------------------------------------------------------------
-   call chebyshev_auto(q0,ndimf,noffdf)
-
-!----------------------------------------------------------------------
-! Write the order-domain autocorrelation function to file
-!----------------------------------------------------------------------
-   call write_chebyshev_auto
-
-!----------------------------------------------------------------------
-! Finalisation
-!----------------------------------------------------------------------
-   call chebyshev_finalise
-
 !----------------------------------------------------------------------
 ! Output timings
 !----------------------------------------------------------------------
    call times(tw2,tc2)
    write(ilog,'(/,a,1x,F9.2,1x,a)') 'Time taken:',tw2-tw1," s"
-   
+    
    return
     
- end subroutine chebyshev_auto_order_domain
+ end subroutine calc_fdstates_cfd
 
 !######################################################################
 
- subroutine chebyshev_initialise(ndimf,noffdf)
-
+ subroutine fdstates_cfd_initialise(ndimf,noffdf)
+   
    implicit none
-
+   
    integer, intent(in)   :: ndimf
    integer*8, intent(in) :: noffdf
-    
+
 !----------------------------------------------------------------------
 ! Dimensions
 !----------------------------------------------------------------------
    matdim=ndimf
    noffdiag=noffdf
-
-!----------------------------------------------------------------------
-! Make sure that the order of the Chebyshev expansion of Delta(E-H)
-! is even
-!----------------------------------------------------------------------
-   if (mod(chebyord,2).ne.0) chebyord=chebyord-1
-    
+   
 !----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !----------------------------------------------------------------------
-   allocate(auto(0:2*chebyord))
-   auto=0.0d0
-    
+   ! Filter diagonalisation eigenstates
+   allocate(eigvec(matdim,nsel))
+   eigvec=0.0d0
+
+   ! Filter diagonalisation eigenvalues
+   allocate(eigval(nsel))
+   eigval=0.0d0
+   
    return
-    
- end subroutine chebyshev_initialise
-    
+   
+ end subroutine fdstates_cfd_initialise
+
 !######################################################################
 
-  subroutine chebyshev_finalise
+   subroutine fdstates_cfd_finalise
     
     use tdsemod
     
@@ -144,13 +127,15 @@ contains
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
-    deallocate(auto)
+    deallocate(eigvec)
+    deallocate(eigval)
+    
     if (hincore) call deallocate_hamiltonian
     
     return
     
-  end subroutine chebyshev_finalise
-
+  end subroutine fdstates_cfd_finalise
+ 
 !######################################################################
 
   subroutine memory_managment
@@ -179,6 +164,9 @@ contains
     ! Chebyshev polynomial-vector products
     memavail=memavail-8.0d0*4*matdim/1024.0d0**2
 
+    ! Filter diagonalisation eigenstates
+    memavail=memavail+8.0d0*neig/1024.0d0**2
+    
     ! Be cautious and only use say 90% of the available memory
     memavail=memavail*0.9d0
 
@@ -209,26 +197,24 @@ contains
     else
        hincore=.false.
     endif
-
+    
     return
     
   end subroutine memory_managment
-    
+
 !######################################################################
 
-  subroutine chebyshev_auto(q0,ndimf,noffdf)
+  subroutine calc_eigenstates(q0)
 
     use tdsemod
-    
+        
     implicit none
 
-    integer, intent(in)        :: ndimf
-    integer*8, intent(in)      :: noffdf
-    integer                    :: k,i
-    real(dp), dimension(ndimf) :: q0
-    real(dp), allocatable      :: qk(:),qkm1(:),qkm2(:)
-    real(dp)                   :: N0
-    
+    integer                     :: k,i,unit
+    real(dp), dimension(matdim) :: q0
+    real(dp), allocatable       :: qk(:),qkm1(:),qkm2(:)
+    real(dp)                    :: norm
+
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
@@ -242,16 +228,17 @@ contains
     qkm2=0.0d0
 
 !----------------------------------------------------------------------
-! C_0
+! On-the-fly calculation of the Chebyshev filter diagonalisation
+! eigenstates
 !----------------------------------------------------------------------
-    auto(0)=dot_product(q0,q0)
+    ! Zeroth-order contribution to the eigenstates
+    do i=1,nsel
+       eigvec(:,i)=k2eig(0,isel(i))*q0(:)
+    enddo
 
-!----------------------------------------------------------------------
-! Calculate the Chebyshev order-domain autocorrelation function
-!----------------------------------------------------------------------
     ! Initialisation
     qkm1=q0
-    
+
     ! Loop over Chebyshev polynomials of order k >= 1
     do k=1,chebyord
 
@@ -260,18 +247,14 @@ contains
           write(ilog,'(70a)') ('+',i=1,70)
           write(ilog,'(a,x,i6)') 'Order:',k
        endif
-       
+
        ! Calculate the kth Chebyhev polynomial-vector product
        call chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
 
-       ! Calculate C_k
-       auto(k)=dot_product(q0,qk)
-
-       ! Calculate C_2k and C_2k-1
-       if (k.gt.chebyord/2) then
-          auto(2*k)=2.0d0*dot_product(qk,qk)-auto(0)
-          auto(2*k-1)=2.0d0*dot_product(qkm1,qk)-auto(1)
-       endif
+       ! kth-order contribution to the eigenstates
+       do i=1,nsel
+          eigvec(:,i)=eigvec(:,i)+k2eig(k,isel(i))*qk(:)
+       enddo
 
        ! Update qkm1 and qkm2
        qkm2=qkm1       
@@ -279,8 +262,42 @@ contains
        qk=0.0d0
        
     enddo
+
+    ! Last report
+    if (mod(k,10).ne.0) then
+       write(ilog,'(70a)') ('+',i=1,70)
+       write(ilog,'(a,x,i6)') 'Order:',k
+    endif
     write(ilog,'(70a)') ('+',i=1,70)
 
+!----------------------------------------------------------------------
+! Normalisation
+!----------------------------------------------------------------------
+    do i=1,nsel
+       norm=sqrt(dot_product(eigvec(:,i),eigvec(:,i)))
+       eigvec(:,i)=eigvec(:,i)/norm
+    enddo
+       
+!----------------------------------------------------------------------
+! Calculation of energies
+!----------------------------------------------------------------------
+    do i=1,nsel
+       call matxvec(matdim,noffdiag,eigvec(:,i),qk)
+       qk=-qk
+       eigval(i)=dot_product(eigvec(:,i),qk)
+    enddo
+
+!----------------------------------------------------------------------
+! Write the eigenstates to file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit=unit,file='SCRATCH/fdstates',status='unknown',&
+         access='sequential',form='unformatted')
+    do i=1,nsel
+       write(unit) i,eigval(i),eigvec(:,i)
+    enddo
+    close(unit)
+    
 !----------------------------------------------------------------------
 ! Deallocate arrays
 !----------------------------------------------------------------------
@@ -290,48 +307,8 @@ contains
     
     return
     
-  end subroutine chebyshev_auto
-
+  end subroutine calc_eigenstates
+    
 !######################################################################
 
-  subroutine write_chebyshev_auto
-
-    use constants
-    use iomod
-    
-    implicit none
-
-    integer :: unit,k
-    
-!----------------------------------------------------------------------
-! Open the output file
-!----------------------------------------------------------------------
-    call freeunit(unit)
-    open(unit,file='chebyauto',form='formatted',status='unknown')
-
-!----------------------------------------------------------------------
-! Write the file header
-!----------------------------------------------------------------------
-    write(unit,'(a,2(2x,E21.14),/)') '#    Spectral bounds:',&
-         bounds(1),bounds(2)
-    write(unit,'(a)')   '#    Order [k]    C_k'
-    
-!----------------------------------------------------------------------
-! Write the order-domain autocorrelation function to file
-!----------------------------------------------------------------------
-    do k=0,chebyord*2
-       write(unit,'(i6,11x,E21.14)') k,auto(k)
-    enddo
-    
-!----------------------------------------------------------------------
-! Close the output file
-!----------------------------------------------------------------------
-    close(unit)
-    
-    return
-    
-  end subroutine write_chebyshev_auto
-
-!######################################################################
-    
-end module chebyspec
+end module fdstates_cfd

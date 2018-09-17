@@ -329,6 +329,7 @@ integer                               :: nfbas,neig,&
                                          nsel,iwfunc
 integer, dimension(:), allocatable    :: isel
 real(dp), dimension(:,:), allocatable :: fbas2eig
+real(dp), dimension(:,:), allocatable :: k2eig
 real(dp), dimension(2)                :: ebound
 character(len=60)                     :: fdiagdat,&
                                          fdiagsel
