@@ -87,7 +87,14 @@ program chebyfd
 ! Output the spectrum
 !----------------------------------------------------------------------
   call wrspec
-  
+
+!----------------------------------------------------------------------
+! For use in subsequent eigenstate calculations, output the
+! filter state-to-eigenstate transformation matrix, and the spectral
+! bounds
+!----------------------------------------------------------------------
+  call wrdatfile
+
 contains
   
 !######################################################################
@@ -597,8 +604,8 @@ contains
     
     implicit none
 
-    integer                                :: m,n,i
-    real(dp), dimension(:), allocatable    :: gramdet
+    integer                             :: m,n,i
+    real(dp), dimension(:), allocatable :: gramdet
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -896,24 +903,24 @@ contains
 
     integer :: i
     
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Allocate arrays
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     allocate(tdm(nrbas))
     tdm=0.0d0
 
     allocate(osc(nrbas))
     osc=0.0d0
 
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Calculate the transition dipole moments
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     tdm=matmul(transpose(eigvec),(matmul(transpose(transmat),&
          matmul(transpose(fkn(:,1:nfsbas)),auto(0:Kdim)))))
 
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Calculate the oscillator strengths
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     do i=1,nrbas
        osc(i)=ener(i)*tdm(i)**2
     enddo
@@ -939,15 +946,15 @@ contains
 !    real(dp) :: en,D,b
 !    ! CHECK
     
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Open the output file
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     call freeunit(unit)
     open(unit,file='chebyfd_eig.dat',form='formatted',status='unknown')
 
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Write the spectrum to file
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     ! Table header
     write(unit,'(29a)') ('#',i=1,29)
     write(unit,'(a)') '#  Energy        Intensity'
@@ -982,14 +989,93 @@ contains
 !    enddo
 !    ! CHECK
     
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
 ! Close the output file
-!---------------------------------------------------------------------- 
+!----------------------------------------------------------------------
     close(unit)
     
     return
     
   end subroutine wrspec
+
+!######################################################################
+
+  subroutine wrdatfile
+
+    use constants
+    use channels
+    use cfdmod
+    
+    implicit none
+
+    integer                               :: nab,indx1,indx2,i
+    real(dp), dimension(:,:), allocatable :: Bmat,Dmat
+
+!----------------------------------------------------------------------
+! Determine the no. states within the interval [Ea,Eb]
+!----------------------------------------------------------------------
+    ! No. eigenstates within [Ea,Eb]
+    nab=0
+    do i=1,nrbas
+       if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
+       nab=nab+1
+    enddo
+
+    ! Indices of the first and last eigenstates within [Ea,Eb]
+    indx1=0
+    indx2=0
+    do i=1,nrbas
+       if (ener(i).ge.Ea.and.indx1.eq.0) indx1=i
+       if (ener(i).gt.Eb.and.indx2.eq.0) indx2=i-1
+    enddo
+    if (indx2.eq.0) indx2=nrbas
+    
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    ! Filtered state-to-eigenstate transformation matrix
+    allocate(Bmat(nfsbas,nrbas))
+    Bmat=0.0d0
+
+    ! Chebyshev order-domain state-to-eigensate transformation matrix
+    allocate(Dmat(0:Kdim,nrbas))
+    Dmat=0.0d0
+
+!----------------------------------------------------------------------
+! Transformation matrices
+!----------------------------------------------------------------------
+    ! Filtered state-to-eigenstate transformation matrix
+    Bmat(1:nfsbas,1:nrbas)=&
+         matmul(transmat(1:nfsbas,1:nrbas),eigvec(1:nrbas,1:nrbas))
+
+    ! Chebyshev order-domain state-to-eigensate transformation matrix
+    Dmat(0:Kdim,1:nrbas)=&
+         matmul(fkn(0:kdim,1:nfsbas),Bmat(1:nfsbas,1:nrbas))
+
+!----------------------------------------------------------------------
+! Write the data file
+!----------------------------------------------------------------------
+    ! No. eigenstates in [Ea,Eb]
+    write(idat) nab
+
+    ! Chebyshev expansion order
+    write(idat) Kdim
+
+    ! Transformation matrix for the eigenstates in [Ea,Eb]
+    write(idat) Dmat(0:Kdim,indx1:indx2)
+    
+    ! Spectral bounds
+    write(idat) bounds
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(Bmat)
+    deallocate(Dmat)
+    
+    return
+    
+  end subroutine wrdatfile
     
 !######################################################################
   
