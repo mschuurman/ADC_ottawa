@@ -277,7 +277,7 @@ contains
        norm=sqrt(dot_product(eigvec(:,i),eigvec(:,i)))
        eigvec(:,i)=eigvec(:,i)/norm
     enddo
-       
+
 !----------------------------------------------------------------------
 ! Calculation of energies
 !----------------------------------------------------------------------

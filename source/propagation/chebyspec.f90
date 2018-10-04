@@ -368,8 +368,9 @@ contains
 ! Open the output file
 !----------------------------------------------------------------------
     call freeunit(unit)
-    open(unit,file='cheby1h1p',form='unformatted',status='unknown')
-
+    open(unit=unit,file='cheby1h1p',status='unknown',&
+         access='sequential',form='unformatted')
+    
 !----------------------------------------------------------------------
 ! Write the 1h1p parts of the Chebyshev order-domain vectors to file
 !----------------------------------------------------------------------

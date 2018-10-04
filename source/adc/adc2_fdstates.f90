@@ -4,7 +4,13 @@
 ! (1) A wavepacket propagation (TDFD), or;
 ! (2) An order-domain Chebyshev propagation (CFD).
 !
-!
+! Note that at the ADC(2) level, we only need the 1h1p part of the
+! eigenvectors to calculate NTOs, and so for CFD we also allow for
+! the reading of the 1h1p parts of the Chebyshev order-domain vectors
+! from file. These can then be used to construct the 1h1p parts of the
+! eigenvectors, and then the NTOs. This affords a massive saving of
+! computational effort as we don't have to repeat the Chebyshev
+! propagation.
 !#######################################################################
 
 module adc2fdstatesmod
@@ -393,28 +399,52 @@ contains
 !----------------------------------------------------------------------
 ! Read the 1h1p parts of the Chebyshev order-domain vectors from file
 !----------------------------------------------------------------------
+    ! Open the cheby1h1p file
     call freeunit(unit)
-    open(unit,file='cheby1h1p',form='unformatted',status='old',err=999)
-    do k=1,chebyord
+    open(unit=unit,file='cheby1h1p',status='unknown',&
+         access='sequential',form='unformatted')
+
+    ! Read the 1h1p parts of the Chebyshev vectors
+    do k=0,chebyord
        read(unit) q1h1p(:,k)
     enddo
+
+    ! Close the cheby1h1p file
     close(unit)
 
 !----------------------------------------------------------------------
 ! Calculate the 1h1p parts of the eigenvectors
 !----------------------------------------------------------------------
+    eig1h1p=0.0d0
     do i=1,nsel
        do k=0,chebyord
           eig1h1p(:,i)=eig1h1p(:,i)+k2eig(k,isel(i))*q1h1p(:,k)
        enddo
     enddo
-
+    
 !----------------------------------------------------------------------
-! NTO analysis
+! Write the 1h1p parts of the eigenvectors to file padded with zeros
+! in the 2h2p part. This must be done before calling adc2_nto
 !----------------------------------------------------------------------
+    ! Open the fdstates file
+    call freeunit(unit)
+    open(unit=unit,file='SCRATCH/fdstates',status='unknown',&
+         access='sequential',form='unformatted')
+    
+    ! Write the 1h1p parts of the eigenstates to file
+    eigtmp=0.0d0
+    do i=1,nsel
+       eigtmp(1:ndimsf)=eig1h1p(1:ndimsf,i)
+       write(unit) i,1.0d0,eigtmp
+    enddo
 
-    print*,"WRITE EIGTMP (Q1H1P PADDED WITH ZEROS) TO SCRATCH/fdstates FOR EVERY STATE"
-    stop
+    ! Close the fdstates file
+    close(unit)
+    
+!----------------------------------------------------------------------
+! Calculate and output the NTOs
+!----------------------------------------------------------------------
+    call adc2_nto(gam,ndimf,kpqf,'SCRATCH/fdstates',nsel,'nto')
     
 !----------------------------------------------------------------------
 ! Deallocate arrays
@@ -424,7 +454,7 @@ contains
     deallocate(eigtmp)
     
     return
-
+    
 999 continue
     errmsg='The cheby1h1p file does not exist'
     call error_control
