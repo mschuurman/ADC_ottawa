@@ -12,16 +12,17 @@ module chebyspec
   
   implicit none
 
-  integer                :: matdim
+  integer                :: matdim,n1h1p
   integer*8              :: noffdiag
   real(dp), dimension(2) :: bounds
   real(dp), allocatable  :: auto(:)
+  real(dp), allocatable  :: q1h1p(:,:)
   
 contains
 
 !######################################################################
 
-  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf)
+  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf,ndimsf)
 
     use tdsemod
     use specbounds
@@ -29,7 +30,7 @@ contains
     
     implicit none
 
-    integer, intent(in)        :: ndimf
+    integer, intent(in)        :: ndimf,ndimsf
     integer*8, intent(in)      :: noffdf
     integer                    :: k
     real(dp), dimension(ndimf) :: q0
@@ -51,7 +52,7 @@ contains
 !----------------------------------------------------------------------
 ! Initialisation
 !----------------------------------------------------------------------
-    call chebyshev_initialise(ndimf,noffdf)
+    call chebyshev_initialise(ndimf,noffdf,ndimsf)
 
 !----------------------------------------------------------------------
 ! Determine what can be held in memory
@@ -80,13 +81,18 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
 !----------------------------------------------------------------------
-   call chebyshev_auto(q0,ndimf,noffdf)
+   call chebyshev_auto(q0)
 
 !----------------------------------------------------------------------
 ! Write the order-domain autocorrelation function to file
 !----------------------------------------------------------------------
    call write_chebyshev_auto
 
+!----------------------------------------------------------------------
+! Write the 1h1p parts of the Chebyshev order-domain vectors to file
+!----------------------------------------------------------------------
+   if (save1h1p) call write_1h1p
+   
 !----------------------------------------------------------------------
 ! Finalisation
 !----------------------------------------------------------------------
@@ -104,11 +110,11 @@ contains
 
 !######################################################################
 
- subroutine chebyshev_initialise(ndimf,noffdf)
+ subroutine chebyshev_initialise(ndimf,noffdf,ndimsf)
 
    implicit none
 
-   integer, intent(in)   :: ndimf
+   integer, intent(in)   :: ndimf,ndimsf
    integer*8, intent(in) :: noffdf
     
 !----------------------------------------------------------------------
@@ -116,7 +122,8 @@ contains
 !----------------------------------------------------------------------
    matdim=ndimf
    noffdiag=noffdf
-
+   n1h1p=ndimsf
+   
 !----------------------------------------------------------------------
 ! Make sure that the order of the Chebyshev expansion of Delta(E-H)
 ! is even
@@ -126,9 +133,16 @@ contains
 !----------------------------------------------------------------------
 ! Allocate and initialise arrays
 !----------------------------------------------------------------------
+   ! Chebyshev order-domain autocorrelation function
    allocate(auto(0:2*chebyord))
    auto=0.0d0
-    
+
+   ! 1h1p parts of the Chebyshev order-domain vectors
+   if (save1h1p) then
+      allocate(q1h1p(n1h1p,0:chebyord))
+      q1h1p=0.0d0
+   endif
+      
    return
     
  end subroutine chebyshev_initialise
@@ -146,8 +160,9 @@ contains
 !----------------------------------------------------------------------
     deallocate(auto)
     if (hincore) call deallocate_hamiltonian
+    if (save1h1p) deallocate(q1h1p)
     
-    return
+   return
     
   end subroutine chebyshev_finalise
 
@@ -179,6 +194,10 @@ contains
     ! Chebyshev polynomial-vector products
     memavail=memavail-8.0d0*4*matdim/1024.0d0**2
 
+    ! 1h1p parts of the Chebyshev vectors
+    if (save1h1p) &
+         memavail=memavail-8.0d0*n1h1p*(chebyord+1)/1024.0d0**2
+    
     ! Be cautious and only use say 90% of the available memory
     memavail=memavail*0.9d0
 
@@ -216,18 +235,16 @@ contains
     
 !######################################################################
 
-  subroutine chebyshev_auto(q0,ndimf,noffdf)
+  subroutine chebyshev_auto(q0)
 
     use tdsemod
     
     implicit none
 
-    integer, intent(in)        :: ndimf
-    integer*8, intent(in)      :: noffdf
-    integer                    :: k,i
-    real(dp), dimension(ndimf) :: q0
-    real(dp), allocatable      :: qk(:),qkm1(:),qkm2(:)
-    real(dp)                   :: N0
+    integer                     :: k,i
+    real(dp), dimension(matdim) :: q0
+    real(dp), allocatable       :: qk(:),qkm1(:),qkm2(:)
+    real(dp)                    :: N0
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -246,6 +263,11 @@ contains
 !----------------------------------------------------------------------
     auto(0)=dot_product(q0,q0)
 
+!----------------------------------------------------------------------
+! Save the 1h1p of the 0th-order Chebyshev vector
+!----------------------------------------------------------------------
+    if (save1h1p) q1h1p(:,0)=q0(1:n1h1p)
+    
 !----------------------------------------------------------------------
 ! Calculate the Chebyshev order-domain autocorrelation function
 !----------------------------------------------------------------------
@@ -273,6 +295,9 @@ contains
           auto(2*k-1)=2.0d0*dot_product(qkm1,qk)-auto(1)
        endif
 
+       ! Save the 1h1p of the kth Chebyshev vector
+       if (save1h1p) q1h1p(:,k)=qk(1:n1h1p)
+       
        ! Update qkm1 and qkm2
        qkm2=qkm1       
        qkm1=qk
@@ -295,9 +320,6 @@ contains
 !######################################################################
 
   subroutine write_chebyshev_auto
-
-    use constants
-    use iomod
     
     implicit none
 
@@ -332,6 +354,38 @@ contains
     
   end subroutine write_chebyshev_auto
 
+!######################################################################
+
+  subroutine write_1h1p
+
+    use iomod
+    
+    implicit none
+
+    integer :: unit,k
+
+!----------------------------------------------------------------------
+! Open the output file
+!----------------------------------------------------------------------
+    call freeunit(unit)
+    open(unit,file='cheby1h1p',form='unformatted',status='unknown')
+
+!----------------------------------------------------------------------
+! Write the 1h1p parts of the Chebyshev order-domain vectors to file
+!----------------------------------------------------------------------
+    do k=0,chebyord
+       write(unit) q1h1p(:,k)
+    enddo
+       
+!----------------------------------------------------------------------
+! Close the output file
+!----------------------------------------------------------------------
+    close(unit)
+    
+    return
+    
+  end subroutine write_1h1p
+    
 !######################################################################
     
 end module chebyspec

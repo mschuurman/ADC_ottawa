@@ -806,6 +806,14 @@
             goto 999
          endif
 
+         ! Saving of the 1h1p parts of the wavepacket to file is not
+         ! yet supported
+         if (save1h1p) then
+            msg='Saving of the 1h1p parts of the wavepacket to file is &
+                 not yet supported'
+            goto 999
+         endif
+         
       endif
 
       ! Chebyshev recursion
@@ -848,6 +856,14 @@
          if (fdiagsel.eq.'') then
             msg='The name of the FDIAG state selection file has &
                  not been given'
+            goto 999
+         endif
+
+         ! Calculation of NTOs using the 1h1p parts of the wavepacket
+         ! read from file is not yet supported
+         if (save1h1p) then
+            msg='The calculation of NTOs using the 1h1p parts of the &
+                 wavepacket read from file is not yet supported'
             goto 999
          endif
          
@@ -1973,6 +1989,9 @@
             else
                goto 100
             endif
+
+         else if (keyword(i).eq.'save_1h1p') then
+            save1h1p=.true.
             
          else
             ! Exit if the keyword is not recognised
@@ -2094,6 +2113,9 @@
             else
                goto 100
             endif
+
+         else if (keyword(i).eq.'save_1h1p') then
+            save1h1p=.true.
             
          else
             ! Exit if the keyword is not recognised

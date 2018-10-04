@@ -320,6 +320,7 @@ integer                               :: autoprop
 integer                               :: chebyord
 integer                               :: tdrep
 logical                               :: lautospec
+logical                               :: save1h1p
 
 !!$************************************************
 !!$**********Filter Diagonalisation State**********

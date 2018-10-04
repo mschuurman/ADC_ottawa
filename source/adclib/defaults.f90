@@ -156,6 +156,7 @@
       autoord=0
       autoprop=1
       chebyord=0
+      save1h1p=.false.
       
 !-----------------------------------------------------------------------
 ! Filter diagonalisation state calculation parameters
@@ -163,7 +164,7 @@
       fdiagdat=''
       fdiagsel=''
       lfdstates=.false.
-
+      
 !-----------------------------------------------------------------------
 ! Wavepacket propagation parameters
 !-----------------------------------------------------------------------

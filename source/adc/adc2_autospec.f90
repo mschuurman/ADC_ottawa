@@ -80,7 +80,7 @@ contains
     else if (autoprop.eq.2) then
        ! Calculation of the Chebyshev order-domain autocorrelation
        ! function C_k
-       call chebyshev_auto_order_domain(dpsi,ndimf,noffdf)
+       call chebyshev_auto_order_domain(dpsi,ndimf,noffdf,ndimsf)
     endif
        
 !-----------------------------------------------------------------------

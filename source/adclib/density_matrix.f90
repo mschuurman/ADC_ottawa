@@ -534,28 +534,6 @@ contains
 
     trdens(nocc+1:nbas,1:nocc,:)=trdens(nocc+1:nbas,1:nocc,:) &
          -sqrt(2.0d0)*tmp(nocc+1:nbas,1:nocc,:)
-
-
-
-    !! TEST
-    !nlim1=1
-    !nlim2=kpqf(1,0)
-    !
-    !do i=1,nstates
-    !   rvec(:,i)=rvec(:,i)/sqrt(dot_product(rvec(1:nlim2,i),rvec(1:nlim2,i)))
-    !enddo
-    !
-    !tmp=0.0d0
-    !
-    !do cnt=nlim1,nlim2
-    !   i=kpqf(3,cnt)
-    !   a=kpqf(5,cnt)
-    !   trdens(a,i,:)=-sqrt(2.0d0)*rvec(cnt,:)
-    !enddo
-    !
-    !return
-    !! TEST
-
     
 !----------------------------------------------------------------------
 ! First-order 1h1p contribution
