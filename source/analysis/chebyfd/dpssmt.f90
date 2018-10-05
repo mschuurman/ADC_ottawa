@@ -267,6 +267,11 @@ contains
       ntot=neven+nodd
 
 !
+! Get the eigenvalues using the analytic formula  
+!
+!   call dpss_ev_ana(npts,nev,bw,v,lambda)
+      
+!
 !  Get the eigenvalues, by Quadrature (Chebychev)
 !
 
@@ -279,5 +284,55 @@ contains
  end subroutine get_dpss
     
 !######################################################################
-  
+
+ subroutine dpss_ev_ana(npts,nev,bw,v,lambda)
+
+   implicit none
+
+   integer                       :: npts,nev,n,j1,k1,j,k
+   real(dp)                      :: bw,tausq
+   real(dp), dimension(npts,nev) :: v
+   real(dp), dimension(nev)      :: lambda
+   real(dp), parameter           :: pi=3.141592653589793d0
+
+   print*,'bw:',bw
+   
+   lambda=0.0d0
+
+   ! Loop over DPSSs
+   do n=1,nev
+
+      do j1=1,npts
+         j=j1-1
+         do k1=1,npts
+            k=k1-1
+            
+            if (j+k-npts+1.eq.0) then
+               lambda(n)=lambda(n)+v(j1,n)*v(k1,n)*2.0d0*bw
+            else
+               lambda(n)=lambda(n)+v(j1,n)*v(k1,n)&
+                    *sin(2*pi*bw*(j+k-npts+1))/(pi*(j+k-npts+1))
+            endif
+            
+         enddo
+      enddo
+
+      ! tau**2 prefactor
+      if (mod(n,2).eq.0) then
+         tausq=1.0d0
+      else
+         tausq=-1.0d0
+      endif
+      lambda(n)=lambda(n)*(-tausq)
+
+!      write(6,'(2x,i3,2(2x,ES15.6))') n,lambda(n),1.0d0-lambda(n)
+      
+   enddo
+      
+   return
+   
+ end subroutine dpss_ev_ana
+   
+!######################################################################
+ 
 end module dpssmt
