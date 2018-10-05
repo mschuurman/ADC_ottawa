@@ -37,7 +37,7 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------
-    call calc_dpss(npts,fw,nev,v,lambda,theta)
+    call get_dpss(npts,fw,nev,v,lambda,theta)
     
     return
     
@@ -45,7 +45,7 @@ contains
     
 !######################################################################
 
-  subroutine calc_dpss(npts,fw,nev,v,lambda,theta)
+  subroutine get_dpss(npts,fw,nev,v,lambda,theta)
 
     implicit none
 
@@ -276,7 +276,7 @@ contains
    
    return
     
- end subroutine calc_dpss
+ end subroutine get_dpss
     
 !######################################################################
   
