@@ -264,20 +264,20 @@ contains
 
    endif
 
-      ntot=neven+nodd
+   ntot=neven+nodd
 
 !
 ! Get the eigenvalues using the analytic formula  
 !
-!   call dpss_ev_ana(npts,nev,bw,v,lambda)
+   call dpss_ev_ana(npts,nev,bw,v,lambda)
       
 !
 !  Get the eigenvalues, by Quadrature (Chebychev)
 !
-
-   atol = 1.d-14
-
-   call dpss_ev(npts,nev,bw,atol,v,lambda,theta)
+!
+!   atol = 1.d-14
+!
+!   call dpss_ev(npts,nev,bw,atol,v,lambda,theta)
    
    return
     
@@ -289,30 +289,39 @@ contains
 
    implicit none
 
-   integer                       :: npts,nev,n,j1,k1,j,k
-   real(dp)                      :: bw,tausq
-   real(dp), dimension(npts,nev) :: v
-   real(dp), dimension(nev)      :: lambda
-   real(dp), parameter           :: pi=3.141592653589793d0
+   integer                         :: npts,nev,n,i,j1,k1,j,k
+   real(dp)                        :: bw,tausq
+   real(dp), dimension(npts,nev)   :: v
+   real(dp), dimension(nev)        :: lambda
+   real(dp), dimension(0:2*npts-2) :: gammaval
+   real(dp), parameter             :: pi=3.141592653589793d0
 
-   print*,'bw:',bw
-   
-   lambda=0.0d0
+!----------------------------------------------------------------------   
+! Precalculate Gamma(j+k) values
+!----------------------------------------------------------------------   
+   do i=0,2*npts-2
+      if (i-npts+1.eq.0) then
+         gammaval(i)=2.0d0*bw
+      else
+         gammaval(i)=sin(2*pi*bw*(i-npts+1))/(pi*(i-npts+1))
+      endif
+   enddo
+      
+!----------------------------------------------------------------------   
+! Calculate the eigenvalues
+!----------------------------------------------------------------------   
+   lambda=0.0d0   
 
    ! Loop over DPSSs
    do n=1,nev
 
+      ! Loop over pairs of DPSS indices
       do j1=1,npts
          j=j1-1
          do k1=1,npts
             k=k1-1
-            
-            if (j+k-npts+1.eq.0) then
-               lambda(n)=lambda(n)+v(j1,n)*v(k1,n)*2.0d0*bw
-            else
-               lambda(n)=lambda(n)+v(j1,n)*v(k1,n)&
-                    *sin(2*pi*bw*(j+k-npts+1))/(pi*(j+k-npts+1))
-            endif
+
+            lambda(n)=lambda(n)+v(j1,n)*v(k1,n)*gammaval(j+k)
             
          enddo
       enddo
@@ -324,8 +333,6 @@ contains
          tausq=-1.0d0
       endif
       lambda(n)=lambda(n)*(-tausq)
-
-!      write(6,'(2x,i3,2(2x,ES15.6))') n,lambda(n),1.0d0-lambda(n)
       
    enddo
       
