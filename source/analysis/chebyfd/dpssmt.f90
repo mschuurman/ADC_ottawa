@@ -15,7 +15,7 @@ contains
 
 !######################################################################
 
-  subroutine dpss(npts,fw,nev,v,lambda)
+  subroutine dpss_mt(npts,fw,nev,v,lambda)
 
     implicit none
 
@@ -24,14 +24,13 @@ contains
                                             ! series
     
     integer                       :: nev    ! Desired number of
-                                            ! Slepian functions
+                                            ! DPSSs
 
-    real(dp)                      :: fw     ! Time-bandwidth product
+    real(dp)                      :: fw     ! NxW
     
-    real(dp), dimension(npts,nev) :: v      ! Slepian functions
+    real(dp), dimension(npts,nev) :: v      ! DPSSs
 
-    real(dp), dimension(nev)      :: lambda ! Eigenvalues of the
-                                            ! Slepians
+    real(dp), dimension(nev)      :: lambda ! Eigenvalues
 
     real(dp), dimension(nev)      :: theta  ! 1-eigenvalues
     
@@ -42,7 +41,7 @@ contains
     
     return
     
-  end subroutine dpss
+  end subroutine dpss_mt
     
 !######################################################################
 

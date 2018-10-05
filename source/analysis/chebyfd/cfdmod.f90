@@ -23,13 +23,13 @@ module cfdmod
   ! No. quadrature points
   integer, parameter  :: npts=5001
   !
-  ! Time-bandwidth product
+  ! NxW
   real(dp)            :: fw
   !
-  ! Slepian functions
+  ! DPSSs
   real(dp), dimension(:,:), allocatable :: v
   !
-  ! Eigenvalues of the Slepians
+  ! Eigenvalues
   real(dp), dimension(:), allocatable :: lambda
   !
   ! Tabulated optimal time-bandwidth products

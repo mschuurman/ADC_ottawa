@@ -1,46 +1,46 @@
 !######################################################################
-! slepianmod: routines for the calculation of the coefficients in the
-!             expansion of Slepian filter functions in terms of
-!             Chebyshev polynomials of the first kind
+! idpssmod: routines for the calculation of the coefficients in the
+!          expansion of IDPSS filter functions in terms of Chebyshev
+!          polynomials of the first kind
 !######################################################################
 
-module slepianmod
+module idpssmod
 
 contains
   
 !######################################################################
   
-  subroutine get_coeffs_slepians
+  subroutine get_coeffs_idpss
 
     use cfdmod
     
     implicit none
 
 !----------------------------------------------------------------------
-! If the time-bandwidth product has not been supplied by the user,
-! then look up the optimal value
+! If the value of NxW has not been supplied by the user, then look up
+! the optimal value
 !----------------------------------------------------------------------
   if (fw.eq.0.0d0.and..not.varfw) call get_optimal_fw
     
 !----------------------------------------------------------------------
-! Get the Slepian filter functions
+! Get the IDPSS filter functions
 !----------------------------------------------------------------------
-    call get_slepians
+    call get_idpss
 
 !----------------------------------------------------------------------
-! Output some information about the Slepians to the log file
+! Output some information about the DPSSs to the log file
 !----------------------------------------------------------------------
-    call wrslepinfo
+    call wrdpssinfo
 
 !----------------------------------------------------------------------
 ! Calculate the coefficients entering into the expansion of the
-! Slepian filter functions with respect to the Chebyshev polynomials
+! IDPSS filter functions with respect to the Chebyshev polynomials
 !----------------------------------------------------------------------
     call calc_expansion_coeffs
     
     return
     
-  end subroutine get_coeffs_slepians
+  end subroutine get_coeffs_idpss
 
 !######################################################################
   
@@ -55,19 +55,18 @@ contains
     character(len=4) :: ai
 
 !----------------------------------------------------------------------
-! Exit if the optimal time-bandwidth product is not available for the
-! value of nfsbas
+! Exit if the optimal NxW value is not available for the value of
+! nfsbas
 !----------------------------------------------------------------------
     if (nfsbas.gt.nopt) then
        write(ai,'(i4)') nopt
-       errmsg='Optimal time-bandwidth products are not currently &
-            available for numbers of Slepians greater than '&
-            //trim(adjustl(ai))
+       errmsg='Optimal NxW values are not currently available for &
+            numbers of DPSSs greater than '//trim(adjustl(ai))
        call error_control
     endif
     
 !----------------------------------------------------------------------
-! Set the optimal time-bandwidth product for the current no. Slepians
+! Set the optimal NxW for the current no. DPSSs
 !----------------------------------------------------------------------
     call fill_optfw
     fw=optfw(nfsbas)
@@ -146,7 +145,7 @@ contains
   
 !######################################################################
 
-  subroutine get_slepians
+  subroutine get_idpss
 
     use cfdmod
     
@@ -155,7 +154,7 @@ contains
 !----------------------------------------------------------------------
 ! Allocate arrays
 !----------------------------------------------------------------------
-    ! Slepians
+    ! DPSSs
     allocate(v(npts,nfsbas))
     v=0.0d0
 
@@ -167,13 +166,12 @@ contains
 ! Get the DPSSs
 !----------------------------------------------------------------------
     if (varfw) then
-       ! Variable time-bandwidth product for each Slepian filter: read
-       ! in the pre-calculated DPSSs
-       call read_slepians
+       ! Variable NxW value for IDPSS filter function: read in the
+       ! pre-calculated DPSSs
+       call read_dpss
     else
-       ! Constant time-bandwidth product for all Slepian filters:
-       ! calculate the DPSSs
-       call calc_slepians
+       ! Constant NxW value for all IDPSS filters: calculate the DPSSs
+       call calc_dpss
     endif
 
 !----------------------------------------------------------------------
@@ -183,11 +181,11 @@ contains
 
     return
     
-  end subroutine get_slepians
+  end subroutine get_idpss
 
 !######################################################################
 
-  subroutine read_slepians
+  subroutine read_dpss
 
     use iomod
     use cfdmod
@@ -209,8 +207,8 @@ contains
 ! Exit if the no. DPSSs is greater than the no. pre-calculated
 !----------------------------------------------------------------------
     if (nfsbas.gt.nprecalc) then
-       errmsg='The no. Slepians requested is greater than the no. &
-            that has been pre-calculated'
+       errmsg='The no. DPSSs requested is greater than the no. that &
+            has been pre-calculated'
        call error_control
     endif
     
@@ -224,7 +222,7 @@ contains
     ! Next free unit
     call freeunit(unit)
     
-    ! Loop over the Slepians
+    ! Loop over the DPSSs
     do n=1,nfsbas
 
        ! Current filename
@@ -246,11 +244,11 @@ contains
 
     return
     
-  end subroutine read_slepians
+  end subroutine read_dpss
     
 !######################################################################
 
-  subroutine calc_slepians
+  subroutine calc_dpss
 
     use cfdmod
     use dpssmt
@@ -263,15 +261,15 @@ contains
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------
-    call dpss(npts,fw,nfsbas,v,lambda)
+    call dpss_mt(npts,fw,nfsbas,v,lambda)
     
     return
     
-  end subroutine calc_slepians
+  end subroutine calc_dpss
 
 !######################################################################
 
-  subroutine wrslepinfo
+  subroutine wrdpssinfo
 
     use channels
     use cfdmod
@@ -282,11 +280,11 @@ contains
     real(dp) :: ovrlp
     
 !----------------------------------------------------------------------
-! Output some information about the Slepians to file
+! Output some information about the DPSSs to file
 !----------------------------------------------------------------------
     ! fw
     if (.not.varfw) &
-         write(ilog,'(a,2x,F10.7)') '# Time half-bandwidth product:',fw
+         write(ilog,'(a,2x,F10.7)') '# NxW:',fw
     
     ! Eigenvalues
     if (.not.varfw) then
@@ -311,7 +309,7 @@ contains
     
     return
     
-  end subroutine wrslepinfo
+  end subroutine wrdpssinfo
 
 !######################################################################
 
@@ -465,4 +463,4 @@ contains
   
 !######################################################################
   
-end module slepianmod
+end module idpssmod

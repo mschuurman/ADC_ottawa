@@ -71,7 +71,7 @@ echo "LIB_LAPACK=$lapackflag" >>ADC.CONFIG
 # Calls to make
 #-----------------------------------------------------------------------
 list=(clean_all adc stieltjes_ap mcspline numhess rixsplt auto2spec \
-      cheby2spec fdiag ntoana slepian chebyfd)
+      cheby2spec fdiag ntoana dpss chebyfd)
 
 if [ -z $target ]; then
     for T in "${list[@]}"; do

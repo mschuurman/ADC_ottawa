@@ -1,7 +1,7 @@
 !######################################################################
-! slepian: A program to calculate discrete prolate spheroidal
-!          sequences. Makes use of code lifted from the Multitaper
-!          Spectrum Estimation library.
+! dpss: A program to calculate discrete prolate spheroidal sequences.
+!       Makes use of code lifted from the Multitaper Spectrum
+!       Estimation library.
 !######################################################################
 
 module global
@@ -16,13 +16,13 @@ module global
   ! Time-bandwidth product
   real(dp)                              :: fw
 
-  ! Desired number of Slepian functions
+  ! Desired number of DPSSs
   integer                               :: nev
 
-  ! Slepian functions
+  ! DPSSs
   real(dp), dimension(:,:), allocatable :: v
 
-  ! Eigenvalues of the Slepians
+  ! Eigenvalues
   real(dp), dimension(:), allocatable   :: lambda
 
   ! 1-eigenvalues
@@ -34,7 +34,7 @@ end module global
 
 !######################################################################
 
-program slepian
+program dpss
 
   use global
   use dpssmt
@@ -54,7 +54,7 @@ program slepian
 !----------------------------------------------------------------------
 ! Calculate the DPSSs
 !----------------------------------------------------------------------  
-  call dpss(npts,fw,nev,v,lambda)
+  call dpss_mt(npts,fw,nev,v,lambda)
 
   theta=1.0d0-lambda
   
@@ -91,7 +91,7 @@ contains
     read(string,*) npts
 
 !----------------------------------------------------------------------    
-! Argument 2: number of Slepians
+! Argument 2: number of DPSSs
 !----------------------------------------------------------------------    
     call getarg(2,string)
     read(string,*) nev
@@ -114,7 +114,7 @@ contains
 
     implicit none
 
-    ! Slepians
+    ! DPSSs
     allocate(v(npts,nev))
     v=0.0d0
 
@@ -146,7 +146,7 @@ contains
     logical           :: exists
     
 !----------------------------------------------------------------------
-! Output the Slepians to file
+! Output the DPSSs to file
 !----------------------------------------------------------------------
     inquire(file='dpss/.',exist=exists)
     if (exists) call system('rm dpss/*')
@@ -154,7 +154,7 @@ contains
     
     call freeunit(unit)
 
-    ! Loop over the Slepians
+    ! Loop over the DPSSs
     do i=1,nev
 
        ! Open the output file
@@ -173,13 +173,13 @@ contains
     enddo
 
 !----------------------------------------------------------------------
-! Output some information about the Slepians to file
+! Output some information about the DPSSs to file
 !----------------------------------------------------------------------
     ! Open file
     open(unit,file='dpss.info',form='formatted',status='unknown')
 
     ! fw
-    write(unit,'(a,2x,F10.7)') '# Time half-bandwidth product:',fw
+    write(unit,'(a,2x,F10.7)') '# WxN:',fw
     
     ! Eigenvalues
     write(unit,'(/,41a)') ('#',i=1,41)
@@ -234,5 +234,5 @@ contains
   
 !######################################################################
   
-end program slepian
+end program dpss
 

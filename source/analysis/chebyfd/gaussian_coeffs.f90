@@ -1,6 +1,6 @@
 !######################################################################
 ! gaussianmod: routines for the calculation of the coefficients in the
-!              expansion of Slepian filter functions in terms of
+!              expansion of Gaussian filter functions in terms of
 !              Chebyshev polynomials of the first kind
 !######################################################################
 

@@ -1,6 +1,6 @@
 !######################################################################
 ! chebyfd: a low-storage Chebyshev filter diagonalisation program
-!          based on the use of Slepian or Gaussian filter functions
+!          based on the use of IDPSS or Gaussian filter functions
 !######################################################################
 
 program chebyfd
@@ -192,7 +192,7 @@ contains
     ! Energies in a.u.
     lau=.false.
 
-    ! Time half-bandwidth parameter for Slepian filter functions
+    ! NxW
     fw=0.0d0
 
     ! Width parameter for Gaussian filte functions
@@ -228,17 +228,18 @@ contains
              goto 100
           endif
 
-       else if (keyword(i).eq.'slepians') then
+       else if (keyword(i).eq.'slepians'&
+            .or.keyword(i).eq.'dpss') then
           ifilter=1
           if (keyword(i+1).eq.'=') then
              i=i+2
-             ! No. slepian filter functions
+             ! No. DPSSs
              read(keyword(i),*) nfsbas
-             ! Optional argument: time-bandwidth product factor
+             ! Optional argument: NxW value
              if (keyword(i+1).eq.',') then
                 i=i+2
                 if (keyword(i).eq.'variable') then
-                   ! Variable time-bandwidth products
+                   ! Variable W values
                    varfw=.true.
                 else
                    read(keyword(i),*) fw
@@ -460,7 +461,7 @@ contains
 
   subroutine get_coeffs
 
-    use slepianmod
+    use idpssmod
     use gaussianmod
 
     implicit none
@@ -476,8 +477,8 @@ contains
 !----------------------------------------------------------------------    
     select case(ifilter)
 
-    case(1) ! Slepian filter functions
-       call get_coeffs_slepians
+    case(1) ! IDPSS filter functions
+       call get_coeffs_idpss
 
     case(2) ! Gaussian filter functions
        call get_coeffs_gaussians

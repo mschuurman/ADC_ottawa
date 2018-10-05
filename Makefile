@@ -440,7 +440,7 @@ NTOANA_OBJ = accuracy.o \
 ########################################################################
 # DPSS code
 ########################################################################
-SLEPIAN = source/include/constants.o \
+DPSS = source/include/constants.o \
 	source/include/channels.o \
 	source/iomodules/iomod.o \
 	source/iomodules/parsemod.o \
@@ -452,9 +452,9 @@ SLEPIAN = source/include/constants.o \
 	source/analysis/chebyfd/tridib.o \
 	source/analysis/chebyfd/xint.o \
 	source/analysis/chebyfd/dpssmt.o \
-	source/analysis/chebyfd/slepian.o
+	source/analysis/chebyfd/dpss.o
 
-SLEPIAN_OBJ = constants.o \
+DPSS_OBJ = constants.o \
 	channels.o \
 	iomod.o \
 	parsemod.o \
@@ -466,7 +466,7 @@ SLEPIAN_OBJ = constants.o \
 	tridib.o \
 	xint.o \
 	dpssmt.o \
-	slepian.o 
+	dpss.o 
 
 ########################################################################
 # Chebyshev filter diagonalisation code
@@ -485,7 +485,7 @@ CHEBYFD = source/include/constants.o \
 	source/analysis/chebyfd/dpssmt.o \
 	source/analysis/chebyfd/cfdmod.o \
 	source/analysis/chebyfd/gaussian_coeffs.o \
-	source/analysis/chebyfd/slepian_coeffs.o \
+	source/analysis/chebyfd/idpss_coeffs.o \
 	source/analysis/chebyfd/chebyfd.o
 
 CHEBYFD_OBJ = constants.o \
@@ -502,7 +502,7 @@ CHEBYFD_OBJ = constants.o \
 	dpssmt.o \
 	cfdmod.o \
 	gaussian_coeffs.o \
-	slepian_coeffs.o \
+	idpss_coeffs.o \
 	chebyfd.o
 
 #-----------------------------------------------------------------------
@@ -544,8 +544,8 @@ ntoana: $(NTOANA)
 	$(F90) $(F90OPTS) $(NTOANA_OBJ) $(LIBS) -o bin/ntoana.x
 	rm -f *.o *~ *.mod
 
-slepian: $(SLEPIAN)
-	$(F90) $(F90OPTS) $(SLEPIAN_OBJ) $(LIBS) -o bin/slepian.x
+dpss: $(DPSS)
+	$(F90) $(F90OPTS) $(DPSS_OBJ) $(LIBS) -o bin/dpss.x
 	rm -f *.o *~ *.mod
 
 chebyfd: $(CHEBYFD)
