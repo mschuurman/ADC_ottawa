@@ -65,7 +65,7 @@ contains
 ! required basis vectors will be read from disk. Otherwise, the
 ! basis vectors will be recalculated.
 !-----------------------------------------------------------------------
-    if (save1h1p) then
+    if (read1h1p) then
        call fdstates_1h1p_read(ndimsf,ndimf,kpqf,gam)
     else
        call fdstates_recalc(ndim,ndims,ndimf,kpq,kpqf,noffd,noffdf,gam)

@@ -335,6 +335,7 @@ real(dp), dimension(2)                :: ebound
 character(len=60)                     :: fdiagdat,&
                                          fdiagsel
 logical                               :: lfdstates
+logical                               :: read1h1p
 
 !!$************************************************
 !!$************External Electric Field*************

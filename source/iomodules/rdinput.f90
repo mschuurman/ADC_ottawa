@@ -1990,7 +1990,7 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'save_1h1p') then
+         else if (keyword(i).eq.'save1h1p') then
             save1h1p=.true.
             
          else
@@ -2114,8 +2114,8 @@
                goto 100
             endif
 
-         else if (keyword(i).eq.'save_1h1p') then
-            save1h1p=.true.
+         else if (keyword(i).eq.'read1h1p') then
+            read1h1p=.true.
             
          else
             ! Exit if the keyword is not recognised

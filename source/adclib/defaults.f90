@@ -164,6 +164,7 @@
       fdiagdat=''
       fdiagsel=''
       lfdstates=.false.
+      read1h1p=.false.
       
 !-----------------------------------------------------------------------
 ! Wavepacket propagation parameters
