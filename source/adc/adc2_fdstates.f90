@@ -401,8 +401,8 @@ contains
 !----------------------------------------------------------------------
     ! Open the cheby1h1p file
     call freeunit(unit)
-    open(unit=unit,file='cheby1h1p',status='unknown',&
-         access='sequential',form='unformatted')
+    open(unit=unit,file='cheby1h1p',status='old',access='sequential',&
+         form='unformatted')
 
     ! Read the 1h1p parts of the Chebyshev vectors
     do k=0,chebyord
