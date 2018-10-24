@@ -22,7 +22,7 @@ contains
 
 !######################################################################
 
-  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf,ndimsf)
+  subroutine chebyshev_auto_order_domain(q0,ndimf,noffdf,ndimsf,kpqf)
 
     use tdsemod
     use specbounds
@@ -30,6 +30,10 @@ contains
     
     implicit none
 
+    ! TEMPORARY
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    ! TEMPORARY
+    
     integer, intent(in)        :: ndimf,ndimsf
     integer*8, intent(in)      :: noffdf
     integer                    :: k
@@ -77,6 +81,11 @@ contains
     ! definitely in the interval [Ea,Eb]
     bounds(1)=0.9d0*bounds(1)
     bounds(2)=1.1d0*bounds(2)
+
+!----------------------------------------------------------------------
+! Projection of the initial state onto an energy subspace
+!----------------------------------------------------------------------
+    if (lprojpsi0) call project_psi0(q0,kpqf)
     
 !----------------------------------------------------------------------
 ! Calculate the order-domain autocorrelation function
@@ -244,7 +253,6 @@ contains
     integer                     :: k,i
     real(dp), dimension(matdim) :: q0
     real(dp), allocatable       :: qk(:),qkm1(:),qkm2(:)
-    real(dp)                    :: N0
     
 !----------------------------------------------------------------------
 ! Allocate arrays
@@ -386,6 +394,158 @@ contains
     return
     
   end subroutine write_1h1p
+
+!######################################################################
+
+  subroutine project_psi0(q0,kpqf)
+
+    use tdsemod
+    use misc
+    
+    implicit none
+
+    ! TEMPORARY
+    integer, dimension(7,0:nBas**2*4*nOcc**2) :: kpqf
+    ! TEMPORARY
+    
+    integer                     :: k
+    real(dp), dimension(matdim) :: q0
+    real(dp), allocatable       :: qk(:),qkm1(:),qkm2(:),pq0(:)
+    real(dp), allocatable       :: gk(:),fk(:)
+    real(dp)                    :: escale,alpha,cosa,sina
+
+    integer, allocatable :: indx(:)
+    integer              :: ilbl,kpqdim2
+    character(len=2)     :: spincase
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(qk(matdim))
+    qk=0.0d0
+
+    allocate(qkm1(matdim))
+    qkm1=0.0d0
+
+    allocate(qkm2(matdim))
+    qkm2=0.0d0
+
+    allocate(pq0(matdim))
+    pq0=0.0d0
+    
+    allocate(gk(0:chebyord))
+    gk=0.0d0
+    
+    allocate(fk(0:chebyord))
+    fk=0.0d0
+    
+!----------------------------------------------------------------------
+! Scale the projection energy
+!----------------------------------------------------------------------
+    escale=projen-(0.5d0*(bounds(2)-bounds(1))+bounds(1))
+    escale=escale/(bounds(2)-bounds(1))
+    escale=2.0d0*escale
+
+!----------------------------------------------------------------------
+! Calculate the attenuation coefficients, g_k
+!----------------------------------------------------------------------
+  alpha=pi/dble(chebyord+2)
+  cosa=cos(alpha)
+  sina=sin(alpha)
+  
+  do k=0,chebyord
+     gk(k)=(1.0d0-dble(k)/(dble(chebyord+2)))*sina*cos(k*alpha) &
+          + (1.0d0/dble(chebyord+2))*cosa*sin(k*alpha)
+  enddo
+  gk(:)=gk(:)/sina
+
+!----------------------------------------------------------------------
+! Calculate the expansion coefficients, f_k
+!----------------------------------------------------------------------
+    fk(0)=1.0d0-acos(escale)/pi
+
+    do k=1,chebyord
+       fk(k)=-2.0d0*sin(k*acos(escale))/(k*pi)
+    enddo
+
+!----------------------------------------------------------------------
+! Project the initial state onto the energy subspace of interest
+!----------------------------------------------------------------------
+    ! Initialisation
+    pq0=fk(0)*gk(0)*q0
+    qkm1=q0
+    
+    ! Jackson-Chebyshev expansion
+    do k=1,chebyord
+
+       ! Calculate the kth Chebyhev polynomial-vector product
+       call chebyshev_recursion(k,matdim,noffdiag,bounds,qk,qkm1,qkm2)
+
+       ! Contribution the the projected state
+       pq0=pq0+fk(k)*gk(k)*qk
+
+       ! Update qkm1 and qkm2
+       qkm2=qkm1       
+       qkm1=qk
+       qk=0.0d0
+
+    enddo
+
+    q0=pq0
+
+!----------------------------------------------------------------------
+! Test: analyse the dominant configurations contributuing to the
+! projected initial state
+!----------------------------------------------------------------------
+    allocate(indx(matdim))
+    indx=0
+    
+    pq0=abs(q0/sqrt(dot_product(q0,q0)))
+    
+    call dsortindxa1("D",matdim,pq0,indx(:))
+
+    kpqdim2=1+nBas**2*4*nOcc**2
+    
+    do k=1,50
+       ilbl=indx(k)
+       if (kpqf(4,ilbl).eq.-1) then
+          ! Single excitations
+          write(ilog,'(3x,i2,4x,a2,1x,i2,9x,F8.5)') &
+               kpqf(3,ilbl),'->',kpqf(5,ilbl),pq0(ilbl)
+       else
+          ! Double excitations
+          if (kpqf(3,ilbl).ne.kpqf(4,ilbl).and.kpqf(5,ilbl).ne.kpqf(6,ilbl)) then
+             ! a|=b, i|=j
+             spincase=getspincase(ilbl,kpqf,kpqdim2)
+             write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),2x,a2,2x,F8.5)') &
+                  kpqf(3,ilbl),kpqf(4,ilbl),'->',kpqf(5,ilbl),&
+                  kpqf(6,ilbl),spincase,pq0(ilbl)
+          else
+             ! a=b,  i=j
+             ! a|=b, i=j
+             ! a=b,  i=|j
+             write(ilog,'(3x,2(i2,1x),a2,2(1x,i2),6x,F8.5)') &
+                  kpqf(3,ilbl),kpqf(4,ilbl),'->',kpqf(5,ilbl),&
+                  kpqf(6,ilbl),pq0(ilbl)
+          endif
+       endif
+    enddo
+    
+    deallocate(indx)
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(qk)
+    deallocate(qkm1)
+    deallocate(qkm2)
+    deallocate(pq0)
+    deallocate(gk)
+    deallocate(fk)
+    
+    return
+    
+  end subroutine project_psi0
     
 !######################################################################
     

@@ -652,7 +652,7 @@ contains
     denom=czero
     do k=0,iauto/2
        numer=numer+avec(k)*(z**k)
-       denom=denom+bvec(k)*(z**k)      
+       denom=denom+bvec(k)*(z**k)
     enddo
     
     func=2.0d0*real(numer/denom)

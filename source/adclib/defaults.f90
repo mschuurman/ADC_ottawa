@@ -157,6 +157,8 @@
       autoprop=1
       chebyord=0
       save1h1p=.false.
+      lprojpsi0=.false.
+      projen=0.0d0
       
 !-----------------------------------------------------------------------
 ! Filter diagonalisation state calculation parameters

@@ -1990,6 +1990,20 @@
                goto 100
             endif
 
+         else if (keyword(i).eq.'filter') then
+            lprojpsi0=.true.
+            if (keyword(i+1).eq.'=') then
+               i=i+2
+               read(keyword(i),*) projen
+            else
+               goto 100
+            endif
+            ! Optional energy unit
+            if (keyword(i+1).eq.',') then
+               i=i+2
+               call convert_energy(keyword(i),projen)
+            endif
+
          else if (keyword(i).eq.'save1h1p') then
             save1h1p=.true.
             

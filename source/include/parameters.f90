@@ -310,7 +310,8 @@ real(dp), dimension(:), allocatable     :: edavf
 logical                                 :: ltpa
 
 !!$************************************************
-!!$**************TD-ADC Calculations**************
+!!$************TD-ADC and Chebyshev-ADC************
+!!$ *****************Calculations******************
 !!$************************************************
 !!$************************************************
 real(dp)                              :: tfinal,tout,&
@@ -319,8 +320,10 @@ integer                               :: autoord
 integer                               :: autoprop
 integer                               :: chebyord
 integer                               :: tdrep
+real(dp)                              :: projen
 logical                               :: lautospec
 logical                               :: save1h1p
+logical                               :: lprojpsi0
 
 !!$************************************************
 !!$**********Filter Diagonalisation State**********
