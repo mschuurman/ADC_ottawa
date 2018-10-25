@@ -263,17 +263,7 @@ contains
 !----------------------------------------------------------------------
 ! File header
 !----------------------------------------------------------------------
-    write(unit,'(67a)') ('#',k=1,67)
-    if (lau) then
-       write(unit,'(a)') '#  Energy (au)      Gaussian         &
-            Jackson          No'
-    else
-       write(unit,'(a)') '#  Energy (eV)      Gaussian         &
-            Jackson          No'
-    endif
-    write(unit,'(a)') '#                   Window           &
-         Window           Window'
-    write(unit,'(67a)') ('#',k=1,67)
+    call write_header(unit)
 
 !----------------------------------------------------------------------
 ! Precompute window function values
@@ -350,6 +340,57 @@ contains
     return
     
   end subroutine calc_spectrum
+
+!######################################################################
+
+  subroutine write_header(unit)
+
+    use constants
+    use cheby2specmod
+    
+    implicit none
+
+    integer :: unit,i
+
+    if (lpade) then
+
+       write(unit,'(84a)') ('#',i=1,84)
+
+       if (lau) then
+          write(unit,'(a)') '#  Energy (au)      Pade             &
+               Gaussian         Jackson          No'
+       else
+          write(unit,'(a)') '#  Energy (eV)      Pade             &
+               Gaussian         Jackson          No'
+       endif
+          
+          write(unit,'(a)') '#                   Approximant      &
+               Window           Window           Window'
+          
+       write(unit,'(84a)') ('#',i=1,84)
+
+    else
+
+       write(unit,'(67a)') ('#',i=1,67)
+
+       if (lau) then
+          write(unit,'(a)') '#  Energy (au)      Gaussian         &
+               Jackson          No'
+       else
+          write(unit,'(a)') '#  Energy (eV)      Gaussian         &
+               Jackson          No'
+       endif
+
+       write(unit,'(a)') '#                   Window           &
+            Window           Window'
+
+       write(unit,'(67a)') ('#',i=1,67)
+
+    endif
+    
+    return
+    
+  end subroutine write_header
     
 !######################################################################
   
