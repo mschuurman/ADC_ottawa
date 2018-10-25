@@ -505,7 +505,7 @@ contains
 !----------------------------------------------------------------------
     c(0)=auto(0)
     do k=1,order
-       c(k)=2.0d0*auto(k)*exp(-(k/tau))
+       c(k)=2.0d0*auto(k)*exp(-k/tau)
     enddo
 
 !----------------------------------------------------------------------
@@ -590,26 +590,20 @@ contains
     real(dp)    :: theta,func
     complex(dp) :: z,numer,denom,val1,val2
 
-    z=exp(ci*theta)
     numer=czero
     denom=czero
+
+    z=exp(ci*theta)
+    
     do k=0,order/2
        numer=numer+a(k)*(z**k)
        denom=denom+b(k)*(z**k)
     enddo
+
     val1=numer/denom
 
-    z=exp(-ci*theta)
-    numer=czero
-    denom=czero
-    do k=0,order/2
-       numer=numer+a(k)*(z**k)
-       denom=denom+b(k)*(z**k)
-    enddo
-    val2=numer/denom
-    
-    func=0.5d0*real(val1+val2)
-    
+    func=real(val1)
+
     return
     
   end function padespec_cheby
