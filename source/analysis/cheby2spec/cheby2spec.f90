@@ -11,6 +11,7 @@ module cheby2specmod
   real(dp), parameter    :: eh2ev=27.2113845d0
   real(dp)               :: convfac
   real(dp), allocatable  :: a(:),b(:),c(:),d(:)
+  real(dp)               :: tau
   logical                :: lau
   logical                :: lpade
   
@@ -73,6 +74,9 @@ contains
 
     ! Pade approximant of the cosine transform
     lpade=.false.
+
+    ! Damping factor
+    tau=0.0d0
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -111,6 +115,10 @@ contains
        else if (string1.eq.'-pade') then
           ! Pade approximant of the Fourier transform
           lpade=.true.
+          ! Damping factor
+          i=i+1
+          call getarg(i,string2)
+          read(string2,*) tau
           
        else
           errmsg='Unknown keyword: '//trim(string1)
@@ -342,43 +350,6 @@ contains
     return
     
   end subroutine calc_spectrum
-
-!######################################################################
-
-  function padespec_cheby(theta) result(func)
-
-    use constants
-    use cheby2specmod
-
-    implicit none
-
-    integer     :: k
-    real(dp)    :: theta,func
-    complex(dp) :: z,numer,denom,val1,val2
-
-    z=exp(ci*theta)
-    numer=czero
-    denom=czero
-    do k=0,order/2
-       numer=numer+a(k)*(z**k)
-       denom=denom+b(k)*(z**k)
-    enddo
-    val1=0.5d0*real(numer/denom)
-
-    z=exp(-ci*theta)
-    numer=czero
-    denom=czero
-    do k=0,order/2
-       numer=numer+a(k)*(z**k)
-       denom=denom+b(k)*(z**k)
-    enddo
-    val2=0.5d0*real(numer/denom)
-    
-    func=real(val1+val2)
-    
-    return
-    
-  end function padespec_cheby
     
 !######################################################################
   
@@ -471,7 +442,7 @@ contains
     real(dp), allocatable :: gmat(:,:)
     
 !----------------------------------------------------------------------
-! Allocate and initialisae arrays
+! Allocate and initialise arrays
 !----------------------------------------------------------------------
     n=order/2
     
@@ -485,13 +456,15 @@ contains
     d=0.0d0
     allocate(gmat(n,n))
     gmat=0.0d0
-
+    allocate(ipiv(n))
+    ipiv=0
+    
 !----------------------------------------------------------------------
 ! c-vector
 !----------------------------------------------------------------------
     c(0)=auto(0)
     do k=1,order
-       c(k)=2.0d0*auto(k)
+       c(k)=2.0d0*auto(k)*exp(-(k/tau))
     enddo
 
 !----------------------------------------------------------------------
@@ -516,8 +489,6 @@ contains
 ! N.B., we use the usual convention for diagonal Pade approximant
 ! schemes and set b0=1
 !----------------------------------------------------------------------
-    allocate(ipiv(n))
-
     call dgetrf(n,n,gmat,n,ipiv,info)
 
     if (info.ne.0) then
@@ -540,11 +511,11 @@ contains
        stop
     endif
 
-    deallocate(ipiv)
-
 !----------------------------------------------------------------------
 ! Calculate the a-coefficients
 !----------------------------------------------------------------------
+    a=0.0d0
+
     a(0)=c(0)
     
     do k=1,n
@@ -552,11 +523,56 @@ contains
           a(k)=a(k)+b(m)*c(k-m)
        enddo
     enddo
+
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(gmat)
+    deallocate(c)
+    deallocate(d)
+    deallocate(ipiv)
     
     return
     
   end subroutine pade_coeff_cheby
+
+!######################################################################
+
+  function padespec_cheby(theta) result(func)
+
+    use constants
+    use cheby2specmod
+
+    implicit none
+
+    integer     :: k
+    real(dp)    :: theta,func
+    complex(dp) :: z,numer,denom,val1,val2
+
+    z=exp(ci*theta)
+    numer=czero
+    denom=czero
+    do k=0,order/2
+       numer=numer+a(k)*(z**k)
+       denom=denom+b(k)*(z**k)
+    enddo
+    val1=numer/denom
+
+    z=exp(-ci*theta)
+    numer=czero
+    denom=czero
+    do k=0,order/2
+       numer=numer+a(k)*(z**k)
+       denom=denom+b(k)*(z**k)
+    enddo
+    val2=numer/denom
     
+    func=0.5d0*real(val1+val2)
+    
+    return
+    
+  end function padespec_cheby
+  
 !######################################################################
   
 end program cheby2spec

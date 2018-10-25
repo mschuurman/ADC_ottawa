@@ -703,7 +703,7 @@ contains
        write(iout,'(100a)') ('#',i=1,100)
        do i=0,epoints
           e=(emin+i*dele)*eh2ev
-          write(iout,'(6(ES15.6,2x))') e,abs(sp(i,4)),sp(i,2),&
+          write(iout,'(6(ES15.6,2x))') e,sp(i,4),sp(i,2),&
                sp(i,1),sp(i,3),sp(i,0)
        enddo
     else
