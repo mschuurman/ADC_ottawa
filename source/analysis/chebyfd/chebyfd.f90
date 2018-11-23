@@ -968,7 +968,8 @@ contains
        if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
 
        write(unit,'(2(2x,F10.5))') ener(i)*convfac,osc(i)
-
+       !write(unit,'(2(2x,F18.14))') ener(i)*convfac,osc(i)
+       
     enddo
 
 

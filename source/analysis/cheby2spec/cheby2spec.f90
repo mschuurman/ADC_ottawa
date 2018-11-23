@@ -213,7 +213,7 @@ contains
     ! If we are calculating the pade approximant of the cosine
     ! transform, then make sure that order is even.
     if (lpade.and.mod(order,2).ne.0) order=order-1
-    
+
     allocate(auto(0:order))
     auto=0.0d0
 
@@ -463,7 +463,7 @@ contains
     func=(order-k+2)*cos(k*alpha) &
          -cos((order+1)*alpha)*sin((order-k+2)*alpha)/sin(alpha)
     func=func/(order+2)
-
+    
     return
     
   end function jacksonwindow

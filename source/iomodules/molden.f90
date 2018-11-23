@@ -26,13 +26,13 @@ contains
     real(dp)                         :: alpha,coeff
     real(dp), dimension(10,10)       :: ftransmat
     character(len=*)                 :: filename
-    character(len=1), dimension(0:3) :: shlbl
+    character(len=1), dimension(0:4) :: shlbl
     type(gam_structure)              :: gam
 
 !-----------------------------------------------------------------------
 ! Set shell labels
 !-----------------------------------------------------------------------
-    shlbl(0:3)=(/ 's','p','d','f' /)
+    shlbl(0:4)=(/ 's','p','d','f','g' /)
 
 !-----------------------------------------------------------------------
 ! Transformation matrix for the reordering of the f-functions to
