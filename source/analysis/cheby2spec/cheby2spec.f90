@@ -12,6 +12,8 @@ module cheby2specmod
   real(dp)               :: convfac
   real(dp), allocatable  :: a(:),b(:),c(:),d(:)
   real(dp)               :: tau
+  character(len=120)     :: autofile
+  character(len=120)     :: outfile
   logical                :: lau
   logical                :: lpade
   
@@ -77,6 +79,12 @@ contains
 
     ! Damping factor
     tau=0.0d0
+
+    ! Name of the Chebyshev order-domain autocorrelation function file
+    autofile='chebyauto'
+
+    ! Name of the output (spectrum) file
+    outfile='chebyspec.dat'
     
 !----------------------------------------------------------------------
 ! Read the command line arguments
@@ -119,6 +127,17 @@ contains
           i=i+1
           call getarg(i,string2)
           read(string2,*) tau
+
+       else if (string1.eq.'-f') then
+          ! Name of the Chebyshev order-domain autocorrelation
+          ! function file
+          i=i+1
+          call getarg(i,autofile)
+
+       else if (string1.eq.'-o') then
+          ! Name of the output (spectrum) file
+          i=i+1
+          call getarg(i,outfile)
           
        else
           errmsg='Unknown keyword: '//trim(string1)
@@ -176,7 +195,7 @@ contains
 !----------------------------------------------------------------------
 ! Make sure that the chebyauto file exists
 !----------------------------------------------------------------------
-    inquire(file='chebyauto',exist=exists)
+    inquire(file=autofile,exist=exists)
 
     if (.not.exists) then
        errmsg='The chebyauto file could not be found'
@@ -187,7 +206,7 @@ contains
 ! Open the chebyauto file
 !----------------------------------------------------------------------
     call freeunit(unit)
-    open(unit,file='chebyauto',form='formatted',status='old')
+    open(unit,file=autofile,form='formatted',status='old')
 
 !----------------------------------------------------------------------
 ! Read the spectral bounds
@@ -258,7 +277,7 @@ contains
 ! Open the output file
 !----------------------------------------------------------------------
     call freeunit(unit)
-    open(unit,file='chebyspec.dat',form='formatted',status='unknown')
+    open(unit,file=outfile,form='formatted',status='unknown')
 
 !----------------------------------------------------------------------
 ! File header
