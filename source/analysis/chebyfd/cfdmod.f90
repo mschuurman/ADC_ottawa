@@ -6,12 +6,15 @@ module cfdmod
   
   save
 
+  ! Order domain autocorrelation function file
+  character(len=120)     :: autofile
+  
   ! Order domain autocorrelation function
   integer                :: order,kfinal,Kdim
   real(dp), allocatable  :: auto(:)
 
   ! Spectral bounds
-  real(dp), dimension(2)  :: bounds
+  real(dp), dimension(2) :: bounds
 
   ! Filter functions
   integer :: ifilter

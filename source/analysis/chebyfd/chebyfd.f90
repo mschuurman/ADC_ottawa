@@ -197,6 +197,9 @@ contains
 
     ! Width parameter for Gaussian filte functions
     sigma=0.0d0
+
+    ! Name of the Chebyshev order-domain autocorrelation function file
+    autofile='chebyauto'
     
 !----------------------------------------------------------------------
 ! Read the input file
@@ -279,6 +282,14 @@ contains
 
        else if (keyword(i).eq.'au') then
           lau=.true.
+
+       else if (keyword(i).eq.'autofile') then
+          if (keyword(i+1).eq.'=') then
+             i=i+2
+             read(keyword(i),'(a)') autofile
+          else
+             goto 100
+          endif
           
        else
           ! Exit if the keyword is not recognised
@@ -358,7 +369,7 @@ contains
 !----------------------------------------------------------------------
 ! Make sure that the chebyauto file exists
 !----------------------------------------------------------------------
-    inquire(file='chebyauto',exist=exists)
+    inquire(file=autofile,exist=exists)
 
     if (.not.exists) then
        errmsg='The chebyauto file could not be found'
@@ -369,7 +380,7 @@ contains
 ! Open the chebyauto file
 !----------------------------------------------------------------------
     call freeunit(unit)
-    open(unit,file='chebyauto',form='formatted',status='old')
+    open(unit,file=autofile,form='formatted',status='old')
 
 !----------------------------------------------------------------------
 ! Read the spectral bounds
@@ -934,25 +945,24 @@ contains
 !######################################################################
 
   subroutine wrspec
-    
+
+    use channels
     use iomod
     use cfdmod
     
     implicit none
 
-    integer :: i,unit
+    integer            :: i,k,unit
+    character(len=120) :: aeig
 
-!    ! CHECK
-!    integer  :: n
-!    real(dp) :: en,D,b
-!    ! CHECK
-    
 !----------------------------------------------------------------------
 ! Open the output file
 !----------------------------------------------------------------------
     call freeunit(unit)
-    open(unit,file='chebyfd_eig.dat',form='formatted',status='unknown')
-
+    k=index(ain,'.inp')-1
+    aeig=trim(ain(1:k))//'_eig.dat'
+    open(unit,file=aeig,form='formatted',status='unknown')
+    
 !----------------------------------------------------------------------
 ! Write the spectrum to file
 !----------------------------------------------------------------------
@@ -971,25 +981,6 @@ contains
        !write(unit,'(2(2x,F18.14))') ener(i)*convfac,osc(i)
        
     enddo
-
-
-!    ! CHECK
-!    D=1000.0d0
-!    b=0.15d0
-!
-!    n=99
-!    do i=1,nrbas
-!
-!       if (ener(i).lt.Ea.or.ener(i).gt.Eb) cycle
-!       
-!       n=n+1
-!       
-!       en=-D+2.0d0*D*(n+0.5d0)*sqrt(b**2/(2.0d0*D))-0.5d0*(n+0.5d0)**2*b**2
-!
-!       print*,n,ener(i),en,ener(i)-en
-!       
-!    enddo
-!    ! CHECK
     
 !----------------------------------------------------------------------
 ! Close the output file
