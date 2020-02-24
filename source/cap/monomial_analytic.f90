@@ -211,7 +211,7 @@ contains
              do l=gam%atoms(i)%sh_p(j),gam%atoms(i)%sh_p(j+1)-1
                 mu=mu+1
                 Rmu(mu,:)=gam%atoms(i)%xyz(1:3)*ang2bohr
-                Rmu(mu,:)=Rmu(mu,:)-gcent(i)
+                Rmu(mu,:)=Rmu(mu,:)-gcent(:)
              enddo
           enddo
        enddo

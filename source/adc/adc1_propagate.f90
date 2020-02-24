@@ -49,7 +49,6 @@ contains
     kpq=kpqf
     ndim=ndimf
     nout=noutf
-    ndims=ndimsf
     
 !-----------------------------------------------------------------------
 ! Set MO representation of the dipole operator
