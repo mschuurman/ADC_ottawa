@@ -14,7 +14,41 @@ contains
 !                analysis
 !######################################################################
   
-  subroutine adc1_flux_cap(matdim,psi,dtpsi,flux)
+  subroutine adc1_flux_cap(matdim,psi,dtpsi,flux,time)
+
+    use constants
+    use parameters
+    use iomod
+    
+    implicit none
+
+    integer                                :: matdim
+    integer                                :: unit,i,k
+    real(dp)                               :: flux,val1,val2,ener
+    real(dp)                               :: time
+    complex(dp), dimension(matdim)         :: psi,dtpsi
+    complex(dp), dimension(:), allocatable :: oppsi
+
+    if (lfluxproj) then
+       ! Ionisation channel resolved flux expectation value within
+       ! Koopman's approximation
+       call adc1_flux_cap_koopmans(matdim,psi,time,flux)
+    else
+       ! Total flux expectation value
+       call adc1_flux_cap_total(matdim,psi,dtpsi,flux)
+    endif
+
+    return
+    
+  end subroutine adc1_flux_cap
+
+!######################################################################
+! adc1_flux_cap_total: calculation of the total flux expectation value
+!                for a TD-ADC(1) calculation using a CAP operator
+!                analysis
+!######################################################################
+  
+  subroutine adc1_flux_cap_total(matdim,psi,dtpsi,flux)
 
     use constants
     use parameters
@@ -58,8 +92,84 @@ contains
 
     return
     
-  end subroutine adc1_flux_cap
+  end subroutine adc1_flux_cap_total
 
+!######################################################################
+! adc1_flux_cap_total: calculation of the ionisation channel resolved
+!                flux expectation value within Koopman's approximation
+!                for a TD-ADC(1) calculation using a CAP operator
+!                analysis
+!######################################################################
+  
+  subroutine adc1_flux_cap_koopmans(matdim,psi,time,flux)
+
+    use constants
+    use parameters
+    use iomod
+    use tdsemod
+    
+    implicit none
+
+    integer                                :: matdim
+    integer                                :: unit,i,k
+    integer*8                              :: dummy
+    real(dp)                               :: flux,val1,val2,ener
+    real(dp)                               :: time
+    complex(dp), dimension(matdim)         :: psi
+    complex(dp), dimension(:), allocatable :: oppsi,projpsi,dtprojpsi
+
+!----------------------------------------------------------------------
+! Allocate and initialise arrays
+!----------------------------------------------------------------------
+    allocate(oppsi(matdim))
+    allocate(projpsi(matdim))
+    allocate(dtprojpsi(matdim))
+    oppsi=czero
+    projpsi=czero
+    dtprojpsi=czero
+    
+!----------------------------------------------------------------------
+! Project the wavepacket onto the subspace of ISs with a hole in the
+! MO of interest
+!----------------------------------------------------------------------
+    do i=1,nkproj1
+       projpsi(ikproj1(i))=psi(ikproj1(i))
+    enddo
+
+!----------------------------------------------------------------------
+! Compute the time derivative of the projected wavepacket
+!----------------------------------------------------------------------
+    dummy=0.5*(matdim-1)*matdim
+    call matxvec_treal_laser_adc1(time,matdim,dummy,projpsi,dtprojpsi)
+
+!----------------------------------------------------------------------
+! (I) 2 Re < d Psi/dt | Theta | Psi >
+!----------------------------------------------------------------------    
+    oppsi=matmul(theta1,projpsi)
+    val1=2.0d0*real(dot_product(dtprojpsi,oppsi))
+
+!----------------------------------------------------------------------
+! (II) 2 < Psi | W | Psi >
+!----------------------------------------------------------------------    
+    oppsi=matmul(w1,projpsi)
+    val2=2.0d0*real(dot_product(projpsi,oppsi))
+    
+!----------------------------------------------------------------------
+! Flux expectation value
+!----------------------------------------------------------------------
+    flux=val1+val2
+    
+!----------------------------------------------------------------------
+! Deallocate arrays
+!----------------------------------------------------------------------
+    deallocate(oppsi)
+    deallocate(projpsi)
+    deallocate(dtprojpsi)
+    
+    return
+    
+  end subroutine adc1_flux_cap_koopmans
+    
 !######################################################################
 ! adc2_flux_cap: calculation of the flux expectation value for a
 !                TD-ADC(2) calculation using a CAP operator

@@ -720,7 +720,7 @@ contains
        ! each timestep)
        if (inttime.eq.0.0d0) then
           norm=real(sqrt(dot_product(psi,psi)))
-          if (lflux) call adc1_flux_cap(matdim,psi,dtpsi,flux)
+          if (lflux) call adc1_flux_cap(matdim,psi,dtpsi,flux,time)
           call wrstepinfo(time,norm,flux,kpqf)
        endif
        
@@ -763,7 +763,7 @@ contains
     ! Final flux expectation value
     if (lflux) then
        call matxvec_treal_laser_adc1(time,matdim,dummy,psi,dtpsi)
-       call adc1_flux_cap(matdim,psi,dtpsi,flux)
+       call adc1_flux_cap(matdim,psi,dtpsi,flux,time)
     endif
 
     ! Final timestep output

@@ -194,6 +194,8 @@
       lautobox=.false.
       densthrsh=-1.0d0
       lflux=.false.
+      lfluxproj=.false.
+      imoproj=0
       lcapdiag=.false.
       
 !-----------------------------------------------------------------------

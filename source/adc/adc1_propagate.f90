@@ -122,6 +122,11 @@ contains
     if (lprojcap) call cap_projection(ndimf)
 
 !-----------------------------------------------------------------------
+! Koopman's approximation channel-resolved flux
+!-----------------------------------------------------------------------
+    if (lfluxproj) call get_koopmans_projector(ndimf,kpqf)
+    
+!-----------------------------------------------------------------------
 ! Perform the wavepacket propagation
 !-----------------------------------------------------------------------
     call propagate_laser_adc1(ndimf,kpqf)
@@ -137,6 +142,7 @@ contains
     if (allocated(cap_mo)) deallocate(cap_mo)
     if (allocated(theta_mo)) deallocate(theta_mo)
     if (allocated(projmask)) deallocate(projmask)
+    if (allocated(ikproj1)) deallocate(ikproj1)
     
     return
     
@@ -288,7 +294,7 @@ contains
 ! Reset the dpl array
 !----------------------------------------------------------------------
     dpl(1:nbas,1:nbas)=dpl_orig(1:nbas,1:nbas)
-    
+
     return
 
   end subroutine cap_isbas_adc1
@@ -509,7 +515,7 @@ contains
 ! Reset the dpl array
 !----------------------------------------------------------------------
     dpl(1:nbas,1:nbas)=dpl_orig(1:nbas,1:nbas)
-    
+
     return
     
   end subroutine theta_isbas_adc1
@@ -922,7 +928,7 @@ contains
 
     ! Rotate the CAP-projector matrix back to the ISR representation
     theta1=matmul(eigvec,matmul(tmp,transpose(eigvec)))
- 
+
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -1096,6 +1102,57 @@ contains
     return
     
   end subroutine diag_hcap_adc1
+
+!#######################################################################
+
+  subroutine get_koopmans_projector(ndimf,kpqf)
+
+    use parameters
+    use constants
+    use misc
+    use iomod
+    
+    implicit none
+
+    integer, dimension(7,0:nBas**2*nOcc**2), intent(in) :: kpqf
+
+    integer :: ndimf
+    integer :: i,count,inda,indb,indk,indl,spin
+
+!----------------------------------------------------------------------
+! Determine the number of intermediate states with a hole index
+! corresponding to the Koopman's approximation ionisation channel
+! of interest
+!----------------------------------------------------------------------
+    nkproj1=0
+    do i=1,ndimf      
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       if (indk.eq.imoproj) nkproj1=nkproj1+1
+    enddo
+
+!----------------------------------------------------------------------
+! Allocate arrays
+!----------------------------------------------------------------------
+    allocate(ikproj1(nkproj1))
+    ikproj1=0
+
+!----------------------------------------------------------------------
+! Fill in the array of intermediate states with a hole index
+! corresponding to the Koopman's approximation ionisation channel
+! of interest
+!----------------------------------------------------------------------
+    count=0
+    do i=1,ndimf      
+       call get_indices(kpqf(:,i),inda,indb,indk,indl,spin)
+       if (indk.eq.imoproj) then
+          count=count+1
+          ikproj1(count)=i
+       endif
+    enddo
+    
+    return
+    
+  end subroutine get_koopmans_projector
     
 !#######################################################################
 

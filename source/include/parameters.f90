@@ -374,6 +374,9 @@ integer                :: nbuf_theta
 integer, dimension(2)  :: nrad,nang
 integer                :: iprojcap
 integer, allocatable   :: projmask(:)
+integer                :: imoproj
+integer                :: nkproj1
+integer, allocatable   :: ikproj1(:)
 real(dp)               :: projlim
 real(dp)               :: capstr
 real(dp), dimension(3) :: boxpar
@@ -389,6 +392,7 @@ logical                :: lcap
 logical                :: lprojcap
 logical                :: lautobox
 logical                :: lflux
+logical                :: lfluxproj
 logical                :: lcapdiag
 
 !!$************************************************

@@ -953,6 +953,7 @@
             if (method.ne.1) then
                errmsg='Bound-unbound and bound-bound projection is &
                     not available for TD-ADC(2) calculations'
+               goto 999
             endif
          endif
          
@@ -961,6 +962,15 @@
          if (lcapdiag.and.method.ne.1) then
             msg='Diagonalisation of H-iW is not yet supported for &
                  ADC(2) calculations'
+            goto 999
+         endif
+
+         ! Koopman's approximation channel-resolved flux analysis is
+         ! only supported at the ADC(1)/CIS level of theory
+         if (lfluxproj.and.method.ne.1) then
+            msg='Koopman''s approximation channel-resolved flux &
+                 analysis is not supported for ADC(2) calculations'
+            goto 999
          endif
          
       endif
@@ -2335,7 +2345,28 @@
 
          else if (keyword(i).eq.'flux') then
             lflux=.true.
-
+            if (keyword(i+1).eq.'=') then
+               ! Projected flux operator
+               lfluxproj=.true.
+               i=i+2
+               if (keyword(i).eq.'moproj') then
+                  ! Koopmans approximation flux operator
+                  ! projection (valid only for TD-ADC(1)
+                  ! or TD-CIS)
+                  if (keyword(i+1).eq.',') then
+                     i=i+2
+                     read(keyword(i),*) imoproj
+                  else
+                     errmsg='No MO index given with flux=moproj'
+                     call error_control
+                  endif
+               else
+                  errmsg='Unknown flux operator projection: '&
+                       //trim(keyword(i))
+                  call error_control
+               endif
+            endif
+                  
          else if (keyword(i).eq.'cap_diag') then
             lcapdiag=.true.
             
