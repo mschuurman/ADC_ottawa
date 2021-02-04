@@ -319,7 +319,7 @@ real(dp)                              :: tfinal,tout,&
 integer                               :: autoord
 integer                               :: autoprop
 integer                               :: chebyord
-integer                               :: tdrep
+integer                               :: tdrep,lastbound
 real(dp)                              :: projen
 logical                               :: lautospec
 logical                               :: save1h1p

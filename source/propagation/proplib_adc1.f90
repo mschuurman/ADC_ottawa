@@ -896,65 +896,36 @@ contains
 
     implicit none
 
-    integer                             :: k,ilbl
-    integer, dimension(:), allocatable  :: indx
-    real(dp), dimension(:), allocatable :: abscoeff
+    integer                             :: k
     real(dp), parameter                 :: coefftol=0.01d0
     character(len=3)                    :: as
     character(len=5)                    :: aket
     
 !-----------------------------------------------------------------------
-! Allocate arrays
-!-----------------------------------------------------------------------
-    allocate(abscoeff(matdim))
-    allocate(indx(matdim))
-
-!-----------------------------------------------------------------------
-! Sort the coefficients by magnitude
-!-----------------------------------------------------------------------
-    abscoeff=abs(psi)
-    call dsortindxa1('D',matdim,abscoeff,indx)
-
-!-----------------------------------------------------------------------
-! Output the field-free eigenstates contributing significantly to the
-! wavepacket
+! Output the projections of the field-free eigenstates below the IP
 !-----------------------------------------------------------------------
     write(ilog,'(/,2x,a,/)') 'Dominant States:'
 
     write(ilog,'(2x,30a)') ('*',k=1,30)
     write(ilog,'(3x,a)') '|J>                 |C_J|'
     write(ilog,'(2x,30a)') ('*',k=1,30)
-
+    
     ! Ground state contribution
     if (abs(psi(matdim)).gt.coefftol) &
          write(ilog,'(3x,a,15x,F8.5)') '|HF>',abs(psi(matdim))
 
-    ! Excited state contributions
-    do k=1,min(50,matdim-1)
-
-       ilbl=indx(k)
-
-       ! Skip the ground state
-       if (ilbl.eq.matdim) cycle
-
-       ! Skip if the coefficient is small
-       if (abs(psi(ilbl)).lt.coefftol) cycle
+    ! Excited state contributions (below the IP)
+    do k=1,lastbound
 
        ! State and absolute coefficient value
-       write(as,'(i3)') ilbl
+       write(as,'(i3)') k
        write(aket,'(a)') '|'//trim(adjustl(as))//'>'       
-       write(ilog,'(3x,a,14x,F8.5)') aket,abs(psi(ilbl))
-
+       write(ilog,'(3x,a,14x,F8.5)') aket,abs(psi(k))
+              
     enddo
     
     write(ilog,'(2x,30a,/)') ('*',k=1,30)
 
-!-----------------------------------------------------------------------
-! Deallocate arrays
-!-----------------------------------------------------------------------
-    deallocate(abscoeff)
-    deallocate(indx)
-    
     return
     
   end subroutine wrpsi_eigen
