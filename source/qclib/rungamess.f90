@@ -783,11 +783,10 @@
       !open(unit,file=filename,form='formatted',status='old')
 
       open(unit,file=logfile,form='formatted',status='old')
-
+      
       targ='EXECUTION OF GAMESS TERMINATED NORMALLY'
       found=.false.
 10    read(unit,'(a)',end=20) string
-      print*,string
       if (index(string,trim(targ)).ne.0) found=.true.      
       goto 10
       
