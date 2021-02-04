@@ -678,7 +678,7 @@ contains
     integer                               :: ndimf,workdim,error,i,j
     real(dp), dimension(:,:), allocatable :: eigvec,tmp
     real(dp), dimension(:), allocatable   :: ener,work
-
+    
 !-----------------------------------------------------------------------
 ! Allocate arrays
 !-----------------------------------------------------------------------
@@ -716,9 +716,21 @@ contains
 !-----------------------------------------------------------------------
     do i=1,ndimf
        eigvec(:,i)=eigvec(:,i+1)
+       ener(i)=ener(i+1)
     enddo
     eigvec(:,ndimf+1)=0.0d0
     eigvec(ndimf+1,ndimf+1)=1.0d0
+    ener(ndimf+1)=0.0d0
+    
+!-----------------------------------------------------------------------
+! Get the index of the last eigenstate below the IP
+!-----------------------------------------------------------------------
+    do i=1,ndimf
+       if (ener(i) > -e(nocc)) then
+          lastbound=i-1
+          exit
+       endif
+    enddo
 
 !-----------------------------------------------------------------------
 ! Transform the operator matrices to the eigenstate representation
