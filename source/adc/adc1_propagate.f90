@@ -535,6 +535,7 @@ contains
 
     integer, dimension(7,0:nBas**2*nOcc**2) :: kpq
     integer                                 :: ndim,i,itmp,unit
+    integer                                 :: lim
     real(dp), dimension(:,:), allocatable   :: eigvec
     real(dp), dimension(:), allocatable     :: ener,mtm,tmvec,osc_str
 
@@ -575,11 +576,18 @@ contains
     write(ilog,'(2x,a)') &
          'Initial space ADC(1)/CIS excitation energies'
     write(ilog,'(70a)') ('*',i=1,70)
+
+    do i=1,ndim
+       if (ener(i) > -e(nocc)) then
+          lim=i-1
+          exit
+       endif
+    enddo
     
     itmp=1+nBas**2*4*nOcc**2
-    call table2(ndim,statenumber+15,ener(1:statenumber+15),&
-         eigvec(:,1:statenumber+15),tmvec(1:statenumber+15),&
-         osc_str(1:statenumber+15),kpq,itmp,'i')
+    call table2(ndim,statenumber+lim,ener(1:statenumber+lim),&
+         eigvec(:,1:statenumber+lim),tmvec(1:statenumber+lim),&
+         osc_str(1:statenumber+lim),kpq,itmp,'i')
 
 !-----------------------------------------------------------------------
 ! Write the eigenpairs to file
