@@ -76,8 +76,8 @@
   real(xrk)                :: eps_geev        = 1e-7_xrk        ! Threshold for declaring ZGEEV eigenvalues degenerate;
   integer(ik), parameter  :: iu_2e_ao        = 12 ! I/O unit used for storing 2e integrals over the atomic bfs
   integer(hik)            :: iosize_2e       = 220000000   ! Integral I/O
-  real(xrk)                :: energy_toler    = 1e-12_xrk        ! Desired SCF convergence for the total energy
-  real(xrk)                :: rho_toler       = 1e-8_xrk        ! Desired SCF convergence for the density matrix
+  real(xrk)                :: energy_toler    = 1e-10_xrk        ! Desired SCF convergence for the total energy
+  real(xrk)                :: rho_toler       = 1e-6_xrk        ! Desired SCF convergence for the density matrix
   complex(xrk)             :: cz=(0._xrk,0._xrk)
  
   logical                 :: converged

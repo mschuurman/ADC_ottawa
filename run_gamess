@@ -13,7 +13,7 @@ NPROC=$3
 ##########################################
 USER=`whoami`
 
-TMP1=/tmp/$USER
+TMP1=/work/01/$USER
 if [ ! -d $TMP1 ]; then
     mkdir $TMP1
 fi
@@ -42,7 +42,7 @@ rm ~/scr/$STEM.*
 cd $SCRATCH
 
 # Replace this with the correct path to rungms
-GAMESSEXE=/home/sneville/gamess/rungms
+GAMESSEXE=/globalhome/iseidu/software/gamess/rungms
 
 $GAMESSEXE $STEM.inp $NPROC >$STEM.log
 
@@ -51,9 +51,12 @@ $GAMESSEXE $STEM.inp $NPROC >$STEM.log
 ##########################################
 cp * $DIR
 mv ~/scr/$STEM.dat $DIR
+mv $STEM.log $DIR
 
 ##########################################
 # Clean up
 ##########################################
+sleep 2s
+
 rm -r $SCRATCH
-rm -r $GSCR
+#rm -r $GSCR

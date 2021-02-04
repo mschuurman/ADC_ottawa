@@ -899,7 +899,7 @@ contains
     integer                             :: k,ilbl
     integer, dimension(:), allocatable  :: indx
     real(dp), dimension(:), allocatable :: abscoeff
-    real(dp), parameter                 :: coefftol=0.01d0
+    real(dp), parameter                 :: coefftol=0.001d0
     character(len=3)                    :: as
     character(len=5)                    :: aket
     
